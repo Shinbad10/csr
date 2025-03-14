@@ -12,6 +12,8 @@ app.use(cors({ origin: '*' }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api", appRoutes);
-
+app.get("/", (req, res) => {
+  res.json({ message: "Server is running!" });
+});
 // Export để Vercel sử dụng như một API handler
 export default app;
