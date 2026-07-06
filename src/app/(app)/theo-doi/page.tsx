@@ -193,30 +193,26 @@ export default function TheoDoiPage() {
       />
 
       {/* --- STATS BANNER --- */}
-      <div className="px-6 py-3 border-b border-[var(--line)] bg-white flex items-center gap-4 xl:gap-8 overflow-x-auto whitespace-nowrap hide-scrollbar shrink-0">
-        <div className="flex flex-col">
-          <span className="text-[10.5px] font-bold text-[var(--mute)] uppercase tracking-wider">Tổng bệnh nhân</span>
-          <span className="font-bold text-[16px] text-[var(--ink)]">{stats.tong}</span>
+      <div className="px-6 py-3.5 border-b border-[var(--line)] bg-[var(--surface-bg)] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 shrink-0">
+        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--navy)] shadow-xs flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Tổng bệnh nhân</span>
+          <div className="font-serif text-[22px] font-bold text-[var(--ink)] mt-1 font-mono">{stats.tong}</div>
         </div>
-        <div className="w-[1px] h-8 bg-[var(--line-soft)] hidden md:block"></div>
-        <div className="flex flex-col">
-          <span className="text-[10.5px] font-bold text-[var(--mute)] uppercase tracking-wider">Có chỉ định (Nhóm A/B)</span>
-          <span className="font-bold text-[16px] text-[var(--teal-deep)]">{stats.chiDinh} <span className="text-[12px] font-medium text-[var(--mute)]">/ {stats.tong}</span></span>
+        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--teal)] shadow-xs flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Có chỉ định (A/B)</span>
+          <div className="font-serif text-[22px] font-bold text-[var(--teal-deep)] mt-1 font-mono">{stats.chiDinh} <span className="text-[12px] font-medium text-[var(--mute)]">/ {stats.tong}</span></div>
         </div>
-        <div className="w-[1px] h-8 bg-[var(--line-soft)] hidden xl:block"></div>
-        <div className="flex flex-col">
-          <span className="text-[10.5px] font-bold text-[var(--mute)] uppercase tracking-wider">Nhóm A: Đã đến BV</span>
-          <span className="font-bold text-[16px] text-[var(--emerald)]">{stats.daDen}</span>
+        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--green)] shadow-xs flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Nhóm A: Đã đến BV</span>
+          <div className="font-serif text-[22px] font-bold text-[var(--green)] mt-1 font-mono">{stats.daDen}</div>
         </div>
-        <div className="w-[1px] h-8 bg-[var(--line-soft)] hidden md:block"></div>
-        <div className="flex flex-col">
-          <span className="text-[10.5px] font-bold text-[var(--mute)] uppercase tracking-wider">Nhóm A: Chưa đến</span>
-          <span className="font-bold text-[16px] text-[var(--amber-deep)]">{stats.chuaDen}</span>
+        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--amber)] shadow-xs flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Nhóm A: Chưa đến</span>
+          <div className="font-serif text-[22px] font-bold text-[var(--amber)] mt-1 font-mono">{stats.chuaDen}</div>
         </div>
-        <div className="w-[1px] h-8 bg-[var(--line-soft)] hidden md:block"></div>
-        <div className="flex flex-col">
-          <span className="text-[10.5px] font-bold text-[var(--mute)] uppercase tracking-wider">Nhóm A: Quá hạn</span>
-          <span className="font-bold text-[16px] text-[var(--rose)]">{stats.quaHan}</span>
+        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--rose)] shadow-xs flex flex-col justify-between col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Nhóm A: Quá hạn</span>
+          <div className="font-serif text-[22px] font-bold text-[var(--rose)] mt-1 font-mono">{stats.quaHan}</div>
         </div>
       </div>
 
@@ -426,26 +422,28 @@ export default function TheoDoiPage() {
       </div>
       {/* Modal Chọn Đợt Khám */}
       {showBkModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4">
-          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-[560px] flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--navy-ink)]/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-[var(--r-xl)] border border-[var(--line)] shadow-[var(--shadow-lg)] w-full max-w-[560px] flex flex-col max-h-[85vh] overflow-hidden">
             {/* Header */}
             <div className="px-6 py-5 border-b border-[var(--line-soft)] flex items-center justify-between bg-white">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-[var(--line)] bg-[var(--surface-bg)] flex items-center justify-center shrink-0 shadow-sm">
-                  <CalendarDays className="w-5 h-5 text-[var(--ink)]" />
+                <div className="w-11 h-11 rounded-[var(--r-md)] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-5 h-5 text-[var(--teal)]" />
                 </div>
                 <div>
-                  <h2 className="font-serif text-[20px] font-bold text-[var(--ink)] leading-tight">Chọn đợt khám</h2>
-                  <p className="text-[13px] text-[var(--mute)] mt-0.5">Lấy danh sách bệnh nhân để theo dõi</p>
+                  <h2 className="font-serif text-[22px] font-bold text-[var(--ink)] leading-tight">
+                    Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span>
+                  </h2>
+                  <p className="text-[13px] text-[var(--mute)] mt-0.5 font-medium">Lấy danh sách bệnh nhân để theo dõi &amp; chăm sóc</p>
                 </div>
               </div>
-              <button onClick={() => setShowBkModal(false)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] active:scale-90 transition-colors" title="Đóng">
+              <button onClick={() => setShowBkModal(false)} className="w-8 h-8 flex items-center justify-center rounded-[var(--r-md)] hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] active:scale-95 transition-colors" title="Đóng">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Search */}
-            <div className="p-4 border-b border-[var(--line-soft)] bg-[var(--surface-bg)]">
+            <div className="p-4 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
                 <input 
@@ -453,28 +451,28 @@ export default function TheoDoiPage() {
                   placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..." 
                   value={bkSearch} 
                   onChange={(e) => setBkSearch(e.target.value)} 
-                  className="w-full h-11 rounded-xl border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] outline-none focus:border-[var(--navy)] focus:ring-1 focus:ring-[var(--navy)] transition-colors shadow-sm" 
+                  className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs" 
                 />
               </div>
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[var(--surface-bg)]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[var(--surface-soft)]">
               {filteredBks.map(b => {
                 const active = selBk === b.id;
                 return (
-                  <button key={b.id} onClick={() => { setSelBk(b.id); setShowBkModal(false); }} className={`w-full text-left p-4 rounded-[16px] transition-all duration-200 flex items-center gap-4 border bg-white ${active ? "border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]" : "border-[var(--line)] shadow-sm hover:border-[var(--mute-soft)] hover:shadow-md"}`}>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border transition-colors ${active ? "bg-[var(--navy-50)] border-transparent text-[var(--navy)]" : "bg-[var(--surface-bg)] border-[var(--line)] text-[var(--mute)]"}`}>
-                      {active ? <Check className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
+                  <button key={b.id} onClick={() => { setSelBk(b.id); setShowBkModal(false); }} className={`w-full text-left p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-center gap-4 border ${active ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]" : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"}`}>
+                    <div className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors ${active ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs" : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"}`}>
+                      {active ? <Check className="w-5 h-5 text-[var(--teal)]" /> : <MapPin className="w-5 h-5" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
-                        <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded shrink-0 bg-[var(--surface-bg)] border border-[var(--line)] text-[var(--mute)]">{b.id}</span>
+                        <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{b.id}</span>
                       </div>
-                      <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4">
-                        <span className="flex items-center gap-1.5 shrink-0"><CalendarDays className="w-3.5 h-3.5" /> {fmtDate(b.ngayKham)}</span>
-                        {b.diaDiem && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{b.diaDiem}</span></span>}
+                      <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
+                        <span className="flex items-center gap-1.5 shrink-0 font-mono"><CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" /> {fmtDate(b.ngayKham)}</span>
+                        {b.diaDiem && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" /> <span className="truncate">{b.diaDiem}</span></span>}
                       </div>
                     </div>
                   </button>
@@ -482,9 +480,9 @@ export default function TheoDoiPage() {
               })}
               {filteredBks.length === 0 && (
                 <div className="text-center py-14 flex flex-col items-center justify-center text-[var(--mute)]">
-                  <div className="w-14 h-14 rounded-full bg-white shadow-sm border border-[var(--line-soft)] flex items-center justify-center mb-4 text-[var(--mute-soft)]"><Search className="w-6 h-6" /></div>
-                  <div className="font-bold text-[15px] text-[var(--ink)]">Không tìm thấy đợt khám</div>
-                  <div className="text-[13.5px] mt-1.5">Thử thay đổi từ khóa tìm kiếm.</div>
+                  <div className="w-12 h-12 rounded-[var(--r-lg)] bg-white shadow-xs border border-[var(--line)] flex items-center justify-center mb-4 text-[var(--mute)]"><Search className="w-6 h-6" /></div>
+                  <div className="font-bold text-[15px] text-[var(--ink)] font-serif">Không tìm thấy đợt khám</div>
+                  <div className="text-[13px] mt-1 text-[var(--mute)]">Thử thay đổi từ khóa tìm kiếm của bạn.</div>
                 </div>
               )}
             </div>

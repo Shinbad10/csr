@@ -36,7 +36,7 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
       <div className="relative shrink-0" ref={ref}>
         <button onClick={() => setOpen((o) => !o)}
           className={`flex items-center gap-2.5 rounded-[var(--r-md)] pl-2.5 pr-2 py-1.5 transition-colors ${open ? "bg-[var(--surface-hover)]" : "hover:bg-[var(--surface-hover)]"}`}>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white font-bold flex items-center justify-center text-[13px]">{initial}</div>
+          <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] font-mono font-bold flex items-center justify-center text-[13px] shadow-xs border border-white/10">{initial}</div>
           <div className="text-left leading-tight hidden sm:block">
             {isLoading ? (
               <div className="animate-pulse space-y-1">
@@ -46,7 +46,7 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
             ) : (
               <>
                 <div className="text-[13px] font-bold text-[var(--ink)] max-w-[160px] truncate">{name}</div>
-                <div className="text-[11px] text-[var(--mute)]">{roleLabel(session?.user?.role)}</div>
+                <div className="text-[11px] font-medium text-[var(--mute)]">{roleLabel(session?.user?.role)}</div>
               </>
             )}
           </div>
@@ -56,7 +56,7 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
         {open && (
           <div className="absolute right-0 top-full mt-2 z-50 w-[252px] bg-white border border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow-lg)] overflow-hidden animate-fade-in">
             <div className="px-4 py-3.5 bg-[var(--surface-soft)] border-b border-[var(--line)] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white font-bold flex items-center justify-center text-[15px] shrink-0">{initial}</div>
+              <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-xs border border-white/10">{initial}</div>
               <div className="min-w-0">
                 <div className="text-[14px] font-bold text-[var(--ink)] truncate">{name}</div>
                 <div className="text-[11px] font-mono text-[var(--mute)]">{session?.user?.id}</div>
