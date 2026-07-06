@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["@prisma/client", "better-sqlite3", "mssql"],
   turbopack: {},
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
