@@ -9,6 +9,7 @@ import { Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X, Stetho
 import { can } from "@/lib/permissions";
 import { fmtDate } from "@/lib/csr";
 import { Field, DateField } from "@/components/csr/fields";
+import { SkeletonTable } from "@/components/layout/Skeleton";
 import { useToast } from "@/components/providers/ToastProvider";
 
 interface CoSo { id: string; ten: string }
@@ -123,7 +124,7 @@ export default function BuoiKhamPage() {
             </thead>
             <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
               {loading ? (
-                <tr><td colSpan={9} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin text-[var(--navy)] mx-auto" /></td></tr>
+                <SkeletonTable rows={5} cols={9} />
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={9} className="py-16 text-center text-[var(--mute)]">Chưa có đợt khám nào.</td></tr>
               ) : filtered.map((b, i) => (

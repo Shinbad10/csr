@@ -363,6 +363,95 @@ export async function batchCheckHISForPatients(
   return results;
 }
 
+// Tìm kiếm thủ công trong HIS theo từ khoá (họ tên / CCCD / mã HIS) — dùng khi đối chiếu tự động không khớp.
+export async function searchHIS(coSoId: string, keyword: string) {
+  const kw = (keyword || "").trim();
+  if (!kw) return [];
+  const config = await getHisConfig(coSoId);
+  const dbConfig: sql.config = {
+    user: config.user,
+    password: config.pass,
+    server: config.host,
+    port: config.port,
+    database: config.dbName,
+    options: { encrypt: true, trustServerCertificate: true },
+    connectionTimeout: 5000,
+    requestTimeout: 20000,
+  };
+
+  let pool: sql.ConnectionPool | null = null;
+  try {
+    pool = await new sql.ConnectionPool(dbConfig).connect();
+
+    // Tự dò cột địa chỉ trong bảng QLyCapThe (mỗi HIS đặt tên khác nhau: Diachi/DiaChi/NoiO/ThuongTru…)
+    let addrCol = "";
+    try {
+      const colRes = await pool.request().query(`
+        SELECT TOP 1 COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'QLyCapThe'
+          AND (COLUMN_NAME LIKE '%iachi%' OR COLUMN_NAME LIKE '%uongtru%' OR COLUMN_NAME LIKE '%noio%' OR COLUMN_NAME LIKE '%diachi%')
+        ORDER BY CASE WHEN COLUMN_NAME LIKE '%iachi%' THEN 0 ELSE 1 END
+      `);
+      addrCol = colRes.recordset?.[0]?.COLUMN_NAME || "";
+    } catch {}
+    // Tên cột lấy từ INFORMATION_SCHEMA (cột thật) nên an toàn để nội suy; bọc [] cho chắc.
+    const addrSelect = addrCol ? `c.[${addrCol}] as diaChi,` : `NULL as diaChi,`;
+
+    const req = pool.request();
+    req.input("kw", sql.NVarChar, `%${kw}%`);
+    req.input("kwRaw", sql.NVarChar, kw);
+
+    const query = `
+      SELECT TOP 30
+        c.Ma as maHIS,
+        c.Hoten as hoTen,
+        c.Namsinh as namSinh,
+        c.CMND as cccd,
+        c.Dienthoai as sdt,
+        ${addrSelect}
+        mo.Ngaymo as ngayMo,
+        mo.Khoa as khoaMo,
+        hsba.Chandoan_Ravien as chanDoanRavien,
+        hsba.Chandoan_Vaovien as chanDoanVaovien,
+        bm.BsDieutri as bsDieuTri,
+        bm.ChandoanChinh as chanDoanBM
+      FROM QLyCapThe c
+      LEFT JOIN QLyPhongMo mo ON c.Ma = mo.MaBenhnhan
+      LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
+      LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
+      WHERE LOWER(c.Hoten) LIKE LOWER(@kw) OR c.CMND LIKE @kw OR c.Ma = @kwRaw
+      ORDER BY mo.Ngaymo DESC
+    `;
+
+    const res = await req.query(query);
+    const rows = res.recordset || [];
+
+    return rows.map((r: any) => {
+      const ngayMo = r.ngayMo ? new Date(r.ngayMo).toISOString() : null;
+      return {
+        maHIS: String(r.maHIS || "").trim(),
+        hoTen: String(r.hoTen || "").trim(),
+        namSinh: String(r.namSinh || "").trim(),
+        cccd: String(r.cccd || "").trim(),
+        sdt: String(r.sdt || "").trim(),
+        diaChi: String(r.diaChi || "").trim(),
+        ngayMo,
+        khoaMo: r.khoaMo || "KMTH",
+        chanDoan: r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || "",
+        bsDieuTri: r.bsDieuTri || "",
+        hasSurgery: Boolean(ngayMo),
+      };
+    });
+  } catch (err: any) {
+    console.error("HIS Search Error:", err);
+    throw new Error(`Lỗi tìm kiếm HIS (${config.host}): ${err?.message || "Không xác định"}`);
+  } finally {
+    if (pool) {
+      try { await pool.close(); } catch {}
+    }
+  }
+}
+
 export async function getHISSurgeryList(coSoId: string, monthStr?: string | null) {
   const config = await getHisConfig(coSoId);
   const dbConfig: sql.config = {

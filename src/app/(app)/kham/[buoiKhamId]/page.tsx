@@ -18,6 +18,7 @@ import { Field, Select, ChoiceRow, PillGroup, SectionHeader, DateField, StatusBa
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { CameraScannerModal } from "@/components/csr/CameraScannerModal";
+import { Skeleton3Column, SkeletonList, SkeletonForm } from "@/components/layout/Skeleton";
 
 interface BuoiKham { id: string; coSoId: string; coSo?: { ten: string }; ngayKham: string; xa: string; diaDiem: string; ghiChu?: string | null }
 
@@ -202,8 +203,11 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
             </button>
           </div>
           {lookup === "loading" && (
-            <div className="mt-3.5 p-3 rounded-xl bg-[var(--navy-50)] border border-[var(--navy)]/20 flex items-center gap-2.5 text-[13.5px] font-semibold text-[var(--navy)] animate-pulse">
-              <Loader2 className="w-4 h-4 animate-spin shrink-0" /> {lookupMsg}
+            <div className="mt-3.5 p-4 rounded-2xl bg-[var(--navy-50)]/70 border border-[var(--navy)]/20 space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2.5 text-[13.5px] font-semibold text-[var(--navy)]">
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" /> {lookupMsg}
+              </div>
+              <SkeletonForm fields={4} cols={2} />
             </div>
           )}
           {lookup === "fail" && (
@@ -528,8 +532,11 @@ function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: 
             </div>
           )}
           {lookup === "loading" && (
-            <div className="mt-2.5 p-2.5 rounded-xl bg-[var(--navy-50)] border border-[var(--navy)]/20 flex items-center gap-2 text-[13px] font-semibold text-[var(--navy)] animate-pulse">
-              <Loader2 className="w-4 h-4 animate-spin shrink-0" /> {lookupMsg}
+            <div className="mt-2.5 p-3 rounded-xl bg-[var(--navy-50)] border border-[var(--navy)]/20 space-y-2.5 animate-fade-in">
+              <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--navy)]">
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" /> {lookupMsg}
+              </div>
+              <SkeletonForm fields={2} cols={2} />
             </div>
           )}
           {lookup === "fail" && (
@@ -695,7 +702,18 @@ export default function ExamPage() {
   ], [selected]);
   const doneCount = steps.filter((s) => s.done).length;
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center" suppressHydrationWarning><Loader2 className="w-9 h-9 animate-spin text-[var(--navy)]" /></div>;
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col bg-[var(--surface-bg)] overflow-hidden" suppressHydrationWarning>
+        <PageHeader
+          title="Đợt khám · Đang tải..."
+          description="Đang truy xuất dữ liệu đợt khám và danh sách bệnh nhân..."
+          guide={[]}
+        />
+        <Skeleton3Column />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--surface-bg)] overflow-hidden" suppressHydrationWarning>
@@ -765,7 +783,9 @@ export default function ExamPage() {
             <span className="text-[12px] text-[var(--mute)] font-medium">{filter ? `${visible.length}/${patients.length}` : patients.length} BN</span>
           </div>
           <div data-tour="kh-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
-            {patients.length === 0 ? (
+            {searching ? (
+              <SkeletonList items={5} />
+            ) : patients.length === 0 ? (
               <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2"><UserPlus className="w-8 h-8 text-[var(--mute-soft)]" /><span>Chưa có bệnh nhân.<br />Nhấn <b className="text-[var(--teal-deep)]">＋</b> để đăng ký.</span></div>
             ) : visible.length === 0 ? (
               <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không khớp bộ lọc / tìm kiếm.</div>

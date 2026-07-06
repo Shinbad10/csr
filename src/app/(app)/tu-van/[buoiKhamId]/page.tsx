@@ -8,6 +8,7 @@ import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCo
 import { useToast } from "@/components/providers/ToastProvider";
 import { BHYT, NHOM, parseDiag, ageOf, fmtDate, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
 import { Dropdown, DateField, ChoiceRow, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
+import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 
 interface BuoiKham { id: string; xa: string; diaDiem: string; ngayKham: string; coSo?: { ten: string } }
 const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "" };
@@ -90,7 +91,18 @@ export default function TuVanSessionPage() {
   const visible = useMemo(() => patients.filter((p) => { if (!filter) return true; if (filter === "chua") return !p.nhom; return p.nhom === filter; }), [patients, filter]);
   const FILTERS = [{ key: "", label: "Tất cả" }, { key: "chua", label: "Chưa phân nhóm" }, { key: "A", label: "Nhóm A · đã chốt mổ" }, { key: "B", label: "Nhóm B · theo dõi" }];
 
-  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" /></div>;
+  if (loading) {
+    return (
+      <div className="h-[calc(100vh-110px)] flex flex-col gap-4">
+        <PageHeader
+          title="Tư vấn & Phân nhóm · Đang tải..."
+          description="Đang truy xuất danh sách bệnh nhân cần tư vấn..."
+          guide={[]}
+        />
+        <Skeleton3Column />
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-110px)] flex flex-col gap-4">
@@ -138,7 +150,8 @@ export default function TuVanSessionPage() {
             <span className="text-[12px] text-[var(--mute)] font-medium">{filter ? `${visible.length}/${patients.length}` : patients.length} BN</span>
           </div>
           <div data-tour="tvs-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
-            {patients.length === 0 ? <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2"><Stethoscope className="w-8 h-8 text-[var(--mute-soft)]" /><span>Đợt khám này chưa có BN nào được khuyến nghị phẫu thuật.</span></div>
+            {searching ? <SkeletonList items={5} />
+              : patients.length === 0 ? <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2"><Stethoscope className="w-8 h-8 text-[var(--mute-soft)]" /><span>Đợt khám này chưa có BN nào được khuyến nghị phẫu thuật.</span></div>
               : visible.length === 0 ? <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không khớp bộ lọc.</div>
                 : visible.map((p) => {
                   const active = selId === p.id; const cds = parseDiag(p.chanDoan); return (

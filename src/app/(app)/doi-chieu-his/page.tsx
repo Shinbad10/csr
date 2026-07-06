@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { fmtDate } from "@/lib/csr";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
+import { SkeletonTable } from "@/components/layout/Skeleton";
 
 interface BuoiKham {
   id: string;
@@ -511,7 +512,9 @@ export default function DoiChieuHisPage() {
                     </tr>
                   </thead>
                   <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-                    {filteredBatchResults.length === 0 ? (
+                    {batchLoading && batchResults.length === 0 ? (
+                      <SkeletonTable rows={6} cols={4} />
+                    ) : filteredBatchResults.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="py-12 text-center text-[var(--mute)]">
                           {batchResults.length === 0 ? "Không tìm thấy bệnh nhân nào trong đợt khám này." : "Không có bệnh nhân nào khớp với bộ lọc."}
@@ -759,7 +762,9 @@ export default function DoiChieuHisPage() {
                     </tr>
                   </thead>
                   <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-                    {filteredRevList.length === 0 ? (
+                    {revLoading && revList.length === 0 ? (
+                      <SkeletonTable rows={6} cols={6} />
+                    ) : filteredRevList.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-12 text-center text-[var(--mute)]">
                           {revList.length === 0 ? "Không tìm thấy ca phẫu thuật nào trong tháng này trên HIS." : "Không có ca phẫu thuật nào khớp với bộ lọc ngày / từ khóa."}

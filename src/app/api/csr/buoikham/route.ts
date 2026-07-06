@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       include: { 
         coSo: true, 
         _count: { select: { hoSo: true } },
-        hoSo: { select: { nhom: true, trangThaiDieuTri: true, trangThai: true } }
+        hoSo: { select: { nhom: true, trangThai: true, ngayMoThucTe: true } }
       },
       orderBy: { ngayKham: "desc" },
     });
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       for (const hs of item.hoSo) {
         const isA = hs.nhom === "A" || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(hs.trangThai);
         const isB = hs.nhom === "B" || hs.trangThai === "NhomB";
-        const isMo = hs.trangThaiDieuTri === "Đã mổ" || hs.trangThai === "DaMoHauPhau";
+        const isMo = hs.ngayMoThucTe != null; // Chỉ tính "đã mổ" khi có ngày mổ thực tế (không chỉ vì có mã HIS)
         
         if (isA) nhomA++;
         else if (isB) nhomB++;

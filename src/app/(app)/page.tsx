@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { CalendarHeart, ClipboardList, BarChart3, ArrowRight, PhoneCall, Users, Calendar, HeartHandshake, CheckCircle2, Activity } from "lucide-react";
+import { CalendarHeart, ClipboardList, BarChart3, ArrowRight, PhoneCall, Users, Calendar, HeartHandshake, CheckCircle2, Activity, Loader2 } from "lucide-react";
 import { can } from "@/lib/permissions";
 import PageHeader from "@/components/layout/PageHeader";
 import { STATUS, statusOf } from "@/lib/csr";
@@ -30,7 +30,7 @@ const KPIS = [
 ] as const;
 
 export default function Dashboard() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const role = session?.user?.role;
   const tiles = TILES.filter((t) => !t.cap || can(role, t.cap));
 
@@ -40,9 +40,20 @@ export default function Dashboard() {
     fetch("/api/csr/reports").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setStats(d); }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  // Chỉ render khi đã có phiên đăng nhập + số liệu → tránh nháy dữ liệu tạm (tên, quyền, KPI)
+  const ready = status !== "loading" && !loading;
+
   const slices: Slice[] = stats
     ? STATUS_ORDER.map((k) => ({ label: statusOf(k).label, value: stats.byStatus[k] || 0, color: statusColor(k) })).filter((s) => s.value > 0)
     : [];
+
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center py-40">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -66,7 +77,7 @@ export default function Dashboard() {
             <div key={c.key} className="card p-4">
               <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center ${c.accent}`}><Icon className="w-5 h-5" /></div>
               <div className="font-mono text-[28px] font-bold text-[var(--ink)] mt-3 leading-none">
-                {loading ? <span className="inline-block w-14 h-7 bg-[var(--surface-hover)] rounded animate-pulse" /> : (stats?.[c.key as keyof Stats] as number) ?? 0}
+                {(stats?.[c.key as keyof Stats] as number) ?? 0}
               </div>
               <div className="text-[12px] text-[var(--text-muted)] mt-1.5">{c.label}</div>
             </div>
@@ -78,17 +89,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <div className="card lg:col-span-2">
           <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] mb-4">Phân bố hồ sơ theo trạng thái</h3>
-          {loading ? <div className="h-[200px] bg-[var(--surface-hover)] rounded-[var(--r-md)] animate-pulse" /> : <Donut data={slices} centerLabel="Hồ sơ" />}
+          <Donut data={slices} centerLabel="Hồ sơ" />
         </div>
         <div className="card">
           <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] mb-4">Phân nhóm & kết quả</h3>
-          {loading ? <div className="h-[210px] bg-[var(--surface-hover)] rounded-[var(--r-md)] animate-pulse" /> : (
-            <BarChart data={[
-              { label: "Nhóm A", value: stats?.nhomA ?? 0, color: CHART_COLORS[1] },
-              { label: "Nhóm B", value: stats?.nhomB ?? 0, color: CHART_COLORS[3] },
-              { label: "Đã mổ", value: stats?.daMo ?? 0, color: CHART_COLORS[0] },
-            ]} height={210} />
-          )}
+          <BarChart data={[
+            { label: "Nhóm A", value: stats?.nhomA ?? 0, color: CHART_COLORS[1] },
+            { label: "Nhóm B", value: stats?.nhomB ?? 0, color: CHART_COLORS[3] },
+            { label: "Đã mổ", value: stats?.daMo ?? 0, color: CHART_COLORS[0] },
+          ]} height={210} />
         </div>
       </div>
 

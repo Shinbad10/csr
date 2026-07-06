@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, Search, ClipboardList, Eye, Clock } from "lucide-react";
 import { ageOf, fmtDate, parseDiag, statusOf, bhytLevel, type HoSo } from "@/lib/csr";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
+import { SkeletonTable } from "@/components/layout/Skeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import { PatientInfoModal, PatientHistoryModal } from "@/components/csr/PatientModals";
 
@@ -65,7 +66,7 @@ export default function HoSoPage() {
               </tr>
             </thead>
             <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-              {loading ? <tr><td colSpan={10} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin text-[var(--navy)] mx-auto" /></td></tr>
+              {loading ? <SkeletonTable rows={10} cols={10} />
               : rows.length === 0 ? <tr><td colSpan={10} className="py-16 text-center text-[var(--mute)]"><ClipboardList className="w-8 h-8 mx-auto mb-2 text-[var(--mute-soft)]" />Không có hồ sơ khớp điều kiện.</td></tr>
               : rows.map((r) => (
                 <tr key={r.id} className="hover:bg-[var(--surface-soft)] transition-colors border-b border-[var(--line-soft)] group">
