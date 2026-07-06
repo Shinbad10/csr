@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Plus, Building2, Users, ScrollText, X, Check, Pencil, Trash2, FileSpreadsheet, RefreshCw, ExternalLink, Copy } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import PageHeader from "@/components/layout/PageHeader";
@@ -222,13 +223,27 @@ export default function QuanTriPage() {
 }
 
 function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy-ink)]/45 backdrop-blur-sm p-4">
-      <div className="w-full max-w-[480px] bg-white rounded-[var(--r-xl)] shadow-[var(--shadow-lg)] overflow-hidden animate-fade-in mx-2">
-        <div className="flex items-center justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-[var(--line)]"><h2 className="font-serif text-[18px] font-semibold">{title}</h2><button onClick={onClose} className="p-1.5 rounded-full text-[var(--mute)] hover:bg-[var(--surface-hover)]"><X className="w-5 h-5" /></button></div>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-[520px] max-h-[90vh] flex flex-col bg-white rounded-[20px] shadow-[0_25px_50px_-12px_rgba(3,29,166,0.2)] overflow-hidden animate-fade-in mx-2" onClick={(e) => e.stopPropagation()}>
+        {/* Gradient accent */}
+        <div className="h-1 shrink-0 bg-gradient-to-r from-[var(--teal)] via-[var(--navy)] to-[var(--teal)]" />
+        <div className="flex shrink-0 items-center justify-between px-6 pt-5 pb-4">
+          <h2 className="font-serif text-[20px] font-bold text-[var(--ink)]">{title}</h2>
+          <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors">
+            <X className="w-4.5 h-4.5" />
+          </button>
+        </div>
+        <div className="border-t border-[var(--line-soft)] shrink-0" />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -249,41 +264,53 @@ function CoSoModal({ edit, onClose, onDone }: { edit?: CoSo; onClose: () => void
   };
   return (
     <ModalShell title={edit ? "Sửa cơ sở" : "Thêm cơ sở"} onClose={onClose}>
-      <form onSubmit={submit} className="px-5 sm:px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
-        {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Field label="Mã cơ sở" required><input value={id} onChange={(e) => setId(e.target.value.toUpperCase())} required disabled={!!edit} className="input-field font-mono uppercase disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="VD: CS03" /></Field><Field label="Tên" required><input value={ten} onChange={(e) => setTen(e.target.value)} required className="input-field" /></Field></div>
-        <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" /></Field>
-        <div className="pt-3 border-t border-[var(--line-soft)] mt-3">
-          <div className="text-[13px] font-bold text-[var(--navy)] mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--teal)]" />
-            Cấu hình tài khoản Cổng BHYT (BHXH) riêng cho cơ sở
-          </div>
+      <form onSubmit={submit} className="flex flex-col overflow-hidden">
+        <div className="px-6 py-5 space-y-5 overflow-y-auto">
+          {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Tài khoản BHXH"><input value={bhxhUser} onChange={(e) => setBhxhUser(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 0101000..." /></Field>
-            <Field label="Mật khẩu BHXH"><input type="password" value={bhxhPass} onChange={(e) => setBhxhPass(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder={edit && edit.bhxhPass ? "••••••••" : "Nhập mật khẩu..."} /></Field>
+            <Field label="Mã cơ sở" required><input value={id} onChange={(e) => setId(e.target.value.toUpperCase())} required disabled={!!edit} className="input-field font-mono uppercase disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="VD: CS03" /></Field>
+            <Field label="Tên" required><input value={ten} onChange={(e) => setTen(e.target.value)} required className="input-field" /></Field>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-            <Field label="Mã CSKCB"><input value={bhxhMaCSKCB} onChange={(e) => setBhxhMaCSKCB(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 01001" /></Field>
-            <Field label="Họ tên cán bộ"><input value={bhxhHoTenCB} onChange={(e) => setBhxhHoTenCB(e.target.value)} className="input-field text-[13.5px]" placeholder="Họ tên CB tra cứu" /></Field>
-            <Field label="CCCD cán bộ"><input value={bhxhCccdCB} onChange={(e) => setBhxhCccdCB(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="Số CCCD cán bộ" /></Field>
+          <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" /></Field>
+
+          <div className="pt-4 border-t border-[var(--line-soft)]">
+            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" /> Cấu hình BHXH
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Tài khoản BHXH"><input value={bhxhUser} onChange={(e) => setBhxhUser(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 0101000..." /></Field>
+              <Field label="Mật khẩu BHXH"><input type="password" value={bhxhPass} onChange={(e) => setBhxhPass(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder={edit && edit.bhxhPass ? "••••••••" : "Nhập mật khẩu..."} /></Field>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+              <Field label="Mã CSKCB"><input value={bhxhMaCSKCB} onChange={(e) => setBhxhMaCSKCB(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 01001" /></Field>
+              <Field label="Họ tên cán bộ"><input value={bhxhHoTenCB} onChange={(e) => setBhxhHoTenCB(e.target.value)} className="input-field text-[13.5px]" placeholder="Họ tên CB tra cứu" /></Field>
+              <Field label="CCCD cán bộ"><input value={bhxhCccdCB} onChange={(e) => setBhxhCccdCB(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="Số CCCD cán bộ" /></Field>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-[var(--line-soft)]">
+            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-600" /> Cấu hình HIS (SQL Server)
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="IP / Host HIS"><input value={hisHost} onChange={(e) => setHisHost(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 192.168.10.250" /></Field>
+              <Field label="Cổng (Port)"><input value={hisPort} onChange={(e) => setHisPort(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="1433" /></Field>
+              <Field label="Tên Database"><input value={hisDbName} onChange={(e) => setHisDbName(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: shpt_phongKham" /></Field>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+              <Field label="Tài khoản SQL HIS"><input value={hisUser} onChange={(e) => setHisUser(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: reader" /></Field>
+              <Field label="Mật khẩu SQL HIS"><input type="password" value={hisPass} onChange={(e) => setHisPass(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder={edit && edit.hisPass ? "••••••••" : "Nhập mật khẩu HIS..."} /></Field>
+            </div>
           </div>
         </div>
-        <div className="pt-3 border-t border-[var(--line-soft)] mt-3">
-          <div className="text-[13px] font-bold text-[var(--navy)] mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-purple-600" />
-            Cấu hình máy chủ HIS (SQL Server) riêng cho bệnh viện
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Field label="IP / Host HIS"><input value={hisHost} onChange={(e) => setHisHost(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 192.168.10.250" /></Field>
-            <Field label="Cổng (Port)"><input value={hisPort} onChange={(e) => setHisPort(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="1433" /></Field>
-            <Field label="Tên Database"><input value={hisDbName} onChange={(e) => setHisDbName(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: shpt_phongKham" /></Field>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-            <Field label="Tài khoản SQL HIS"><input value={hisUser} onChange={(e) => setHisUser(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: reader" /></Field>
-            <Field label="Mật khẩu SQL HIS"><input type="password" value={hisPass} onChange={(e) => setHisPass(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder={edit && edit.hisPass ? "••••••••" : "Nhập mật khẩu HIS..."} /></Field>
-          </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-[var(--surface-soft)] border-t border-[var(--line)] flex justify-end gap-3 shrink-0">
+          <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button>
+          <button type="submit" disabled={saving} className="btn btn-primary px-6 py-2.5 font-bold">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)]" />} Lưu
+          </button>
         </div>
-        <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button><button type="submit" disabled={saving} className="btn btn-primary px-6 py-2.5 font-bold">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)]" />} Lưu</button></div>
       </form>
     </ModalShell>
   );
@@ -302,12 +329,58 @@ function UserModal({ cosos, edit, onClose, onDone }: { cosos: CoSo[]; edit?: Ngu
   };
   return (
     <ModalShell title={edit ? "Sửa tài khoản" : "Thêm tài khoản"} onClose={onClose}>
-      <form onSubmit={submit} className="px-5 sm:px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
-        {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Field label="Mã NV" required><input value={maNV} onChange={(e) => setMaNV(e.target.value.toUpperCase())} required disabled={!!edit} className="input-field font-mono uppercase disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="NV05" /></Field><Field label="Họ tên" required><input value={hoTen} onChange={(e) => setHoTen(e.target.value)} required className="input-field" /></Field></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Field label="Vai trò" required><Dropdown value={vaiTro} mono={false} options={ROLES} labels={{ TuVanVien: "Tư vấn viên", KeToan: "Kế toán", QuanLy: "Quản lý" }} onChange={setVaiTro} /></Field><Field label="Cơ sở"><Dropdown value={coSoId} mono={false} placeholder={vaiTro === "QuanLy" ? "Toàn hệ thống" : "Chọn cơ sở…"} options={["", ...cosos.filter((c) => c.trangThai === "active").map((c) => c.id)]} labels={Object.fromEntries(cosos.map((c) => [c.id, c.ten]))} onChange={setCoSoId} /></Field></div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><Field label="Tên đăng nhập" required><input value={tenDangNhap} onChange={(e) => setTen(e.target.value)} required disabled={!!edit} className="input-field font-mono disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" /></Field><Field label={edit ? "Mật khẩu mới" : "Mật khẩu"} required={!edit}><input type="text" value={matKhau} onChange={(e) => setMk(e.target.value)} required={!edit} className="input-field" placeholder={edit ? "Để trống nếu không đổi" : ""} /></Field></div>
-        <div className="flex justify-end gap-3 pt-2"><button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button><button type="submit" disabled={saving} className="btn btn-primary px-6 py-2.5 font-bold">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)]" />} Lưu</button></div>
+      <form onSubmit={submit} className="flex flex-col overflow-hidden">
+        <div className="px-6 py-5 space-y-5 overflow-y-auto">
+          {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
+          
+          {/* Thông tin cơ bản */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Mã NV" required>
+              <input value={maNV} onChange={(e) => setMaNV(e.target.value.toUpperCase())} required disabled={!!edit} className="input-field font-mono uppercase disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="NV05" />
+            </Field>
+            <Field label="Họ tên" required>
+              <input value={hoTen} onChange={(e) => setHoTen(e.target.value)} required className="input-field" />
+            </Field>
+          </div>
+
+          {/* Phân quyền */}
+          <div className="pt-4 border-t border-[var(--line-soft)]">
+            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--navy)]" /> Phân quyền
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Vai trò" required>
+                <Dropdown value={vaiTro} mono={false} options={ROLES} labels={{ TuVanVien: "Tư vấn viên", KeToan: "Kế toán", QuanLy: "Quản lý" }} onChange={setVaiTro} />
+              </Field>
+              <Field label="Cơ sở">
+                <Dropdown value={coSoId} mono={false} placeholder={vaiTro === "QuanLy" ? "Toàn hệ thống" : "Chọn cơ sở…"} options={["", ...cosos.filter((c) => c.trangThai === "active").map((c) => c.id)]} labels={Object.fromEntries(cosos.map((c) => [c.id, c.ten]))} onChange={setCoSoId} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Đăng nhập */}
+          <div className="pt-4 border-t border-[var(--line-soft)]">
+            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" /> Thông tin đăng nhập
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Tên đăng nhập" required>
+                <input value={tenDangNhap} onChange={(e) => setTen(e.target.value)} required disabled={!!edit} className="input-field font-mono disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" />
+              </Field>
+              <Field label={edit ? "Mật khẩu mới" : "Mật khẩu"} required={!edit}>
+                <input type="text" value={matKhau} onChange={(e) => setMk(e.target.value)} required={!edit} className="input-field" placeholder={edit ? "Để trống nếu không đổi" : ""} />
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-[var(--surface-soft)] border-t border-[var(--line)] flex justify-end gap-3 shrink-0">
+          <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button>
+          <button type="submit" disabled={saving} className="btn btn-primary px-6 py-2.5 font-bold">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)]" />} Lưu
+          </button>
+        </div>
       </form>
     </ModalShell>
   );

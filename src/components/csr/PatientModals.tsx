@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Loader2,
@@ -57,9 +58,14 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
     return () => { active = false; };
   }, [hoSoId]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-[var(--surface)] rounded-[var(--r-xl)] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-[var(--line)]">
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 animate-fade-in" onClick={onClose}>
+      <div className="bg-[var(--surface)] rounded-[var(--r-xl)] shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-[var(--line)]" onClick={(e) => e.stopPropagation()}>
         {/* Header - Editorial Navy Gradient & Teal Glow */}
         <div 
           className="p-[20px] px-[24px] text-white flex items-center justify-between border-b border-[var(--line)] relative overflow-hidden"
@@ -263,7 +269,8 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -328,7 +335,12 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
     return "bg-[var(--line-soft)] text-[var(--ink-soft)] border-[var(--line)]";
   };
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
       <div className="bg-[var(--surface)] rounded-[var(--r-xl)] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-[var(--line)]">
         {/* Header - Editorial Navy Gradient & Teal Glow */}
@@ -510,6 +522,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Roboto, Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
 import SessionProvider from "@/components/providers/SessionProvider";
 import ToastProvider from "@/components/providers/ToastProvider";
+import PWARegister from "@/components/providers/PWARegister";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi" className={`${roboto.variable} ${beVietnamPro.variable} ${jetbrains.variable} antialiased h-full`} suppressHydrationWarning>
       <body className="min-h-full font-sans bg-[var(--surface-bg)] text-[var(--ink)]" suppressHydrationWarning>
+        <PWARegister />
         <SessionProvider>
           <ToastProvider>{children}</ToastProvider>
         </SessionProvider>

@@ -64,8 +64,9 @@ export default function LoginPage() {
           <div className="flex items-center gap-6 group">
             <div className="relative">
               <div className="absolute inset-0 bg-[var(--teal)]/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-              <div className="w-20 h-20 rounded-[20px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] flex items-center justify-center font-serif font-bold text-[36px] shadow-2xl group-hover:scale-105 transition-transform duration-500 ring-1 ring-white/10">
-                V
+              <div className="w-20 h-20 rounded-[20px] bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-2xl group-hover:scale-105 transition-transform duration-500 ring-1 ring-[var(--line)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="VISI" className="w-16 h-16 object-contain" />
               </div>
             </div>
             <div className="flex flex-col">

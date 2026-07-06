@@ -100,8 +100,9 @@ export default function Sidebar({ open, setOpen }: { open?: boolean; setOpen?: (
         {/* Brand */}
         <div className={`h-[72px] flex items-center gap-3 border-b border-[var(--line-soft)] shrink-0 transition-all duration-300 ${collapsed ? "px-0 justify-center" : "px-4 justify-between lg:justify-start"}`}>
           <div className={`flex items-center ${collapsed ? "justify-center" : ""}`}>
-            <div className={`relative group rounded-[10px] flex items-center justify-center font-serif font-bold text-[15px] text-[var(--teal)] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] shrink-0 transition-all duration-300 ${collapsed ? "w-[38px] h-[38px] cursor-pointer" : "w-9 h-9"}`}>
-              V
+            <div className={`relative group shrink-0 transition-all duration-300 ${collapsed ? "w-[42px] h-[42px] cursor-pointer" : "w-11 h-11"}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="VISI" className="w-full h-full object-contain drop-shadow-sm" />
               {collapsed && (
                 <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-2 bg-[var(--navy-deep)] text-white text-[13px] font-bold rounded-lg shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-50 flex items-center gap-1.5 border border-[var(--navy-100)] font-sans">
                   <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-[var(--navy-deep)] rotate-45 border-l border-b border-[var(--navy-100)]" />
@@ -109,7 +110,7 @@ export default function Sidebar({ open, setOpen }: { open?: boolean; setOpen?: (
                 </div>
               )}
             </div>
-            <div className={`leading-tight overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[150px] opacity-100 ml-3"}`}>
+            <div className={`leading-tight overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[150px] opacity-100 ml-2.5"}`}>
               <div className="font-serif font-semibold text-[16px] tracking-[-0.02em] text-[var(--ink)] whitespace-nowrap">VISI</div>
               <div className="font-sans font-bold text-[9px] uppercase tracking-[0.18em] text-[var(--mute)] whitespace-nowrap">Khám cộng đồng</div>
             </div>

@@ -9,12 +9,32 @@
   --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
 
-  --animate-fade-in: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-fade-in: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-up: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-in-right: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(4px) scale(0.99); }
     to { opacity: 1; transform: translateY(0) scale(1); }
   }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+}
+
+/* ── Smooth scrolling ─────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 :root {
@@ -88,13 +108,37 @@ body {
 /* font-feature cho số ở JetBrains Mono */
 .font-mono { font-variant-numeric: tabular-nums; }
 
+/* ── Smooth page transitions ──────────────────────────────── */
+main > * {
+  animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Performant transitions (GPU-accelerated) ─────────────── */
+.card,
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-success,
+a[class*="group"] {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ── Smooth focus rings ──────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+  transition: outline-offset 0.15s ease;
+}
+
 @layer components {
   .card {
-    @apply bg-[var(--surface)] rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] p-4;
+    @apply bg-[var(--surface)] rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] p-4 transition-shadow duration-200;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-[14px] font-semibold rounded-[var(--r-md)] transition-all disabled:opacity-45 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-[14px] font-semibold rounded-[var(--r-md)] transition-all duration-200 disabled:opacity-45 disabled:cursor-not-allowed;
   }
   .btn-primary {
     @apply bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] active:scale-[0.98];
@@ -107,6 +151,6 @@ body {
   }
 
   .input-field {
-    @apply w-full rounded-[var(--r-md)] border border-[var(--line)] bg-white px-3 py-2 text-[14px] text-[var(--ink)] outline-none transition-colors focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)];
+    @apply w-full rounded-[var(--r-md)] border border-[var(--line)] bg-white px-3 py-2 text-[14px] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)];
   }
 }
