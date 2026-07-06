@@ -5,8 +5,8 @@
    Be Vietnam Pro (tiêu đề) · Roboto (body) · JetBrains Mono (số/mã/giờ)
    ───────────────────────────────────────────────────────────── */
 @theme {
-  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
 
   --animate-fade-in: fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -41,42 +41,45 @@ html {
   /* navy — thương hiệu */
   --navy: #031da6;
   --navy-hover: #021685;
-  --navy-deep: #010e52;
-  --navy-ink: #010a3b;
-  --navy-50: #eef1ff;
-  --navy-100: #dce3ff;
+  --navy-deep: #020f5c;
+  --navy-ink: #010833;
+  --navy-50: rgba(3, 29, 166, 0.04);
+  --navy-100: rgba(3, 29, 166, 0.08);
   --navy-soft: #eef1ff;
 
   /* teal — chỉ dùng cho success / "đang sống" */
   --teal: #02b8a9;
-  --teal-soft: #e5f8f7;
-  --teal-deep: #018c81;
+  --teal-soft: #e6faf7;
+  --teal-softer: #f2fcfa;
+  --teal-deep: #018a7f;
 
   /* mực & chữ */
-  --ink: #1a1a24;
-  --ink-soft: #2d2d3a;
-  --text-light: #2d2d3a;
-  --text-muted: #646473;
-  --mute: #8a8a9e;
-  --mute-soft: #b4b4c7;
+  --ink: #0d1025;
+  --ink-soft: #45495e;
+  --text-light: #45495e;
+  --text-muted: #8a8fa3;
+  --mute: #8a8fa3;
+  --mute-soft: #b8bcca;
 
   /* nền & bề mặt */
   --surface: #ffffff;
   --surface-bg: #f7f8fc;
   --surface-hover: #f1f3f9;
-  --surface-soft: #fbfbfc;
+  --surface-soft: #fafbfd;
 
   /* đường kẻ */
-  --line: #e4e6ef;
-  --line-strong: #d1d4e3;
-  --line-soft: #f0f2f8;
+  --line: #eef0f5;
+  --line-strong: #e2e5ed;
+  --line-soft: #f4f5f9;
 
   /* trạng thái */
   --amber: #d97706;
-  --amber-soft: #fef3c7;
-  --warning: #b45309;
+  --amber-soft: #fef6eb;
+  --warning: #d97706;
   --rose: #e11d48;
-  --rose-soft: #ffe4e6;
+  --rose-soft: #fef1f4;
+  --green: #059669;
+  --green-soft: #ecfdf5;
 
   /* pill vàng (chẩn đoán / chỉ định) */
   --gold: #b88600;
@@ -84,14 +87,15 @@ html {
   --gold-line: #ecd9a3;
   --gold-deep: #946a00;
 
-  /* bóng đổ */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.25);
-  --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.35);
+  /* bóng đổ (ink-tinted shadows theo VISI) */
+  --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
+  --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
+  --shadow-md: 0 4px 12px rgba(13, 16, 37, 0.06), 0 2px 4px rgba(13, 16, 37, 0.03);
+  --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.08);
+  --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
+  --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
 
-  /* bo góc 10–14px */
+  /* bo góc chuẩn VISI */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 14px;

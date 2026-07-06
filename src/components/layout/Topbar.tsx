@@ -23,7 +23,7 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
   }, [open]);
 
   return (
-    <header className="h-[72px] shrink-0 bg-white border-b border-[var(--line)] flex items-center justify-between px-4 sm:px-6">
+    <header className="h-16 shrink-0 bg-white border-b border-[var(--line)] flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center gap-4 flex-1 min-w-0">
         {onToggleSidebar && (
           <button className="lg:hidden p-1.5 -ml-1.5 text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] rounded-md" onClick={onToggleSidebar}>

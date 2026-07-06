@@ -96,11 +96,11 @@ export default function Sidebar({ open, setOpen }: { open?: boolean; setOpen?: (
         <div className="fixed inset-0 bg-[var(--navy-ink)]/40 backdrop-blur-sm z-40 lg:hidden" onClick={() => setOpen(false)} />
       )}
       
-      <aside className={`fixed lg:relative top-0 h-screen ${collapsed ? "w-[72px]" : "w-[250px]"} shrink-0 bg-white border-r border-[var(--line)] flex flex-col z-50 transition-all duration-300 ease-in-out overflow-x-hidden ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+      <aside className={`fixed lg:relative top-0 h-screen ${collapsed ? "w-[72px]" : "w-[248px]"} shrink-0 bg-white border-r border-[var(--line)] flex flex-col z-50 transition-all duration-300 ease-in-out overflow-x-hidden ${open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
         {/* Brand */}
-        <div className={`h-[72px] flex items-center gap-3 border-b border-[var(--line-soft)] shrink-0 transition-all duration-300 ${collapsed ? "px-0 justify-center" : "px-4 justify-between lg:justify-start"}`}>
+        <div className={`h-16 flex items-center gap-3 border-b border-[var(--line-soft)] shrink-0 transition-all duration-300 ${collapsed ? "px-0 justify-center" : "px-4 justify-between lg:justify-start"}`}>
           <div className={`flex items-center ${collapsed ? "justify-center" : ""}`}>
-            <div className={`relative group shrink-0 transition-all duration-300 ${collapsed ? "w-[42px] h-[42px] cursor-pointer" : "w-11 h-11"}`}>
+            <div className={`relative group shrink-0 transition-all duration-300 ${collapsed ? "w-[38px] h-[38px] cursor-pointer" : "w-9 h-9"}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.png" alt="VISI" className="w-full h-full object-contain drop-shadow-sm" />
               {collapsed && (
@@ -111,8 +111,8 @@ export default function Sidebar({ open, setOpen }: { open?: boolean; setOpen?: (
               )}
             </div>
             <div className={`leading-tight overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[150px] opacity-100 ml-2.5"}`}>
-              <div className="font-serif font-semibold text-[16px] tracking-[-0.02em] text-[var(--ink)] whitespace-nowrap">VISI</div>
-              <div className="font-sans font-bold text-[9px] uppercase tracking-[0.18em] text-[var(--mute)] whitespace-nowrap">Khám cộng đồng</div>
+              <div className="font-serif font-bold text-[16px] tracking-[-0.02em] text-[var(--ink)] whitespace-nowrap">VISI</div>
+              <div className="font-mono font-bold text-[9px] uppercase tracking-[0.18em] text-[var(--teal)] whitespace-nowrap">Khám cộng đồng</div>
             </div>
           </div>
           {setOpen && !collapsed && (

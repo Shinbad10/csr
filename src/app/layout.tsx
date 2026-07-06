@@ -1,23 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Roboto, Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
+import { Manrope, Fraunces, JetBrains_Mono } from "next/font/google";
 import SessionProvider from "@/components/providers/SessionProvider";
 import ToastProvider from "@/components/providers/ToastProvider";
 import PWARegister from "@/components/providers/PWARegister";
 import "./globals.css";
 
-const roboto = Roboto({
-  variable: "--font-roboto",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["vietnamese", "latin"],
-  weight: ["300", "400", "500", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
-const beVietnamPro = Be_Vietnam_Pro({
-  variable: "--font-be-vietnam-pro",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["vietnamese", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
-const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["vietnamese", "latin"], display: "swap" });
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["vietnamese", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   themeColor: "#031da6",
@@ -42,7 +47,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="vi" className={`${roboto.variable} ${beVietnamPro.variable} ${jetbrains.variable} antialiased h-full`} suppressHydrationWarning>
+    <html lang="vi" className={`${manrope.variable} ${fraunces.variable} ${jetbrains.variable} antialiased h-full`} suppressHydrationWarning>
       <body className="min-h-full font-sans bg-[var(--surface-bg)] text-[var(--ink)]" suppressHydrationWarning>
         <PWARegister />
         <SessionProvider>
