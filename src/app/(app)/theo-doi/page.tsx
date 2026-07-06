@@ -7,6 +7,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { parseDiag, ageOf, fmtDate, fmtTime, statusOf, bhytLevel, TT_DIEU_TRI, type HoSo } from "@/lib/csr";
 import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
+import Modal from "@/components/layout/Modal";
 
 const FOLLOW = ["", "Đang follow-up", "Quá 28 ngày–chuyển CSKH", "Đã chốt", "Ngừng"];
 const EMPTY_DIEUTRI = { daDon: false, ngayMoThucTe: "", soTienThucThu: "", trangThaiDieuTri: "", ngayTaiKham: "", ghiChuMat2: "" };
@@ -178,13 +179,21 @@ export default function TheoDoiPage() {
       <PageHeader
         title="Theo dõi A/B"
         description="Theo dõi nhóm B (chăm sóc) và nhóm A (nhắc lịch & cập nhật bệnh viện)."
+        guide={[
+          { selector: '[data-tour="td-bk"]', title: "Chọn đợt khám", desc: "Bấm vào đây để tải danh sách bệnh nhân cần theo dõi." },
+          { selector: '[data-tour="td-tabs"]', title: "Chọn nhóm theo dõi", desc: "Tab \"Nhóm A (Mổ)\" để nhắc lịch & cập nhật bệnh viện; \"Nhóm B (K/N)\" để chăm sóc, tư vấn lại." },
+          { selector: '[data-tour="td-list"]', title: "Chọn bệnh nhân", desc: "Bấm vào tên để xem chi tiết và lịch sử liên hệ." },
+          { selector: '[data-tour="td-note"]', title: "Ghi nhật ký liên hệ", desc: "Nhập kết quả gọi điện rồi bấm \"Ghi nhận liên hệ\"." },
+          { selector: '[data-tour="td-treat"]', title: "Cập nhật điều trị (Nhóm A)", desc: "Đánh dấu \"Đã đến bệnh viện\", nhập ngày mổ, số tiền, trạng thái rồi lưu." },
+        ]}
+        guideTip="Nút ⚡ Đối chiếu HIS tự lấy dữ liệu mổ từ hệ thống bệnh viện."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
             <Link href="/doi-chieu-his" className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-1.5 text-[var(--navy)] bg-blue-50/50">
               ⚡ Đối chiếu HIS hàng loạt
             </Link>
-            <button onClick={() => setShowBkModal(true)} className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)]">
-              <CalendarDays className="w-4 h-4 text-[var(--navy)]" /> 
+            <button data-tour="td-bk" onClick={() => setShowBkModal(true)} className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)]">
+              <CalendarDays className="w-4 h-4 text-[var(--navy)]" />
               {selBk ? bkLabels[selBk] : "Chọn đợt khám..."}
             </button>
             <button onClick={() => setShowList(true)} className="xl:hidden btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-1.5 text-[var(--navy)]"><Users className="w-4 h-4" /> Bệnh nhân <span className="bg-[var(--rose)] text-white text-[10px] px-1.5 rounded-full">{rows.length}</span></button>
@@ -192,27 +201,33 @@ export default function TheoDoiPage() {
         }
       />
 
-      {/* --- STATS BANNER --- */}
-      <div className="px-6 py-3.5 border-b border-[var(--line)] bg-[var(--surface-bg)] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 shrink-0">
-        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--navy)] shadow-xs flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Tổng bệnh nhân</span>
-          <div className="font-serif text-[22px] font-bold text-[var(--ink)] mt-1 font-mono">{stats.tong}</div>
-        </div>
-        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--teal)] shadow-xs flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Có chỉ định (A/B)</span>
-          <div className="font-serif text-[22px] font-bold text-[var(--teal-deep)] mt-1 font-mono">{stats.chiDinh} <span className="text-[12px] font-medium text-[var(--mute)]">/ {stats.tong}</span></div>
-        </div>
-        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--green)] shadow-xs flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Nhóm A: Đã đến BV</span>
-          <div className="font-serif text-[22px] font-bold text-[var(--green)] mt-1 font-mono">{stats.daDen}</div>
-        </div>
-        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--amber)] shadow-xs flex flex-col justify-between">
-          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Nhóm A: Chưa đến</span>
-          <div className="font-serif text-[22px] font-bold text-[var(--amber)] mt-1 font-mono">{stats.chuaDen}</div>
-        </div>
-        <div className="bg-white border border-[var(--line)] rounded-[var(--r-md)] p-3 border-l-[3px] border-l-[var(--rose)] shadow-xs flex flex-col justify-between col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-[0.14em] font-mono">Nhóm A: Quá hạn</span>
-          <div className="font-serif text-[22px] font-bold text-[var(--rose)] mt-1 font-mono">{stats.quaHan}</div>
+      {/* --- STATS BANNER (Compact Strip - No truncation, wraps cleanly) --- */}
+      <div className="px-5 py-2.5 border-b border-[var(--line)] bg-[var(--surface-soft)] text-xs shrink-0 font-medium">
+        <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Tổng BN:</span>
+            <span className="font-mono font-bold text-[var(--navy)] text-sm">{stats.tong}</span>
+          </div>
+          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Chỉ định (A/B):</span>
+            <span className="font-mono font-bold text-[var(--teal-deep)] text-sm">{stats.chiDinh}</span> <span className="text-[11px] text-[var(--mute)]">/ {stats.tong}</span>
+          </div>
+          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Nhóm A (Đã đến BV):</span>
+            <span className="font-mono font-bold text-[var(--green)] text-sm">{stats.daDen}</span>
+          </div>
+          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Nhóm A (Chưa đến):</span>
+            <span className="font-mono font-bold text-[var(--amber)] text-sm">{stats.chuaDen}</span>
+          </div>
+          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Nhóm A (Quá hạn):</span>
+            <span className="font-mono font-bold text-[var(--rose)] text-sm">{stats.quaHan}</span>
+          </div>
         </div>
       </div>
 
@@ -222,7 +237,7 @@ export default function TheoDoiPage() {
 
         {/* COL 1 — List */}
         <aside className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${showList ? "translate-x-0" : "translate-x-full"} xl:static xl:translate-x-0 xl:w-[360px] xl:shrink-0 xl:border-r xl:border-[var(--line)] xl:shadow-none xl:z-0`}>
-          <div className="p-3 border-b border-[var(--line)] bg-[var(--surface-bg)] flex gap-2">
+          <div data-tour="td-tabs" className="p-3 border-b border-[var(--line)] bg-[var(--surface-bg)] flex gap-2">
             <button onClick={() => { setTab("A"); setSel(null); }} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-bold transition-all ${tab === "A" ? "bg-[var(--navy)] text-white shadow-md" : "bg-white border border-[var(--line)] text-[var(--mute)] hover:bg-[var(--surface-hover)]"}`}><CalendarClock className="w-4 h-4" /> Nhóm A (Mổ)</button>
             <button onClick={() => { setTab("B"); setSel(null); }} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-bold transition-all ${tab === "B" ? "bg-[var(--navy)] text-white shadow-md" : "bg-white border border-[var(--line)] text-[var(--mute)] hover:bg-[var(--surface-hover)]"}`}><PhoneCall className="w-4 h-4" /> Nhóm B (K/N)</button>
           </div>
@@ -236,7 +251,7 @@ export default function TheoDoiPage() {
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tên, mã, SĐT…" className="w-full h-10 rounded-xl border border-[var(--line)] bg-[var(--surface-bg)] pl-9 pr-4 text-[13px] outline-none focus:border-[var(--navy)] focus:ring-1 focus:ring-[var(--navy)]" />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
+          <div data-tour="td-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
             {loading ? <div className="py-14 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" /></div>
               : rows.length === 0 ? <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không khớp tìm kiếm hoặc chưa có bệnh nhân.</div>
                 : rows.map((p) => {
@@ -265,67 +280,59 @@ export default function TheoDoiPage() {
         <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-white">
           {sel ? (<>
             <div className="flex-1 flex flex-col min-h-0">
-              {/* --- Patient Profile --- */}
-              <div className="p-6 pb-0 shrink-0">
-                <div className="relative bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-5 overflow-hidden shadow-[var(--shadow-sm)]">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--teal-soft)] rounded-bl-full opacity-50 pointer-events-none" />
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h2 className="font-serif text-[26px] font-bold text-[var(--ink)] uppercase tracking-tight">{sel.hoTen}</h2>
-                        {sel.nhom && <StatusBadge label={`Nhóm ${sel.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" />}
-                        <button onClick={() => checkHisPatient(sel)} disabled={checkingHis} title="Đối chiếu lịch sử mổ / điều trị từ HIS bệnh viện" className="btn px-3 py-1 h-7 text-[12px] font-bold rounded-lg bg-gradient-to-r from-[var(--amber-soft)] to-white border border-[var(--amber)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-all flex items-center gap-1.5 shadow-sm">
-                          {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <>⚡ Đối chiếu HIS</>}
-                        </button>
-                      </div>
-                    </div>
+              {/* COMPACT PATIENT HEADER STRIP (FULL INFO - NO TRUNCATION) */}
+              <div className="bg-[var(--surface-soft)] border-b border-[var(--line)] px-5 py-3 shrink-0 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="font-serif font-bold text-[19px] text-[var(--ink)] uppercase tracking-tight">{sel.hoTen}</h2>
+                    <span className="font-mono font-bold text-[var(--navy)] bg-white px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{sel.maBN}</span>
+                    {sel.maBNHIS && (
+                      <span className="font-mono font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--teal)] text-xs shadow-2xs">HIS: {sel.maBNHIS}</span>
+                    )}
+                    {sel.nhom && <StatusBadge label={`Nhóm ${sel.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />}
+                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{sel.gioiTinh} · {ageOf(sel)} tuổi</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <button onClick={() => checkHisPatient(sel)} disabled={checkingHis} title="Đối chiếu HIS" className="btn px-3 py-1 h-7 text-xs font-bold rounded-[var(--r-sm)] bg-gradient-to-r from-[var(--amber-soft)] to-white border border-[var(--amber)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-all flex items-center gap-1.5 shadow-2xs">
+                      {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <>⚡ Đối chiếu HIS</>}
+                    </button>
+                  </div>
+                </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mt-5 text-[13px] text-[var(--ink-soft)]">
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Mã bệnh nhân / HIS</div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <div className="font-mono font-bold text-[var(--navy)] bg-[var(--navy-50)] inline-flex px-2 py-0.5 rounded border border-[var(--navy-100)]">{sel.maBN}</div>
-                          {sel.maBNHIS && (
-                            <div className="font-mono font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] inline-flex px-2 py-0.5 rounded border border-[var(--teal)]" title="Mã bệnh nhân trên hệ thống HIS">HIS: {sel.maBNHIS}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Giới tính & Tuổi</div>
-                        <div className="font-semibold text-[13.5px] text-[var(--ink)]">{sel.gioiTinh} <span className="text-[var(--mute)] px-0.5">·</span> {ageOf(sel)} tuổi</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Số CCCD & BHYT</div>
-                        <div className="font-mono font-medium text-[var(--ink)]">{sel.cccd || "—"}</div>
-                        {sel.bhyt && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="font-mono text-[11.5px] text-[var(--mute)]">{sel.bhyt}</span>
-                            <span className="px-1.5 py-0.5 rounded-[var(--r-sm)] text-[10px] font-bold bg-gradient-to-r from-[var(--teal-soft)] to-[var(--teal-50)] text-[var(--teal-deep)] border border-[var(--teal)] shadow-sm">{bhytLevel(sel.bhyt)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Điện thoại</div>
-                        {sel.sdt ? (
-                          <a href={`tel:${sel.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] hover:underline inline-flex items-center gap-1.5 bg-[var(--navy-50)] hover:bg-[var(--teal-soft)] px-2 py-0.5 rounded border border-[var(--navy-100)] hover:border-[var(--teal)] transition-all shadow-sm">
-                            <Phone className="w-3.5 h-3.5" />
-                            {sel.sdt}
-                          </a>
-                        ) : (
-                          <div className="font-mono font-medium text-[var(--mute)]">—</div>
-                        )}
-                      </div>
-                      <div className="col-span-2 md:col-span-4 border-t border-[var(--line-soft)] pt-3">
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1">Địa chỉ thường trú</div>
-                        <div className="font-medium truncate" title={[sel.diaChi, sel.buoiKham?.xa].filter(Boolean).join(", ") || "—"}>{[sel.diaChi, sel.buoiKham?.xa].filter(Boolean).join(", ") || "—"}</div>
-                      </div>
+                <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-xs text-[var(--ink-soft)] pt-1.5 border-t border-[var(--line-soft)]/80">
+                  {sel.cccd && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[var(--mute)] font-semibold">CCCD:</span>
+                      <span className="font-mono font-bold text-[var(--ink)]">{sel.cccd}</span>
                     </div>
+                  )}
+                  {sel.bhyt && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[var(--mute)] font-semibold">BHYT:</span>
+                      <span className="font-mono font-bold text-[var(--teal-deep)] bg-white px-1.5 py-0.5 rounded border border-[var(--line)]">{sel.bhyt} <span className="text-[10px] text-[var(--teal)]">({bhytLevel(sel.bhyt)})</span></span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[var(--mute)] font-semibold">Điện thoại:</span>
+                    {sel.sdt ? (
+                      <a href={`tel:${sel.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-[var(--line)]">
+                        <Phone className="w-3 h-3 text-[var(--teal)]" /> {sel.sdt}
+                      </a>
+                    ) : (
+                      <span className="font-mono text-[var(--mute)]">—</span>
+                    )}
+                  </div>
+                  <div className="flex items-start sm:items-center gap-1.5 flex-1 min-w-[280px]">
+                    <span className="text-[var(--mute)] font-semibold shrink-0">Địa chỉ:</span>
+                    <span className="font-medium text-[var(--ink)] leading-relaxed break-words">
+                      {[sel.diaChi, sel.buoiKham?.xa].filter(Boolean).join(", ") || "—"}
+                    </span>
                   </div>
                 </div>
               </div>
               <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-b border-[var(--line)] overflow-y-auto xl:overflow-hidden">
                 {/* --- NHẬT KÝ LIÊN HỆ --- */}
-                <div className={`p-6 xl:border-r border-[var(--line)] flex flex-col min-h-0 ${tab === "A" ? "xl:w-[400px] shrink-0 bg-[var(--surface-bg)]" : "w-full"}`}>
+                <div data-tour="td-note" className={`p-6 xl:border-r border-[var(--line)] flex flex-col min-h-0 ${tab === "A" ? "xl:w-[400px] shrink-0 bg-[var(--surface-bg)]" : "w-full"}`}>
                   <div className="flex items-center gap-2 mb-6">
                     <PhoneCall className="w-4 h-4 text-[var(--navy)]" /><h3 className="font-bold text-[13px] uppercase tracking-wide">Nhật ký liên hệ</h3>
                   </div>
@@ -361,7 +368,7 @@ export default function TheoDoiPage() {
 
                 {/* --- TIẾP NHẬN & ĐIỀU TRỊ (CHỈ NHÓM A) --- */}
                 {tab === "A" && (
-                  <div className="flex-1 p-6 relative flex flex-col min-h-0 xl:overflow-y-auto">
+                  <div data-tour="td-treat" className="flex-1 p-6 relative flex flex-col min-h-0 xl:overflow-y-auto">
                     <div className="flex items-center gap-2 mb-6 shrink-0">
                       <ClipboardList className="w-4 h-4 text-[var(--teal-deep)]" /><h3 className="font-bold text-[13px] uppercase tracking-wide">Tiếp nhận & Điều trị tại BV</h3>
                     </div>
@@ -421,74 +428,59 @@ export default function TheoDoiPage() {
         </main>
       </div>
       {/* Modal Chọn Đợt Khám */}
-      {showBkModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--navy-ink)]/40 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-white rounded-[var(--r-xl)] border border-[var(--line)] shadow-[var(--shadow-lg)] w-full max-w-[560px] flex flex-col max-h-[85vh] overflow-hidden">
-            {/* Header */}
-            <div className="px-6 py-5 border-b border-[var(--line-soft)] flex items-center justify-between bg-white">
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 rounded-[var(--r-md)] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-5 h-5 text-[var(--teal)]" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-[22px] font-bold text-[var(--ink)] leading-tight">
-                    Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span>
-                  </h2>
-                  <p className="text-[13px] text-[var(--mute)] mt-0.5 font-medium">Lấy danh sách bệnh nhân để theo dõi &amp; chăm sóc</p>
-                </div>
-              </div>
-              <button onClick={() => setShowBkModal(false)} className="w-8 h-8 flex items-center justify-center rounded-[var(--r-md)] hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] active:scale-95 transition-colors" title="Đóng">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="p-4 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-                <input 
-                  autoFocus 
-                  placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..." 
-                  value={bkSearch} 
-                  onChange={(e) => setBkSearch(e.target.value)} 
-                  className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs" 
-                />
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[var(--surface-soft)]">
-              {filteredBks.map(b => {
-                const active = selBk === b.id;
-                return (
-                  <button key={b.id} onClick={() => { setSelBk(b.id); setShowBkModal(false); }} className={`w-full text-left p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-center gap-4 border ${active ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]" : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"}`}>
-                    <div className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors ${active ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs" : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"}`}>
-                      {active ? <Check className="w-5 h-5 text-[var(--teal)]" /> : <MapPin className="w-5 h-5" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
-                        <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{b.id}</span>
-                      </div>
-                      <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
-                        <span className="flex items-center gap-1.5 shrink-0 font-mono"><CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" /> {fmtDate(b.ngayKham)}</span>
-                        {b.diaDiem && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" /> <span className="truncate">{b.diaDiem}</span></span>}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-              {filteredBks.length === 0 && (
-                <div className="text-center py-14 flex flex-col items-center justify-center text-[var(--mute)]">
-                  <div className="w-12 h-12 rounded-[var(--r-lg)] bg-white shadow-xs border border-[var(--line)] flex items-center justify-center mb-4 text-[var(--mute)]"><Search className="w-6 h-6" /></div>
-                  <div className="font-bold text-[15px] text-[var(--ink)] font-serif">Không tìm thấy đợt khám</div>
-                  <div className="text-[13px] mt-1 text-[var(--mute)]">Thử thay đổi từ khóa tìm kiếm của bạn.</div>
-                </div>
-              )}
-            </div>
+      <Modal
+        open={showBkModal}
+        onClose={() => setShowBkModal(false)}
+        title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
+        subtitle="Lấy danh sách bệnh nhân để theo dõi & chăm sóc"
+        icon={CalendarDays}
+        noPadding
+      >
+        {/* Search */}
+        <div className="p-4 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
+            <input 
+              autoFocus 
+              placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..." 
+              value={bkSearch} 
+              onChange={(e) => setBkSearch(e.target.value)} 
+              className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs" 
+            />
           </div>
         </div>
-      )}
+
+        {/* List */}
+        <div className="p-4 space-y-2.5 bg-[var(--surface-soft)] min-h-[300px] max-h-[60vh] overflow-y-auto">
+          {filteredBks.map(b => {
+            const active = selBk === b.id;
+            return (
+              <button key={b.id} onClick={() => { setSelBk(b.id); setShowBkModal(false); }} className={`w-full text-left p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-center gap-4 border ${active ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]" : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"}`}>
+                <div className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors ${active ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs" : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"}`}>
+                  {active ? <Check className="w-5 h-5 text-[var(--teal)]" /> : <MapPin className="w-5 h-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
+                    <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{b.id}</span>
+                  </div>
+                  <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
+                    <span className="flex items-center gap-1.5 shrink-0 font-mono"><CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" /> {fmtDate(b.ngayKham)}</span>
+                    {b.diaDiem && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" /> <span className="truncate">{b.diaDiem}</span></span>}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+          {filteredBks.length === 0 && (
+            <div className="text-center py-14 flex flex-col items-center justify-center text-[var(--mute)]">
+              <div className="w-12 h-12 rounded-[var(--r-lg)] bg-white shadow-xs border border-[var(--line)] flex items-center justify-center mb-4 text-[var(--mute)]"><Search className="w-6 h-6" /></div>
+              <div className="font-bold text-[15px] text-[var(--ink)] font-serif">Không tìm thấy đợt khám</div>
+              <div className="text-[13px] mt-1 text-[var(--mute)]">Thử thay đổi từ khóa tìm kiếm của bạn.</div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

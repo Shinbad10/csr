@@ -296,10 +296,17 @@ export default function DoiChieuHisPage() {
       <PageHeader
         title="Đối chiếu máy chủ HIS Bệnh viện"
         description="Quét đối chiếu hàng loạt theo đợt khám & Đối chiếu ngược từ danh sách phẫu thuật trên hệ thống HIS."
+        guide={[
+          { selector: '[data-tour="his-tabs"]', title: "Chọn cách đối chiếu", desc: "Tab \"Quét theo Đợt khám\" để đối chiếu hàng loạt; tab \"Đối chiếu ngược từ HIS\" để dò từ danh sách mổ của bệnh viện." },
+          { selector: '[data-tour="his-select"]', title: "Chọn đợt khám & tháng", desc: "Chọn đợt khám tầm soát và tháng phẫu thuật trên HIS." },
+          { selector: '[data-tour="his-run"]', title: "Quét đối chiếu", desc: "Bấm \"Quét đối chiếu ngay\" để hệ thống kết nối HIS và so khớp mã bệnh nhân." },
+          { title: "Đọc kết quả", desc: "Sau khi quét, các thẻ thống kê Tổng BN / Khớp mã HIS / Đã phẫu thuật sẽ hiện ngay bên dưới." },
+        ]}
+        guideTip="Đối chiếu giúp xác nhận bệnh nhân tầm soát đã thực sự được phẫu thuật tại bệnh viện."
       />
 
       {/* Navigation Tabs chuẩn theo company UI */}
-      <div className="flex border-b border-[var(--line)] gap-6">
+      <div data-tour="his-tabs" className="flex border-b border-[var(--line)] gap-6">
         <button
           onClick={() => setTab("batch")}
           className={`pb-3 font-semibold text-[14px] flex items-center gap-2 border-b-2 transition-all ${
@@ -328,7 +335,7 @@ export default function DoiChieuHisPage() {
       {tab === "batch" && (
         <div className="space-y-6">
           {/* Card lọc & chọn buổi khám */}
-          <div className="card p-5 bg-white flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div data-tour="his-select" className="card p-5 bg-white flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 flex-1">
               <div className="flex-1 min-w-[280px]">
                 <label className="block text-[12px] font-bold text-[var(--ink-soft)] uppercase tracking-wider mb-1.5">
@@ -360,6 +367,7 @@ export default function DoiChieuHisPage() {
             </div>
 
             <button
+              data-tour="his-run"
               onClick={runBatchCheck}
               disabled={batchLoading || !selectedBuoiId}
               className="btn btn-primary h-[38px] px-6 shrink-0 shadow-sm flex items-center gap-2"
@@ -494,12 +502,12 @@ export default function DoiChieuHisPage() {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-[var(--surface-soft)] text-[11px] font-bold uppercase tracking-wider text-[var(--mute)] border-b border-[var(--line)]">
+                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
                     <tr>
-                      <th className="py-3 px-4">Họ và tên / Mã BN</th>
-                      <th className="py-3 px-4">Mã HIS</th>
-                      <th className="py-3 px-4">Trạng thái HIS</th>
-                      <th className="py-3 px-4">Chi tiết phẫu thuật / Điều trị</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Họ và tên / Mã BN</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Mã HIS</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Trạng thái HIS</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Chi tiết phẫu thuật / Điều trị</th>
                     </tr>
                   </thead>
                   <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
@@ -511,32 +519,32 @@ export default function DoiChieuHisPage() {
                       </tr>
                     ) : (
                       filteredBatchResults.map((r, i) => (
-                        <tr key={i} className="hover:bg-[var(--surface-hover)] transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-[var(--ink)]">{r.hoTen}</div>
-                            <div className="font-mono text-xs text-[var(--teal-deep)] mt-0.5">{r.maBN || "—"}</div>
+                        <tr key={i} className="hover:bg-[var(--surface-soft)] transition-colors border-b border-[var(--line-soft)] group">
+                          <td className="py-3.5 px-3.5 align-middle">
+                            <div className="font-bold text-[var(--ink)] group-hover:text-[var(--navy)] text-[13px]">{r.hoTen}</div>
+                            <div className="font-mono text-[11.5px] font-bold text-[var(--navy)] mt-0.5"><span className="text-[var(--mute-soft)] font-normal">BN-</span>{(r.maBN || "").replace(/^BN-?/i, "") || "—"}</div>
                           </td>
-                          <td className="py-3 px-4 font-mono font-bold text-[var(--navy)] text-xs">
+                          <td className="py-3.5 px-3.5 align-middle font-mono font-bold text-[var(--navy)] text-[11.5px]">
                             {r.maHIS || <span className="text-[var(--mute)] font-normal">—</span>}
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-3.5 align-middle">
                             {r.found ? (
                               r.hasSurgery ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold bg-[#f3eaf8] text-[#7c3aed] border border-[#7c3aed]/20">
                                   <CheckCircle2 className="w-3.5 h-3.5" /> Đã mổ / Điều trị
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--teal-soft)] text-[var(--teal-deep)]">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/20">
                                   <Check className="w-3.5 h-3.5" /> Có hồ sơ HIS
                                 </span>
                               )
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold bg-[var(--line-soft)] text-[var(--mute)] border border-[var(--line)]">
                                 Chưa thấy trên HIS
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-xs text-[var(--text-muted)] max-w-md">
+                          <td className="py-3.5 px-3.5 align-middle text-xs text-[var(--ink-soft)] max-w-md">
                             {r.chiTiet || r.error || "—"}
                           </td>
                         </tr>
@@ -544,6 +552,16 @@ export default function DoiChieuHisPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+              <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 flex items-center justify-between text-xs text-[var(--mute)] font-medium">
+                <div>
+                  Hiển thị <span className="font-mono font-bold text-[var(--ink)]">{filteredBatchResults.length > 0 ? 1 : 0}–{filteredBatchResults.length}</span> trong tổng số <span className="font-mono font-bold text-[var(--ink)]">{batchResults.length}</span> bệnh nhân
+                </div>
+                <div className="flex items-center gap-1 font-mono">
+                  <button disabled className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--mute)] disabled:opacity-40">&lt;</button>
+                  <button className="w-7 h-7 rounded flex items-center justify-center bg-[var(--navy)] text-white font-bold text-xs">1</button>
+                  <button disabled className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--mute)] disabled:opacity-40">&gt;</button>
+                </div>
               </div>
             </div>
           )}
@@ -730,14 +748,14 @@ export default function DoiChieuHisPage() {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-[var(--surface-soft)] text-[11px] font-bold uppercase tracking-wider text-[var(--mute)] border-b border-[var(--line)]">
+                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
                     <tr>
-                      <th className="py-3 px-4">Mã HIS</th>
-                      <th className="py-3 px-4">BN trên HIS</th>
-                      <th className="py-3 px-4">Ngày mổ</th>
-                      <th className="py-3 px-4">Khoa / Chẩn đoán</th>
-                      <th className="py-3 px-4">Đối chiếu với hệ thống tầm soát CSR</th>
-                      <th className="py-3 px-4 text-right">Thao tác</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Mã HIS</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">BN trên HIS</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Ngày mổ</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Khoa / Chẩn đoán</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)]">Đối chiếu với hệ thống tầm soát CSR</th>
+                      <th className="py-3 px-3.5 border-b border-[var(--line)] text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
@@ -753,28 +771,28 @@ export default function DoiChieuHisPage() {
                         .map((r, i) => (
                           <tr
                             key={i}
-                            className={`transition-colors ${
-                              r.matchedCsr ? "bg-[var(--teal-soft)]/40 hover:bg-[var(--teal-soft)]/70 font-medium" : "hover:bg-[var(--surface-hover)]"
+                            className={`transition-colors border-b border-[var(--line-soft)] group ${
+                              r.matchedCsr ? "bg-[var(--teal-soft)]/30 hover:bg-[var(--teal-soft)]/50" : "hover:bg-[var(--surface-soft)]"
                             }`}
                           >
-                            <td className="py-3 px-4 font-mono text-xs font-bold text-[var(--navy)]">{r.maHIS}</td>
-                            <td className="py-3 px-4">
-                              <div className="text-[var(--ink)] font-bold">{r.hoTen}</div>
-                              <div className="text-xs text-[var(--mute)] mt-0.5">NS: {r.namSinh} | SĐT: {r.sdt || "—"}</div>
+                            <td className="py-3.5 px-3.5 align-middle font-mono text-[11.5px] font-bold text-[var(--navy)]">{r.maHIS}</td>
+                            <td className="py-3.5 px-3.5 align-middle">
+                              <div className="text-[var(--ink)] font-bold group-hover:text-[var(--navy)] text-[13px]">{r.hoTen}</div>
+                              <div className="text-xs text-[var(--mute)] mt-0.5 font-mono">NS: {r.namSinh} | SĐT: {r.sdt || "—"}</div>
                             </td>
-                            <td className="py-3 px-4 whitespace-nowrap font-mono text-xs">
+                            <td className="py-3.5 px-3.5 align-middle whitespace-nowrap font-mono text-xs">
                               {r.ngayMo ? fmtDate(r.ngayMo.slice(0, 10)) : "—"}
                             </td>
-                            <td className="py-3 px-4 text-xs">
+                            <td className="py-3.5 px-3.5 align-middle text-xs">
                               <div className="font-semibold text-[var(--ink)]">Khoa: {r.khoaMo}</div>
                               <div className="text-[var(--mute)] max-w-xs truncate mt-0.5">{r.chanDoan || "—"}</div>
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-3.5 px-3.5 align-middle">
                               {r.matchedCsr ? (
-                                <div className="p-2 rounded-xl bg-white border border-[var(--teal)] shadow-sm">
+                                <div className="p-2 rounded-[var(--r-md)] bg-white border border-[var(--teal)]/40 shadow-[var(--shadow-sm)]">
                                   <div className="text-xs font-bold text-[var(--teal-deep)] flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-[var(--teal)] animate-pulse" />
-                                    🎯 Khớp BN: {r.matchedCsr.hoTen} ({r.matchedCsr.maBN})
+                                    🎯 Khớp BN: {r.matchedCsr.hoTen} (<span className="font-mono">{r.matchedCsr.maBN}</span>)
                                   </div>
                                   <div className="text-[11px] text-[var(--mute)] mt-0.5">
                                     Đợt: {r.matchedCsr.buoiKham?.xa} ({fmtDate(r.matchedCsr.buoiKham?.ngayKham)})
@@ -784,28 +802,28 @@ export default function DoiChieuHisPage() {
                                 <span className="text-xs text-[var(--mute)] italic">⚪ Khách tự đến BV / Khác</span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <td className="py-3.5 px-3.5 align-middle text-right whitespace-nowrap">
                               {r.matchedCsr ? (
                                 r.matchedCsr.maBNHIS ? (
-                                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-xs font-bold bg-[var(--line-soft)] text-[var(--mute)] border border-[var(--line)]">
                                     ✔️ Đã liên kết
                                   </span>
                                 ) : (
                                   <button
                                     onClick={() => linkPatient(r)}
                                     disabled={linkingId === r.matchedCsr.id}
-                                    className="btn btn-success px-3 py-1.5 text-xs font-bold rounded-lg shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1 ml-auto"
+                                    className="btn btn-primary px-3 py-1.5 text-xs font-bold rounded-[var(--r-sm)] shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1 ml-auto"
                                   >
                                     {linkingId === r.matchedCsr.id ? (
                                       <RefreshCw className="w-3 h-3 animate-spin" />
                                     ) : (
-                                      <Check className="w-3.5 h-3.5" />
+                                      <Check className="w-3.5 h-3.5 text-[var(--teal)]" />
                                     )}
                                     Cập nhật ngay
                                   </button>
                                 )
                               ) : (
-                                <span className="text-xs text-[var(--mute)]">—</span>
+                                <span className="text-xs text-[var(--mute)] font-mono">—</span>
                               )}
                             </td>
                           </tr>
@@ -813,6 +831,16 @@ export default function DoiChieuHisPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+              <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 flex items-center justify-between text-xs text-[var(--mute)] font-medium">
+                <div>
+                  Hiển thị <span className="font-mono font-bold text-[var(--ink)]">{filteredRevList.length > 0 ? 1 : 0}–{filteredRevList.length}</span> trong tổng số <span className="font-mono font-bold text-[var(--ink)]">{revList.length}</span> ca phẫu thuật
+                </div>
+                <div className="flex items-center gap-1 font-mono">
+                  <button disabled className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--mute)] disabled:opacity-40">&lt;</button>
+                  <button className="w-7 h-7 rounded flex items-center justify-center bg-[var(--navy)] text-white font-bold text-xs">1</button>
+                  <button disabled className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--mute)] disabled:opacity-40">&gt;</button>
+                </div>
               </div>
             </div>
           )}

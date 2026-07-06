@@ -139,6 +139,7 @@ export interface ThongTinTheBHYT {
   ngaySinh?: string;
   diaChi?: string;
   gioiTinh?: string;
+  namNamLienTuc?: string;
 }
 
 export interface KetQuaTraCuuBHYT {
@@ -189,6 +190,7 @@ export function parseTheBhyt(raw: unknown): ThongTinTheBHYT | null {
   const ngaySinh = getStr("ngaySinh", "NgaySinh", "ngay_sinh", "dob");
   const diaChi = getStr("diaChi", "DiaChi", "dia_chi");
   const gioiTinh = getStr("gioiTinh", "GioiTinh", "gioi_tinh");
+  const namNamLienTuc = getStr("namNamLienTuc", "nam_nam_lien_tuc", "ngay5Nam", "ngay_5_nam");
 
   // Mức hưởng: ưu tiên từ cổng, nếu không có tự suy từ ký tự thứ 3 của mã thẻ
   let mucHuong = getStr("mucHuong", "MucHuong", "maQuyenLoi", "quyen_loi", "ty_le") || "";
@@ -209,6 +211,7 @@ export function parseTheBhyt(raw: unknown): ThongTinTheBHYT | null {
     ngaySinh,
     diaChi,
     gioiTinh,
+    namNamLienTuc,
   };
 }
 

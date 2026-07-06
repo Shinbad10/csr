@@ -2,14 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import HelpGuide, { type GuideStep } from "./HelpGuide";
 
 interface PageHeaderProps {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Các bước hướng dẫn sử dụng trang — hiện nút "Hướng dẫn" (tour tương tác) ở đầu trang */
+  guide?: GuideStep[];
+  /** Mẹo nhỏ hiển thị ở bước cuối của tour */
+  guideTip?: string;
+  /** Tên hiển thị cho tour (dùng khi title là JSX) */
+  guideTitle?: string;
 }
 
-export default function PageHeader({ title, description, actions }: PageHeaderProps) {
+export default function PageHeader({ title, description, actions, guide, guideTip, guideTitle }: PageHeaderProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -64,7 +71,12 @@ export default function PageHeader({ title, description, actions }: PageHeaderPr
               </div>
             )}
           </div>
-          {actions && <div className="shrink-0 flex items-center gap-2.5 flex-wrap">{actions}</div>}
+          {(actions || guide) && (
+            <div className="shrink-0 flex items-center gap-2.5 flex-wrap">
+              {actions}
+              {guide && guide.length > 0 && <HelpGuide title={guideTitle || (typeof title === "string" ? title : undefined)} steps={guide} tip={guideTip} />}
+            </div>
+          )}
         </div>
       </div>
     </>

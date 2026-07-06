@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Plus, Building2, Users, ScrollText, X, Check, Pencil, Trash2, FileSpreadsheet, RefreshCw, ExternalLink, Copy } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import PageHeader from "@/components/layout/PageHeader";
+import Modal from "@/components/layout/Modal";
 import { fmtTime } from "@/lib/csr";
 import { roleLabel } from "@/lib/permissions";
-import { Field, Dropdown, StatusBadge } from "@/components/csr/fields";
+import { Field, Dropdown, StatusBadge, SectionHeader } from "@/components/csr/fields";
 
 interface CoSo { id: string; ten: string; diaChi: string | null; trangThai: string; bhxhUser?: string | null; bhxhPass?: string | null; bhxhMaCSKCB?: string | null; bhxhHoTenCB?: string | null; bhxhCccdCB?: string | null; hisHost?: string | null; hisPort?: string | null; hisUser?: string | null; hisPass?: string | null; hisDbName?: string | null }
 interface NguoiDung { maNV: string; hoTen: string; vaiTro: string; coSoId: string | null; tenDangNhap: string; trangThai: string; coSo?: { ten: string } }
@@ -102,9 +102,20 @@ export default function QuanTriPage() {
 
   return (
     <div>
-      <PageHeader title="Quản trị hệ thống" description="Cơ sở, tài khoản (gán vai trò + cơ sở) và nhật ký kiểm toán. Xoá có ràng buộc → ngừng hoạt động (BR-13)." />
+      <PageHeader
+        title="Quản trị hệ thống"
+        description="Cơ sở, tài khoản (gán vai trò + cơ sở) và nhật ký kiểm toán. Xoá có ràng buộc → ngừng hoạt động (BR-13)."
+        guide={[
+          { selector: '[data-tour="qt-tabs"]', title: "Chọn mục quản trị", desc: "Dùng các tab: Cơ sở, Tài khoản, Google Sheet, Nhật ký." },
+          { selector: '[data-tour="qt-table"]', title: "Quản lý cơ sở", desc: "Xem/sửa danh sách cơ sở. Bấm \"Thêm cơ sở\" để tạo mới và cấu hình kết nối BHYT / HIS." },
+          { title: "Quản lý tài khoản", desc: "Ở tab \"Tài khoản\": tạo tài khoản, gán vai trò và cơ sở làm việc cho từng người dùng." },
+          { title: "Cấu hình Google Sheet", desc: "Ở tab \"Google Sheet\": gán ID Google Sheet cho từng cơ sở để đồng bộ báo cáo." },
+          { title: "Xem nhật ký kiểm toán", desc: "Tab \"Nhật ký\" ghi lại các thao tác quan trọng trong hệ thống." },
+        ]}
+        guideTip={'Bản ghi đang có ràng buộc dữ liệu sẽ được chuyển sang "ngừng hoạt động" thay vì xoá cứng (BR-13).'}
+      />
 
-      <div className="flex items-center gap-1 mt-5 bg-white border border-[var(--line)] rounded-[var(--r-md)] p-1 w-full sm:w-fit overflow-x-auto hide-scrollbar">
+      <div data-tour="qt-tabs" className="flex items-center gap-1 mt-5 bg-white border border-[var(--line)] rounded-[var(--r-md)] p-1 w-full sm:w-fit overflow-x-auto hide-scrollbar">
         {([["coso", "Cơ sở", Building2], ["nguoidung", "Tài khoản", Users], ["gsheet", "Google Sheet", FileSpreadsheet], ["audit", "Nhật ký", ScrollText]] as const).map(([k, label, Icon]) => (
           <button key={k} onClick={() => changeTab(k)} className={`inline-flex items-center gap-2 px-4 py-2 rounded-[var(--r-sm)] text-[13px] font-bold whitespace-nowrap ${tab === k ? "bg-[var(--navy)] text-white" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"}`}><Icon className="w-4 h-4 shrink-0" /> {label}</button>
         ))}
@@ -127,75 +138,86 @@ export default function QuanTriPage() {
           )}
 
           {tab === "coso" && (
-            <div className="bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <div data-tour="qt-table" className="card p-0 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[700px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]"><tr>
-                    <th className="py-3.5 px-5 border-b border-[var(--line)] w-12"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={cosos.length > 0 && selectedCosos.size === cosos.length} onChange={(e) => setSelectedCosos(e.target.checked ? new Set(cosos.map(c => c.id)) : new Set())} /></th>
-                    {["Mã", "Tên cơ sở", "Địa chỉ", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
+                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
+                    <th className="py-3.5 px-3.5 border-b border-[var(--line)] w-12"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={cosos.length > 0 && selectedCosos.size === cosos.length} onChange={(e) => setSelectedCosos(e.target.checked ? new Set(cosos.map(c => c.id)) : new Set())} /></th>
+                    {["Mã", "Tên cơ sở", "Địa chỉ", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
                   </tr></thead>
-                  <tbody className="divide-y divide-[var(--line-soft)] bg-white">
-                    {cosos.map((c) => (
+                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
+                    {cosos.length === 0 ? <tr><td colSpan={6} className="py-16 text-center text-[var(--mute)]">Chưa có cơ sở nào.</td></tr>
+                    : cosos.map((c) => (
                       <tr key={c.id} className="hover:bg-[var(--surface-hover)] transition-colors group">
-                        <td className="py-3.5 px-5"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={selectedCosos.has(c.id)} onChange={(e) => { const n = new Set(selectedCosos); if (e.target.checked) n.add(c.id); else n.delete(c.id); setSelectedCosos(n); }} /></td>
-                        <td className="py-3.5 px-5 font-mono font-bold text-[var(--teal-deep)]">{c.id}</td>
-                        <td className="py-3.5 px-5 font-bold text-[var(--ink)]">{c.ten}</td>
-                        <td className="py-3.5 px-5 text-[var(--mute)] whitespace-nowrap">{c.diaChi || "—"}</td>
-                        <td className="py-3.5 px-5 whitespace-nowrap">{c.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
-                        <td className="py-3.5 px-5"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "coso", rec: c })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa"><Pencil className="w-4 h-4" /></button><button onClick={() => lockCoso(c.id)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa cơ sở"><Trash2 className="w-4 h-4" /></button></div></td>
+                        <td className="py-3.5 px-3.5"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={selectedCosos.has(c.id)} onChange={(e) => { const n = new Set(selectedCosos); if (e.target.checked) n.add(c.id); else n.delete(c.id); setSelectedCosos(n); }} /></td>
+                        <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--teal-deep)]">{c.id}</td>
+                        <td className="py-3.5 px-3.5 font-bold text-[var(--ink)]">{c.ten}</td>
+                        <td className="py-3.5 px-3.5 text-[var(--mute)] whitespace-nowrap">{c.diaChi || "—"}</td>
+                        <td className="py-3.5 px-3.5 whitespace-nowrap">{c.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
+                        <td className="py-3.5 px-3.5"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "coso", rec: c })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa"><Pencil className="w-4 h-4" /></button><button onClick={() => lockCoso(c.id)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa cơ sở"><Trash2 className="w-4 h-4" /></button></div></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
+                Tổng số <span className="font-mono font-bold text-[var(--ink)]">{cosos.length}</span> cơ sở
               </div>
             </div>
           )}
 
           {tab === "nguoidung" && (
-            <div className="bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <div className="card p-0 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[900px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]"><tr>
-                    <th className="py-3.5 px-5 border-b border-[var(--line)] w-12"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={users.length > 0 && selectedUsers.size === users.length} onChange={(e) => setSelectedUsers(e.target.checked ? new Set(users.map(u => u.maNV)) : new Set())} /></th>
-                    {["Mã NV", "Họ tên", "Vai trò", "Cơ sở", "Đăng nhập", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right whitespace-nowrap" : "whitespace-nowrap"}`}>{h}</th>)}
+                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
+                    <th className="py-3.5 px-3.5 border-b border-[var(--line)] w-12"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={users.length > 0 && selectedUsers.size === users.length} onChange={(e) => setSelectedUsers(e.target.checked ? new Set(users.map(u => u.maNV)) : new Set())} /></th>
+                    {["Mã NV", "Họ tên", "Vai trò", "Cơ sở", "Đăng nhập", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right whitespace-nowrap" : "whitespace-nowrap"}`}>{h}</th>)}
                   </tr></thead>
-                  <tbody className="divide-y divide-[var(--line-soft)] bg-white">
-                    {users.map((u) => (
+                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
+                    {users.length === 0 ? <tr><td colSpan={8} className="py-16 text-center text-[var(--mute)]">Chưa có tài khoản nào.</td></tr>
+                    : users.map((u) => (
                       <tr key={u.maNV} className="hover:bg-[var(--surface-hover)] transition-colors group">
-                        <td className="py-3.5 px-5"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={selectedUsers.has(u.maNV)} onChange={(e) => { const n = new Set(selectedUsers); if (e.target.checked) n.add(u.maNV); else n.delete(u.maNV); setSelectedUsers(n); }} /></td>
-                        <td className="py-3.5 px-5 font-mono font-bold text-[var(--teal-deep)] whitespace-nowrap">{u.maNV}</td>
-                        <td className="py-3.5 px-5 font-bold text-[var(--ink)] whitespace-nowrap">{u.hoTen}</td>
-                        <td className="py-3.5 px-5 whitespace-nowrap"><span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{roleLabel(u.vaiTro)}</span></td>
-                        <td className="py-3.5 px-5 text-[var(--mute)] font-medium whitespace-nowrap">{u.coSo?.ten || "Toàn hệ thống"}</td>
-                        <td className="py-3.5 px-5 font-mono text-xs whitespace-nowrap">{u.tenDangNhap}</td>
-                        <td className="py-3.5 px-5 whitespace-nowrap">{u.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
-                        <td className="py-3.5 px-5 whitespace-nowrap"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "user", rec: u })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa"><Pencil className="w-4 h-4" /></button><button onClick={() => lockUser(u.maNV)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa tài khoản"><Trash2 className="w-4 h-4" /></button></div></td>
+                        <td className="py-3.5 px-3.5"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={selectedUsers.has(u.maNV)} onChange={(e) => { const n = new Set(selectedUsers); if (e.target.checked) n.add(u.maNV); else n.delete(u.maNV); setSelectedUsers(n); }} /></td>
+                        <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--teal-deep)] whitespace-nowrap">{u.maNV}</td>
+                        <td className="py-3.5 px-3.5 font-bold text-[var(--ink)] whitespace-nowrap">{u.hoTen}</td>
+                        <td className="py-3.5 px-3.5 whitespace-nowrap"><span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{roleLabel(u.vaiTro)}</span></td>
+                        <td className="py-3.5 px-3.5 text-[var(--mute)] font-medium whitespace-nowrap">{u.coSo?.ten || "Toàn hệ thống"}</td>
+                        <td className="py-3.5 px-3.5 font-mono text-xs whitespace-nowrap">{u.tenDangNhap}</td>
+                        <td className="py-3.5 px-3.5 whitespace-nowrap">{u.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
+                        <td className="py-3.5 px-3.5 whitespace-nowrap"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "user", rec: u })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa"><Pencil className="w-4 h-4" /></button><button onClick={() => lockUser(u.maNV)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa tài khoản"><Trash2 className="w-4 h-4" /></button></div></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
+                Tổng số <span className="font-mono font-bold text-[var(--ink)]">{users.length}</span> tài khoản
+              </div>
             </div>
           )}
 
           {tab === "audit" && (
-            <div className="bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <div className="card p-0 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[600px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]"><tr>{["Thời điểm", "Người dùng", "Hành động", "Bảng", "Bản ghi"].map((h) => <th key={h} className="py-3.5 px-5 border-b border-[var(--line)] whitespace-nowrap">{h}</th>)}</tr></thead>
-                  <tbody className="divide-y divide-[var(--line-soft)] bg-white">
+                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>{["Thời điểm", "Người dùng", "Hành động", "Bảng", "Bản ghi"].map((h) => <th key={h} className="py-3.5 px-3.5 border-b border-[var(--line)] whitespace-nowrap">{h}</th>)}</tr></thead>
+                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
                     {audits.length === 0 ? <tr><td colSpan={5} className="py-16 text-center text-[var(--mute)]">Chưa có nhật ký kiểm toán.</td></tr>
                     : audits.map((a) => (
                       <tr key={a.id} className="hover:bg-[var(--surface-hover)] transition-colors">
-                        <td className="py-3.5 px-5 font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{fmtTime(a.thoiDiem)}</td>
-                        <td className="py-3.5 px-5 font-mono font-bold text-[var(--navy)] whitespace-nowrap">{a.nguoiDung}</td>
-                        <td className="py-3.5 px-5 whitespace-nowrap"><span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--ink-soft)] border border-[var(--line)] uppercase tracking-wider">{a.hanhDong}</span></td>
-                        <td className="py-3.5 px-5 text-[var(--mute)] font-mono text-[11.5px] whitespace-nowrap">{a.bang}</td>
-                        <td className="py-3.5 px-5 font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{a.banGhiId}</td>
+                        <td className="py-3.5 px-3.5 font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{fmtTime(a.thoiDiem)}</td>
+                        <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--navy)] whitespace-nowrap">{a.nguoiDung}</td>
+                        <td className="py-3.5 px-3.5 whitespace-nowrap"><span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--ink-soft)] border border-[var(--line)] uppercase tracking-wider">{a.hanhDong}</span></td>
+                        <td className="py-3.5 px-3.5 text-[var(--mute)] font-mono text-[11.5px] whitespace-nowrap">{a.bang}</td>
+                        <td className="py-3.5 px-3.5 font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{a.banGhiId}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
+                Tổng số <span className="font-mono font-bold text-[var(--ink)]">{audits.length}</span> bản ghi
               </div>
             </div>
           )}
@@ -204,57 +226,46 @@ export default function QuanTriPage() {
         </div>
       )}
 
-      {modal?.type === "coso" && <CoSoModal edit={modal.rec as CoSo | undefined} onClose={() => setModal(null)} onDone={() => { setModal(null); load(true); }} />}
-      {modal?.type === "user" && <UserModal cosos={cosos} edit={modal.rec as NguoiDung | undefined} onClose={() => setModal(null)} onDone={() => { setModal(null); load(true); }} />}
+      {modal?.type === "coso" && <CoSoModal cosos={cosos} edit={modal.rec as CoSo | undefined} onClose={() => setModal(null)} onDone={() => { setModal(null); load(true); }} />}
+      {modal?.type === "user" && <UserModal cosos={cosos} users={users} edit={modal.rec as NguoiDung | undefined} onClose={() => setModal(null)} onDone={() => { setModal(null); load(true); }} />}
       
       {confirmDialog && (
-        <ModalShell title={confirmDialog.title} onClose={() => setConfirmDialog(null)}>
-          <div className="px-6 py-5">
-            <p className="text-[14px] text-[var(--ink-soft)]">{confirmDialog.message}</p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setConfirmDialog(null)} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button>
-              <button onClick={confirmDialog.onConfirm} className="btn px-5 py-2.5 font-bold text-white bg-[var(--rose)] hover:bg-[#e11d48] rounded-[var(--r-md)] shadow-[var(--shadow-sm)]">Xóa dữ liệu</button>
+        <Modal open={true} title={confirmDialog.title} onClose={() => setConfirmDialog(null)} maxWidth="max-w-[460px]">
+          <div className="py-2">
+            <p className="text-[14px] text-[var(--ink-soft)] leading-relaxed">{confirmDialog.message}</p>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--line-soft)]">
+              <button onClick={() => setConfirmDialog(null)} className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl">Hủy</button>
+              <button onClick={confirmDialog.onConfirm} className="btn px-5 py-2.5 font-bold text-white bg-[var(--rose)] hover:bg-[#e11d48] rounded-xl shadow-sm">Xóa dữ liệu</button>
             </div>
           </div>
-        </ModalShell>
+        </Modal>
       )}
     </div>
   );
 }
 
-function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-[520px] max-h-[90vh] flex flex-col bg-white rounded-[20px] shadow-[0_25px_50px_-12px_rgba(3,29,166,0.2)] overflow-hidden animate-fade-in mx-2" onClick={(e) => e.stopPropagation()}>
-        {/* Gradient accent */}
-        <div className="h-1 shrink-0 bg-gradient-to-r from-[var(--teal)] via-[var(--navy)] to-[var(--teal)]" />
-        <div className="flex shrink-0 items-center justify-between px-6 pt-5 pb-4">
-          <h2 className="font-serif text-[20px] font-bold text-[var(--ink)]">{title}</h2>
-          <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors">
-            <X className="w-4.5 h-4.5" />
-          </button>
-        </div>
-        <div className="border-t border-[var(--line-soft)] shrink-0" />
-        {children}
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-function CoSoModal({ edit, onClose, onDone }: { edit?: CoSo; onClose: () => void; onDone: () => void }) {
+function CoSoModal({ cosos, edit, onClose, onDone }: { cosos: CoSo[]; edit?: CoSo; onClose: () => void; onDone: () => void }) {
   const { addToast } = useToast();
-  const [id, setId] = useState(edit?.id ?? ""); const [ten, setTen] = useState(edit?.ten ?? ""); const [diaChi, setDiaChi] = useState(edit?.diaChi ?? "");
+  const autoId = useMemo(() => {
+    if (edit) return edit.id;
+    let maxNum = 0;
+    cosos.forEach((c) => {
+      const match = c.id.match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    return `CS${String(maxNum + 1).padStart(2, "0")}`;
+  }, [edit, cosos]);
+
+  const [id, setId] = useState(edit?.id ?? autoId); const [ten, setTen] = useState(edit?.ten ?? ""); const [diaChi, setDiaChi] = useState(edit?.diaChi ?? "");
   const [bhxhUser, setBhxhUser] = useState(edit?.bhxhUser ?? ""); const [bhxhPass, setBhxhPass] = useState(edit?.bhxhPass ?? "");
   const [bhxhMaCSKCB, setBhxhMaCSKCB] = useState(edit?.bhxhMaCSKCB ?? ""); const [bhxhHoTenCB, setBhxhHoTenCB] = useState(edit?.bhxhHoTenCB ?? ""); const [bhxhCccdCB, setBhxhCccdCB] = useState(edit?.bhxhCccdCB ?? "");
   const [hisHost, setHisHost] = useState(edit?.hisHost ?? ""); const [hisPort, setHisPort] = useState(edit?.hisPort ?? "1433");
   const [hisUser, setHisUser] = useState(edit?.hisUser ?? ""); const [hisPass, setHisPass] = useState(edit?.hisPass ?? ""); const [hisDbName, setHisDbName] = useState(edit?.hisDbName ?? "");
   const [saving, setSaving] = useState(false); const [err, setErr] = useState("");
+  
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setSaving(true);
     const res = await fetch(edit ? `/api/csr/coso/${edit.id}` : "/api/csr/coso", { method: edit ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName }) });
@@ -262,63 +273,93 @@ function CoSoModal({ edit, onClose, onDone }: { edit?: CoSo; onClose: () => void
     if (!res.ok) { setErr(d.error || "Lỗi"); return; }
     addToast({ type: "success", message: edit ? "Đã cập nhật cơ sở." : "Đã thêm cơ sở." }); onDone();
   };
+
   return (
-    <ModalShell title={edit ? "Sửa cơ sở" : "Thêm cơ sở"} onClose={onClose}>
-      <form onSubmit={submit} className="flex flex-col overflow-hidden">
-        <div className="px-6 py-5 space-y-5 overflow-y-auto">
-          {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={edit ? "Sửa thông tin cơ sở" : "Thêm cơ sở y tế mới"}
+      subtitle={
+        edit ? (
+          <span className="flex items-center gap-2">
+            <span>Quản lý thông tin chi nhánh & cấu hình</span>
+            <span className="font-mono text-[11.5px] font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] px-2 py-0.5 rounded border border-[var(--teal)]">Mã CS: {edit.id}</span>
+          </span>
+        ) : (
+          "Quản lý thông tin chi nhánh & cấu hình kết nối BHYT / HIS"
+        )
+      }
+      icon={Building2}
+      maxWidth="max-w-[700px]"
+      noPadding
+    >
+      <form onSubmit={submit} className="p-7 space-y-6 bg-white">
+        {err && <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2"><X className="w-4 h-4 shrink-0" /> {err}</div>}
+        
+        <div className="space-y-4">
+          <SectionHeader n={1} accent="Thông tin chung" />
+          <Field label="Tên cơ sở" required>
+            <input value={ten} onChange={(e) => setTen(e.target.value)} required className="input-field h-10 font-semibold text-[14.5px]" placeholder="VD: Bệnh viện Mắt VISI Đắk Lắk" />
+          </Field>
+          <Field label="Địa chỉ cơ sở">
+            <input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field h-10" placeholder="Số nhà, đường, phường/xã, tỉnh/thành..." />
+          </Field>
+        </div>
+
+        <div className="space-y-4 pt-2">
+          <SectionHeader n={2} accent="Cấu hình tra cứu BHYT" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Mã cơ sở" required><input value={id} onChange={(e) => setId(e.target.value.toUpperCase())} required disabled={!!edit} className="input-field font-mono uppercase disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="VD: CS03" /></Field>
-            <Field label="Tên" required><input value={ten} onChange={(e) => setTen(e.target.value)} required className="input-field" /></Field>
+            <Field label="Tài khoản BHXH"><input value={bhxhUser} onChange={(e) => setBhxhUser(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="VD: 0101000..." /></Field>
+            <Field label="Mật khẩu BHXH"><input type="password" value={bhxhPass} onChange={(e) => setBhxhPass(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder={edit && edit.bhxhPass ? "••••••••" : "Nhập mật khẩu..."} /></Field>
           </div>
-          <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" /></Field>
-
-          <div className="pt-4 border-t border-[var(--line-soft)]">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" /> Cấu hình BHXH
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Tài khoản BHXH"><input value={bhxhUser} onChange={(e) => setBhxhUser(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 0101000..." /></Field>
-              <Field label="Mật khẩu BHXH"><input type="password" value={bhxhPass} onChange={(e) => setBhxhPass(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder={edit && edit.bhxhPass ? "••••••••" : "Nhập mật khẩu..."} /></Field>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-              <Field label="Mã CSKCB"><input value={bhxhMaCSKCB} onChange={(e) => setBhxhMaCSKCB(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 01001" /></Field>
-              <Field label="Họ tên cán bộ"><input value={bhxhHoTenCB} onChange={(e) => setBhxhHoTenCB(e.target.value)} className="input-field text-[13.5px]" placeholder="Họ tên CB tra cứu" /></Field>
-              <Field label="CCCD cán bộ"><input value={bhxhCccdCB} onChange={(e) => setBhxhCccdCB(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="Số CCCD cán bộ" /></Field>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-[var(--line-soft)]">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-600" /> Cấu hình HIS (SQL Server)
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Field label="IP / Host HIS"><input value={hisHost} onChange={(e) => setHisHost(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: 192.168.10.250" /></Field>
-              <Field label="Cổng (Port)"><input value={hisPort} onChange={(e) => setHisPort(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="1433" /></Field>
-              <Field label="Tên Database"><input value={hisDbName} onChange={(e) => setHisDbName(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: shpt_phongKham" /></Field>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
-              <Field label="Tài khoản SQL HIS"><input value={hisUser} onChange={(e) => setHisUser(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder="VD: reader" /></Field>
-              <Field label="Mật khẩu SQL HIS"><input type="password" value={hisPass} onChange={(e) => setHisPass(e.target.value)} className="input-field font-mono text-[13.5px]" placeholder={edit && edit.hisPass ? "••••••••" : "Nhập mật khẩu HIS..."} /></Field>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Field label="Mã CSKCB"><input value={bhxhMaCSKCB} onChange={(e) => setBhxhMaCSKCB(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="VD: 01001" /></Field>
+            <Field label="Họ tên cán bộ"><input value={bhxhHoTenCB} onChange={(e) => setBhxhHoTenCB(e.target.value)} className="input-field text-[13.5px] h-10" placeholder="Họ tên CB tra cứu" /></Field>
+            <Field label="CCCD cán bộ"><input value={bhxhCccdCB} onChange={(e) => setBhxhCccdCB(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="Số CCCD cán bộ" /></Field>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-[var(--surface-soft)] border-t border-[var(--line)] flex justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button>
-          <button type="submit" disabled={saving} className="btn btn-primary px-6 py-2.5 font-bold">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)]" />} Lưu
+        <div className="space-y-4 pt-2">
+          <SectionHeader n={3} accent="Cấu hình HIS (SQL Server)" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Field label="IP / Host HIS"><input value={hisHost} onChange={(e) => setHisHost(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="VD: 192.168.10.250" /></Field>
+            <Field label="Cổng (Port)"><input value={hisPort} onChange={(e) => setHisPort(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="1433" /></Field>
+            <Field label="Tên Database"><input value={hisDbName} onChange={(e) => setHisDbName(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="VD: shpt_phongKham" /></Field>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Tài khoản SQL HIS"><input value={hisUser} onChange={(e) => setHisUser(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder="VD: reader" /></Field>
+            <Field label="Mật khẩu SQL HIS"><input type="password" value={hisPass} onChange={(e) => setHisPass(e.target.value)} className="input-field font-mono text-[13.5px] h-10" placeholder={edit && edit.hisPass ? "••••••••" : "Nhập mật khẩu HIS..."} /></Field>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--line-soft)] mt-6">
+          <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
+          <button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />} {edit ? "Lưu thay đổi" : "Tạo cơ sở"}
           </button>
         </div>
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
 
-function UserModal({ cosos, edit, onClose, onDone }: { cosos: CoSo[]; edit?: NguoiDung; onClose: () => void; onDone: () => void }) {
+function UserModal({ cosos, users, edit, onClose, onDone }: { cosos: CoSo[]; users: NguoiDung[]; edit?: NguoiDung; onClose: () => void; onDone: () => void }) {
   const { addToast } = useToast();
-  const [maNV, setMaNV] = useState(edit?.maNV ?? ""); const [hoTen, setHoTen] = useState(edit?.hoTen ?? ""); const [vaiTro, setVaiTro] = useState(edit?.vaiTro ?? "CSKH"); const [coSoId, setCoSoId] = useState(edit?.coSoId ?? ""); const [tenDangNhap, setTen] = useState(edit?.tenDangNhap ?? ""); const [matKhau, setMk] = useState(""); const [saving, setSaving] = useState(false); const [err, setErr] = useState("");
+  const autoMaNV = useMemo(() => {
+    if (edit) return edit.maNV;
+    let maxNum = 0;
+    users.forEach((u) => {
+      const match = u.maNV.match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    return `NV${String(maxNum + 1).padStart(2, "0")}`;
+  }, [edit, users]);
+
+  const [maNV, setMaNV] = useState(edit?.maNV ?? autoMaNV); const [hoTen, setHoTen] = useState(edit?.hoTen ?? ""); const [vaiTro, setVaiTro] = useState(edit?.vaiTro ?? "CSKH"); const [coSoId, setCoSoId] = useState(edit?.coSoId ?? ""); const [tenDangNhap, setTen] = useState(edit?.tenDangNhap ?? ""); const [matKhau, setMk] = useState(""); const [saving, setSaving] = useState(false); const [err, setErr] = useState("");
+  
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setSaving(true);
     const body = edit ? { hoTen, vaiTro, coSoId, matKhau: matKhau || undefined } : { maNV, hoTen, vaiTro, coSoId, tenDangNhap, matKhau };
@@ -327,62 +368,68 @@ function UserModal({ cosos, edit, onClose, onDone }: { cosos: CoSo[]; edit?: Ngu
     if (!res.ok) { setErr(d.error || "Lỗi"); return; }
     addToast({ type: "success", message: edit ? "Đã cập nhật tài khoản." : "Đã thêm tài khoản." }); onDone();
   };
+
   return (
-    <ModalShell title={edit ? "Sửa tài khoản" : "Thêm tài khoản"} onClose={onClose}>
-      <form onSubmit={submit} className="flex flex-col overflow-hidden">
-        <div className="px-6 py-5 space-y-5 overflow-y-auto">
-          {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
-          
-          {/* Thông tin cơ bản */}
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={edit ? "Sửa thông tin tài khoản" : "Thêm tài khoản người dùng"}
+      subtitle={
+        edit ? (
+          <span className="flex items-center gap-2">
+            <span>Cấp quyền truy cập & phân bổ vai trò</span>
+            <span className="font-mono text-[11.5px] font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] px-2 py-0.5 rounded border border-[var(--teal)]">Mã NV: {edit.maNV}</span>
+          </span>
+        ) : (
+          "Cấp quyền truy cập & phân bổ vai trò nhân sự trong hệ thống"
+        )
+      }
+      icon={Users}
+      maxWidth="max-w-[620px]"
+      noPadding
+    >
+      <form onSubmit={submit} className="p-7 space-y-6 bg-white">
+        {err && <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2"><X className="w-4 h-4 shrink-0" /> {err}</div>}
+        
+        <div className="space-y-4">
+          <SectionHeader n={1} accent="Thông tin nhân sự" />
+          <Field label="Họ và tên" required>
+            <input value={hoTen} onChange={(e) => setHoTen(e.target.value)} required className="input-field h-10 font-semibold text-[14.5px]" placeholder="VD: Nguyễn Văn A" />
+          </Field>
+        </div>
+
+        <div className="space-y-4 pt-2">
+          <SectionHeader n={2} accent="Phân quyền & Vai trò" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Mã NV" required>
-              <input value={maNV} onChange={(e) => setMaNV(e.target.value.toUpperCase())} required disabled={!!edit} className="input-field font-mono uppercase disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="NV05" />
+            <Field label="Vai trò hệ thống" required>
+              <Dropdown value={vaiTro} mono={false} options={ROLES} labels={{ TuVanVien: "Tư vấn viên", KeToan: "Kế toán", QuanLy: "Quản lý" }} onChange={setVaiTro} />
             </Field>
-            <Field label="Họ tên" required>
-              <input value={hoTen} onChange={(e) => setHoTen(e.target.value)} required className="input-field" />
+            <Field label="Cơ sở làm việc">
+              <Dropdown value={coSoId} mono={false} placeholder={vaiTro === "QuanLy" ? "Toàn hệ thống" : "Chọn cơ sở…"} options={["", ...cosos.filter((c) => c.trangThai === "active").map((c) => c.id)]} labels={Object.fromEntries(cosos.map((c) => [c.id, c.ten]))} onChange={setCoSoId} />
             </Field>
-          </div>
-
-          {/* Phân quyền */}
-          <div className="pt-4 border-t border-[var(--line-soft)]">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--navy)]" /> Phân quyền
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Vai trò" required>
-                <Dropdown value={vaiTro} mono={false} options={ROLES} labels={{ TuVanVien: "Tư vấn viên", KeToan: "Kế toán", QuanLy: "Quản lý" }} onChange={setVaiTro} />
-              </Field>
-              <Field label="Cơ sở">
-                <Dropdown value={coSoId} mono={false} placeholder={vaiTro === "QuanLy" ? "Toàn hệ thống" : "Chọn cơ sở…"} options={["", ...cosos.filter((c) => c.trangThai === "active").map((c) => c.id)]} labels={Object.fromEntries(cosos.map((c) => [c.id, c.ten]))} onChange={setCoSoId} />
-              </Field>
-            </div>
-          </div>
-
-          {/* Đăng nhập */}
-          <div className="pt-4 border-t border-[var(--line-soft)]">
-            <div className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--mute)] mb-3 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" /> Thông tin đăng nhập
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Tên đăng nhập" required>
-                <input value={tenDangNhap} onChange={(e) => setTen(e.target.value)} required disabled={!!edit} className="input-field font-mono disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" />
-              </Field>
-              <Field label={edit ? "Mật khẩu mới" : "Mật khẩu"} required={!edit}>
-                <input type="text" value={matKhau} onChange={(e) => setMk(e.target.value)} required={!edit} className="input-field" placeholder={edit ? "Để trống nếu không đổi" : ""} />
-              </Field>
-            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-[var(--surface-soft)] border-t border-[var(--line)] flex justify-end gap-3 shrink-0">
-          <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button>
-          <button type="submit" disabled={saving} className="btn btn-primary px-6 py-2.5 font-bold">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)]" />} Lưu
+        <div className="space-y-4 pt-2">
+          <SectionHeader n={3} accent="Thông tin đăng nhập" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Tên đăng nhập" required>
+              <input value={tenDangNhap} onChange={(e) => setTen(e.target.value)} required disabled={!!edit} className="input-field font-mono h-10 disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="VD: cskh.hcm" />
+            </Field>
+            <Field label={edit ? "Mật khẩu mới" : "Mật khẩu"} required={!edit}>
+              <input type="text" value={matKhau} onChange={(e) => setMk(e.target.value)} required={!edit} className="input-field font-mono h-10" placeholder={edit ? "Để trống nếu không đổi..." : "Nhập mật khẩu..."} />
+            </Field>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--line-soft)] mt-6">
+          <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
+          <button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />} {edit ? "Lưu thay đổi" : "Tạo tài khoản"}
           </button>
         </div>
       </form>
-    </ModalShell>
+    </Modal>
   );
 }
 
@@ -485,10 +532,10 @@ function GoogleSheetPanel() {
       <div className="bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-sm)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-left text-[13px]">
-            <thead className="bg-[var(--surface-soft)] text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]"><tr>
-              {["Cơ sở", shared ? "Tab trong bảng tính" : "Spreadsheet ID", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-5 border-b border-[var(--line)] whitespace-nowrap ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
+            <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
+              {["Cơ sở", shared ? "Tab trong bảng tính" : "Spreadsheet ID", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] whitespace-nowrap ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
             </tr></thead>
-            <tbody className="divide-y divide-[var(--line-soft)] bg-white">
+            <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
               {rows.map((c) => {
                 const effective = shared ? status!.sharedSheetId! : (c.sheetId || c.envSheetId);
                 const draft = drafts[c.id] ?? (c.sheetId ?? "");

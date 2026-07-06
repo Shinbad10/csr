@@ -6,6 +6,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { BHYT, NHOM, parseDiag, ageOf, fmtDate, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
 import { Dropdown, Select, DateField, ChoiceRow, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
+import Modal from "@/components/layout/Modal";
 
 const FILTERS = [
   { key: "", label: "Tất cả" },
@@ -120,12 +121,20 @@ export default function TuVanSessionPage() {
   return (
     <div className="flex-1 flex flex-col bg-[var(--surface-bg)] overflow-hidden">
       <PageHeader 
-        title="Tư vấn phẫu thuật" 
+        title="Tư vấn phẫu thuật"
         description="Tư vấn bệnh nhân có khuyến nghị phẫu thuật từ đợt khám."
+        guide={[
+          { selector: '[data-tour="tv-bk"]', title: "Chọn đợt khám", desc: "Bấm vào đây để tải danh sách bệnh nhân được khuyến nghị phẫu thuật." },
+          { selector: '[data-tour="tv-list"]', title: "Chọn bệnh nhân", desc: "Bấm vào tên trong hàng chờ để mở phiếu tư vấn. (Cần chọn đợt khám trước)" },
+          { selector: '[data-tour="tv-nhom"]', title: "Phân nhóm", desc: "Chọn Nhóm A (đồng ý mổ) hoặc Nhóm B (suy nghĩ thêm)." },
+          { selector: '[data-tour="tv-lich"]', title: "Nhập lịch & chi phí", desc: "Nhập ngày điều trị, giờ đón, điểm đón và số tiền dự kiến." },
+          { selector: '[data-tour="tv-save"]', title: "Lưu phân nhóm", desc: "Bấm \"Lưu phân nhóm\" ở thanh dưới để hoàn tất. Nếu đã phân nhóm rồi, bấm \"Sửa phân nhóm\" để chỉnh." },
+        ]}
+        guideTip={'Dùng bộ lọc để xem riêng bệnh nhân "Chưa phân nhóm" hoặc "Đã phân nhóm".'}
         actions={
           <div className="flex items-center gap-3">
-            <button onClick={() => setShowBkModal(true)} className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)]">
-              <CalendarDays className="w-4 h-4 text-[var(--navy)]" /> 
+            <button data-tour="tv-bk" onClick={() => setShowBkModal(true)} className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)]">
+              <CalendarDays className="w-4 h-4 text-[var(--navy)]" />
               {selBk ? bkLabels[selBk] : "Chọn đợt khám..."}
             </button>
             <button onClick={() => setShowList(true)} className="lg:hidden btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-1.5 text-[var(--navy)]"><Users className="w-4 h-4" /> Bệnh nhân <span className="bg-[var(--rose)] text-white text-[10px] px-1.5 rounded-full">{patients.length}</span></button>
@@ -133,72 +142,59 @@ export default function TuVanSessionPage() {
         }
       />
 
-      {showBkModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[2px] p-4">
-          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-[560px] flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="px-6 py-5 border-b border-[var(--line-soft)] flex items-center justify-between bg-white">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-[var(--line)] bg-[var(--surface-bg)] flex items-center justify-center shrink-0 shadow-sm">
-                  <CalendarDays className="w-5 h-5 text-[var(--ink)]" />
-                </div>
-                <div>
-                  <h2 className="font-serif text-[20px] font-bold text-[var(--ink)] leading-tight">Chọn đợt khám</h2>
-                  <p className="text-[13px] text-[var(--mute)] mt-0.5">Lấy danh sách bệnh nhân theo từng đợt</p>
-                </div>
-              </div>
-              <button onClick={() => setShowBkModal(false)} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] active:scale-90 transition-colors" title="Đóng">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="p-4 border-b border-[var(--line-soft)] bg-[var(--surface-bg)]">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-                <input 
-                  autoFocus 
-                  placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..." 
-                  value={bkSearch} 
-                  onChange={(e) => setBkSearch(e.target.value)} 
-                  className="w-full h-11 rounded-xl border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] outline-none focus:border-[var(--navy)] focus:ring-1 focus:ring-[var(--navy)] transition-colors shadow-sm" 
-                />
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[var(--surface-bg)]">
-              {filteredBks.map(b => {
-                const active = selBk === b.id;
-                return (
-                  <button key={b.id} onClick={() => { setSelBk(b.id); setShowBkModal(false); }} className={`w-full text-left p-4 rounded-[16px] transition-all duration-200 flex items-center gap-4 border bg-white ${active ? "border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]" : "border-[var(--line)] shadow-sm hover:border-[var(--mute-soft)] hover:shadow-md"}`}>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border transition-colors ${active ? "bg-[var(--navy-50)] border-transparent text-[var(--navy)]" : "bg-[var(--surface-bg)] border-[var(--line)] text-[var(--mute)]"}`}>
-                      {active ? <Check className="w-5 h-5" /> : <MapPin className="w-5 h-5" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
-                        <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded shrink-0 bg-[var(--surface-bg)] border border-[var(--line)] text-[var(--mute)]">{b.id}</span>
-                      </div>
-                      <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4">
-                        <span className="flex items-center gap-1.5 shrink-0"><CalendarDays className="w-3.5 h-3.5" /> {fmtDate(b.ngayKham)}</span>
-                        {b.diaDiem && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{b.diaDiem}</span></span>}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-              {filteredBks.length === 0 && (
-                <div className="text-center py-14 flex flex-col items-center justify-center text-[var(--mute)]">
-                  <div className="w-14 h-14 rounded-full bg-white shadow-sm border border-[var(--line-soft)] flex items-center justify-center mb-4 text-[var(--mute-soft)]"><Search className="w-6 h-6" /></div>
-                  <div className="font-bold text-[15px] text-[var(--ink)]">Không tìm thấy đợt khám</div>
-                  <div className="text-[13.5px] mt-1.5">Thử thay đổi từ khóa tìm kiếm.</div>
-                </div>
-              )}
-            </div>
+      <Modal
+        open={showBkModal}
+        onClose={() => setShowBkModal(false)}
+        title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
+        subtitle="Lấy danh sách bệnh nhân để theo dõi & chăm sóc"
+        icon={CalendarDays}
+        noPadding
+      >
+        {/* Search */}
+        <div className="p-4 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
+            <input 
+              autoFocus 
+              placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..." 
+              value={bkSearch} 
+              onChange={(e) => setBkSearch(e.target.value)} 
+              className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs" 
+            />
           </div>
         </div>
-      )}
+
+        {/* List */}
+        <div className="p-4 space-y-2.5 bg-[var(--surface-soft)] min-h-[300px] max-h-[60vh] overflow-y-auto">
+          {filteredBks.map(b => {
+            const active = selBk === b.id;
+            return (
+              <button key={b.id} onClick={() => { setSelBk(b.id); setShowBkModal(false); }} className={`w-full text-left p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-center gap-4 border ${active ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]" : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"}`}>
+                <div className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors ${active ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs" : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"}`}>
+                  {active ? <Check className="w-5 h-5 text-[var(--teal)]" /> : <MapPin className="w-5 h-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
+                    <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{b.id}</span>
+                  </div>
+                  <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
+                    <span className="flex items-center gap-1.5 shrink-0 font-mono"><CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" /> {fmtDate(b.ngayKham)}</span>
+                    {b.diaDiem && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" /> <span className="truncate">{b.diaDiem}</span></span>}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+          {filteredBks.length === 0 && (
+            <div className="text-center py-14 flex flex-col items-center justify-center text-[var(--mute)]">
+              <div className="w-12 h-12 rounded-[var(--r-lg)] bg-white shadow-xs border border-[var(--line)] flex items-center justify-center mb-4 text-[var(--mute)]"><Search className="w-6 h-6" /></div>
+              <div className="font-bold text-[15px] text-[var(--ink)] font-serif">Không tìm thấy đợt khám</div>
+              <div className="text-[13px] mt-1 text-[var(--mute)]">Thử thay đổi từ khóa tìm kiếm của bạn.</div>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-t border-[var(--line)] overflow-y-auto xl:overflow-hidden relative">
         {/* Backdrop */}
@@ -246,53 +242,45 @@ export default function TuVanSessionPage() {
         <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-white">
           {selected ? (<>
             <div className="flex-1 overflow-y-auto pb-32">
-              {/* --- Patient Profile --- */}
-              <div className="p-6 pb-0">
-                <div className="relative bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-5 overflow-hidden shadow-[var(--shadow-sm)]">
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--teal-soft)] rounded-bl-full opacity-50 pointer-events-none" />
-                  <div className="relative z-10">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <h2 className="font-serif text-[26px] font-bold text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
-                        {selected.nhom && !selected.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${selected.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" />}
-                      </div>
+              {/* COMPACT PATIENT HEADER STRIP (FULL INFO - NO TRUNCATION) */}
+              <div className="bg-[var(--surface-soft)] border-b border-[var(--line)] px-5 py-3 shrink-0 flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="font-serif font-bold text-[19px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
+                    <span className="font-mono font-bold text-[var(--navy)] bg-white px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
+                    {selected.nhom && !selected.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${selected.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />}
+                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-xs text-[var(--ink-soft)] pt-1.5 border-t border-[var(--line-soft)]/80">
+                  {selected.cccd && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[var(--mute)] font-semibold">CCCD:</span>
+                      <span className="font-mono font-bold text-[var(--ink)]">{selected.cccd}</span>
                     </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mt-5 text-[13px] text-[var(--ink-soft)]">
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Mã bệnh nhân</div>
-                        <div className="font-mono font-bold text-[var(--navy)] bg-[var(--navy-50)] inline-flex px-2 py-0.5 rounded border border-[var(--navy-100)]">{selected.maBN}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Giới tính & Tuổi</div>
-                        <div className="font-semibold text-[13.5px] text-[var(--ink)]">{selected.gioiTinh} <span className="text-[var(--mute)] px-0.5">·</span> {ageOf(selected)} tuổi</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Số CCCD & BHYT</div>
-                        <div className="font-mono font-medium text-[var(--ink)]">{selected.cccd || "—"}</div>
-                        {selected.bhyt && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="font-mono text-[11.5px] text-[var(--mute)]">{selected.bhyt}</span>
-                            <span className="px-1.5 py-0.5 rounded-[var(--r-sm)] text-[10px] font-bold bg-gradient-to-r from-[var(--teal-soft)] to-[var(--teal-50)] text-[var(--teal-deep)] border border-[var(--teal)] shadow-sm">{bhytLevel(selected.bhyt)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Điện thoại</div>
-                        {selected.sdt ? (
-                          <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] hover:underline inline-flex items-center gap-1.5 bg-[var(--navy-50)] hover:bg-[var(--teal-soft)] px-2 py-0.5 rounded border border-[var(--navy-100)] hover:border-[var(--teal)] transition-all shadow-sm">
-                            <Phone className="w-3.5 h-3.5" />
-                            {selected.sdt}
-                          </a>
-                        ) : (
-                          <div className="font-mono font-medium text-[var(--mute)]">—</div>
-                        )}
-                      </div>
-                      <div className="col-span-2 md:col-span-4 border-t border-[var(--line-soft)] pt-3">
-                        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1">Địa chỉ thường trú</div>
-                        <div className="font-medium truncate" title={[selected.diaChi, selected.buoiKham?.xa].filter(Boolean).join(", ") || "—"}>{[selected.diaChi, selected.buoiKham?.xa].filter(Boolean).join(", ") || "—"}</div>
-                      </div>
+                  )}
+                  {selected.bhyt && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[var(--mute)] font-semibold">BHYT:</span>
+                      <span className="font-mono font-bold text-[var(--teal-deep)] bg-white px-1.5 py-0.5 rounded border border-[var(--line)]">{selected.bhyt} <span className="text-[10px] text-[var(--teal)]">({bhytLevel(selected.bhyt)})</span></span>
                     </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[var(--mute)] font-semibold">Điện thoại:</span>
+                    {selected.sdt ? (
+                      <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-[var(--line)]">
+                        <Phone className="w-3 h-3 text-[var(--teal)]" /> {selected.sdt}
+                      </a>
+                    ) : (
+                      <span className="font-mono text-[var(--mute)]">—</span>
+                    )}
+                  </div>
+                  <div className="flex items-start sm:items-center gap-1.5 flex-1 min-w-[280px]">
+                    <span className="text-[var(--mute)] font-semibold shrink-0">Địa chỉ:</span>
+                    <span className="font-medium text-[var(--ink)] leading-relaxed break-words">
+                      {[selected.diaChi, selected.buoiKham?.xa].filter(Boolean).join(", ") || "—"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -304,7 +292,7 @@ export default function TuVanSessionPage() {
                 </div>
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <div>
+                    <div data-tour="tv-nhom">
                       <label className={labelCls}>2.1 Chọn nhóm</label>
                       <ChoiceRow options={NHOM} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly} />
                     </div>
@@ -313,7 +301,7 @@ export default function TuVanSessionPage() {
                       <input disabled={readOnly} inputMode="numeric" value={f.soTienBao} onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 5000000" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div data-tour="tv-lich" className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     <DateField disabled={readOnly} label="2.2 Ngày điều trị" value={f.ngayHen} onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))} min={tomorrowISO()} />
                     <Select disabled={readOnly} label="2.3 Giờ đón (dự kiến)" value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} opts={TIME_OPTS} placeholder="Chọn giờ…" />
                     <div className="md:col-span-2">
@@ -325,7 +313,7 @@ export default function TuVanSessionPage() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-[var(--line)] bg-[var(--surface-bg)] flex justify-between items-center z-10 shrink-0">
+            <div data-tour="tv-save" className="p-4 border-t border-[var(--line)] bg-[var(--surface-bg)] flex justify-between items-center z-10 shrink-0">
               <span className="text-[12.5px] flex items-center gap-2">
                 {dirty ? <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--amber)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse" /> Chưa lưu</span> : <span className="inline-flex items-center gap-1.5 text-[var(--mute)]"><Check className="w-3.5 h-3.5 text-[var(--teal)]" /> Đã lưu</span>}
               </span>

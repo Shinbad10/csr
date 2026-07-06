@@ -20,6 +20,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",
     "google-auth-library": "^10.9.0",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.17.0",
     "mssql": "^12.5.5",
     "next": "16.2.9",

@@ -104,6 +104,15 @@ export default function TuVanSessionPage() {
           </div>
         }
         description={buoiKham ? `Đợt khám: BV - Xã ${buoiKham.xa}, ${buoiKham.diaDiem} · ${fmtDate(buoiKham.ngayKham)}` : "—"}
+        guideTitle="Tư vấn & phân nhóm"
+        guide={[
+          { selector: '[data-tour="tvs-list"]', title: "Chọn bệnh nhân", desc: "Danh sách này là các bệnh nhân được khuyến nghị phẫu thuật của đợt khám này." },
+          { selector: '[data-tour="tvs-clinical"]', title: "Xem kết quả khám", desc: "Thẻ \"Kết quả khám lâm sàng\" cho biết thị lực và chẩn đoán để tư vấn." },
+          { selector: '[data-tour="tvs-bhyt"]', title: "Xác nhận BHYT", desc: "Mức hưởng tự lấy từ mã thẻ; nếu chưa có thẻ, chọn mức hưởng thủ công." },
+          { selector: '[data-tour="tvs-nhom"]', title: "Phân nhóm & lịch mổ", desc: "Chọn Nhóm A/B, nhập ngày điều trị, giờ đón và điểm đón." },
+          { selector: '[data-tour="tvs-save"]', title: "Lưu tư vấn", desc: "Bấm \"Lưu tư vấn\" để hoàn tất phân nhóm." },
+        ]}
+        guideTip="Nhóm A (đồng ý mổ) bắt buộc phải nhập Ngày điều trị."
       />
 
       <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
@@ -128,7 +137,7 @@ export default function TuVanSessionPage() {
             </div>
             <span className="text-[12px] text-[var(--mute)] font-medium">{filter ? `${visible.length}/${patients.length}` : patients.length} BN</span>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
+          <div data-tour="tvs-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
             {patients.length === 0 ? <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2"><Stethoscope className="w-8 h-8 text-[var(--mute-soft)]" /><span>Đợt khám này chưa có BN nào được khuyến nghị phẫu thuật.</span></div>
               : visible.length === 0 ? <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không khớp bộ lọc.</div>
                 : visible.map((p) => {
@@ -145,58 +154,52 @@ export default function TuVanSessionPage() {
         <main className="flex-1 min-w-0 card p-0 flex flex-col min-h-0">
           {selected ? (<>
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* --- Patient Profile Card --- */}
-              <div className="relative bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-5 overflow-hidden shadow-[var(--shadow-sm)]">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--teal-soft)] rounded-bl-full opacity-50 pointer-events-none" />
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <h2 className="font-serif text-[22px] font-bold text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
-                      <StatusBadge label={statusOf(selected.trangThai).label} cls={statusOf(selected.trangThai).cls} />
-                      {selected.nhom && !selected.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${selected.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" />}
-                    </div>
+              {/* COMPACT PATIENT HEADER STRIP (FULL INFO - NO TRUNCATION) */}
+              <div className="bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-4 shadow-2xs flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="font-serif font-bold text-[19px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
+                    <span className="font-mono font-bold text-[var(--navy)] bg-white px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
+                    <StatusBadge label={statusOf(selected.trangThai).label} cls={statusOf(selected.trangThai).cls} sm />
+                    {selected.nhom && !selected.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${selected.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />}
+                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 mt-5 text-[13px] text-[var(--ink-soft)]">
-                    <div>
-                      <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Mã bệnh nhân</div>
-                      <div className="font-mono font-bold text-[var(--navy)] bg-[var(--navy-50)] inline-flex px-2 py-0.5 rounded border border-[var(--navy-100)]">{selected.maBN}</div>
+                <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-xs text-[var(--ink-soft)] pt-1.5 border-t border-[var(--line-soft)]/80">
+                  {selected.cccd && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[var(--mute)] font-semibold">CCCD:</span>
+                      <span className="font-mono font-bold text-[var(--ink)]">{selected.cccd}</span>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Giới tính & Tuổi</div>
-                      <div className="font-semibold text-[13.5px] text-[var(--ink)]">{selected.gioiTinh} <span className="text-[var(--mute)] px-0.5">·</span> {ageOf(selected)} tuổi</div>
+                  )}
+                  {selected.bhyt && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[var(--mute)] font-semibold">BHYT:</span>
+                      <span className="font-mono font-bold text-[var(--teal-deep)] bg-white px-1.5 py-0.5 rounded border border-[var(--line)]">{selected.bhyt} <span className="text-[10px] text-[var(--teal)]">({bhytLevel(selected.bhyt)})</span></span>
                     </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Số CCCD & BHYT</div>
-                      <div className="font-mono font-medium text-[var(--ink)]">{selected.cccd || "—"}</div>
-                      {selected.bhyt && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="font-mono text-[11.5px] text-[var(--mute)]">{selected.bhyt}</span>
-                          <span className="px-1.5 py-0.5 rounded-[var(--r-sm)] text-[10px] font-bold bg-gradient-to-r from-[var(--teal-soft)] to-[var(--teal-50)] text-[var(--teal-deep)] border border-[var(--teal)] shadow-sm">{bhytLevel(selected.bhyt)}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1.5">Điện thoại</div>
-                      {selected.sdt ? (
-                        <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] hover:underline inline-flex items-center gap-1.5 bg-[var(--navy-50)] hover:bg-[var(--teal-soft)] px-2 py-0.5 rounded border border-[var(--navy-100)] hover:border-[var(--teal)] transition-all shadow-sm">
-                          <Phone className="w-3.5 h-3.5" />
-                          {selected.sdt}
-                        </a>
-                      ) : (
-                        <div className="font-mono font-medium text-[var(--mute)]">—</div>
-                      )}
-                    </div>
-                    <div className="col-span-2 md:col-span-4 border-t border-[var(--line-soft)] pt-3">
-                      <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider mb-1">Địa chỉ thường trú</div>
-                      <div className="font-medium truncate" title={selected.diaChi || "—"}>{selected.diaChi || "—"}</div>
-                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[var(--mute)] font-semibold">Điện thoại:</span>
+                    {selected.sdt ? (
+                      <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-[var(--line)]">
+                        <Phone className="w-3 h-3 text-[var(--teal)]" /> {selected.sdt}
+                      </a>
+                    ) : (
+                      <span className="font-mono text-[var(--mute)]">—</span>
+                    )}
+                  </div>
+                  <div className="flex items-start sm:items-center gap-1.5 flex-1 min-w-[280px]">
+                    <span className="text-[var(--mute)] font-semibold shrink-0">Địa chỉ:</span>
+                    <span className="font-medium text-[var(--ink)] leading-relaxed break-words">
+                      {selected.diaChi || "—"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* --- Clinical Results Card --- */}
-              <div className="card p-0 border-[var(--gold-line)] overflow-hidden shadow-[var(--shadow-sm)]">
+              <div data-tour="tvs-clinical" className="card p-0 border-[var(--gold-line)] overflow-hidden shadow-[var(--shadow-sm)]">
                 <div className="bg-[var(--gold-soft)] px-5 py-3 border-b border-[var(--gold-line)] flex items-center justify-between">
                   <h3 className="font-serif text-[15px] font-bold text-[var(--gold-deep)] flex items-center gap-2"><Stethoscope className="w-[18px] h-[18px]" /> Kết quả khám lâm sàng</h3>
                 </div>
@@ -211,7 +214,7 @@ export default function TuVanSessionPage() {
               <div className="card p-5 space-y-5">
                 <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] flex items-center gap-2"><UserCog className="w-4 h-4 text-[var(--teal-deep)]" /> Tư vấn & phân nhóm</h3>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  <div>
+                  <div data-tour="tvs-bhyt">
                     <label className={labelCls}>BHYT <span className="font-normal text-[var(--mute)]">· tự động từ mã thẻ</span></label>
                     {f.bhyt ? (
                       <div className="input-field flex items-center justify-between gap-2 bg-[var(--surface-soft)]">
@@ -221,7 +224,7 @@ export default function TuVanSessionPage() {
                     ) : <Dropdown value="" placeholder="Chưa có thẻ — chọn mức hưởng…" options={[...BHYT]} onChange={(v) => setF((s) => ({ ...s, bhyt: v }))} />}
                   </div>
                   <div><label className={labelCls}>Số tiền báo</label><input inputMode="numeric" value={f.soTienBao} onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 5000000" /></div>
-                  <div className="col-span-2"><label className={labelCls}>Phân nhóm</label><ChoiceRow options={[...NHOM]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v, ngayHen: v === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen }))} render={(o) => (o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)")} /></div>
+                  <div data-tour="tvs-nhom" className="col-span-2"><label className={labelCls}>Phân nhóm</label><ChoiceRow options={[...NHOM]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v, ngayHen: v === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen }))} render={(o) => (o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)")} /></div>
                   <div><label className={labelCls}>Ngày điều trị (ĐK mổ){f.nhom === "A" && <span className="text-[var(--rose)]"> *</span>}<span className="font-normal text-[var(--mute)]"> · mặc định ngày mai</span></label><DateField value={f.ngayHen} min={tomorrowISO()} onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))} /></div>
                   <div className="grid grid-cols-[100px_1fr] gap-3 col-span-2 lg:col-span-1">
                     <div><label className={labelCls}>Giờ đón</label><Combobox value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} options={TIME_OPTS} placeholder="--:--" /></div>
@@ -232,7 +235,7 @@ export default function TuVanSessionPage() {
             </div>
             <div className="shrink-0 border-t border-[var(--line)] px-6 py-3 flex items-center justify-between gap-4">
               <span className="text-[12px] flex items-center gap-2 min-w-0">{dirty ? <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--amber)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse" /> Chưa lưu</span> : <span className="inline-flex items-center gap-1.5 text-[var(--mute)]"><Check className="w-3.5 h-3.5 text-[var(--teal)]" /> Đã lưu</span>}{selected.tuVanVien && <span className="text-[var(--mute)] truncate hidden md:inline">· Người chốt: <b>{selected.tuVanVien.hoTen}</b></span>}</span>
-              <button onClick={save} disabled={saving || !dirty} className="btn btn-primary px-8 py-2.5 font-bold shrink-0">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal)]" />} Lưu tư vấn</button>
+              <button data-tour="tvs-save" onClick={save} disabled={saving || !dirty} className="btn btn-primary px-8 py-2.5 font-bold shrink-0">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal)]" />} Lưu tư vấn</button>
             </div>
           </>) : <div className="flex-1 flex flex-col items-center justify-center text-[var(--mute)] text-center px-8 gap-2"><Stethoscope className="w-10 h-10 text-[var(--mute-soft)]" /><span className="text-[14px]">Chọn bệnh nhân trong hàng chờ để tư vấn & phân nhóm.</span></div>}
         </main>

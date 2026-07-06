@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, ChevronDown, UserRound, ShieldCheck, Menu } from "lucide-react";
+import { LogOut, ChevronDown, UserRound, ShieldCheck, Menu, KeyRound } from "lucide-react";
 import { roleLabel } from "@/lib/permissions";
+import { ChangePasswordModal } from "@/components/layout/ChangePasswordModal";
 
 export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const isLoading = status === "loading";
@@ -66,6 +68,12 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
               <div className="flex items-center gap-2 text-[var(--ink-soft)]"><ShieldCheck className="w-4 h-4 text-[var(--teal-deep)]" /> Vai trò: <b>{roleLabel(session?.user?.role)}</b></div>
               <div className="flex items-center gap-2 text-[var(--ink-soft)]"><UserRound className="w-4 h-4 text-[var(--navy)]" /> {session?.user?.coSoId ? `Cơ sở: ${session.user.coSoId}` : "Toàn hệ thống"}</div>
             </div>
+            <button
+              onClick={() => { setOpen(false); setChangePwOpen(true); }}
+              className="w-full px-4 py-2.5 flex items-center gap-2.5 text-[13px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-hover)] transition-colors border-b border-[var(--line-soft)]"
+            >
+              <KeyRound className="w-4 h-4 text-[var(--teal-deep)]" /> Đổi mật khẩu
+            </button>
             <button onClick={() => signOut({ callbackUrl: "/login" })}
               className="w-full px-4 py-3 flex items-center gap-2.5 text-[13px] font-semibold text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-colors">
               <LogOut className="w-4 h-4" /> Đăng xuất
@@ -73,6 +81,12 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
           </div>
         )}
       </div>
+
+      <ChangePasswordModal
+        open={changePwOpen}
+        onClose={() => setChangePwOpen(false)}
+        userId={session?.user?.id || ""}
+      />
     </header>
   );
 }

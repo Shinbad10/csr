@@ -8,18 +8,39 @@ import bcrypt from "bcryptjs";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || !can(session.user.role, "admin.masterdata")) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
+  if (!session) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
   const { id } = await params;
+  const isSelf = session.user.id === id;
+  const isAdmin = can(session.user.role, "admin.masterdata");
+  if (!isSelf && !isAdmin) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
+
   try {
     const b = await request.json();
     const data: Record<string, unknown> = {};
-    if (b.hoTen) data.hoTen = b.hoTen.trim();
-    if (b.vaiTro) { data.vaiTro = b.vaiTro; data.coSoId = b.vaiTro === "QuanLy" ? null : b.coSoId || null; }
-    else if (b.coSoId !== undefined) data.coSoId = b.coSoId || null;
-    if (b.trangThai) data.trangThai = b.trangThai;
-    if (b.matKhau) data.matKhauHash = await bcrypt.hash(b.matKhau, 10);
+    if (isAdmin) {
+      if (b.hoTen) data.hoTen = b.hoTen.trim();
+      if (b.vaiTro) { data.vaiTro = b.vaiTro; data.coSoId = b.vaiTro === "QuanLy" ? null : b.coSoId || null; }
+      else if (b.coSoId !== undefined) data.coSoId = b.coSoId || null;
+      if (b.trangThai) data.trangThai = b.trangThai;
+    }
+    if (b.matKhau) {
+      if (id === "admin") {
+        return NextResponse.json({ error: "Tài khoản admin mặc định không thể đổi mật khẩu tại đây" }, { status: 400 });
+      }
+      if (!isAdmin || isSelf) {
+        if (!b.oldPassword) return NextResponse.json({ error: "Vui lòng nhập mật khẩu hiện tại" }, { status: 400 });
+        const currentUser = await getPrisma().nguoiDungCSR.findUnique({ where: { maNV: id } });
+        if (!currentUser || !(await bcrypt.compare(b.oldPassword, currentUser.matKhauHash))) {
+          return NextResponse.json({ error: "Mật khẩu hiện tại không đúng" }, { status: 400 });
+        }
+      }
+      data.matKhauHash = await bcrypt.hash(b.matKhau, 10);
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "Không có dữ liệu hợp lệ để cập nhật" }, { status: 400 });
+    }
     await getPrisma().nguoiDungCSR.update({ where: { maNV: id }, data });
-    await audit(session.user.id, "NguoiDungCSR", id, "sua", { ...b, matKhau: b.matKhau ? "***" : undefined });
+    await audit(session.user.id, "NguoiDungCSR", id, "sua", { ...b, matKhau: b.matKhau ? "***" : undefined, oldPassword: b.oldPassword ? "***" : undefined });
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });

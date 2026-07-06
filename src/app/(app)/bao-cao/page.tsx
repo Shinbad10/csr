@@ -52,16 +52,23 @@ export default function BaoCaoPage() {
   return (
     <div>
       <PageHeader 
-        title="Báo cáo & thống kê" 
+        title="Báo cáo & thống kê"
         description="Thống kê cơ bản theo cơ sở đang làm việc + xuất Excel để Kế toán tính tiền CSR."
+        guide={[
+          { selector: '[data-tour="bc-kpi"]', title: "Xem số liệu tổng quan", desc: "Các thẻ KPI này tổng hợp số bệnh nhân theo từng trạng thái của cơ sở." },
+          { selector: '[data-tour="bc-chart"]', title: "Xem phân bố", desc: "Biểu đồ \"Phân bố theo trạng thái\" cho thấy tỉ lệ các nhóm bệnh nhân." },
+          { selector: '[data-tour="bc-export"]', title: "Xuất Excel", desc: "Bấm \"Xuất Excel\" để tải file cho Kế toán tính tiền CSR." },
+          { selector: '[data-tour="bc-sheet"]', title: "Mở Google Sheet", desc: "Bấm \"Google Sheet\" (nếu có) để xem báo cáo trực tuyến được đồng bộ." },
+        ]}
+        guideTip="Số liệu thống kê theo đúng cơ sở bạn đang làm việc."
         actions={<div className="flex items-center gap-2">
-          {stats?.sheetUrl && <a href={stats.sheetUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary px-4 py-2.5 font-bold"><FileSpreadsheet className="w-4 h-4 text-[var(--teal-deep)]" /> Google Sheet</a>}
-          <button onClick={exportExcel} disabled={exporting} className="btn btn-primary px-5 py-2.5 font-bold">{exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 text-[var(--teal)]" />} Xuất Excel</button>
+          {stats?.sheetUrl && <a data-tour="bc-sheet" href={stats.sheetUrl} target="_blank" rel="noopener noreferrer" className="btn btn-secondary px-4 py-2.5 font-bold"><FileSpreadsheet className="w-4 h-4 text-[var(--teal-deep)]" /> Google Sheet</a>}
+          <button data-tour="bc-export" onClick={exportExcel} disabled={exporting} className="btn btn-primary px-5 py-2.5 font-bold">{exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 text-[var(--teal)]" />} Xuất Excel</button>
         </div>}
       />
 
       {loading ? <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" /></div> : stats && (<>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
+        <div data-tour="bc-kpi" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
           {CARDS.map((c) => {
             const Icon = c.icon;
             return (
@@ -75,7 +82,7 @@ export default function BaoCaoPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
-          <div className="card lg:col-span-2">
+          <div data-tour="bc-chart" className="card lg:col-span-2">
             <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] mb-4">Phân bố theo trạng thái</h3>
             {(() => {
               const slices: Slice[] = STATUS_ORDER

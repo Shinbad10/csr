@@ -28,7 +28,7 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
   return (
     <ToastCtx.Provider value={{ addToast }}>
       {children}
-      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2.5 w-[340px] max-w-[calc(100vw-2.5rem)]">
+      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2.5 w-[340px] max-w-[calc(100vw-2.5rem)]" suppressHydrationWarning>
         {toasts.map((t) => {
           const Icon = ICON[t.type];
           return (

@@ -12,10 +12,36 @@ export async function GET(request: Request) {
   try {
     const data = await getPrisma().buoiKham.findMany({
       where: coSoId ? { coSoId } : undefined,
-      include: { coSo: true, _count: { select: { hoSo: true } } },
+      include: { 
+        coSo: true, 
+        _count: { select: { hoSo: true } },
+        hoSo: { select: { nhom: true, trangThaiDieuTri: true, trangThai: true } }
+      },
       orderBy: { ngayKham: "desc" },
     });
-    return NextResponse.json(data);
+    const result = data.map(item => {
+      let nhomA = 0;
+      let nhomB = 0;
+      let daMo = 0;
+      let chuaMo = 0;
+      for (const hs of item.hoSo) {
+        const isA = hs.nhom === "A" || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(hs.trangThai);
+        const isB = hs.nhom === "B" || hs.trangThai === "NhomB";
+        const isMo = hs.trangThaiDieuTri === "Đã mổ" || hs.trangThai === "DaMoHauPhau";
+        
+        if (isA) nhomA++;
+        else if (isB) nhomB++;
+        
+        if (isMo) {
+          daMo++;
+        } else if (isA) {
+          chuaMo++;
+        }
+      }
+      const { hoSo, ...rest } = item;
+      return { ...rest, stats: { nhomA, nhomB, daMo, chuaMo } };
+    });
+    return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }

@@ -49,10 +49,17 @@ export default function Dashboard() {
       <PageHeader
         title={<>Xin chào, <span className="italic text-[var(--teal-deep)]">{session?.user?.name || "bạn"}</span></>}
         description="Tổng quan hoạt động của cơ sở đang làm việc."
+        guideTitle="Bảng điều khiển"
+        guide={[
+          { selector: '[data-tour="db-kpi"]', title: "Xem chỉ số nhanh", desc: "Các thẻ KPI này tổng hợp hoạt động chính của cơ sở đang làm việc." },
+          { selector: '[data-tour="db-nav"]', title: "Điều hướng chức năng", desc: "Dùng thanh menu bên trái để chuyển giữa các chức năng. Bắt đầu từ \"Đợt khám tầm soát\"." },
+          { selector: '[data-tour="help-btn"]', title: "Cần trợ giúp?", desc: "Mỗi trang đều có nút \"Hướng dẫn\" này — bấm để xem tour từng bước." },
+        ]}
+        guideTip="Quy trình chuẩn: Đợt khám → Khám → Tư vấn & phân nhóm → Theo dõi A/B → Đối chiếu HIS → Báo cáo."
       />
 
       {/* KPI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-7">
+      <div data-tour="db-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-7">
         {KPIS.map((c) => {
           const Icon = c.icon;
           return (
