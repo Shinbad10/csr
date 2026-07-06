@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+// ─────────────────────────────────────────────────────────────
+//  VISI CSR — bám SRS 1.1 (§6). Đã bỏ field app mẫu MSG ngoài SRS.
+// ─────────────────────────────────────────────────────────────
+
+model CoSo {
+  id          String         @id
+  ten         String
+  diaChi      String?
+  trangThai   String         @default("active") // active | inactive
+  sheetId     String?        // UC-10/BR-15 — spreadsheetId Google Sheet (tự tạo lần đồng bộ đầu)
+  bhxhUser    String?        // Tài khoản cổng BHXH của cơ sở
+  bhxhPass    String?        // Mật khẩu cổng BHXH của cơ sở
+  bhxhMaCSKCB String?        // Mã cơ sở KCB trên cổng BHXH
+  bhxhHoTenCB String?        // Họ tên cán bộ tra cứu BHXH
+  bhxhCccdCB  String?        // CCCD cán bộ tra cứu BHXH
+  hisHost     String?        // Host/IP SQL Server HIS
+  hisPort     String?        // Port SQL Server HIS
+  hisUser     String?        // User HIS
+  hisPass     String?        // Pass HIS
+  hisDbName   String?        // Tên database HIS
+  buoiKham    BuoiKham[]
+  nguoiDung   NguoiDungCSR[]
+  hoSo        HoSoBenhNhan[]
+}
+
+model NguoiDungCSR {
+  maNV         String          @id // PK; dùng làm mã ghi công CSR
+  hoTen        String
+  vaiTro       String          // CSKH | TuVanVien | KeToan | QuanLy
+  coSoId       String?         // NULL nếu Quản lý toàn hệ thống
+  coSo         CoSo?           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  tenDangNhap  String          @unique
+  matKhauHash  String
+  trangThai    String          @default("active") // active | locked
+  buoiKhamTao  BuoiKham[]
+  hoSoTuVan    HoSoBenhNhan[]  @relation("TuVanVien")
+  hoSoPhuTrach HoSoBenhNhan[]  @relation("PhuTrach")
+  hoSoChotCuoi HoSoBenhNhan[]  @relation("ChotCuoi")
+  nhatKy       NhatKyTheoDoi[]
+}
+
+model BuoiKham {
+  id          String         @id @default(cuid())
+  coSoId      String
+  coSo        CoSo           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  ngayKham    DateTime
+  xa          String
+  diaDiem     String
+  ghiChu      String?
+  nguoiTao    String
+  nguoiTaoRef NguoiDungCSR   @relation(fields: [nguoiTao], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  createdAt   DateTime       @default(now())
+  syncStatus  String         @default("SYNCED")
+  hoSo        HoSoBenhNhan[]
+}
+
+model HoSoBenhNhan {
+  id         String   @id @default(cuid())
+  maBN       String   @unique // BR-01
+  maBNHIS    String?  // Mã bệnh nhân trên hệ thống HIS bệnh viện
+  stt        Int               // BR-02
+  buoiKhamId String
+  buoiKham   BuoiKham @relation(fields: [buoiKhamId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  coSoId     String
+  coSo       CoSo     @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+
+  // Tiếp nhận (CSKH)
+  hoTen       String
+  gioiTinh    String   // Nam | Nữ | Khác
+  ngaySinh    DateTime? // ngày sinh đầy đủ (tự lấy khi quét thẻ BHYT/CCCD)
+  namSinh     Int       // năm sinh (SRS) — suy từ ngaySinh hoặc nhập tay
+  cccd        String?
+  diaChi      String?
+  sdt         String?
+  sdtNguoiNha String?   // BR-06
+
+  // Lâm sàng (Tư vấn viên chép từ phiếu bác sĩ)
+  thiLucMP     String?
+  thiLucMT     String?
+  chanDoan     String  @default("[]") // JSON mảng enum
+  chanDoanKhac String? // BR-07
+  khuyenNghi   String? // Phẫu thuật | Theo dõi
+
+  // Tư vấn & phân nhóm (Tư vấn viên) — màn /tu-van sau buổi khám
+  bhyt        String?   // lưu MÃ THẺ; mức hưởng suy từ ký tự thứ 3
+  tuVanVienMa String?   // BR-03
+  tuVanVien   NguoiDungCSR? @relation("TuVanVien", fields: [tuVanVienMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  soTienBao   Float?    // BR-10
+  ngayDieuTri DateTime? // BR-04 (bắt buộc nếu nhom=A)
+  diemDon     String?
+  gioDon      String?
+  nhom        String?   // A | B
+
+  // Theo dõi nhóm B
+  followUpStatus  String?
+  nguoiPhuTrachMa String?
+  nguoiPhuTrach   NguoiDungCSR? @relation("PhuTrach", fields: [nguoiPhuTrachMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  nguoiChotCuoiMa String?
+  nguoiChotCuoi   NguoiDungCSR? @relation("ChotCuoi", fields: [nguoiChotCuoiMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  ngayChot        DateTime?
+
+  // Điều trị (CSKH tại bệnh viện)
+  daDon            Boolean   @default(false)
+  ngayMoThucTe     DateTime?
+  soTienThucThu    Float?
+  trangThaiDieuTri String?   // Đã mổ | Hủy | Không đến
+  ngayTaiKham      DateTime?
+  ghiChuMat2       String?   // BR-09 — không vào thống kê
+
+  // Hệ thống
+  trangThai  String          @default("TiepNhan") // suy ra (BR-08)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  createdBy  String?
+  updatedBy  String?
+  syncStatus String          @default("SYNCED")
+  nhatKy     NhatKyTheoDoi[]
+
+  @@index([coSoId])
+  @@index([buoiKhamId])
+  @@index([trangThai])
+}
+
+model NhatKyTheoDoi {
+  id         String       @id @default(cuid())
+  hoSoId     String
+  hoSo       HoSoBenhNhan @relation(fields: [hoSoId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  ngay       DateTime
+  nguoiGoiMa String
+  nguoiGoi   NguoiDungCSR @relation(fields: [nguoiGoiMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  noiDung    String
+  syncStatus String       @default("SYNCED")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  bang      String
+  banGhiId  String
+  hanhDong  String // them | sua | xoa | ngung_hoat_dong
+  nguoiDung String
+  thoiDiem  DateTime @default(now())
+  thayDoi   String
+}
+
+model SyncQueue {
+  id        Int      @id @default(autoincrement())
+  hoSoId    String
+  createdAt DateTime @default(now())
+  retries   Int      @default(0)
+}
+
+model DanhMucBenhVien {
+  id        Int    @id @default(autoincrement())
+  ten       String @unique
+  trangThai String @default("active")
+}

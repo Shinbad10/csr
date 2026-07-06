@@ -1,0 +1,147 @@
+generator sqlite_client {
+  provider = "prisma-client-js"
+  output   = "./client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── VISI CSR Models ───
+
+model CoSo {
+  id          String         @id
+  ten         String
+  diaChi      String?
+  trangThai   String         @default("active")
+  sheetId     String?        // UC-10/BR-15 — spreadsheetId Google Sheet (tự tạo lần đồng bộ đầu)
+  bhxhUser    String?        // Tài khoản cổng BHXH của cơ sở
+  bhxhPass    String?        // Mật khẩu cổng BHXH của cơ sở
+  bhxhMaCSKCB String?        // Mã cơ sở KCB trên cổng BHXH
+  bhxhHoTenCB String?        // Họ tên cán bộ tra cứu BHXH
+  bhxhCccdCB  String?        // CCCD cán bộ tra cứu BHXH
+  hisHost     String?        // Host/IP SQL Server HIS
+  hisPort     String?        // Port SQL Server HIS
+  hisUser     String?        // User HIS
+  hisPass     String?        // Pass HIS
+  hisDbName   String?        // Tên database HIS
+  buoiKham    BuoiKham[]
+  nguoiDung   NguoiDungCSR[]
+  hoSo        HoSoBenhNhan[]
+}
+
+model NguoiDungCSR {
+  maNV          String          @id
+  hoTen         String
+  vaiTro        String
+  coSoId        String?
+  coSo          CoSo?           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  tenDangNhap   String          @unique
+  matKhauHash   String
+  trangThai     String          @default("active")
+  buoiKhamTao   BuoiKham[]
+  hoSoTuVan     HoSoBenhNhan[]  @relation("TuVanVien")
+  hoSoPhuTrach  HoSoBenhNhan[]  @relation("PhuTrach")
+  hoSoChotCuoi  HoSoBenhNhan[]  @relation("ChotCuoi")
+  nhatKy        NhatKyTheoDoi[]
+}
+
+model BuoiKham {
+  id          String         @id @default(cuid())
+  coSoId      String
+  coSo        CoSo           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  ngayKham    DateTime
+  xa          String
+  diaDiem     String
+  ghiChu      String?
+  nguoiTao    String
+  nguoiTaoRef NguoiDungCSR   @relation(fields: [nguoiTao], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  createdAt   DateTime       @default(now())
+  syncStatus  String         @default("SYNCED")
+  hoSo        HoSoBenhNhan[]
+}
+
+model HoSoBenhNhan {
+  id              String         @id @default(cuid())
+  maBN            String         @unique
+  maBNHIS         String?        // Mã bệnh nhân trên hệ thống HIS bệnh viện
+  stt             Int
+  buoiKhamId      String
+  buoiKham        BuoiKham       @relation(fields: [buoiKhamId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  coSoId          String
+  coSo            CoSo           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  hoTen           String
+  gioiTinh        String
+  ngaySinh        DateTime?
+  namSinh         Int
+  cccd            String?
+  diaChi          String?
+  sdt             String?
+  sdtNguoiNha     String?
+  thiLucMP        String?
+  thiLucMT        String?
+  chanDoan        String         @default("[]")
+  chanDoanKhac    String?
+  khuyenNghi      String?
+  bhyt            String?
+  tuVanVienMa     String?
+  tuVanVien       NguoiDungCSR?  @relation("TuVanVien", fields: [tuVanVienMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  soTienBao       Float?
+  ngayDieuTri     DateTime?
+  diemDon         String?
+  gioDon          String?
+  nhom            String?
+  followUpStatus  String?
+  nguoiPhuTrachMa String?
+  nguoiPhuTrach   NguoiDungCSR?  @relation("PhuTrach", fields: [nguoiPhuTrachMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  nguoiChotCuoiMa String?
+  nguoiChotCuoi   NguoiDungCSR?  @relation("ChotCuoi", fields: [nguoiChotCuoiMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  ngayChot        DateTime?
+  daDon           Boolean        @default(false)
+  ngayMoThucTe    DateTime?
+  soTienThucThu   Float?
+  trangThaiDieuTri String?
+  ngayTaiKham     DateTime?
+  ghiChuMat2      String?
+  trangThai       String         @default("TiepNhan")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  syncStatus      String         @default("SYNCED")
+  nhatKy          NhatKyTheoDoi[]
+}
+
+model NhatKyTheoDoi {
+  id          String        @id @default(cuid())
+  hoSoId      String
+  hoSo        HoSoBenhNhan  @relation(fields: [hoSoId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  ngay        DateTime
+  nguoiGoiMa  String
+  nguoiGoi    NguoiDungCSR  @relation(fields: [nguoiGoiMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
+  noiDung     String
+  syncStatus  String        @default("SYNCED")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  bang       String
+  banGhiId   String
+  hanhDong   String
+  nguoiDung  String
+  thoiDiem   DateTime @default(now())
+  thayDoi    String
+}
+
+model SyncQueue {
+  id        Int      @id @default(autoincrement())
+  hoSoId    String
+  createdAt DateTime @default(now())
+  retries   Int      @default(0)
+}
+
+model DanhMucBenhVien {
+  id        Int      @id @default(autoincrement())
+  ten       String   @unique
+  trangThai String   @default("active")
+}

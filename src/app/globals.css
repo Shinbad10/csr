@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/* ── Company design tokens (VISI) ─────────────────────────────
+   navy = chữ ký thương hiệu · teal = chỉ cho "sống / thành công"
+   Be Vietnam Pro (tiêu đề) · Roboto (body) · JetBrains Mono (số/mã/giờ)
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  --animate-fade-in: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+:root {
+  /* navy — thương hiệu */
+  --navy: #031da6;
+  --navy-hover: #021685;
+  --navy-deep: #010e52;
+  --navy-ink: #010a3b;
+  --navy-50: #eef1ff;
+  --navy-100: #dce3ff;
+  --navy-soft: #eef1ff;
+
+  /* teal — chỉ dùng cho success / "đang sống" */
+  --teal: #02b8a9;
+  --teal-soft: #e5f8f7;
+  --teal-deep: #018c81;
+
+  /* mực & chữ */
+  --ink: #1a1a24;
+  --ink-soft: #2d2d3a;
+  --text-light: #2d2d3a;
+  --text-muted: #646473;
+  --mute: #8a8a9e;
+  --mute-soft: #b4b4c7;
+
+  /* nền & bề mặt */
+  --surface: #ffffff;
+  --surface-bg: #f7f8fc;
+  --surface-hover: #f1f3f9;
+  --surface-soft: #fbfbfc;
+
+  /* đường kẻ */
+  --line: #e4e6ef;
+  --line-strong: #d1d4e3;
+  --line-soft: #f0f2f8;
+
+  /* trạng thái */
+  --amber: #d97706;
+  --amber-soft: #fef3c7;
+  --warning: #b45309;
+  --rose: #e11d48;
+  --rose-soft: #ffe4e6;
+
+  /* pill vàng (chẩn đoán / chỉ định) */
+  --gold: #b88600;
+  --gold-soft: #fdf3d3;
+  --gold-line: #ecd9a3;
+  --gold-deep: #946a00;
+
+  /* bóng đổ */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.25);
+  --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.35);
+
+  /* bo góc 10–14px */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+}
+
+body {
+  background-color: var(--surface-bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+/* font-feature cho số ở JetBrains Mono */
+.font-mono { font-variant-numeric: tabular-nums; }
+
+@layer components {
+  .card {
+    @apply bg-[var(--surface)] rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] p-4;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-[14px] font-semibold rounded-[var(--r-md)] transition-all disabled:opacity-45 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] active:scale-[0.98];
+  }
+  .btn-secondary {
+    @apply bg-white border border-[var(--line)] text-[var(--text-light)] hover:bg-[var(--surface-hover)] active:scale-[0.98];
+  }
+  .btn-success {
+    @apply bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full rounded-[var(--r-md)] border border-[var(--line)] bg-white px-3 py-2 text-[14px] text-[var(--ink)] outline-none transition-colors focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)];
+  }
+}

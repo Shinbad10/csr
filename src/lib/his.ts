@@ -1,0 +1,440 @@
+import sql from "mssql";
+import { getPrisma } from "./prisma";
+import { triggerSync } from "./syncWorker";
+
+export interface HISCheckResult {
+  found: boolean;
+  maHIS?: string;
+  hoTenHIS?: string;
+  namSinhHIS?: string;
+  hasSurgery?: boolean;
+  ngayMo?: string | null;
+  khoaMo?: string | null;
+  chanDoan?: string | null;
+  bsDieutri?: string | null;
+  chiTiet?: string;
+  error?: string;
+}
+
+export async function getHisConfig(coSoId: string) {
+  try {
+    const coSo = await getPrisma().coSo.findUnique({
+      where: { id: coSoId },
+      select: {
+        hisHost: true,
+        hisPort: true,
+        hisUser: true,
+        hisPass: true,
+        hisDbName: true,
+      },
+    });
+
+    return {
+      host: coSo?.hisHost || process.env.HIS_HOST || "192.168.10.250",
+      port: parseInt(coSo?.hisPort || process.env.HIS_PORT || "1433", 10),
+      user: coSo?.hisUser || process.env.HIS_USER || "reader",
+      pass: coSo?.hisPass || process.env.HIS_PASS || "Admin@123",
+      dbName: coSo?.hisDbName || process.env.HIS_DB || "shpt_phongKham",
+    };
+  } catch {
+    return {
+      host: process.env.HIS_HOST || "192.168.10.250",
+      port: parseInt(process.env.HIS_PORT || "1433", 10),
+      user: process.env.HIS_USER || "reader",
+      pass: process.env.HIS_PASS || "Admin@123",
+      dbName: process.env.HIS_DB || "shpt_phongKham",
+    };
+  }
+}
+
+export function appendHisNote(oldNote: string | null | undefined, newHisDetail: string): string {
+  const clean = (oldNote || "")
+    .split("\n")
+    .filter((line) => !line.trim().startsWith("[HIS]:"))
+    .join("\n")
+    .trim();
+  const res = clean ? `${clean}\n[HIS]: ${newHisDetail}` : `[HIS]: ${newHisDetail}`;
+  return res.slice(0, 950); // Giữ dưới 1000 ký tự để tránh lỗi tràn cột NVARCHAR(1000) trên SQL Server
+}
+
+export async function checkHISForPatient(
+  coSoId: string,
+  hoTen: string,
+  namSinh: number | string,
+  cccd?: string | null,
+  bhyt?: string | null,
+  monthStr?: string | null
+): Promise<HISCheckResult> {
+  const config = await getHisConfig(coSoId);
+
+  const dbConfig: sql.config = {
+    user: config.user,
+    password: config.pass,
+    server: config.host,
+    port: config.port,
+    database: config.dbName,
+    options: {
+      encrypt: true,
+      trustServerCertificate: true,
+    },
+    connectionTimeout: 5000,
+    requestTimeout: 10000,
+  };
+
+  let pool: sql.ConnectionPool | null = null;
+  try {
+    pool = await new sql.ConnectionPool(dbConfig).connect();
+
+    const hoTenClean = hoTen.trim();
+    const namSinhStr = String(namSinh).trim();
+    const cccdClean = cccd?.trim() || "";
+
+    // Truy vấn tổng hợp từ QLyCapThe, QLyPhongMo, Noitru_HSBA và BN_Master
+    const query = `
+      SELECT TOP 5
+        c.Ma as maHIS,
+        c.Hoten,
+        c.Namsinh,
+        c.CMND,
+        c.Dienthoai,
+        mo.Ngaymo,
+        mo.Khoa as khoaMo,
+        hsba.Chandoan_Ravien as chanDoanRavien,
+        hsba.Chandoan_Vaovien as chanDoanVaovien,
+        hsba.Ngayvao,
+        hsba.Ngayra,
+        bm.BsDieutri,
+        bm.ChandoanChinh as chanDoanBM
+      FROM QLyCapThe c
+      LEFT JOIN QLyPhongMo mo ON c.Ma = mo.MaBenhnhan
+      LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
+      LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
+      WHERE (c.CMND = @cccd AND @cccd <> '')
+         OR (LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)
+      ORDER BY mo.Ngaymo DESC, hsba.Ngayvao DESC
+    `;
+
+    const req = pool.request();
+    req.input("cccd", sql.NVarChar, cccdClean);
+    req.input("hoTen", sql.NVarChar, hoTenClean);
+    req.input("namSinh", sql.NVarChar, namSinhStr);
+
+    const res = await req.query(query);
+    const rows = res.recordset;
+
+    if (!rows || rows.length === 0) {
+      return {
+        found: false,
+        error: "Không tìm thấy hồ sơ bệnh nhân trên hệ thống HIS bệnh viện.",
+      };
+    }
+
+    // Tìm thấy bệnh nhân trên HIS
+    const first = rows[0];
+    const maHIS = String(first.maHIS || "").trim();
+    const hoTenHIS = String(first.Hoten || "").trim();
+    const namSinhHIS = String(first.Namsinh || "").trim();
+
+    // Kiểm tra xem có bản ghi mổ/phẫu thuật nào không
+    // Ưu tiên bản ghi có Ngaymo trong tháng yêu cầu (nếu có monthStr)
+    let surgeryRow = null;
+    if (monthStr) {
+      // monthStr dạng YYYY-MM hoặc MM/YYYY
+      const parts = monthStr.split(/[-/]/);
+      let targetYear = "";
+      let targetMonth = "";
+      if (parts[0].length === 4) {
+        targetYear = parts[0];
+        targetMonth = parts[1].padStart(2, "0");
+      } else if (parts[1]?.length === 4) {
+        targetYear = parts[1];
+        targetMonth = parts[0].padStart(2, "0");
+      }
+
+      surgeryRow = rows.find((r) => {
+        if (!r.Ngaymo) return false;
+        const d = new Date(r.Ngaymo);
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const y = String(d.getFullYear());
+        return (!targetYear || y === targetYear) && (!targetMonth || m === targetMonth);
+      });
+    }
+
+    // Nếu không khớp chính xác tháng, lấy bản ghi mổ mới nhất (nếu có)
+    if (!surgeryRow) {
+      surgeryRow = rows.find((r) => r.Ngaymo != null);
+    }
+
+    const hasSurgery = Boolean(surgeryRow && surgeryRow.Ngaymo);
+    const targetRow = surgeryRow || first;
+
+    const ngayMo = targetRow.Ngaymo ? new Date(targetRow.Ngaymo).toISOString() : null;
+    const khoaMo = targetRow.khoaMo || null;
+    const chanDoan = targetRow.chanDoanRavien || targetRow.chanDoanVaovien || targetRow.chanDoanBM || null;
+    const bsDieutri = targetRow.BsDieutri || null;
+
+    let chiTiet = `Bệnh nhân: ${hoTenHIS} (Mã HIS: ${maHIS}, NS: ${namSinhHIS})`;
+    if (hasSurgery && ngayMo) {
+      const dStr = new Date(ngayMo).toLocaleDateString("vi-VN");
+      chiTiet += ` - Đã phẫu thuật ngày ${dStr} tại Khoa ${khoaMo || "KMTH"}`;
+      if (chanDoan) chiTiet += ` (CĐ: ${chanDoan})`;
+    } else {
+      chiTiet += ` - Chưa ghi nhận lịch sử phẫu thuật trên HIS.`;
+    }
+
+    return {
+      found: true,
+      maHIS,
+      hoTenHIS,
+      namSinhHIS,
+      hasSurgery,
+      ngayMo,
+      khoaMo,
+      chanDoan,
+      bsDieutri,
+      chiTiet,
+    };
+  } catch (err: any) {
+    console.error("HIS Connection Error:", err);
+    return {
+      found: false,
+      error: `Lỗi kết nối HIS (${config.host}): ${err?.message || "Không xác định"}`,
+    };
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+      } catch {}
+    }
+  }
+}
+
+export async function batchCheckHISForPatients(
+  coSoId: string,
+  patients: Array<{
+    id: string;
+    hoTen: string;
+    namSinh: number | string;
+    cccd?: string | null;
+    bhyt?: string | null;
+    buoiKham?: { ngayKham: Date | string } | null;
+    nhom?: string | null;
+    khuyenNghi?: string | null;
+    ghiChuMat2?: string | null;
+    daDon?: boolean;
+    trangThaiDieuTri?: string | null;
+    ngayMoThucTe?: Date | string | null;
+  }>,
+  monthStr?: string | null
+) {
+  const config = await getHisConfig(coSoId);
+  const dbConfig: sql.config = {
+    user: config.user,
+    password: config.pass,
+    server: config.host,
+    port: config.port,
+    database: config.dbName,
+    options: { encrypt: true, trustServerCertificate: true },
+    connectionTimeout: 5000,
+    requestTimeout: 30000,
+  };
+
+  let pool: sql.ConnectionPool | null = null;
+  const results = [];
+  try {
+    pool = await new sql.ConnectionPool(dbConfig).connect();
+    const prisma = getPrisma();
+
+    for (const p of patients) {
+      try {
+        const hoTenClean = p.hoTen.trim();
+        const namSinhStr = String(p.namSinh).trim();
+        const cccdClean = p.cccd?.trim() || "";
+        const mStr = monthStr || (p.buoiKham?.ngayKham ? new Date(p.buoiKham.ngayKham).toISOString().slice(0, 7) : null);
+
+        const query = `
+          SELECT TOP 5
+            c.Ma as maHIS, c.Hoten, c.Namsinh, c.CMND, c.Dienthoai,
+            mo.Ngaymo, mo.Khoa as khoaMo,
+            hsba.Chandoan_Ravien as chanDoanRavien, hsba.Chandoan_Vaovien as chanDoanVaovien,
+            hsba.Ngayvao, hsba.Ngayra, bm.BsDieutri, bm.ChandoanChinh as chanDoanBM
+          FROM QLyCapThe c
+          LEFT JOIN QLyPhongMo mo ON c.Ma = mo.MaBenhnhan
+          LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
+          LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
+          WHERE (c.CMND = @cccd AND @cccd <> '')
+             OR (LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)
+          ORDER BY mo.Ngaymo DESC, hsba.Ngayvao DESC
+        `;
+        const req = pool.request();
+        req.input("cccd", sql.NVarChar, cccdClean);
+        req.input("hoTen", sql.NVarChar, hoTenClean);
+        req.input("namSinh", sql.NVarChar, namSinhStr);
+
+        const res = await req.query(query);
+        const rows = res.recordset;
+
+        if (!rows || rows.length === 0) {
+          results.push({ id: p.id, hoTen: p.hoTen, found: false });
+          continue;
+        }
+
+        const first = rows[0];
+        const maHIS = String(first.maHIS || "").trim();
+        const hoTenHIS = String(first.Hoten || "").trim();
+        const namSinhHIS = String(first.Namsinh || "").trim();
+
+        let surgeryRow = null;
+        if (mStr) {
+          const parts = mStr.split(/[-/]/);
+          let targetYear = "", targetMonth = "";
+          if (parts[0].length === 4) { targetYear = parts[0]; targetMonth = parts[1].padStart(2, "0"); }
+          else if (parts[1]?.length === 4) { targetYear = parts[1]; targetMonth = parts[0].padStart(2, "0"); }
+
+          surgeryRow = rows.find((r) => {
+            if (!r.Ngaymo) return false;
+            const d = new Date(r.Ngaymo);
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const y = String(d.getFullYear());
+            return (!targetYear || y === targetYear) && (!targetMonth || m === targetMonth);
+          });
+        }
+        if (!surgeryRow) surgeryRow = rows.find((r) => r.Ngaymo != null);
+
+        const hasSurgery = Boolean(surgeryRow && surgeryRow.Ngaymo);
+        const targetRow = surgeryRow || first;
+        const ngayMo = targetRow.Ngaymo ? new Date(targetRow.Ngaymo).toISOString() : null;
+        const khoaMo = targetRow.khoaMo || null;
+        const chanDoan = targetRow.chanDoanRavien || targetRow.chanDoanVaovien || targetRow.chanDoanBM || null;
+
+        let chiTiet = `Bệnh nhân: ${hoTenHIS} (Mã HIS: ${maHIS}, NS: ${namSinhHIS})`;
+        if (hasSurgery && ngayMo) {
+          const dStr = new Date(ngayMo).toLocaleDateString("vi-VN");
+          chiTiet += ` - Đã phẫu thuật ngày ${dStr} tại Khoa ${khoaMo || "KMTH"}`;
+          if (chanDoan) chiTiet += ` (CĐ: ${chanDoan})`;
+        } else {
+          chiTiet += ` - Chưa ghi nhận lịch sử phẫu thuật trên HIS.`;
+        }
+
+        // Cập nhật DB
+        const updateData: any = { maBNHIS: maHIS };
+        if (hasSurgery) {
+          if (p.nhom === "A" || p.khuyenNghi === "Phẫu thuật" || !p.nhom) {
+            updateData.daDon = true;
+            updateData.trangThaiDieuTri = "Đã mổ";
+            updateData.trangThai = "DaMoHauPhau";
+            if (ngayMo) updateData.ngayMoThucTe = new Date(ngayMo);
+            else if (!p.ngayMoThucTe) updateData.ngayMoThucTe = new Date();
+          }
+          updateData.followUpStatus = "Đã chốt";
+          if (chiTiet) {
+            updateData.ghiChuMat2 = appendHisNote(p.ghiChuMat2, chiTiet);
+          }
+        }
+
+        await prisma.hoSoBenhNhan.update({
+          where: { id: p.id },
+          data: updateData,
+        });
+
+        // Xoá rác nhật ký liên hệ
+        await prisma.nhatKyTheoDoi.deleteMany({
+          where: { hoSoId: p.id, noiDung: { startsWith: "[⚡ Đối chiếu HIS]" } },
+        });
+
+        try {
+          await prisma.syncQueue.create({ data: { hoSoId: p.id } });
+        } catch {}
+
+        results.push({ id: p.id, hoTen: p.hoTen, found: true, maHIS, hasSurgery, chiTiet });
+      } catch (e: any) {
+        results.push({ id: p.id, hoTen: p.hoTen, found: false, error: e?.message || "Lỗi khi tra cứu BN này" });
+      }
+    }
+    triggerSync();
+  } catch (err: any) {
+    console.error("Batch HIS Connection Error:", err);
+    throw new Error(`Lỗi kết nối HIS (${config.host}): ${err?.message || "Không xác định"}`);
+  } finally {
+    if (pool) {
+      try { await pool.close(); } catch {}
+    }
+  }
+  return results;
+}
+
+export async function getHISSurgeryList(coSoId: string, monthStr?: string | null) {
+  const config = await getHisConfig(coSoId);
+  const dbConfig: sql.config = {
+    user: config.user,
+    password: config.pass,
+    server: config.host,
+    port: config.port,
+    database: config.dbName,
+    options: { encrypt: true, trustServerCertificate: true },
+    connectionTimeout: 5000,
+    requestTimeout: 20000,
+  };
+
+  let pool: sql.ConnectionPool | null = null;
+  try {
+    pool = await new sql.ConnectionPool(dbConfig).connect();
+
+    let monthFilter = "";
+    const req = pool.request();
+    if (monthStr) {
+      const parts = monthStr.split(/[-/]/);
+      let targetYear = "", targetMonth = "";
+      if (parts[0].length === 4) { targetYear = parts[0]; targetMonth = parts[1]; }
+      else if (parts[1]?.length === 4) { targetYear = parts[1]; targetMonth = parts[0]; }
+      if (targetYear && targetMonth) {
+        req.input("yr", sql.Int, parseInt(targetYear, 10));
+        req.input("mo", sql.Int, parseInt(targetMonth, 10));
+        monthFilter = " AND YEAR(mo.Ngaymo) = @yr AND MONTH(mo.Ngaymo) = @mo";
+      }
+    }
+
+    const query = `
+      SELECT TOP 500
+        c.Ma as maHIS,
+        c.Hoten as hoTen,
+        c.Namsinh as namSinh,
+        c.CMND as cccd,
+        c.Dienthoai as sdt,
+        mo.Ngaymo as ngayMo,
+        mo.Khoa as khoaMo,
+        hsba.Chandoan_Ravien as chanDoanRavien,
+        hsba.Chandoan_Vaovien as chanDoanVaovien,
+        bm.BsDieutri as bsDieuTri,
+        bm.ChandoanChinh as chanDoanBM
+      FROM QLyPhongMo mo
+      JOIN QLyCapThe c ON mo.MaBenhnhan = c.Ma
+      LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
+      LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
+      WHERE mo.Ngaymo IS NOT NULL ${monthFilter}
+      ORDER BY mo.Ngaymo DESC
+    `;
+
+    const res = await req.query(query);
+    const rows = res.recordset || [];
+
+    return rows.map((r: any) => ({
+      maHIS: String(r.maHIS || "").trim(),
+      hoTen: String(r.hoTen || "").trim(),
+      namSinh: String(r.namSinh || "").trim(),
+      cccd: String(r.cccd || "").trim(),
+      sdt: String(r.sdt || "").trim(),
+      ngayMo: r.ngayMo ? new Date(r.ngayMo).toISOString() : null,
+      khoaMo: r.khoaMo || "KMTH",
+      chanDoan: r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || "",
+      bsDieuTri: r.bsDieuTri || "",
+    }));
+  } catch (err: any) {
+    console.error("HIS Surgery List Error:", err);
+    throw new Error(`Lỗi lấy danh sách mổ HIS (${config.host}): ${err?.message || "Không xác định"}`);
+  } finally {
+    if (pool) {
+      try { await pool.close(); } catch {}
+    }
+  }
+}
