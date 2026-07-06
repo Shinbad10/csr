@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  web:
+    image: ghcr.io/shinbad10/csr:latest
+    container_name: csr_runner
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    volumes:
+      - ./public:/app/public
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3008
+      - AUTH_TRUST_HOST=true
