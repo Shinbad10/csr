@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Lock, User, Eye, EyeOff, Sparkles, ChevronRight } from "lucide-react";
+import { Lock, User, Eye, EyeOff, Sparkles, ChevronRight, Building2 } from "lucide-react";
+import { getActiveFacilities, setSelectedFacilityCookie } from "./actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +16,19 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [remember, setRemember] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
+
+  const [showFacilityModal, setShowFacilityModal] = useState(false);
+  const [facilities, setFacilities] = useState<{id: string, ten: string}[]>([]);
+  const [selectedFacility, setSelectedFacility] = useState("");
+
+  useEffect(() => {
+    getActiveFacilities().then(data => {
+      setFacilities(data);
+      if (data.length > 0) {
+        setSelectedFacility(data[0].id);
+      }
+    });
+  }, []);
 
   const handleLogin = useCallback(
     async (e: React.FormEvent) => {
@@ -38,18 +52,31 @@ export default function LoginPage() {
         const res = await signIn("credentials", { username, password, redirect: false });
         if (res?.error) {
           setError("Tên đăng nhập hoặc mật khẩu không chính xác.");
+          setIsLoading(false);
         } else {
-          router.push("/");
-          router.refresh();
+          if (facilities.length > 0) {
+            setShowFacilityModal(true);
+            setIsLoading(false);
+          } else {
+            router.push("/");
+            router.refresh();
+          }
         }
       } catch {
         setError("Không thể kết nối máy chủ xác thực");
-      } finally {
         setIsLoading(false);
       }
     },
-    [username, password, isLoading, router]
+    [username, password, isLoading, router, facilities]
   );
+
+  const handleConfirmFacility = async () => {
+    if (!selectedFacility) return;
+    setIsLoading(true);
+    await setSelectedFacilityCookie(selectedFacility);
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[var(--surface-bg)] relative overflow-hidden font-sans p-4 sm:p-6 lg:p-12">
@@ -237,6 +264,63 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Chọn Cơ Sở */}
+      {showFacilityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--ink)]/40 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-[var(--r-xl)] shadow-[var(--shadow-xl)] overflow-hidden animate-slide-up relative">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--navy)] via-[var(--teal)] to-[var(--navy)]" />
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-[10px] bg-[var(--surface-soft)] flex items-center justify-center text-[var(--teal)]">
+                  <Building2 size={20} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-xl text-[var(--ink)]">Chọn cơ sở</h3>
+                  <p className="text-[12px] text-[var(--mute)]">Vui lòng chọn cơ sở làm việc hiện tại</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {facilities.map((f) => (
+                  <label
+                    key={f.id}
+                    className={`flex items-center gap-3 p-3.5 rounded-[var(--r-md)] border-2 cursor-pointer transition-all ${
+                      selectedFacility === f.id
+                        ? "border-[var(--navy)] bg-[var(--surface-bg)]"
+                        : "border-[var(--line-soft)] hover:border-[var(--line-strong)]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="facility"
+                      value={f.id}
+                      checked={selectedFacility === f.id}
+                      onChange={(e) => setSelectedFacility(e.target.value)}
+                      className="w-4 h-4 text-[var(--navy)] border-[var(--line-strong)] focus:ring-[var(--navy-100)]"
+                    />
+                    <span className="font-medium text-[13.5px] text-[var(--ink)]">{f.ten}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-8 flex gap-3">
+                <button
+                  onClick={handleConfirmFacility}
+                  disabled={!selectedFacility || isLoading}
+                  className="flex-1 py-3 px-4 rounded-[var(--r-md)] font-bold text-[13px] uppercase tracking-[0.1em] text-white bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] active:scale-[0.99] transition-all duration-200 disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Truy cập"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

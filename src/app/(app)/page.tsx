@@ -58,7 +58,7 @@ export default function Dashboard() {
   return (
     <div>
       <PageHeader
-        title={<>Xin chào, <span className="italic text-[var(--teal-deep)]">{session?.user?.name || "bạn"}</span></>}
+        title={<>Xin chào,<span className="italic text-[var(--teal-deep)] ml-1.5">{session?.user?.name || "bạn"}</span></>}
         description="Tổng quan hoạt động của cơ sở đang làm việc."
         guideTitle="Bảng điều khiển"
         guide={[

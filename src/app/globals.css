@@ -129,7 +129,7 @@ a[class*="group"] {
 }
 
 /* ── Smooth focus rings ──────────────────────────────────── */
-*:focus-visible {
+*:focus-visible:not(input):not(textarea):not(select):not(.input-field) {
   outline: 2px solid var(--navy);
   outline-offset: 2px;
   border-radius: var(--r-sm);
@@ -156,5 +156,23 @@ a[class*="group"] {
 
   .input-field {
     @apply w-full rounded-[var(--r-md)] border border-[var(--line)] bg-white px-3 py-2 text-[14px] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)];
+  }
+
+  /* Vùng cuộn ngang (tab, bảng): ẩn thanh cuộn nhưng vẫn cuộn được. */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Cảm ứng: cuộn ngang trong bảng không kéo lệch cả trang. */
+@media (max-width: 1023px) {
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
   }
 }

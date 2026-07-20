@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, Shield, Phone, CreditCard, MapPin, User, Users, Pencil, CalendarDays } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { BHYT, NHOM, parseDiag, ageOf, fmtDate, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
-import { Dropdown, Select, DateField, ChoiceRow, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
+import { BHYT, NHOM, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
+import { Dropdown, Select, DateField, ChoiceRow, StatusBadge, labelCls, Combobox, SectionHeader } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 
@@ -39,12 +39,12 @@ export default function TuVanSessionPage() {
   const [selBk, setSelBk] = useState<string>("");
   const [showBkModal, setShowBkModal] = useState(true);
   const [bkSearch, setBkSearch] = useState("");
-  const bkLabels = useMemo(() => Object.fromEntries(bks.map((b) => [b.id, `${fmtDate(b.ngayKham)} · ${b.xa}`])), [bks]);
+  const bkLabels = useMemo(() => Object.fromEntries(bks.map((b) => [b.id, `${fmtDate(b.ngayKham)} · ${fmtBuoiKhamName(b)}`])), [bks]);
 
   const filteredBks = useMemo(() => {
     if (!bkSearch.trim()) return bks;
     const q = bkSearch.toLowerCase();
-    return bks.filter(b => b.id.toLowerCase().includes(q) || b.xa.toLowerCase().includes(q) || (b.diaDiem && b.diaDiem.toLowerCase().includes(q)));
+    return bks.filter(b => b.id.toLowerCase().includes(q) || b.xa.toLowerCase().includes(q) || (b.diaDiem && b.diaDiem.toLowerCase().includes(q)) || (b.ghiChu && b.ghiChu.toLowerCase().includes(q)));
   }, [bks, bkSearch]);
 
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
@@ -132,13 +132,12 @@ export default function TuVanSessionPage() {
         ]}
         guideTip={'Dùng bộ lọc để xem riêng bệnh nhân "Chưa phân nhóm" hoặc "Đã phân nhóm".'}
         actions={
-          <div className="flex items-center gap-3">
-            <button data-tour="tv-bk" onClick={() => setShowBkModal(true)} className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)]">
-              <CalendarDays className="w-4 h-4 text-[var(--navy)]" />
+          <button data-tour="tv-bk" onClick={() => setShowBkModal(true)} className="btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold min-h-[32px] rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)] text-left">
+            <CalendarDays className="w-4 h-4 shrink-0 text-[var(--navy)]" />
+            <span>
               {selBk ? bkLabels[selBk] : "Chọn đợt khám..."}
-            </button>
-            <button onClick={() => setShowList(true)} className="lg:hidden btn btn-secondary px-3 py-1.5 text-[12.5px] font-semibold h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-1.5 text-[var(--navy)]"><Users className="w-4 h-4" /> Bệnh nhân <span className="bg-[var(--rose)] text-white text-[10px] px-1.5 rounded-full">{patients.length}</span></button>
-          </div>
+            </span>
+          </button>
         }
       />
 
@@ -175,7 +174,7 @@ export default function TuVanSessionPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
+                    <span className="font-bold text-[15px] truncate text-[var(--ink)]" title={fmtBuoiKhamName(b)}>{fmtBuoiKhamName(b)}</span>
                     <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{b.id}</span>
                   </div>
                   <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
@@ -195,6 +194,18 @@ export default function TuVanSessionPage() {
           )}
         </div>
       </Modal>
+
+      {/* Nút FAB Bệnh nhân trên mobile */}
+      <button
+        onClick={() => setShowList(true)}
+        className="xl:hidden fixed bottom-20 right-4 z-[900] w-14 h-14 rounded-full bg-[var(--navy)] text-white shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex items-center justify-center border-2 border-white/20 hover:scale-105 active:scale-95 transition-all group"
+        title="Danh sách bệnh nhân"
+      >
+        <Users className="w-6 h-6 text-[var(--teal)] group-hover:scale-110 transition-transform" />
+        <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1.5 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-full flex items-center justify-center shadow-md border-2 border-white">
+          {patients.length}
+        </span>
+      </button>
 
       <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-t border-[var(--line)] overflow-y-auto xl:overflow-hidden relative">
         {/* Backdrop */}
@@ -232,18 +243,18 @@ export default function TuVanSessionPage() {
                   const active = selId === p.id; return (
                 <button key={p.id} onClick={() => { pick(p); if (window.innerWidth < 1024) setShowList(false); }} className={`w-full text-left rounded-[var(--r-md)] border px-3 py-2.5 transition-all duration-150 ${active ? "border-[var(--teal)] bg-[var(--teal-soft)] shadow-[0_0_0_1px_var(--teal)]" : "border-[var(--line)] bg-white hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)]"}`}>
                       <div className="flex items-center justify-between gap-2"><span className="text-[13.5px] font-bold text-[var(--ink)] truncate">{p.stt}. {p.hoTen}</span><span className="font-mono text-[11px] font-bold text-[var(--teal-deep)] shrink-0">{p.maBN.split("-").pop()}</span></div>
-                      <div className="text-[11px] text-[var(--mute)] mt-0.5 truncate">{p.gioiTinh} · {ageOf(p)}t {p.buoiKham?.xa ? `· Xã ${p.buoiKham.xa}` : ""}</div>
+                      <div className="text-[11px] text-[var(--mute)] mt-0.5 truncate">{p.gioiTinh} · {ageOf(p)}t {p.buoiKham ? `· ${fmtBuoiKhamName(p.buoiKham)}` : ""}</div>
                       <div className="flex items-center gap-1.5 mt-1.5"><StatusBadge label={statusOf(p.trangThai).label} cls={statusOf(p.trangThai).cls} sm />{p.nhom && !p.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${p.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />}</div>
                     </button>);
                 })}
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-white">
+        <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-[var(--surface-bg)]">
           {selected ? (<>
             <div className="flex-1 overflow-y-auto pb-32">
               {/* COMPACT PATIENT HEADER STRIP (FULL INFO - NO TRUNCATION) */}
-              <div className="bg-[var(--surface-soft)] border-b border-[var(--line)] px-5 py-3 shrink-0 flex flex-col gap-2">
+              <div className="bg-[var(--surface-soft)] border-b border-[var(--line)] px-5 py-3 shrink-0 flex flex-col gap-2 shadow-sm">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <h2 className="font-serif font-bold text-[19px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
@@ -286,26 +297,38 @@ export default function TuVanSessionPage() {
               </div>
 
               {/* --- Consultation Form --- */}
-              <div className="px-6 py-6">
-                <div className="flex items-center gap-2 mb-6">
-                  <UserCog className="w-4 h-4" /><h3 className="font-bold text-[13px] uppercase tracking-wide">Tư vấn & Phân nhóm</h3>
-                </div>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <div data-tour="tv-nhom">
-                      <label className={labelCls}>2.1 Chọn nhóm</label>
-                      <ChoiceRow options={NHOM} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly} />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Số tiền dự kiến</label>
-                      <input disabled={readOnly} inputMode="numeric" value={f.soTienBao} onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 5000000" />
+              <div className="p-5 space-y-5">
+                <div className="card p-0">
+                  <SectionHeader n={1} accent="Tư vấn & Phân nhóm" />
+                  <div className="p-5 space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                      <div data-tour="tv-nhom">
+                        <label className={labelCls}>Chọn nhóm</label>
+                        <ChoiceRow options={NHOM} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Số tiền dự kiến</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mute)] font-bold">đ</span>
+                          <input disabled={readOnly} inputMode="numeric" 
+                            value={f.soTienBao ? new Intl.NumberFormat("vi-VN").format(Number(f.soTienBao)) : ""} 
+                            onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))} 
+                            className="input-field font-mono font-bold text-[var(--teal-deep)] pl-8 pr-14" 
+                            placeholder="VD: 5.000.000" />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--mute)] text-[10px] font-bold uppercase bg-[var(--surface-soft)] px-1.5 py-0.5 rounded border border-[var(--line-soft)]">VND</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div data-tour="tv-lich" className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <DateField disabled={readOnly} label="2.2 Ngày điều trị" value={f.ngayHen} onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))} min={tomorrowISO()} />
-                    <Select disabled={readOnly} label="2.3 Giờ đón (dự kiến)" value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} opts={TIME_OPTS} placeholder="Chọn giờ…" />
+                </div>
+
+                <div className="card p-0">
+                  <SectionHeader n={2} accent="Lịch trình & Đưa đón" />
+                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4" data-tour="tv-lich">
+                    <DateField disabled={readOnly} label="Ngày điều trị" value={f.ngayHen} onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))} min={tomorrowISO()} />
+                    <Select disabled={readOnly} label="Giờ đón (dự kiến)" value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} opts={TIME_OPTS} placeholder="Chọn giờ…" />
                     <div className="md:col-span-2">
-                      <label className={labelCls}>2.4 Điểm đón</label>
+                      <label className={labelCls}>Điểm đón</label>
                       <Combobox disabled={readOnly} value={f.diemDon} onChange={(v) => setF((s) => ({ ...s, diemDon: v }))} options={uniqueDiemDon} placeholder="Chọn hoặc nhập điểm đón…" />
                     </div>
                   </div>

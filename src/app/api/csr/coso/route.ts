@@ -25,8 +25,16 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!can(session.user.role, "admin.masterdata")) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   try {
-    const { id, ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName } = await request.json();
+    const { id, ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName, cauHinhTruong } = await request.json();
     if (!id || !ten) return NextResponse.json({ error: "Thiếu mã hoặc tên cơ sở" }, { status: 400 });
+    if (cauHinhTruong) {
+      try {
+        const parsed = JSON.parse(cauHinhTruong);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+      } catch {
+        return NextResponse.json({ error: "Cấu hình trường không hợp lệ" }, { status: 400 });
+      }
+    }
     const data = await getPrisma().coSo.create({
       data: {
         id: id.trim(),
@@ -42,6 +50,7 @@ export async function POST(request: Request) {
         hisUser: hisUser?.trim() || null,
         hisPass: hisPass?.trim() || null,
         hisDbName: hisDbName?.trim() || null,
+        cauHinhTruong: cauHinhTruong || null,
       },
     });
     await audit(session.user.id, "CoSo", data.id, "them", { ten });

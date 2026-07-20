@@ -1,7 +1,7 @@
 // UC-10 / BR-15 — Rút hàng đợi SyncQueue và đẩy lên Google Sheet.
 // Gọi 2 nơi: fire-and-forget ngay sau mỗi ghi (cảm giác real-time) và cron dự phòng.
 import { getPrisma } from "./prisma";
-import { syncHoSo, sheetEnabled } from "./googleSheet";
+import { syncHoSo, batchSyncHoSos, sheetEnabled } from "./googleSheet";
 
 const MAX_RETRIES = 5; // quá ngưỡng → bỏ khỏi hàng đợi, ghi log để xử lý tay
 let running = false;    // khoá tránh nhiều lần drain chồng nhau (fire-and-forget liên tục)
@@ -30,6 +30,19 @@ export async function drainSyncQueue(limit = 50): Promise<DrainResult> {
       g.ids.push(r.id);
       g.retries = Math.max(g.retries, r.retries);
       byHoSo.set(r.hoSoId, g);
+    }
+
+    if (byHoSo.size > 1) {
+      // Đồng bộ theo lô tốc độ cao (2 request API thay vì 2N request)
+      const hoSoIds = Array.from(byHoSo.keys());
+      const allIds = rows.map((r) => r.id);
+      const res = await batchSyncHoSos(hoSoIds);
+      if (res.failed === 0) {
+        await prisma.syncQueue.deleteMany({ where: { id: { in: allIds } } });
+        processed += res.processed;
+        return { processed, failed };
+      }
+      // Nếu lô có lỗi, rơi xuống xử lý từng hồ sơ bên dưới để retry/ghi nhận lỗi chính xác
     }
 
     for (const [hoSoId, g] of byHoSo) {

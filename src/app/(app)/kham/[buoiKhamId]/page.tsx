@@ -1,28 +1,55 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import {
   Loader2, Search, UserPlus, SlidersHorizontal, RefreshCw, Check, Printer,
   LogOut, X, ScanLine, Save, ClipboardList, Pencil, Users,
-  MapPin, Shield, Camera,
+  MapPin, Shield, Camera, AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import {
-  CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtTime, bhytLevel, statusOf, type HoSo,
+  CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, statusOf, type HoSo,
 } from "@/lib/csr";
+import {
+  BENH_SU_OPTIONS, BENH_LY_OPTIONS, LOAI_BENH_LY_OPTIONS, HUONG_XU_TRI, MUC_HUONG_BHYT,
+  huongXuTriToKhuyenNghi, parseFieldConfig, isFieldOn, type FieldConfig,
+} from "@/lib/formFields";
 import { type ThongTinTheBHYT } from "@/lib/bhxh";
+import { DoctorAutocomplete } from "@/components/csr/DoctorAutocomplete";
 import { Field, Select, ChoiceRow, PillGroup, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { CameraScannerModal } from "@/components/csr/CameraScannerModal";
+import { BarcodeScannerInput } from "@/components/csr/BarcodeScannerInput";
 import { Skeleton3Column, SkeletonList, SkeletonForm } from "@/components/layout/Skeleton";
 
-interface BuoiKham { id: string; coSoId: string; coSo?: { ten: string }; ngayKham: string; xa: string; diaDiem: string; ghiChu?: string | null }
+interface BuoiKham { id: string; coSoId: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null }; ngayKham: string; xa: string; diaDiem: string; bacSiKham?: string | null; ghiChu?: string | null }
 
-const EMPTY = { thiLucMP: "", thiLucMT: "", chanDoan: [] as string[], chanDoanKhac: "", khuyenNghi: "", sdt: "", nhom: "" };
+const CO_KHONG = ["Có", "Không"];
+/** Boolean? ⇄ "Có" / "Không" / "" cho ChoiceRow */
+const boolToChoice = (v?: boolean | null) => (v == null ? "" : v ? "Có" : "Không");
+const choiceToBool = (v: string) => (v === "" ? null : v === "Có");
+const mucHuongFromThe = (bhyt?: string | null) => {
+  const n = parseInt(bhytLevel(bhyt), 10);
+  return Number.isFinite(n) ? String(n) : "";
+};
+
+const EMPTY = {
+  thiLucMP: "", thiLucMT: "", chanDoan: [] as string[], chanDoanKhac: "", khuyenNghi: "", sdt: "", nhom: "",
+  // Phiếu khám sàng lọc nhãn khoa
+  benhSu: "", loaiBenhSu: [] as string[],
+  chieuCao: "", canNang: "",
+  benhLy: "", loaiBenhLy: [] as string[], loaiBenhLyKhac: "",
+  huongXuTri: "", huongXuTriKhac: "",
+  // Bác sỹ chỉ định & Điểm khám lấy từ đợt khám hoặc chọn qua autocomplete
+  bacSiChiDinh: "",
+  nhanVienTuVan: "",
+  xacNhanDieuTri: "", lyDoKhongDieuTri: "",
+  ngayDieuTri: "",
+};
 
 function applyBhxhDataToForm(
   the: ThongTinTheBHYT,
@@ -52,7 +79,7 @@ function applyBhxhDataToForm(
 }
 
 // ── Modal tiếp nhận: quét thẻ BHYT / CCCD / VNeID ──────────────────────────
-function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; onClose: () => void; onCreated: (p: HoSo) => void }) {
+function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKham; cfg: FieldConfig; onClose: () => void; onCreated: (p: HoSo) => void }) {
   const [hoTen, setHoTen] = useState("");
   const [bhyt, setBhyt] = useState("");
   const [gioiTinh, setGioiTinh] = useState("");
@@ -60,10 +87,14 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
   const [ngaySinh, setNgaySinh] = useState("");
   const [sdt, setSdt] = useState("");
   const [diaChi, setDiaChi] = useState("");
+  const [khuPho, setKhuPho] = useState("");
+  const [xaPhuong, setXaPhuong] = useState("");
+  const [mucHuong, setMucHuong] = useState("");
   const [scan, setScan] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [dupWarning, setDupWarning] = useState<string | null>(null);
   const [lookup, setLookup] = useState<"idle" | "loading" | "ok" | "fail">("idle");
   const [lookupMsg, setLookupMsg] = useState("");
   const [theBhyt, setTheBhyt] = useState<ThongTinTheBHYT | null>(null);
@@ -95,43 +126,83 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
     if (!target) return;
     const p = target.split("|").map((s) => s.trim());
     if (p.length >= 6) {
-      const cccdV = p[0] || "", tenV = p[2] || "";
+      const cccdV = (p[0] || "").replace(/\D/g, "").slice(0, 12), tenV = p[2] || "";
+      // Ngày sinh trên QR CCCD/VNeID: chuẩn BCA là ddmmyyyy (8 số), nhưng một số đầu đọc trả dd/mm/yyyy hoặc chỉ yyyy
+      const dobRaw = (p[3] || "").replace(/\s/g, "");
       let dobIso = "";
-      if (/^\d{8}$/.test(p[3])) dobIso = `${p[3].slice(4)}-${p[3].slice(2, 4)}-${p[3].slice(0, 2)}`;
+      if (/^\d{8}$/.test(dobRaw)) dobIso = `${dobRaw.slice(4)}-${dobRaw.slice(2, 4)}-${dobRaw.slice(0, 2)}`;
+      else if (/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.test(dobRaw)) {
+        const [, d, m, y] = dobRaw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)!;
+        dobIso = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      } else if (/^\d{4}$/.test(dobRaw)) dobIso = `${dobRaw}-01-01`;
       setCccd(cccdV); setHoTen(tenV); if (dobIso) setNgaySinh(dobIso);
-      setGioiTinh(/n[ữu]/i.test(p[4]) ? "Nữ" : "Nam");
+      // Giới tính trên thẻ: "Nam" / "Nữ"; chỉ khi khớp "Nữ" mới là Nữ, còn lại mặc định Nam
+      setGioiTinh(/n[ữu]/i.test(p[4] || "") ? "Nữ" : "Nam");
       setDiaChi(p[5] || ""); setScan("");
       if (cccdV && tenV) lookupBhxh(cccdV, tenV, dobIso); // Tự động tra cứu BHYT luôn ngay sau khi quét CCCD
     } else if (/^[A-Za-z]{2}\d/.test(target)) {
       const maV = target.toUpperCase();
       setBhyt(maV); setScan("");
       if (hoTen || cccd) lookupBhxh(maV, hoTen || cccd, ngaySinh);
+    } else if (/^\d{9,12}$/.test(target)) {
+      const cccdV = target.replace(/\D/g, "").slice(0, 12);
+      setCccd(cccdV); setScan("");
+      if (hoTen) lookupBhxh(cccdV, hoTen, ngaySinh);
     } else {
-      setCccd(target); setScan("");
-      if (target.length === 12 && hoTen) lookupBhxh(target, hoTen, ngaySinh);
+      // Chuỗi quét rác hoặc địa chỉ bị ngắt dở -> bỏ qua, tuyệt đối không ghi đè vào Số CCCD
+      setScan("");
+      return;
     }
   }, [scan, hoTen, cccd, ngaySinh]);
 
-  // Tự động nhận diện & mapping khi chuỗi QR được nhập đủ (từ máy quét mã vạch hoặc paste, không cần phím Enter)
-  useEffect(() => {
-    if (!scan || !scan.trim()) return;
-    const str = scan.trim();
-    const p = str.split("|").map((s) => s.trim());
+  const handleCccdChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setCccd(val.replace(/\D/g, "").slice(0, 12));
+  };
+  const handleHoTenChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setHoTen(val);
+  };
+  const handleBhytChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setBhyt(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15));
+    setLookup("idle"); setTheBhyt(null);
+  };
+  const handleSdtChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setSdt(val.replace(/[^0-9\s.+]/g, "").slice(0, 15));
+  };
+  const handleDiaChiChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setDiaChi(val);
+  };
 
-    // 1. Nếu là mã CCCD / VNeID (phát hiện có phân cách | và ít nhất 6 trường, CCCD đủ 12 số)
-    if (p.length >= 6 && /^\d{12}$/.test(p[0])) {
-      const timer = setTimeout(() => applyScan(str), 100);
-      return () => clearTimeout(timer);
-    }
-    // 2. Nếu là mã thẻ BHYT (đúng 15 ký tự gồm 2 chữ cái + 13 số, VD: DN4838321436964)
-    if (/^[A-Za-z]{2}\d{13}$/.test(str)) {
-      const timer = setTimeout(() => applyScan(str), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [scan, applyScan]);
+  const handleResetForm = () => {
+    setHoTen("");
+    setBhyt("");
+    setGioiTinh("Nam");
+    setCccd("");
+    setNgaySinh("");
+    setSdt("");
+    setDiaChi("");
+    setKhuPho("");
+    setXaPhuong("");
+    setMucHuong("");
+    setScan("");
+    setTheBhyt(null);
+    setLookup("idle");
+    setLookupMsg("");
+    setErr("");
+    setDupWarning(null);
+  };
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setErr("");
+  // Mức hưởng suy tự động từ mã thẻ mỗi khi thẻ đổi
+  useEffect(() => { const m = mucHuongFromThe(bhyt); if (m) setMucHuong(m); }, [bhyt]);
+
+  const submit = async (e?: React.FormEvent, forceCreate = false) => {
+    if (e) e.preventDefault();
+    setErr("");
+    if (!forceCreate) setDupWarning(null);
     if (!ngaySinh) { setErr("Vui lòng chọn ngày sinh"); return; }
     if (!gioiTinh) { setErr("Vui lòng chọn giới tính"); return; }
     setSaving(true);
@@ -140,11 +211,23 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           buoiKhamId: buoiKham.id, hoTen, gioiTinh, ngaySinh, cccd, bhyt, sdt, diaChi,
+          mucHuongBHYT: mucHuong || undefined,
+          khuPho: isFieldOn(cfg, "khuPho") ? khuPho : undefined,
+          xaPhuong: isFieldOn(cfg, "xaPhuong") ? xaPhuong : undefined,
           sdtNguoiNha: sdt ? undefined : "Chưa cung cấp",
+          forceCreate,
+          boQuaTrung: forceCreate,
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setErr(data.error || "Không thể lưu hồ sơ"); return; }
+      if (!res.ok) {
+        if (res.status === 409 || data.isDuplicate || (data.error && data.error.includes("Bệnh nhân đã có trong buổi khám"))) {
+          setDupWarning(data.error || "Bệnh nhân này đã có trong danh sách buổi khám hôm nay.");
+          return;
+        }
+        setErr(data.error || "Không thể lưu hồ sơ");
+        return;
+      }
       onCreated(data);
     } catch { setErr("Mất kết nối máy chủ"); }
     finally { setSaving(false); }
@@ -155,74 +238,23 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
       open={true}
       onClose={onClose}
       title={buoiKham.coSo?.ten || "Tiếp nhận bệnh nhân mới"}
-      subtitle={<span className="font-mono flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--teal-deep)] inline" /> {buoiKham.diaDiem} · Xã {buoiKham.xa}</span>}
+      subtitle={<span className="font-mono flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--teal-deep)] inline" /> {fmtBuoiKhamName(buoiKham)}</span>}
       icon={UserPlus}
       maxWidth="max-w-[760px]"
       noPadding
     >
-      <form onSubmit={submit} className="p-8 space-y-7 bg-white">
-        {/* QR Scanner Card */}
-        <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-[var(--navy)]/35 bg-gradient-to-br from-[var(--navy-50)]/60 via-[var(--surface-bg)] to-white p-4 shadow-sm transition-all focus-within:border-[var(--navy)] focus-within:ring-4 focus-within:ring-[var(--navy-100)]">
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setCameraOpen(true)}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] hover:from-[var(--navy-deep)] hover:to-[var(--navy)] text-white flex items-center justify-center shadow-md shadow-[var(--navy)]/20 shrink-0 ring-2 ring-white transition-all hover:scale-105 active:scale-95 group cursor-pointer"
-              title="Bấm để mở Camera quét mã QR"
-            >
-              <Camera className="w-6 h-6 text-[var(--teal)] animate-pulse group-hover:scale-110 transition-transform" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <input
-                value={scan}
-                onChange={(e) => setScan(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyScan(scan); } }}
-                placeholder="Quét mã QR trên thẻ BHYT / CCCD / VNeID (Tự động nhận diện & tra cứu)..."
-                className="w-full bg-transparent text-[14.5px] font-mono font-bold text-[var(--navy-deep)] placeholder:text-[var(--mute)]/80 placeholder:font-sans placeholder:font-medium outline-none"
-                autoFocus
-              />
-            </div>
-            {scan && (
-              <button
-                type="button"
-                onClick={() => setScan("")}
-                className="p-2 text-[var(--mute)] hover:text-[var(--ink)] rounded-lg hover:bg-black/5 transition-colors"
-                title="Xóa chuỗi quét"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setCameraOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[var(--navy)] text-white hover:bg-[var(--navy-deep)] transition-all flex items-center gap-1.5 font-bold text-[13px] shrink-0 shadow-sm hover:shadow"
-              title="Quét bằng camera (Mobile/Tablet/PC)"
-            >
-              <Camera className="w-4 h-4 text-[var(--teal)] shrink-0 animate-pulse" />
-              <span className="hidden sm:inline">Quét Camera</span>
-            </button>
-          </div>
-          {lookup === "loading" && (
-            <div className="mt-3.5 p-4 rounded-2xl bg-[var(--navy-50)]/70 border border-[var(--navy)]/20 space-y-3 animate-fade-in">
-              <div className="flex items-center gap-2.5 text-[13.5px] font-semibold text-[var(--navy)]">
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" /> {lookupMsg}
-              </div>
-              <SkeletonForm fields={4} cols={2} />
-            </div>
-          )}
-          {lookup === "fail" && (
-            <div className="mt-3.5 p-3 rounded-xl bg-[var(--rose-soft)] border border-[var(--rose)]/30 flex items-center justify-between text-[13.5px] font-semibold text-[var(--rose)] animate-fade-in">
-              <span className="flex items-center gap-2"><X className="w-4 h-4 shrink-0" /> {lookupMsg}</span>
-              <button type="button" onClick={() => lookupBhxh(scan || cccd || bhyt, hoTen, ngaySinh)} className="text-[12px] font-bold underline hover:no-underline">Thử lại</button>
-            </div>
-          )}
-          {lookup === "ok" && (
-            <div className="mt-3.5 p-3 rounded-xl bg-[var(--teal-soft)]/50 border border-[var(--teal)]/40 flex items-center justify-between text-[13.5px] font-semibold text-[var(--teal-deep)] animate-fade-in">
-              <span className="flex items-center gap-2"><Check className="w-4 h-4 shrink-0 stroke-[3]" /> {lookupMsg}</span>
-              {theBhyt && <span className="font-mono bg-[var(--teal)] text-white px-2.5 py-0.5 rounded-md text-[11.5px]">Mã: {theBhyt.maThe}</span>}
-            </div>
-          )}
-        </div>
+      <form onSubmit={submit} className="p-3.5 sm:px-5 sm:py-3 space-y-2.5 bg-[var(--surface-bg)]">
+        {/* QR Scanner Card (Đã cách ly re-render và chống nhảy tab Tiếng Việt) */}
+        <BarcodeScannerInput
+          onScan={(text) => applyScan(text)}
+          onOpenCamera={() => setCameraOpen(true)}
+          lookupStatus={lookup}
+          lookupMsg={lookupMsg}
+          onRetryLookup={() => lookupBhxh(cccd || bhyt, hoTen, ngaySinh)}
+          theBhytMa={theBhyt?.maThe}
+          autoFocus={true}
+          onClear={handleResetForm}
+        />
 
         {err && (
           <div className="p-4 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-2xl text-[13.5px] font-semibold text-[var(--rose)] flex items-center gap-3.5 shadow-sm animate-shake">
@@ -231,78 +263,119 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
           </div>
         )}
 
-        <div className="space-y-6">
-          <SectionHeader n={1} accent="Hành chính & Định danh" />
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-            <div className="md:col-span-6"><Field label="Họ và tên" required><input value={hoTen} onChange={(e) => setHoTen(e.target.value)} required className="input-field font-semibold text-[15px]" placeholder="VD: NGUYỄN VĂN A" /></Field></div>
-            <div className="md:col-span-3"><Select label="Giới tính" req opts={["Nam", "Nữ", "Khác"]} value={gioiTinh} onChange={setGioiTinh} /></div>
-            <div className="md:col-span-3"><Field label="Ngày sinh" required><DateField value={ngaySinh} onChange={setNgaySinh} placeholder="dd/mm/yyyy" /></Field></div>
-            <div className="md:col-span-6"><Field label="Số CCCD (12 số font-mono)"><input value={cccd} onChange={(e) => setCccd(e.target.value)} className="input-field font-mono font-bold tracking-wider text-[14.5px]" placeholder="000000000000" maxLength={12} /></Field></div>
-            <div className="md:col-span-6"><Field label="Số điện thoại liên hệ"><input value={sdt} onChange={(e) => setSdt(e.target.value)} className="input-field font-mono font-semibold text-[14.5px]" placeholder="0900 000 000" /></Field></div>
-            <div className="md:col-span-12"><Field label="Địa chỉ thường trú / Nơi ở hiện tại"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" placeholder="Số nhà, đường, thôn/xấp, xã/phường..." /></Field></div>
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-4 gap-y-2.5">
+          {/* Row 1: Họ và tên * (6) | Mã thẻ BH (6) */}
+          <div className="sm:col-span-6">
+            <Field label="Họ và tên" required>
+              <input value={hoTen} onChange={(e) => handleHoTenChange(e.target.value)} required className="input-field font-semibold text-[15px]" placeholder="VD: NGUYỄN VĂN A" />
+            </Field>
           </div>
-        </div>
-
-        <div className="space-y-6 pt-2">
-          <SectionHeader n={2} accent="Thông tin Thẻ BHYT & Tuyến khám" />
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-            <div className="md:col-span-8">
-              <Field label="Mã thẻ BHYT (15 ký tự)">
-                <div className="flex gap-2.5">
-                  <div className="relative flex-1">
-                    <input
-                      value={bhyt}
-                      onChange={(e) => { setBhyt(e.target.value.toUpperCase()); setLookup("idle"); setTheBhyt(null); }}
-                      className="input-field font-mono uppercase font-bold text-[var(--navy-deep)] pr-9 tracking-wider text-[15px]"
-                      placeholder="VD: DN4838321436964"
-                      maxLength={15}
-                    />
-                    {bhyt && <button type="button" onClick={() => { setBhyt(""); setTheBhyt(null); setLookup("idle"); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)]"><X className="w-4 h-4" /></button>}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => lookupBhxh(bhyt, hoTen, ngaySinh)}
-                    disabled={!bhyt.trim() || lookup === "loading"}
-                    className="btn btn-secondary px-5 font-bold shrink-0 border-[var(--line-strong)] hover:border-[var(--navy)] text-[var(--navy)]"
-                  >
-                    {lookup === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Tra cứu
-                  </button>
+          <div className="sm:col-span-6">
+            <Field label="Mã thẻ BH">
+              <div className="flex gap-2">
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    value={bhyt}
+                    onChange={(e) => handleBhytChange(e.target.value)}
+                    className="input-field font-mono uppercase font-bold text-[var(--navy-deep)] pr-8 tracking-wider text-[14.5px]"
+                    placeholder="VD: DN4838321436964"
+                    maxLength={15}
+                  />
+                  {bhyt && <button type="button" onClick={() => { setBhyt(""); setTheBhyt(null); setLookup("idle"); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"><X className="w-4 h-4" /></button>}
                 </div>
-              </Field>
-            </div>
-            <div className="md:col-span-4">
-              <Field label="Mức hưởng BHYT">
-                <div className="h-10 px-3.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-between font-mono font-bold text-[14px] text-[var(--navy-deep)]">
-                  <span>{theBhyt?.mucHuong || bhytLevel(bhyt) || "Chưa xác định"}</span>
-                  {bhyt && <span className="w-2 h-2 rounded-full bg-[var(--teal)] animate-pulse" />}
-                </div>
-              </Field>
-            </div>
-
-            {theBhyt && (
-              <div className="md:col-span-12 p-4 rounded-2xl bg-gradient-to-br from-[var(--navy-50)] to-[var(--surface-bg)] border border-[var(--navy)]/20 text-[13.5px] text-[var(--navy-deep)] space-y-2.5 shadow-xs">
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--navy)]/10 font-bold text-[14px]">
-                  <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-[var(--teal-deep)]" /> Dữ liệu từ Cổng GĐ BHYT / BHXH Việt Nam</span>
-                  <span className="font-mono text-[12px] bg-[var(--navy)] text-white px-2.5 py-0.5 rounded-md">Hợp lệ</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
-                  <div><span className="text-[var(--mute)] font-medium">Họ tên trên thẻ:</span> <strong className="uppercase">{theBhyt.hoTen || "?"}</strong></div>
-                  <div><span className="text-[var(--mute)] font-medium">Ngày sinh:</span> <strong className="font-mono">{theBhyt.ngaySinh || "?"}</strong></div>
-                  <div><span className="text-[var(--mute)] font-medium">Hạn sử dụng:</span> <strong className="font-mono">{theBhyt.tuNgay || "?"} → {theBhyt.denNgay || "?"}</strong></div>
-                  <div><span className="text-[var(--mute)] font-medium">Nơi ĐKBĐ:</span> <strong>{theBhyt.tenDKBD || "Chưa rõ"} ({theBhyt.maDKBD || ""})</strong></div>
-                  {theBhyt.namNamLienTuc && <div className="sm:col-span-2 text-[12.5px] text-[var(--teal-deep)] font-semibold">✨ 5 năm liên tục từ: <span className="font-mono">{theBhyt.namNamLienTuc}</span></div>}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => lookupBhxh(bhyt, hoTen, ngaySinh)}
+                  disabled={!bhyt.trim() || lookup === "loading"}
+                  className="btn btn-secondary px-3.5 font-bold shrink-0 border-[var(--line-strong)] hover:border-[var(--navy)] text-[var(--navy)] text-[13px]"
+                  title="Tra cứu BHYT"
+                >
+                  {lookup === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                </button>
               </div>
-            )}
+            </Field>
           </div>
+
+          {/* Row 2: Giới tính * (6) | CCCD (6 - bỏ required) */}
+          <div className="sm:col-span-6">
+            <Field label="Giới tính" required>
+              <div className="flex items-center gap-5 h-10 px-1">
+                {["Nam", "Nữ", "Khác"].map((g) => (
+                  <label key={g} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="radio" name="gioiTinh" checked={gioiTinh === g} onChange={() => setGioiTinh(g)} className="w-4.5 h-4.5 accent-[var(--teal-deep)] cursor-pointer" />
+                    <span className="text-[14px] font-medium text-[var(--ink)]">{g}</span>
+                  </label>
+                ))}
+              </div>
+            </Field>
+          </div>
+          <div className="sm:col-span-6">
+            <Field label="CCCD">
+              <input value={cccd} onChange={(e) => handleCccdChange(e.target.value)} className="input-field font-mono font-bold tracking-wider text-[14.5px]" placeholder="000000000000" maxLength={12} />
+            </Field>
+          </div>
+
+          {/* Row 3: Ngày sinh * (6) | Điện thoại (6) */}
+          <div className="sm:col-span-6">
+            <Field label="Ngày sinh" required>
+              <DateField value={ngaySinh} onChange={setNgaySinh} placeholder="dd/mm/yyyy" />
+            </Field>
+          </div>
+          <div className="sm:col-span-6">
+            <Field label="Điện thoại">
+              <input value={sdt} onChange={(e) => handleSdtChange(e.target.value)} className="input-field font-mono font-semibold text-[14.5px]" placeholder="0900 000 000" />
+            </Field>
+          </div>
+
+          {/* Row 4: Địa chỉ (12) - Đã bỏ khu phố, xã phường */}
+          {isFieldOn(cfg, "diaChi") && (
+            <div className="sm:col-span-12">
+              <Field label="Địa chỉ">
+                <input value={diaChi} onChange={(e) => handleDiaChiChange(e.target.value)} className="input-field" placeholder="Số nhà, đường, thôn/ấp..." />
+              </Field>
+            </div>
+          )}
+
+          {/* Nếu có nhập BHYT hoặc có thông tin tra cứu -> hiển thị Mức hưởng & kết quả tra cứu */}
+          {(bhyt.trim().length > 0 || theBhyt) && (
+            <div className="sm:col-span-6">
+              <Select label="Mức hưởng BHYT (%)" req value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+            </div>
+          )}
+
+          {theBhyt && (
+            <div className="sm:col-span-12 p-3.5 rounded-xl bg-gradient-to-br from-[var(--navy-50)] to-[var(--surface-bg)] border border-[var(--navy)]/20 text-[13px] text-[var(--navy-deep)] space-y-2 shadow-xs animate-fade-in">
+              <div className="flex items-center justify-between pb-1.5 border-b border-[var(--navy)]/10 font-bold text-[13.5px]">
+                <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-[var(--teal-deep)]" /> Dữ liệu BHYT / BHXH hợp lệ</span>
+                <span className="font-mono text-[11.5px] bg-[var(--navy)] text-white px-2 py-0.5 rounded-md">OK</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[12.5px]">
+                <div><span className="text-[var(--mute)] font-medium">Họ tên trên thẻ:</span> <strong className="uppercase">{theBhyt.hoTen || "?"}</strong></div>
+                <div><span className="text-[var(--mute)] font-medium">Ngày sinh:</span> <strong className="font-mono">{theBhyt.ngaySinh || "?"}</strong></div>
+                <div><span className="text-[var(--mute)] font-medium">Hạn sử dụng:</span> <strong className="font-mono">{theBhyt.tuNgay || "?"} → {theBhyt.denNgay || "?"}</strong></div>
+                <div><span className="text-[var(--mute)] font-medium">Nơi ĐKBĐ:</span> <strong>{theBhyt.tenDKBD || "Chưa rõ"} ({theBhyt.maDKBD || ""})</strong></div>
+                {theBhyt.namNamLienTuc && <div className="sm:col-span-2 text-[12px] text-[var(--teal-deep)] font-semibold">✨ 5 năm liên tục từ: <span className="font-mono">{theBhyt.namNamLienTuc}</span></div>}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 pt-5 border-t border-[var(--line-soft)] mt-6">
-          <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
-          <button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20 min-w-[160px] justify-center">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 stroke-[3] text-[var(--teal)]" /> Tiếp nhận mới</>}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <button
+            type="button"
+            onClick={handleResetForm}
+            className="btn btn-secondary px-4 py-2.5 font-bold h-11 rounded-xl text-[var(--mute)] hover:text-[var(--rose)] border border-dashed hover:border-[var(--rose)]/40 flex items-center gap-1.5 cursor-pointer transition-all text-[13px]"
+            title="Xóa trắng toàn bộ form để nhập lại từ đầu"
+          >
+            <RefreshCw className="w-4 h-4" /> Làm mới form
           </button>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
+            <button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20 min-w-[160px] justify-center">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 stroke-[3] text-[var(--teal)]" /> Tiếp nhận mới</>}
+            </button>
+          </div>
         </div>
       </form>
       <CameraScannerModal
@@ -313,6 +386,52 @@ function RegisterModal({ buoiKham, onClose, onCreated }: { buoiKham: BuoiKham; o
           applyScan(text);
         }}
       />
+
+      {/* Modal Confirm Cảnh Báo Trùng Lặp Bệnh Nhân */}
+      {dupWarning && (
+        <Modal
+          open={true}
+          onClose={() => setDupWarning(null)}
+          title="Cảnh báo trùng lặp bệnh nhân"
+          icon={AlertTriangle}
+          maxWidth="max-w-[500px]"
+          className="!z-[1100]"
+          noPadding
+        >
+          <div className="p-5 sm:p-6 bg-white space-y-4 text-[14px]">
+            <div className="p-4 bg-[var(--amber-soft)] border border-[var(--amber)]/40 rounded-2xl text-[var(--amber-deep)] flex items-start gap-3.5 shadow-xs">
+              <AlertTriangle className="w-5 h-5 text-[var(--amber-deep)] shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="font-bold text-[14.5px]">Phát hiện hồ sơ đã tồn tại!</div>
+                <div className="mt-1 font-normal text-[13px] leading-relaxed text-[var(--ink)]/90 break-words">{dupWarning}</div>
+              </div>
+            </div>
+            
+            <p className="text-[var(--ink)] leading-relaxed font-medium pt-1">
+              Anh/chị có chắc chắn muốn tiếp tục lưu hồ sơ mới này vào danh sách khám không?
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--line-subtle)]">
+              <button
+                type="button"
+                onClick={handleResetForm}
+                className="btn btn-secondary px-4 py-2.5 font-bold border-[var(--rose)]/30 text-[var(--rose)] hover:bg-[var(--rose-soft)] cursor-pointer rounded-xl h-10 text-[13px]"
+              >
+                No (Không lưu & Reset form)
+              </button>
+              <button
+                type="button"
+                onClick={() => submit(undefined, true)}
+                disabled={saving}
+                className="btn bg-[var(--amber-deep)] hover:bg-[#b45309] text-white font-bold px-5 py-2.5 cursor-pointer shadow-sm flex items-center gap-2 rounded-xl h-10 text-[13px]"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
+                Yes (Tiếp tục lưu)
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 }
@@ -329,7 +448,7 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 // Sửa thông tin tiếp nhận của bệnh nhân (mở từ nút bút chì)
-function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: () => void; onSaved: () => void }) {
+function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg: FieldConfig; onClose: () => void; onSaved: () => void }) {
   const [hoTen, setHoTen] = useState(patient.hoTen);
   const [gioiTinh, setGioiTinh] = useState(patient.gioiTinh || "Nam");
   const [ngaySinh, setNgaySinh] = useState(patient.ngaySinh ? new Date(patient.ngaySinh).toISOString().slice(0, 10) : "");
@@ -337,6 +456,9 @@ function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: 
   const [bhyt, setBhyt] = useState(patient.bhyt || "");
   const [sdt, setSdt] = useState(patient.sdt || "");
   const [diaChi, setDiaChi] = useState(patient.diaChi || "");
+  const [khuPho, setKhuPho] = useState(patient.khuPho || "");
+  const [xaPhuong, setXaPhuong] = useState(patient.xaPhuong || "");
+  const [mucHuong, setMucHuong] = useState(patient.mucHuongBHYT != null ? String(patient.mucHuongBHYT) : mucHuongFromThe(patient.bhyt));
   const [scan, setScan] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -397,43 +519,65 @@ function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: 
     if (!target) return;
     const p = target.split("|").map((s) => s.trim());
     if (p.length >= 6) {
-      const cccdV = p[0] || "", tenV = p[2] || "";
+      const cccdV = (p[0] || "").replace(/\D/g, "").slice(0, 12), tenV = p[2] || "";
+      const dobRaw = (p[3] || "").replace(/\s/g, "");
       let dobIso = "";
-      if (/^\d{8}$/.test(p[3])) dobIso = `${p[3].slice(4)}-${p[3].slice(2, 4)}-${p[3].slice(0, 2)}`;
+      if (/^\d{8}$/.test(dobRaw)) dobIso = `${dobRaw.slice(4)}-${dobRaw.slice(2, 4)}-${dobRaw.slice(0, 2)}`;
+      else if (/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.test(dobRaw)) {
+        const [, d, m, y] = dobRaw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)!;
+        dobIso = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+      } else if (/^\d{4}$/.test(dobRaw)) dobIso = `${dobRaw}-01-01`;
       setCccd(cccdV); setHoTen(tenV); if (dobIso) setNgaySinh(dobIso);
-      setGioiTinh(/n[ữu]/i.test(p[4]) ? "Nữ" : "Nam");
+      setGioiTinh(/n[ữu]/i.test(p[4] || "") ? "Nữ" : "Nam");
       setDiaChi(p[5] || ""); setScan("");
       if (cccdV && tenV) lookupBhxh(cccdV, tenV, dobIso);
     } else if (/^[A-Za-z]{2}\d/.test(target)) {
       const maV = target.toUpperCase();
       setBhyt(maV); setScan("");
       if (hoTen || cccd) lookupBhxh(maV, hoTen || cccd, ngaySinh);
+    } else if (/^\d{9,12}$/.test(target)) {
+      const cccdV = target.replace(/\D/g, "").slice(0, 12);
+      setCccd(cccdV); setScan("");
+      if (hoTen) lookupBhxh(cccdV, hoTen, ngaySinh);
     } else {
-      setCccd(target); setScan("");
-      if (target.length === 12 && hoTen) lookupBhxh(target, hoTen, ngaySinh);
+      // Chuỗi quét rác hoặc địa chỉ bị ngắt dở -> bỏ qua, tuyệt đối không ghi đè vào Số CCCD
+      setScan("");
+      return;
     }
   }, [scan, hoTen, cccd, ngaySinh]);
 
-  useEffect(() => {
-    if (!scan || !scan.trim()) return;
-    const str = scan.trim();
-    const p = str.split("|").map((s) => s.trim());
-    if (p.length >= 6 && /^\d{12}$/.test(p[0])) {
-      const timer = setTimeout(() => applyScan(str), 100);
-      return () => clearTimeout(timer);
-    }
-    if (/^[A-Za-z]{2}\d{13}$/.test(str)) {
-      const timer = setTimeout(() => applyScan(str), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [scan, applyScan]);
+  const handleCccdChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setCccd(val.replace(/\D/g, "").slice(0, 12));
+  };
+  const handleHoTenChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setHoTen(val);
+  };
+  const handleBhytChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setBhyt(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15));
+    setLookup("idle"); setTheBhyt(null);
+  };
+  const handleSdtChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setSdt(val.replace(/[^0-9\s.+]/g, "").slice(0, 15));
+  };
+
+  // Mức hưởng suy tự động từ mã thẻ mỗi khi thẻ đổi
+  useEffect(() => { const m = mucHuongFromThe(bhyt); if (m) setMucHuong(m); }, [bhyt]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setSaving(true);
     try {
       const res = await fetch(`/api/csr/hoso/${patient.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hoTen, gioiTinh, ngaySinh: ngaySinh || null, cccd, bhyt, sdt, diaChi }),
+        body: JSON.stringify({
+          hoTen, gioiTinh, ngaySinh: ngaySinh || null, cccd, bhyt, sdt, diaChi,
+          mucHuongBHYT: mucHuong || null,
+          ...(isFieldOn(cfg, "khuPho") ? { khuPho } : {}),
+          ...(isFieldOn(cfg, "xaPhuong") ? { xaPhuong } : {}),
+        }),
       });
       const d = await res.json();
       if (!res.ok) { setErr(d.error || "Không thể lưu"); return; }
@@ -451,39 +595,25 @@ function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: 
       maxWidth="max-w-[650px]"
       noPadding
     >
-      <form onSubmit={submit} className="px-6 py-5 space-y-4 bg-white">
+      <form onSubmit={submit} className="px-6 py-3.5 space-y-3 bg-white">
         {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
         
-        {/* Quét mã vạch */}
-        <div className="p-3 bg-[var(--surface-hover)] rounded-[var(--r-lg)] border border-[var(--line-soft)] flex items-center gap-2.5">
-          <button type="button" onClick={() => setCameraOpen(true)} className="w-8 h-8 rounded-lg bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white flex items-center justify-center shrink-0 font-bold text-xs transition-colors cursor-pointer" title="Quét bằng camera">QR</button>
-          <input
-            value={scan}
-            onChange={(e) => setScan(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyScan(); } }}
-            placeholder="Quét mã QR (CCCD hoặc BHYT)..."
-            className="bg-transparent border-none outline-none text-[13.5px] w-full text-[var(--ink)] placeholder:text-[var(--mute)] min-w-0"
-          />
-          {scan && <button type="button" onClick={() => applyScan()} className="text-[12px] font-bold text-[var(--teal-deep)] hover:underline shrink-0">Áp dụng</button>}
-          <button
-            type="button"
-            onClick={() => setCameraOpen(true)}
-            className="px-2.5 py-1.5 rounded-lg bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-all flex items-center gap-1 font-bold text-[12px] shrink-0"
-            title="Quét bằng camera (Mobile/Tablet)"
-          >
-            <Camera className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Camera</span>
-          </button>
-        </div>
+        {/* Quét mã vạch (Tối ưu cách ly re-render và khóa phím tắt Tiếng Việt) */}
+        <BarcodeScannerInput
+          onScan={(text) => applyScan(text)}
+          onOpenCamera={() => setCameraOpen(true)}
+          compact={true}
+          autoFocus={false}
+        />
 
-        <Field label="Họ và tên" required><input value={hoTen} onChange={(e) => setHoTen(e.target.value)} required className="input-field" /></Field>
+        <Field label="Họ và tên" required><input value={hoTen} onChange={(e) => handleHoTenChange(e.target.value)} required className="input-field" /></Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
           <Field label="Giới tính" required>
             <div className="flex items-center gap-5 h-[42px]">{["Nam", "Nữ", "Khác"].map((g) => <label key={g} className="flex items-center gap-1.5 cursor-pointer text-[14px]"><input type="radio" name="egt" checked={gioiTinh === g} onChange={() => setGioiTinh(g)} className="accent-[var(--navy)] w-4 h-4" />{g}</label>)}</div>
           </Field>
           <Field label="Ngày sinh"><DateField value={ngaySinh} onChange={setNgaySinh} /></Field>
-          <Field label="CCCD"><input value={cccd} onChange={(e) => setCccd(e.target.value)} className="input-field font-mono" /></Field>
-          <Field label="Điện thoại"><input value={sdt} onChange={(e) => setSdt(e.target.value)} className="input-field font-mono" /></Field>
+          <Field label="CCCD"><input value={cccd} onChange={(e) => handleCccdChange(e.target.value)} className="input-field font-mono" /></Field>
+          <Field label="Điện thoại"><input value={sdt} onChange={(e) => handleSdtChange(e.target.value)} className="input-field font-mono" /></Field>
         </div>
 
         <Field label="Mã thẻ BHYT (Tự động tra cứu quyền lợi BHXH)">
@@ -491,7 +621,7 @@ function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: 
             <div className="relative flex-1">
               <input
                 value={bhyt}
-                onChange={(e) => { setBhyt(e.target.value.toUpperCase()); setLookup("idle"); setTheBhyt(null); }}
+                onChange={(e) => handleBhytChange(e.target.value)}
                 className="input-field h-10 font-mono uppercase font-bold text-[var(--navy-deep)] pr-9 text-[14.5px]"
                 placeholder="VD: DN4838321436964"
               />
@@ -552,7 +682,11 @@ function EditInfoModal({ patient, onClose, onSaved }: { patient: HoSo; onClose: 
           )}
         </Field>
 
-        <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" /></Field>
+        <Select label="Mức hưởng BHYT (%)" req value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+
+        {isFieldOn(cfg, "diaChi") && (
+          <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" placeholder="Số nhà, đường, thôn/ấp..." /></Field>
+        )}
         <div className="flex justify-end gap-3 pt-1"><button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button><button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal)]" />} Lưu</button></div>
       </form>
       <CameraScannerModal
@@ -590,21 +724,40 @@ export default function ExamPage() {
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
   const dirty = JSON.stringify(f) !== baseline;
 
+  // Cấu hình bật/tắt trường phiếu khám của cơ sở
+  const [cfg, setCfg] = useState<FieldConfig>({});
+
+  // Tên người đăng nhập — điền sẵn "Nhân viên tư vấn" cho hồ sơ chưa có
+  const sessionName = useRef("");
+  useEffect(() => { sessionName.current = session?.user?.name || ""; }, [session]);
+
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
   const isDone = selected && selected.trangThai !== "TiepNhan";
   const readOnly = !!isDone && !isEditing;
+
+  /** Khuyến nghị hiệu lực: nếu bật "Hướng xử trí" thì suy từ đó, không thì dùng trường cũ. */
+  const effKhuyenNghi = isFieldOn(cfg, "huongXuTri") ? huongXuTriToKhuyenNghi(f.huongXuTri) : f.khuyenNghi;
 
   const loadForm = useCallback((p: HoSo) => {
     const next = {
       thiLucMP: p.thiLucMP || "", thiLucMT: p.thiLucMT || "",
       chanDoan: parseDiag(p.chanDoan), chanDoanKhac: p.chanDoanKhac || "", khuyenNghi: p.khuyenNghi || "",
       sdt: p.sdt || "", nhom: p.nhom || "",
+      benhSu: boolToChoice(p.benhSu), loaiBenhSu: parseDiag(p.loaiBenhSu ?? "[]"),
+      chieuCao: p.chieuCao || "", canNang: p.canNang || "",
+      benhLy: p.benhLy || "", loaiBenhLy: parseDiag(p.loaiBenhLy ?? "[]"), loaiBenhLyKhac: p.loaiBenhLyKhac || "",
+      huongXuTri: p.huongXuTri || "", huongXuTriKhac: p.huongXuTriKhac || "",
+      bacSiChiDinh: p.bacSiChiDinh || buoiKham?.bacSiKham || "",
+      nhanVienTuVan: p.nhanVienTuVan || sessionName.current || session?.user?.name || "",
+      xacNhanDieuTri: boolToChoice(p.xacNhanDieuTri), lyDoKhongDieuTri: p.lyDoKhongDieuTri || "",
+      ngayDieuTri: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "",
     };
     setF(next); setBaseline(JSON.stringify(next));
-  }, []);
+  }, [buoiKham?.bacSiKham, session?.user?.name]);
 
   const fetchPatients = useCallback(async (keepSel?: string, forceForm = false) => {
-    const res = await fetch(`/api/csr/hoso?buoiKhamId=${buoiKhamId}&search=${encodeURIComponent(search)}`);
+    const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
+    const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(targetId)}&search=${encodeURIComponent(search)}`);
     const data: HoSo[] = res.ok ? await res.json() : [];
     setPatients(data);
     const next = data.find((p) => p.id === (keepSel ?? selId)) || data[0] || null;
@@ -614,8 +767,30 @@ export default function ExamPage() {
 
   useEffect(() => {
     (async () => {
-      const bk = await fetch("/api/csr/buoikham").then((r) => (r.ok ? r.json() : []));
-      setBuoiKham((bk as BuoiKham[]).find((b) => b.id === buoiKhamId) || null);
+      const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
+      let cur: BuoiKham | null = null;
+      try {
+        const res = await fetch(`/api/csr/buoikham/${encodeURIComponent(targetId)}`);
+        if (res.ok) cur = await res.json();
+      } catch {}
+
+      if (!cur) {
+        const bk = await fetch("/api/csr/buoikham").then((r) => (r.ok ? r.json() : []));
+        cur = (bk as BuoiKham[]).find((b) => 
+          b.id.normalize("NFC") === targetId || decodeURIComponent(b.id || "").normalize("NFC") === targetId
+        ) || null;
+      }
+      setBuoiKham(cur);
+
+      // Cấu hình trường của cơ sở tổ chức đợt khám này
+      if (cur?.coSo?.cauHinhTruong) {
+        setCfg(parseFieldConfig(cur.coSo.cauHinhTruong));
+      } else if (cur?.coSoId) {
+        const cosos = await fetch("/api/csr/coso?all=1").then((r) => (r.ok ? r.json() : []));
+        const coSo = (cosos as { id: string; cauHinhTruong?: string | null }[]).find((c) => c.id === cur?.coSoId);
+        setCfg(parseFieldConfig(coSo?.cauHinhTruong));
+      }
+
       await fetchPatients();
       setLoading(false);
     })();
@@ -644,13 +819,39 @@ export default function ExamPage() {
 
   const save = useCallback(async () => {
     if (!selected) return;
-    if (f.chanDoan.includes("Khác") && !f.chanDoanKhac.trim()) { addToast({ type: "error", message: "Vui lòng nhập Chẩn đoán khác." }); return; }
+    const on = (k: string) => isFieldOn(cfg, k);
+
+    // Validate phía client (server cũng chặn lại)
+    if (on("chanDoan") && f.chanDoan.includes("Khác") && !f.chanDoanKhac.trim()) { addToast({ type: "error", message: "Vui lòng nhập Chẩn đoán khác." }); return; }
+    if (on("benhLy") && on("loaiBenhLy") && f.benhLy === "Nghi ngờ bệnh lý" && f.loaiBenhLy.length === 0) { addToast({ type: "error", message: "Nghi ngờ bệnh lý: chọn ít nhất một Loại bệnh lý." }); return; }
+    if (on("loaiBenhLy") && f.loaiBenhLy.includes("Khác") && !f.loaiBenhLyKhac.trim()) { addToast({ type: "error", message: "Vui lòng ghi rõ Loại bệnh lý khác." }); return; }
+    if (on("huongXuTri") && f.huongXuTri === "Điều trị khác" && !f.huongXuTriKhac.trim()) { addToast({ type: "error", message: "Vui lòng ghi rõ nội dung Điều trị khác." }); return; }
+    if (on("xacNhanDieuTri") && f.xacNhanDieuTri === "Không" && !f.lyDoKhongDieuTri.trim()) { addToast({ type: "error", message: "Xác nhận điều trị = KHÔNG: vui lòng ghi rõ lý do." }); return; }
     if (f.nhom === "A" && !f.sdt.trim()) { addToast({ type: "error", message: "Vui lòng nhập số điện thoại khi chọn nhóm A." }); return; }
+
+    // Chỉ gửi các trường đang BẬT để không ghi đè dữ liệu của trường đã tắt
+    const payload: Record<string, unknown> = { sdt: f.sdt || undefined, nhom: f.nhom || undefined };
+    if (on("thiLuc")) { payload.thiLucMP = f.thiLucMP; payload.thiLucMT = f.thiLucMT; }
+    if (on("chanDoan")) { payload.chanDoan = f.chanDoan; payload.chanDoanKhac = f.chanDoanKhac; }
+    if (on("huongXuTri")) { payload.huongXuTri = f.huongXuTri || null; payload.huongXuTriKhac = f.huongXuTriKhac; }
+    else if (on("khuyenNghi")) payload.khuyenNghi = f.khuyenNghi;
+    if (on("benhSu")) payload.benhSu = choiceToBool(f.benhSu);
+    if (on("loaiBenhSu")) payload.loaiBenhSu = f.loaiBenhSu;
+    if (on("chieuCao")) payload.chieuCao = f.chieuCao;
+    if (on("canNang")) payload.canNang = f.canNang;
+    if (on("benhLy")) payload.benhLy = f.benhLy || null;
+    if (on("loaiBenhLy")) { payload.loaiBenhLy = f.loaiBenhLy; payload.loaiBenhLyKhac = f.loaiBenhLyKhac; }
+    if (on("bacSiChiDinh")) payload.bacSiChiDinh = f.bacSiChiDinh || buoiKham?.bacSiKham || null;
+    if (on("diemKham")) payload.diemKham = buoiKham?.diaDiem || null;
+    if (on("nhanVienTuVan")) payload.nhanVienTuVan = f.nhanVienTuVan || sessionName.current || session?.user?.name || null;
+    if (on("xacNhanDieuTri")) { payload.xacNhanDieuTri = choiceToBool(f.xacNhanDieuTri); payload.lyDoKhongDieuTri = f.lyDoKhongDieuTri; }
+    if (on("ngayDieuTri")) payload.ngayDieuTri = f.ngayDieuTri || null;
+
     setSaving(true);
     try {
       const res = await fetch(`/api/csr/hoso/${selected.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ thiLucMP: f.thiLucMP, thiLucMT: f.thiLucMT, chanDoan: f.chanDoan, chanDoanKhac: f.chanDoanKhac, khuyenNghi: f.khuyenNghi, sdt: f.sdt || undefined, nhom: f.nhom || undefined }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) { addToast({ type: "error", message: data.error || "Không thể lưu" }); return; }
@@ -659,7 +860,7 @@ export default function ExamPage() {
       await fetchPatients(selected.id, true);
     } catch { addToast({ type: "error", message: "Mất kết nối máy chủ" }); }
     finally { setSaving(false); }
-  }, [selected, f, addToast, fetchPatients]);
+  }, [selected, f, cfg, buoiKham, addToast, fetchPatients]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); if (selected && dirty && !saving) save(); } };
@@ -667,7 +868,10 @@ export default function ExamPage() {
     return () => window.removeEventListener("keydown", h);
   }, [selected, dirty, saving, save]);
 
-  const toggleChanDoan = (v: string) => setF((s) => ({ ...s, chanDoan: s.chanDoan.includes(v) ? s.chanDoan.filter((x) => x !== v) : [...s.chanDoan, v] }));
+  /** Bật/tắt 1 giá trị trong trường đa chọn (chanDoan / loaiBenhSu / loaiBenhLy). */
+  const toggleMulti = (key: "chanDoan" | "loaiBenhSu" | "loaiBenhLy") => (v: string) =>
+    setF((s) => ({ ...s, [key]: s[key].includes(v) ? s[key].filter((x) => x !== v) : [...s[key], v] }));
+  const toggleChanDoan = toggleMulti("chanDoan");
 
   const visible = useMemo(() => patients.filter((p) => {
     if (!filter) return true;
@@ -718,7 +922,7 @@ export default function ExamPage() {
   return (
     <div className="flex-1 flex flex-col bg-[var(--surface-bg)] overflow-hidden" suppressHydrationWarning>
       <PageHeader
-        title={buoiKham ? `Đợt khám · Xã ${buoiKham.xa}` : "Đợt khám"}
+        title={buoiKham ? `Đợt khám · ${fmtBuoiKhamName(buoiKham)}` : "Đợt khám"}
         description={buoiKham ? `${buoiKham.coSo?.ten || ""} · ${buoiKham.diaDiem}` : "—"}
         guide={[
           { selector: '[data-tour="kh-reg"]', title: "Đăng ký bệnh nhân", desc: "Bấm nút ＋ này rồi quét mã QR trên thẻ BHYT / CCCD / VNeID để tự điền thông tin." },
@@ -822,10 +1026,12 @@ export default function ExamPage() {
               </div>
               <dl className="mt-3 space-y-1 text-[11.5px] text-[var(--ink-soft)]">
                 <Row k="Giới tính" v={`${selected.gioiTinh} · ${ageOf(selected)} tuổi`} />
-                <Row k="BHYT" v={selected.bhyt ? `${selected.bhyt} · ${bhytLevel(selected.bhyt)}` : "—"} mono />
+                <Row k="BHYT" v={selected.bhyt ? `${selected.bhyt} · ${selected.mucHuongBHYT ? `${selected.mucHuongBHYT}%` : bhytLevel(selected.bhyt)}` : "—"} mono />
                 <Row k="CCCD" v={selected.cccd || "—"} mono />
                 <Row k="SĐT" v={selected.sdt || "—"} mono />
                 <Row k="Địa chỉ" v={selected.diaChi || "—"} />
+                {isFieldOn(cfg, "khuPho") && <Row k="Khu phố" v={selected.khuPho || "—"} />}
+                {isFieldOn(cfg, "xaPhuong") && <Row k="Xã/Phường" v={selected.xaPhuong || "—"} />}
               </dl>
             </div>
             <div className="xl:flex-1 xl:overflow-y-auto px-4 py-4 border-t border-[var(--line)]">
@@ -853,38 +1059,176 @@ export default function ExamPage() {
         <main className="flex-1 min-w-0 flex flex-col bg-[var(--surface-bg)] min-h-[70vh] xl:min-h-0">
           {selected ? (<>
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              <div data-tour="kh-vision" className="card p-0">
-                <SectionHeader n={1} accent="Đo thị lực" />
-                <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <Select label="1.1 Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
-                  <Select label="1.2 Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
+              {/* Bệnh sử của bản thân */}
+              {(isFieldOn(cfg, "benhSu") || isFieldOn(cfg, "loaiBenhSu")) && (
+                <div className="card p-0">
+                  <SectionHeader n={1} accent="Bệnh sử của bản thân" />
+                  <div className="p-5 space-y-5">
+                    {isFieldOn(cfg, "benhSu") && (
+                      <div>
+                        <label className={labelCls}>Có bệnh sử không?</label>
+                        <ChoiceRow options={CO_KHONG} value={f.benhSu} onChange={(v) => setF((s) => ({ ...s, benhSu: v, loaiBenhSu: v === "Có" ? s.loaiBenhSu : [] }))} disabled={readOnly} />
+                      </div>
+                    )}
+                    {isFieldOn(cfg, "loaiBenhSu") && f.benhSu === "Có" && (
+                      <div>
+                        <label className={labelCls}>Loại bệnh sử <span className="font-normal text-[var(--mute)]">· chọn nhiều</span></label>
+                        <PillGroup options={BENH_SU_OPTIONS} selected={f.loaiBenhSu} onToggle={toggleMulti("loaiBenhSu")} disabled={readOnly} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Dấu hiệu */}
+              {(isFieldOn(cfg, "chieuCao") || isFieldOn(cfg, "canNang")) && (
+                <div className="card p-0">
+                  <SectionHeader n={2} accent="Dấu hiệu" />
+                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    {isFieldOn(cfg, "chieuCao") && (
+                      <Field label="Chiều cao (cm)">
+                        <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
+                      </Field>
+                    )}
+                    {isFieldOn(cfg, "canNang") && (
+                      <Field label="Cân nặng (kg)">
+                        <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55 (không lấy số lẻ)" disabled={readOnly} />
+                      </Field>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Đo thị lực (bộ cũ) */}
+              {isFieldOn(cfg, "thiLuc") && (
+                <div data-tour="kh-vision" className="card p-0">
+                  <SectionHeader n={3} accent="Đo thị lực" />
+                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <Select label="Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
+                    <Select label="Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
+                  </div>
+                </div>
+              )}
+
+              {/* Kết luận ban đầu */}
               <div data-tour="kh-exam" className="card p-0">
-                <SectionHeader n={2} accent="Khám mắt" />
+                <SectionHeader n={4} accent="Kết luận ban đầu" />
                 <div className="p-5 space-y-5">
-                  <div>
-                    <label className={labelCls}>2.1 Chẩn đoán</label>
-                    <PillGroup options={CHAN_DOAN} selected={f.chanDoan} onToggle={toggleChanDoan} disabled={readOnly} />
-                    {f.chanDoan.includes("Khác") && <input value={f.chanDoanKhac} onChange={(e) => setF((s) => ({ ...s, chanDoanKhac: e.target.value }))} placeholder="Nhập chẩn đoán khác…" className="input-field mt-3" disabled={readOnly} />}
-                  </div>
-                  <div>
-                    <label className={labelCls}>2.2 Khuyến nghị</label>
-                    <ChoiceRow options={[...KHUYEN_NGHI]} value={f.khuyenNghi} onChange={(v) => {
-                      setF((s) => ({ ...s, khuyenNghi: v, nhom: v === "Phẫu thuật" ? s.nhom : "" }));
-                    }} disabled={readOnly} />
-                  </div>
+                  {isFieldOn(cfg, "benhLy") && (
+                    <div>
+                      <label className={labelCls}>Bệnh lý</label>
+                      <ChoiceRow options={BENH_LY_OPTIONS} value={f.benhLy} onChange={(v) => setF((s) => ({ ...s, benhLy: v, loaiBenhLy: v === "Nghi ngờ bệnh lý" ? s.loaiBenhLy : [], loaiBenhLyKhac: v === "Nghi ngờ bệnh lý" ? s.loaiBenhLyKhac : "" }))} disabled={readOnly} />
+                    </div>
+                  )}
+
+                  {isFieldOn(cfg, "loaiBenhLy") && (!isFieldOn(cfg, "benhLy") || f.benhLy === "Nghi ngờ bệnh lý") && (
+                    <div>
+                      <label className={labelCls}>Loại bệnh lý <span className="text-[var(--rose)]">*</span> <span className="font-normal text-[var(--mute)]">· theo mã ICD, chọn nhiều</span></label>
+                      <PillGroup options={LOAI_BENH_LY_OPTIONS} selected={f.loaiBenhLy} onToggle={toggleMulti("loaiBenhLy")} disabled={readOnly} />
+                      {f.loaiBenhLy.includes("Khác") && (
+                        <input value={f.loaiBenhLyKhac} onChange={(e) => setF((s) => ({ ...s, loaiBenhLyKhac: e.target.value }))} placeholder="Ghi rõ loại bệnh lý khác…" className="input-field mt-3" disabled={readOnly} />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Chẩn đoán (bộ cũ) */}
+                  {isFieldOn(cfg, "chanDoan") && (
+                    <div>
+                      <label className={labelCls}>Chẩn đoán <span className="font-normal text-[var(--mute)]">· bộ rút gọn</span></label>
+                      <PillGroup options={CHAN_DOAN} selected={f.chanDoan} onToggle={toggleChanDoan} disabled={readOnly} />
+                      {f.chanDoan.includes("Khác") && <input value={f.chanDoanKhac} onChange={(e) => setF((s) => ({ ...s, chanDoanKhac: e.target.value }))} placeholder="Nhập chẩn đoán khác…" className="input-field mt-3" disabled={readOnly} />}
+                    </div>
+                  )}
+
+                  {/* Hướng xử trí thay cho Khuyến nghị (chỉ hiện 1 trong 2) */}
+                  {isFieldOn(cfg, "huongXuTri") ? (
+                    <div>
+                      <label className={labelCls}>Hướng xử trí <span className="text-[var(--rose)]">*</span></label>
+                      <ChoiceRow options={HUONG_XU_TRI} value={f.huongXuTri} onChange={(v) => setF((s) => ({ ...s, huongXuTri: v, nhom: v === "Phẫu thuật" ? s.nhom : "", huongXuTriKhac: v === "Điều trị khác" ? s.huongXuTriKhac : "" }))} disabled={readOnly} />
+                      {f.huongXuTri === "Điều trị khác" && (
+                        <input value={f.huongXuTriKhac} onChange={(e) => setF((s) => ({ ...s, huongXuTriKhac: e.target.value }))} placeholder="Ghi rõ hướng điều trị khác…" className="input-field mt-3" disabled={readOnly} />
+                      )}
+                    </div>
+                  ) : isFieldOn(cfg, "khuyenNghi") && (
+                    <div>
+                      <label className={labelCls}>Khuyến nghị</label>
+                      <ChoiceRow options={[...KHUYEN_NGHI]} value={f.khuyenNghi} onChange={(v) => setF((s) => ({ ...s, khuyenNghi: v, nhom: v === "Phẫu thuật" ? s.nhom : "" }))} disabled={readOnly} />
+                    </div>
+                  )}
                 </div>
               </div>
-              {f.khuyenNghi === "Phẫu thuật" && (
-                <div className="card p-0 mt-5">
-                  <SectionHeader n={3} accent="Tư vấn" />
+
+              {/* Thông tin đoàn khám — luôn hiện (Ngày điều trị / Ngày khám / Xã là trường bắt buộc) */}
+              {(
+                <div className="card p-0">
+                  <SectionHeader n={5} accent="Thông tin đoàn khám" />
+                  <div className="p-5 space-y-5">
+                    <p className="text-[11.5px] text-[var(--mute)] -mt-2">
+                      Điểm khám, ngày khám và xã lấy tự động từ đợt khám. Bác sỹ cho chỉ định và Nhân viên tư vấn được ghi nhận theo từng hồ sơ khám.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                      {isFieldOn(cfg, "bacSiChiDinh") && (
+                        <Field label="Bác sỹ cho chỉ định">
+                          <DoctorAutocomplete
+                            value={f.bacSiChiDinh}
+                            onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
+                            disabled={readOnly}
+                            placeholder="Chọn từ danh sách bác sĩ..."
+                          />
+                        </Field>
+                      )}
+                      {isFieldOn(cfg, "diemKham") && (
+                        <Field label="Điểm khám">
+                          <div className="input-field flex items-center bg-[var(--surface-soft)] text-[var(--ink-soft)]">{buoiKham?.diaDiem || "—"}</div>
+                        </Field>
+                      )}
+                      <Field label="Ngày khám">
+                        <div className="input-field flex items-center bg-[var(--surface-soft)] text-[var(--ink-soft)] font-mono">{fmtDate(buoiKham?.ngayKham)}</div>
+                      </Field>
+                      <Field label="Xã thực hiện khám">
+                        <div className="input-field flex items-center bg-[var(--surface-soft)] text-[var(--ink-soft)]">{buoiKham?.xa || "—"}</div>
+                      </Field>
+
+                      {isFieldOn(cfg, "nhanVienTuVan") && (
+                        <Field label="Nhân viên tư vấn" required>
+                          <input
+                            value={f.nhanVienTuVan || sessionName.current || session?.user?.name || ""}
+                            readOnly
+                            disabled
+                            className="input-field bg-[var(--surface-soft)] text-[var(--ink-soft)] font-semibold cursor-not-allowed select-none"
+                            placeholder="Mặc định theo tài khoản đăng nhập"
+                          />
+                        </Field>
+                      )}
+                      <Field label="Ngày điều trị dự kiến" required={f.nhom === "A"}>
+                        <DateField value={f.ngayDieuTri} onChange={(v) => setF((s) => ({ ...s, ngayDieuTri: v }))} disabled={readOnly} placeholder="dd/mm/yyyy" />
+                      </Field>
+                    </div>
+
+                    {isFieldOn(cfg, "xacNhanDieuTri") && (
+                      <div>
+                        <label className={labelCls}>Xác nhận điều trị <span className="text-[var(--rose)]">*</span></label>
+                        <ChoiceRow options={CO_KHONG} value={f.xacNhanDieuTri} onChange={(v) => setF((s) => ({ ...s, xacNhanDieuTri: v, lyDoKhongDieuTri: v === "Không" ? s.lyDoKhongDieuTri : "" }))} disabled={readOnly} />
+                        {f.xacNhanDieuTri === "Không" && (
+                          <input value={f.lyDoKhongDieuTri} onChange={(e) => setF((s) => ({ ...s, lyDoKhongDieuTri: e.target.value }))} placeholder="Bắt buộc: ghi rõ lý do không điều trị…" className="input-field mt-3" disabled={readOnly} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Tư vấn & phân nhóm — chỉ khi hướng xử trí/khuyến nghị = Phẫu thuật */}
+              {effKhuyenNghi === "Phẫu thuật" && (
+                <div className="card p-0">
+                  <SectionHeader n={6} accent="Tư vấn & phân nhóm" />
                   <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
                     <div>
-                      <label className={labelCls}>3.1 Chọn nhóm</label>
+                      <label className={labelCls}>Chọn nhóm</label>
                       <ChoiceRow options={["A", "B"]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly} />
                     </div>
-                    <Field label="3.2 Số điện thoại" required={f.nhom === "A"}>
+                    <Field label="Số điện thoại" required={f.nhom === "A"}>
                       <input value={f.sdt} onChange={(e) => setF((s) => ({ ...s, sdt: e.target.value }))} placeholder="Nhập SĐT..." className="input-field font-mono" disabled={readOnly} />
                     </Field>
                   </div>
@@ -908,8 +1252,8 @@ export default function ExamPage() {
         </main>
       </div>
 
-      {showReg && buoiKham && <RegisterModal buoiKham={buoiKham} onClose={() => setShowReg(false)} onCreated={(p) => { setShowReg(false); fetchPatients(p.id, true); }} />}
-      {showEdit && selected && <EditInfoModal patient={selected} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); fetchPatients(selected.id, true); }} />}
+      {showReg && buoiKham && <RegisterModal buoiKham={buoiKham} cfg={cfg} onClose={() => setShowReg(false)} onCreated={(p) => { setShowReg(false); fetchPatients(p.id, true); }} />}
+      {showEdit && selected && <EditInfoModal patient={selected} cfg={cfg} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); fetchPatients(selected.id, true); }} />}
     </div>
   );
 }

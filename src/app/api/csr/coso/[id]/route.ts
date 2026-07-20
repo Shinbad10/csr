@@ -10,12 +10,24 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!session || !can(session.user.role, "admin.masterdata")) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   const { id } = await params;
   try {
-    const { ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName } = await request.json();
+    const { ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName, cauHinhTruong } = await request.json();
+
+    // cauHinhTruong là chuỗi JSON object { "<fieldKey>": boolean }
+    if (cauHinhTruong !== undefined && cauHinhTruong !== null) {
+      try {
+        const parsed = JSON.parse(cauHinhTruong);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+      } catch {
+        return NextResponse.json({ error: "Cấu hình trường không hợp lệ" }, { status: 400 });
+      }
+    }
+
     const data = await getPrisma().coSo.update({
       where: { id },
       data: {
         ten,
-        diaChi: diaChi || null,
+        diaChi: diaChi !== undefined ? (diaChi || null) : undefined,
+        cauHinhTruong: cauHinhTruong !== undefined ? (cauHinhTruong || null) : undefined,
         bhxhUser: bhxhUser !== undefined ? (bhxhUser?.trim() || null) : undefined,
         bhxhPass: bhxhPass !== undefined ? (bhxhPass?.trim() || null) : undefined,
         bhxhMaCSKCB: bhxhMaCSKCB !== undefined ? (bhxhMaCSKCB?.trim() || null) : undefined,

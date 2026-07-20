@@ -14,8 +14,15 @@ interface Patch {
 }
 
 // Khử dấu + chuẩn hoá để so khớp ổn định bất kể NFC/NFD (tiếng Việt).
+// Lưu ý: "đ"/"Đ" là ký tự riêng (U+0111/U+0110), KHÔNG phải dấu tổ hợp nên NFD
+// không tách được — phải thay tay, nếu không "Đã mổ"/"Không đến" sẽ không khớp.
 const fold = (s?: string | null) =>
-  (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  (s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/đ/g, "d")
+    .trim();
 
 const hasDiag = (v: unknown) => {
   if (Array.isArray(v)) return v.length > 0;
@@ -30,8 +37,9 @@ export function inferNextState(current: string, p: Patch): string {
   // Lâm sàng
   if (current === "TiepNhan" || current === "DaKham") {
     if (kn === "phau thuat") {
-      if (p.ngayDieuTri) return "NhomA";          // tư vấn cùng lúc → chốt mổ
-      if (p.nhom === "B" || p.soTienBao != null) return "NhomB";
+      if (p.nhom === "B") return "NhomB";          // BN chọn suy nghĩ thêm → không ép chốt mổ
+      if (p.ngayDieuTri) return "NhomA";           // tư vấn cùng lúc → chốt mổ
+      if (p.soTienBao != null) return "NhomB";
       return "CoChiDinhMo";
     }
     if (kn === "theo doi") return "TheoDoi";
@@ -40,8 +48,9 @@ export function inferNextState(current: string, p: Patch): string {
 
   // Tư vấn & phân nhóm
   if (current === "CoChiDinhMo" || current === "NhomB") {
+    if (p.nhom === "B") return "NhomB";           // lựa chọn nhóm của BN được ưu tiên
     if (p.ngayDieuTri) return "NhomA";            // BR-04
-    if (p.nhom === "B" || p.soTienBao != null) return "NhomB";
+    if (p.soTienBao != null) return "NhomB";
   }
 
   // Điều trị tại BV

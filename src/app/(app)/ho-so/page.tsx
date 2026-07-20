@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Loader2, Search, ClipboardList, Eye, Clock } from "lucide-react";
-import { ageOf, fmtDate, parseDiag, statusOf, bhytLevel, type HoSo } from "@/lib/csr";
+import { ageOf, fmtDate, fmtBuoiKhamName, parseDiag, statusOf, bhytLevel, type HoSo } from "@/lib/csr";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
 import { SkeletonTable } from "@/components/layout/Skeleton";
 import PageHeader from "@/components/layout/PageHeader";
@@ -48,18 +48,55 @@ export default function HoSoPage() {
       />
 
       {/* bộ lọc — ĐỂ NGOÀI card overflow-hidden để dropdown không bị cắt */}
-      <div data-tour="hs-filter" className="flex flex-wrap items-center gap-3 mt-5">
+      <div data-tour="hs-filter" className="flex flex-wrap items-center gap-2.5 sm:gap-3 mt-5">
         <div data-tour="hs-search" className="relative w-full sm:w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm tên, mã BN, SĐT, CCCD…" className="input-field pl-9 bg-white" />
         </div>
-        <div className="w-[210px]"><Dropdown value={tt} placeholder="Tất cả trạng thái" mono={false} labels={TT_LABELS} options={TT_OPTS} onChange={setTt} /></div>
-        <div className="w-[180px]"><Dropdown value={nhom} placeholder="Tất cả nhóm" mono={false} labels={NHOM_LABELS} options={["", "A", "B"]} onChange={setNhom} /></div>
+        <div className="flex-1 min-w-[150px] sm:flex-none sm:w-[210px]"><Dropdown value={tt} placeholder="Tất cả trạng thái" mono={false} labels={TT_LABELS} options={TT_OPTS} onChange={setTt} /></div>
+        <div className="flex-1 min-w-[135px] sm:flex-none sm:w-[180px]"><Dropdown value={nhom} placeholder="Tất cả nhóm" mono={false} labels={NHOM_LABELS} options={["", "A", "B"]} onChange={setNhom} /></div>
       </div>
 
       <div className="card p-0 overflow-hidden mt-3">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        {/* Mobile: danh sách thẻ */}
+        <div className="md:hidden divide-y divide-[var(--line-soft)] bg-white">
+          {loading ? (
+            <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" /></div>
+          ) : rows.length === 0 ? (
+            <div className="py-16 text-center text-[var(--mute)] text-[13px]"><ClipboardList className="w-8 h-8 mx-auto mb-2 text-[var(--mute-soft)]" />Không có hồ sơ khớp điều kiện.</div>
+          ) : rows.map((r) => (
+            <div key={r.id} className="p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-bold text-[14px] text-[var(--ink)] truncate">{r.hoTen}</div>
+                  <div className="font-mono text-[11px] font-bold text-[var(--navy)] mt-0.5">
+                    <span className="text-[var(--mute-soft)] font-normal">BN-</span>{r.maBN.replace(/^BN-?/i, "")}
+                  </div>
+                </div>
+                <StatusBadge label={statusOf(r.trangThai).label} cls={statusOf(r.trangThai).cls} sm />
+              </div>
+
+              <div className="text-[12px] text-[var(--ink-soft)] space-y-1">
+                <div>{r.gioiTinh} · {ageOf(r)} tuổi{r.nhom ? ` · Nhóm ${r.nhom}` : ""}{bhytLevel(r.bhyt) ? ` · BHYT ${bhytLevel(r.bhyt)}` : ""}</div>
+                <div className="text-[var(--mute)]">Chẩn đoán: <span className="text-[var(--ink)]">{parseDiag(r.chanDoan).join(", ") || "—"}</span></div>
+                <div className="text-[var(--mute)]">Khuyến nghị: <span className="text-[var(--ink)]">{r.khuyenNghi || "—"}</span></div>
+                <div className="text-[var(--mute)]">Buổi khám: {fmtBuoiKhamName(r.buoiKham)} · {fmtDate(r.buoiKham?.ngayKham)}</div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-0.5">
+                <button onClick={() => setInfoId(r.id)} className="flex-1 justify-center px-2.5 py-2 rounded-[var(--r-sm)] bg-[var(--navy-50)] text-[var(--navy)] font-semibold text-xs flex items-center gap-1 border border-[var(--navy-100)]">
+                  <Eye className="w-3.5 h-3.5" /> Thông tin
+                </button>
+                <button onClick={() => setHistoryId(r.id)} className="flex-1 justify-center px-2.5 py-2 rounded-[var(--r-sm)] bg-[var(--surface-soft)] text-[var(--ink-soft)] font-semibold text-xs flex items-center gap-1 border border-[var(--line)]">
+                  <Clock className="w-3.5 h-3.5" /> Lịch sử
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full min-w-[1180px] text-left border-collapse">
             <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
               <tr>
                 {["Mã BN", "Họ tên", "Giới / Tuổi", "Chẩn đoán", "Khuyến nghị", "BHYT", "Nhóm", "Trạng thái", "Buổi khám", "Thao tác"].map((h) => <th key={h} className={`py-3 px-3.5 border-b border-[var(--line)] whitespace-nowrap ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
@@ -80,7 +117,7 @@ export default function HoSoPage() {
                   <td className="py-3.5 px-3.5 align-middle font-mono whitespace-nowrap">{bhytLevel(r.bhyt) || "—"}</td>
                   <td className="py-3.5 px-3.5 align-middle text-center font-bold">{r.nhom || "—"}</td>
                   <td className="py-3.5 px-3.5 align-middle whitespace-nowrap"><StatusBadge label={statusOf(r.trangThai).label} cls={statusOf(r.trangThai).cls} sm /></td>
-                  <td className="py-3.5 px-3.5 align-middle text-xs text-[var(--mute)] whitespace-nowrap">Xã {r.buoiKham?.xa} · {fmtDate(r.buoiKham?.ngayKham)}</td>
+                  <td className="py-3.5 px-3.5 align-middle text-xs text-[var(--mute)] whitespace-nowrap">{fmtBuoiKhamName(r.buoiKham)} · {fmtDate(r.buoiKham?.ngayKham)}</td>
                   <td className="py-3.5 px-3.5 align-middle whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
@@ -106,7 +143,7 @@ export default function HoSoPage() {
             </tbody>
           </table>
         </div>
-        <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 flex items-center justify-between text-xs text-[var(--mute)] font-medium">
+        <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 flex items-center justify-between gap-3 flex-wrap text-xs text-[var(--mute)] font-medium">
           <div>
             Hiển thị <span className="font-mono font-bold text-[var(--ink)]">{rows.length > 0 ? 1 : 0}–{rows.length}</span> trong tổng số <span className="font-mono font-bold text-[var(--ink)]">{rows.length}</span> hồ sơ
           </div>

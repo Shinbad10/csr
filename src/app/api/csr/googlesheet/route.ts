@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { audit } from "@/lib/audit";
-import { sheetEnabled } from "@/lib/googleSheet";
+import { sheetEnabled, clearDataRows } from "@/lib/googleSheet";
 import { drainSyncQueue } from "@/lib/syncWorker";
 
 export const dynamic = "force-dynamic";
@@ -57,13 +57,42 @@ export async function PUT(request: Request) {
 }
 
 // Đồng bộ ngay: rút hàng đợi SyncQueue đẩy lên Google Sheet.
-export async function POST() {
+// ?rebuild=1 → DỰNG LẠI: xoá hết dòng dữ liệu cũ rồi đẩy lại toàn bộ hồ sơ.
+// Dùng khi đổi bộ cột báo cáo (dòng cũ theo cột cũ sẽ lệch, không tự ghi đè được).
+export async function POST(request: Request) {
   const g = await guard();
   if (g.error) return g.error;
   if (!sheetEnabled()) return NextResponse.json({ ok: false, error: "Chưa cấu hình GOOGLE_CREDENTIALS trong .env" }, { status: 409 });
+
+  const rebuild = new URL(request.url).searchParams.get("rebuild") === "1";
+  const prisma = getPrisma();
+
   try {
-    const result = await drainSyncQueue(200);
-    return NextResponse.json({ ok: true, ...result });
+    if (rebuild) {
+      const cosos = await prisma.coSo.findMany({ select: { id: true, ten: true, sheetId: true } });
+      for (const c of cosos) await clearDataRows(c);
+
+      // Xếp lại toàn bộ hồ sơ vào hàng đợi (bỏ hàng đợi cũ để không đẩy trùng).
+      const hoSos = await prisma.hoSoBenhNhan.findMany({ select: { id: true }, orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }] });
+      await prisma.syncQueue.deleteMany({});
+      if (hoSos.length > 0) {
+        await prisma.syncQueue.createMany({ data: hoSos.map((h) => ({ hoSoId: h.id })) });
+      }
+
+      await audit(g.session!.user.id, "CoSo", "*", "sua", { hanhDong: "Dựng lại Google Sheet", soHoSo: hoSos.length });
+    }
+
+    // Dựng lại có thể nhiều hồ sơ → rút hàng đợi theo lô cho tới khi hết (tối đa 20 lô).
+    let processed = 0, failed = 0;
+    for (let i = 0; i < 20; i++) {
+      const r = await drainSyncQueue(200);
+      processed += r.processed;
+      failed += r.failed;
+      if (!rebuild) break;              // đồng bộ thường: 1 lô là đủ
+      if (r.skipped || r.processed === 0) break; // hết hàng đợi hoặc đang có drain khác chạy
+    }
+    const remaining = await prisma.syncQueue.count();
+    return NextResponse.json({ ok: true, rebuild, processed, failed, remaining });
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }

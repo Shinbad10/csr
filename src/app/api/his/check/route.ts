@@ -41,7 +41,10 @@ export async function POST(request: Request) {
     // Đã tìm thấy trên HIS -> Cập nhật hồ sơ
     const updateData: any = { maBNHIS: res.maHIS };
 
-    if (res.hasSurgery) {
+    // Chỉ tự động gán "Đã mổ" khi matchType === "exact" (CCCD khớp chính xác).
+    // matchType === "partial" (chỉ họ tên + năm sinh) → gán mã HIS nhưng KHÔNG chuyển trạng thái,
+    // cần xác nhận thủ công trên giao diện.
+    if (res.hasSurgery && res.matchType === "exact") {
       // Nhóm A hoặc Điều trị -> cập nhật trạng thái mổ
       if (hoSo.nhom === "A" || hoSo.khuyenNghi === "Phẫu thuật" || !hoSo.nhom) {
         updateData.daDon = true;
@@ -58,9 +61,9 @@ export async function POST(request: Request) {
       if (session.user.id && session.user.id !== "admin") {
         updateData.nguoiPhuTrachMa = session.user.id;
       }
-      if (res.chiTiet) {
-        updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, res.chiTiet);
-      }
+    }
+    if (res.chiTiet) {
+      updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, res.chiTiet);
     }
 
     const updated = await prisma.hoSoBenhNhan.update({

@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { LogOut, ChevronDown, UserRound, ShieldCheck, Menu, KeyRound } from "lucide-react";
+import { LogOut, ChevronDown, UserRound, ShieldCheck, KeyRound } from "lucide-react";
 import { roleLabel } from "@/lib/permissions";
 import { ChangePasswordModal } from "@/components/layout/ChangePasswordModal";
+import TopbarNav from "@/components/layout/TopbarNav";
+import FacilitySwitcher from "@/components/layout/FacilitySwitcher";
 
-export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
+export default function Topbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
@@ -25,17 +28,31 @@ export default function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => vo
   }, [open]);
 
   return (
-    <header className="h-16 shrink-0 bg-white border-b border-[var(--line)] flex items-center justify-between px-4 sm:px-6">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        {onToggleSidebar && (
-          <button className="lg:hidden p-1.5 -ml-1.5 text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] rounded-md" onClick={onToggleSidebar}>
-            <Menu className="w-5 h-5" />
-          </button>
-        )}
-        <div id="topbar-title-portal" className="flex-1 min-w-0 mr-4" />
+    <header className="h-16 shrink-0 bg-white border-b border-[var(--line)] flex items-center gap-2 sm:gap-4 px-3 sm:px-6 min-w-0">
+      {/* Menu chức năng (dropdown theo nhóm) + drawer mobile */}
+      <div className="order-1 lg:order-3">
+        <TopbarNav />
       </div>
 
-      <div className="relative shrink-0" ref={ref}>
+      {/* Thương hiệu */}
+      <Link href="/" className="flex items-center gap-2 sm:gap-2.5 shrink-0 group order-2 lg:order-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="VISI" className="w-8 h-8 sm:w-9 sm:h-9 object-contain drop-shadow-sm" />
+        <div className="leading-tight">
+          <div className="font-serif font-bold text-[15px] sm:text-[16px] tracking-[-0.02em] text-[var(--ink)] whitespace-nowrap">VISI</div>
+          <div className="font-mono font-bold text-[9px] uppercase tracking-[0.18em] text-[var(--teal)] whitespace-nowrap hidden sm:block">Khám cộng đồng</div>
+        </div>
+      </Link>
+
+      <div className="w-px h-7 bg-[var(--line)] shrink-0 hidden lg:block order-2 mx-1" />
+
+      <div className="flex-1 order-4" />
+
+      <div className="hidden md:block md:w-[280px] max-w-[280px] order-5">
+        <FacilitySwitcher />
+      </div>
+
+      <div className="relative shrink-0 order-6" ref={ref}>
         <button onClick={() => setOpen((o) => !o)}
           className={`flex items-center gap-2.5 rounded-[var(--r-md)] pl-2.5 pr-2 py-1.5 transition-colors ${open ? "bg-[var(--surface-hover)]" : "hover:bg-[var(--surface-hover)]"}`}>
           <div className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] font-mono font-bold flex items-center justify-center text-[13px] shadow-xs border border-white/10">{initial}</div>

@@ -68,7 +68,7 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
       maxWidth="max-w-[500px]"
       noPadding
     >
-      <form onSubmit={submit} className="p-7 space-y-6 bg-white">
+      <form onSubmit={submit} className="p-4 sm:p-7 space-y-6 bg-white">
         {err && (
           <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2 animate-shake">
             <X className="w-4 h-4 shrink-0" /> {err}

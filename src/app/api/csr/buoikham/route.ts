@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       include: { 
         coSo: true, 
         _count: { select: { hoSo: true } },
-        hoSo: { select: { nhom: true, trangThai: true, ngayMoThucTe: true } }
+        hoSo: { select: { nhom: true, trangThai: true, ngayMoThucTe: true, bacSiChiDinh: true } }
       },
       orderBy: { ngayKham: "desc" },
     });
@@ -39,7 +39,9 @@ export async function GET(request: Request) {
         }
       }
       const { hoSo, ...rest } = item;
-      return { ...rest, stats: { nhomA, nhomB, daMo, chuaMo } };
+      // Đợt khám cũ chưa có bác sĩ → suy từ bệnh nhân đầu tiên đã ghi nhận.
+      const bacSiKham = rest.bacSiKham || hoSo.find((h) => h.bacSiChiDinh)?.bacSiChiDinh || null;
+      return { ...rest, bacSiKham, stats: { nhomA, nhomB, daMo, chuaMo } };
     });
     return NextResponse.json(result);
   } catch (e) {
@@ -54,18 +56,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bạn không có quyền tạo buổi khám" }, { status: 403 });
 
   try {
-    const { coSoId, ngayKham, xa, diaDiem, ghiChu } = await request.json();
+    const { coSoId, ngayKham, xa, diaDiem, bacSiKham, ghiChu } = await request.json();
     if (!coSoId || !ngayKham || !xa || !diaDiem)
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc (cơ sở, ngày, xã, địa điểm)" }, { status: 400 });
 
     const dateStr = new Date(ngayKham).toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
     const count = await getPrisma().buoiKham.count({
-      where: { id: { startsWith: `BK${dateStr}` } },
+      where: { id: { startsWith: `ĐK-${dateStr}` } },
     });
-    const id = `BK${dateStr}-${String(count + 1).padStart(2, "0")}`;
+    const id = `ĐK-${dateStr}-${String(count + 1).padStart(2, "0")}`;
+
 
     const data = await getPrisma().buoiKham.create({
-      data: { id, coSoId, ngayKham: new Date(ngayKham), xa, diaDiem, ghiChu: ghiChu || null, nguoiTao: session.user.id },
+      data: { id, coSoId, ngayKham: new Date(ngayKham), xa, diaDiem, bacSiKham: bacSiKham?.trim() || null, ghiChu: ghiChu || null, nguoiTao: session.user.id },
     });
     return NextResponse.json(data);
   } catch (e) {

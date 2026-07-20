@@ -21,14 +21,11 @@ export async function GET(request: Request) {
   try {
     const rows = await getPrisma().hoSoBenhNhan.findMany({
       where: { AND: [coSoId ? { coSoId } : {}, buoiKhamId ? { buoiKhamId } : {}, trangThai ? { trangThai } : {}] },
-      include: {
-        coSo: true, buoiKham: true, _count: { select: { nhatKy: true } },
-        tuVanVien: { select: { hoTen: true } }, nguoiChotCuoi: { select: { hoTen: true } },
-      },
+      include: { buoiKham: true, tuVanVien: { select: { hoTen: true } } },
       orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }],
     });
 
-    const aoa: (string | number)[][] = [[...HOSO_HEADER], ...rows.map((h) => hoSoToCells({ ...h, soLanLienHe: h._count.nhatKy }))];
+    const aoa: (string | number)[][] = [[...HOSO_HEADER], ...rows.map((h) => hoSoToCells(h))];
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Danh sách BN");

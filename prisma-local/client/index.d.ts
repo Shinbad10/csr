@@ -1706,6 +1706,7 @@ export namespace Prisma {
     hisUser: string | null
     hisPass: string | null
     hisDbName: string | null
+    cauHinhTruong: string | null
   }
 
   export type CoSoMaxAggregateOutputType = {
@@ -1724,6 +1725,7 @@ export namespace Prisma {
     hisUser: string | null
     hisPass: string | null
     hisDbName: string | null
+    cauHinhTruong: string | null
   }
 
   export type CoSoCountAggregateOutputType = {
@@ -1742,6 +1744,7 @@ export namespace Prisma {
     hisUser: number
     hisPass: number
     hisDbName: number
+    cauHinhTruong: number
     _all: number
   }
 
@@ -1762,6 +1765,7 @@ export namespace Prisma {
     hisUser?: true
     hisPass?: true
     hisDbName?: true
+    cauHinhTruong?: true
   }
 
   export type CoSoMaxAggregateInputType = {
@@ -1780,6 +1784,7 @@ export namespace Prisma {
     hisUser?: true
     hisPass?: true
     hisDbName?: true
+    cauHinhTruong?: true
   }
 
   export type CoSoCountAggregateInputType = {
@@ -1798,6 +1803,7 @@ export namespace Prisma {
     hisUser?: true
     hisPass?: true
     hisDbName?: true
+    cauHinhTruong?: true
     _all?: true
   }
 
@@ -1889,6 +1895,7 @@ export namespace Prisma {
     hisUser: string | null
     hisPass: string | null
     hisDbName: string | null
+    cauHinhTruong: string | null
     _count: CoSoCountAggregateOutputType | null
     _min: CoSoMinAggregateOutputType | null
     _max: CoSoMaxAggregateOutputType | null
@@ -1924,6 +1931,7 @@ export namespace Prisma {
     hisUser?: boolean
     hisPass?: boolean
     hisDbName?: boolean
+    cauHinhTruong?: boolean
     buoiKham?: boolean | CoSo$buoiKhamArgs<ExtArgs>
     nguoiDung?: boolean | CoSo$nguoiDungArgs<ExtArgs>
     hoSo?: boolean | CoSo$hoSoArgs<ExtArgs>
@@ -1946,6 +1954,7 @@ export namespace Prisma {
     hisUser?: boolean
     hisPass?: boolean
     hisDbName?: boolean
+    cauHinhTruong?: boolean
   }, ExtArgs["result"]["coSo"]>
 
   export type CoSoSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -1964,6 +1973,7 @@ export namespace Prisma {
     hisUser?: boolean
     hisPass?: boolean
     hisDbName?: boolean
+    cauHinhTruong?: boolean
   }, ExtArgs["result"]["coSo"]>
 
   export type CoSoSelectScalar = {
@@ -1982,9 +1992,10 @@ export namespace Prisma {
     hisUser?: boolean
     hisPass?: boolean
     hisDbName?: boolean
+    cauHinhTruong?: boolean
   }
 
-  export type CoSoOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ten" | "diaChi" | "trangThai" | "sheetId" | "bhxhUser" | "bhxhPass" | "bhxhMaCSKCB" | "bhxhHoTenCB" | "bhxhCccdCB" | "hisHost" | "hisPort" | "hisUser" | "hisPass" | "hisDbName", ExtArgs["result"]["coSo"]>
+  export type CoSoOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ten" | "diaChi" | "trangThai" | "sheetId" | "bhxhUser" | "bhxhPass" | "bhxhMaCSKCB" | "bhxhHoTenCB" | "bhxhCccdCB" | "hisHost" | "hisPort" | "hisUser" | "hisPass" | "hisDbName" | "cauHinhTruong", ExtArgs["result"]["coSo"]>
   export type CoSoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     buoiKham?: boolean | CoSo$buoiKhamArgs<ExtArgs>
     nguoiDung?: boolean | CoSo$nguoiDungArgs<ExtArgs>
@@ -2017,6 +2028,7 @@ export namespace Prisma {
       hisUser: string | null
       hisPass: string | null
       hisDbName: string | null
+      cauHinhTruong: string | null
     }, ExtArgs["result"]["coSo"]>
     composites: {}
   }
@@ -2458,6 +2470,7 @@ export namespace Prisma {
     readonly hisUser: FieldRef<"CoSo", 'String'>
     readonly hisPass: FieldRef<"CoSo", 'String'>
     readonly hisDbName: FieldRef<"CoSo", 'String'>
+    readonly cauHinhTruong: FieldRef<"CoSo", 'String'>
   }
     
 
@@ -4203,6 +4216,7 @@ export namespace Prisma {
     ngayKham: Date | null
     xa: string | null
     diaDiem: string | null
+    bacSiKham: string | null
     ghiChu: string | null
     nguoiTao: string | null
     createdAt: Date | null
@@ -4215,6 +4229,7 @@ export namespace Prisma {
     ngayKham: Date | null
     xa: string | null
     diaDiem: string | null
+    bacSiKham: string | null
     ghiChu: string | null
     nguoiTao: string | null
     createdAt: Date | null
@@ -4227,6 +4242,7 @@ export namespace Prisma {
     ngayKham: number
     xa: number
     diaDiem: number
+    bacSiKham: number
     ghiChu: number
     nguoiTao: number
     createdAt: number
@@ -4241,6 +4257,7 @@ export namespace Prisma {
     ngayKham?: true
     xa?: true
     diaDiem?: true
+    bacSiKham?: true
     ghiChu?: true
     nguoiTao?: true
     createdAt?: true
@@ -4253,6 +4270,7 @@ export namespace Prisma {
     ngayKham?: true
     xa?: true
     diaDiem?: true
+    bacSiKham?: true
     ghiChu?: true
     nguoiTao?: true
     createdAt?: true
@@ -4265,6 +4283,7 @@ export namespace Prisma {
     ngayKham?: true
     xa?: true
     diaDiem?: true
+    bacSiKham?: true
     ghiChu?: true
     nguoiTao?: true
     createdAt?: true
@@ -4350,6 +4369,7 @@ export namespace Prisma {
     ngayKham: Date
     xa: string
     diaDiem: string
+    bacSiKham: string | null
     ghiChu: string | null
     nguoiTao: string
     createdAt: Date
@@ -4379,6 +4399,7 @@ export namespace Prisma {
     ngayKham?: boolean
     xa?: boolean
     diaDiem?: boolean
+    bacSiKham?: boolean
     ghiChu?: boolean
     nguoiTao?: boolean
     createdAt?: boolean
@@ -4395,6 +4416,7 @@ export namespace Prisma {
     ngayKham?: boolean
     xa?: boolean
     diaDiem?: boolean
+    bacSiKham?: boolean
     ghiChu?: boolean
     nguoiTao?: boolean
     createdAt?: boolean
@@ -4409,6 +4431,7 @@ export namespace Prisma {
     ngayKham?: boolean
     xa?: boolean
     diaDiem?: boolean
+    bacSiKham?: boolean
     ghiChu?: boolean
     nguoiTao?: boolean
     createdAt?: boolean
@@ -4423,13 +4446,14 @@ export namespace Prisma {
     ngayKham?: boolean
     xa?: boolean
     diaDiem?: boolean
+    bacSiKham?: boolean
     ghiChu?: boolean
     nguoiTao?: boolean
     createdAt?: boolean
     syncStatus?: boolean
   }
 
-  export type BuoiKhamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "coSoId" | "ngayKham" | "xa" | "diaDiem" | "ghiChu" | "nguoiTao" | "createdAt" | "syncStatus", ExtArgs["result"]["buoiKham"]>
+  export type BuoiKhamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "coSoId" | "ngayKham" | "xa" | "diaDiem" | "bacSiKham" | "ghiChu" | "nguoiTao" | "createdAt" | "syncStatus", ExtArgs["result"]["buoiKham"]>
   export type BuoiKhamInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
     nguoiTaoRef?: boolean | NguoiDungCSRDefaultArgs<ExtArgs>
@@ -4458,6 +4482,7 @@ export namespace Prisma {
       ngayKham: Date
       xa: string
       diaDiem: string
+      bacSiKham: string | null
       ghiChu: string | null
       nguoiTao: string
       createdAt: Date
@@ -4893,6 +4918,7 @@ export namespace Prisma {
     readonly ngayKham: FieldRef<"BuoiKham", 'DateTime'>
     readonly xa: FieldRef<"BuoiKham", 'String'>
     readonly diaDiem: FieldRef<"BuoiKham", 'String'>
+    readonly bacSiKham: FieldRef<"BuoiKham", 'String'>
     readonly ghiChu: FieldRef<"BuoiKham", 'String'>
     readonly nguoiTao: FieldRef<"BuoiKham", 'String'>
     readonly createdAt: FieldRef<"BuoiKham", 'DateTime'>
@@ -5353,6 +5379,7 @@ export namespace Prisma {
   export type HoSoBenhNhanAvgAggregateOutputType = {
     stt: number | null
     namSinh: number | null
+    mucHuongBHYT: number | null
     soTienBao: number | null
     soTienThucThu: number | null
   }
@@ -5360,6 +5387,7 @@ export namespace Prisma {
   export type HoSoBenhNhanSumAggregateOutputType = {
     stt: number | null
     namSinh: number | null
+    mucHuongBHYT: number | null
     soTienBao: number | null
     soTienThucThu: number | null
   }
@@ -5379,11 +5407,28 @@ export namespace Prisma {
     diaChi: string | null
     sdt: string | null
     sdtNguoiNha: string | null
+    mucHuongBHYT: number | null
+    khuPho: string | null
+    xaPhuong: string | null
     thiLucMP: string | null
     thiLucMT: string | null
     chanDoan: string | null
     chanDoanKhac: string | null
     khuyenNghi: string | null
+    benhSu: boolean | null
+    loaiBenhSu: string | null
+    chieuCao: string | null
+    canNang: string | null
+    benhLy: string | null
+    loaiBenhLy: string | null
+    loaiBenhLyKhac: string | null
+    huongXuTri: string | null
+    huongXuTriKhac: string | null
+    bacSiChiDinh: string | null
+    nhanVienTuVan: string | null
+    xacNhanDieuTri: boolean | null
+    lyDoKhongDieuTri: string | null
+    diemKham: string | null
     bhyt: string | null
     tuVanVienMa: string | null
     soTienBao: number | null
@@ -5424,11 +5469,28 @@ export namespace Prisma {
     diaChi: string | null
     sdt: string | null
     sdtNguoiNha: string | null
+    mucHuongBHYT: number | null
+    khuPho: string | null
+    xaPhuong: string | null
     thiLucMP: string | null
     thiLucMT: string | null
     chanDoan: string | null
     chanDoanKhac: string | null
     khuyenNghi: string | null
+    benhSu: boolean | null
+    loaiBenhSu: string | null
+    chieuCao: string | null
+    canNang: string | null
+    benhLy: string | null
+    loaiBenhLy: string | null
+    loaiBenhLyKhac: string | null
+    huongXuTri: string | null
+    huongXuTriKhac: string | null
+    bacSiChiDinh: string | null
+    nhanVienTuVan: string | null
+    xacNhanDieuTri: boolean | null
+    lyDoKhongDieuTri: string | null
+    diemKham: string | null
     bhyt: string | null
     tuVanVienMa: string | null
     soTienBao: number | null
@@ -5469,11 +5531,28 @@ export namespace Prisma {
     diaChi: number
     sdt: number
     sdtNguoiNha: number
+    mucHuongBHYT: number
+    khuPho: number
+    xaPhuong: number
     thiLucMP: number
     thiLucMT: number
     chanDoan: number
     chanDoanKhac: number
     khuyenNghi: number
+    benhSu: number
+    loaiBenhSu: number
+    chieuCao: number
+    canNang: number
+    benhLy: number
+    loaiBenhLy: number
+    loaiBenhLyKhac: number
+    huongXuTri: number
+    huongXuTriKhac: number
+    bacSiChiDinh: number
+    nhanVienTuVan: number
+    xacNhanDieuTri: number
+    lyDoKhongDieuTri: number
+    diemKham: number
     bhyt: number
     tuVanVienMa: number
     soTienBao: number
@@ -5504,6 +5583,7 @@ export namespace Prisma {
   export type HoSoBenhNhanAvgAggregateInputType = {
     stt?: true
     namSinh?: true
+    mucHuongBHYT?: true
     soTienBao?: true
     soTienThucThu?: true
   }
@@ -5511,6 +5591,7 @@ export namespace Prisma {
   export type HoSoBenhNhanSumAggregateInputType = {
     stt?: true
     namSinh?: true
+    mucHuongBHYT?: true
     soTienBao?: true
     soTienThucThu?: true
   }
@@ -5530,11 +5611,28 @@ export namespace Prisma {
     diaChi?: true
     sdt?: true
     sdtNguoiNha?: true
+    mucHuongBHYT?: true
+    khuPho?: true
+    xaPhuong?: true
     thiLucMP?: true
     thiLucMT?: true
     chanDoan?: true
     chanDoanKhac?: true
     khuyenNghi?: true
+    benhSu?: true
+    loaiBenhSu?: true
+    chieuCao?: true
+    canNang?: true
+    benhLy?: true
+    loaiBenhLy?: true
+    loaiBenhLyKhac?: true
+    huongXuTri?: true
+    huongXuTriKhac?: true
+    bacSiChiDinh?: true
+    nhanVienTuVan?: true
+    xacNhanDieuTri?: true
+    lyDoKhongDieuTri?: true
+    diemKham?: true
     bhyt?: true
     tuVanVienMa?: true
     soTienBao?: true
@@ -5575,11 +5673,28 @@ export namespace Prisma {
     diaChi?: true
     sdt?: true
     sdtNguoiNha?: true
+    mucHuongBHYT?: true
+    khuPho?: true
+    xaPhuong?: true
     thiLucMP?: true
     thiLucMT?: true
     chanDoan?: true
     chanDoanKhac?: true
     khuyenNghi?: true
+    benhSu?: true
+    loaiBenhSu?: true
+    chieuCao?: true
+    canNang?: true
+    benhLy?: true
+    loaiBenhLy?: true
+    loaiBenhLyKhac?: true
+    huongXuTri?: true
+    huongXuTriKhac?: true
+    bacSiChiDinh?: true
+    nhanVienTuVan?: true
+    xacNhanDieuTri?: true
+    lyDoKhongDieuTri?: true
+    diemKham?: true
     bhyt?: true
     tuVanVienMa?: true
     soTienBao?: true
@@ -5620,11 +5735,28 @@ export namespace Prisma {
     diaChi?: true
     sdt?: true
     sdtNguoiNha?: true
+    mucHuongBHYT?: true
+    khuPho?: true
+    xaPhuong?: true
     thiLucMP?: true
     thiLucMT?: true
     chanDoan?: true
     chanDoanKhac?: true
     khuyenNghi?: true
+    benhSu?: true
+    loaiBenhSu?: true
+    chieuCao?: true
+    canNang?: true
+    benhLy?: true
+    loaiBenhLy?: true
+    loaiBenhLyKhac?: true
+    huongXuTri?: true
+    huongXuTriKhac?: true
+    bacSiChiDinh?: true
+    nhanVienTuVan?: true
+    xacNhanDieuTri?: true
+    lyDoKhongDieuTri?: true
+    diemKham?: true
     bhyt?: true
     tuVanVienMa?: true
     soTienBao?: true
@@ -5752,11 +5884,28 @@ export namespace Prisma {
     diaChi: string | null
     sdt: string | null
     sdtNguoiNha: string | null
+    mucHuongBHYT: number | null
+    khuPho: string | null
+    xaPhuong: string | null
     thiLucMP: string | null
     thiLucMT: string | null
     chanDoan: string
     chanDoanKhac: string | null
     khuyenNghi: string | null
+    benhSu: boolean | null
+    loaiBenhSu: string
+    chieuCao: string | null
+    canNang: string | null
+    benhLy: string | null
+    loaiBenhLy: string
+    loaiBenhLyKhac: string | null
+    huongXuTri: string | null
+    huongXuTriKhac: string | null
+    bacSiChiDinh: string | null
+    nhanVienTuVan: string | null
+    xacNhanDieuTri: boolean | null
+    lyDoKhongDieuTri: string | null
+    diemKham: string | null
     bhyt: string | null
     tuVanVienMa: string | null
     soTienBao: number | null
@@ -5816,11 +5965,28 @@ export namespace Prisma {
     diaChi?: boolean
     sdt?: boolean
     sdtNguoiNha?: boolean
+    mucHuongBHYT?: boolean
+    khuPho?: boolean
+    xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
     chanDoan?: boolean
     chanDoanKhac?: boolean
     khuyenNghi?: boolean
+    benhSu?: boolean
+    loaiBenhSu?: boolean
+    chieuCao?: boolean
+    canNang?: boolean
+    benhLy?: boolean
+    loaiBenhLy?: boolean
+    loaiBenhLyKhac?: boolean
+    huongXuTri?: boolean
+    huongXuTriKhac?: boolean
+    bacSiChiDinh?: boolean
+    nhanVienTuVan?: boolean
+    xacNhanDieuTri?: boolean
+    lyDoKhongDieuTri?: boolean
+    diemKham?: boolean
     bhyt?: boolean
     tuVanVienMa?: boolean
     soTienBao?: boolean
@@ -5868,11 +6034,28 @@ export namespace Prisma {
     diaChi?: boolean
     sdt?: boolean
     sdtNguoiNha?: boolean
+    mucHuongBHYT?: boolean
+    khuPho?: boolean
+    xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
     chanDoan?: boolean
     chanDoanKhac?: boolean
     khuyenNghi?: boolean
+    benhSu?: boolean
+    loaiBenhSu?: boolean
+    chieuCao?: boolean
+    canNang?: boolean
+    benhLy?: boolean
+    loaiBenhLy?: boolean
+    loaiBenhLyKhac?: boolean
+    huongXuTri?: boolean
+    huongXuTriKhac?: boolean
+    bacSiChiDinh?: boolean
+    nhanVienTuVan?: boolean
+    xacNhanDieuTri?: boolean
+    lyDoKhongDieuTri?: boolean
+    diemKham?: boolean
     bhyt?: boolean
     tuVanVienMa?: boolean
     soTienBao?: boolean
@@ -5918,11 +6101,28 @@ export namespace Prisma {
     diaChi?: boolean
     sdt?: boolean
     sdtNguoiNha?: boolean
+    mucHuongBHYT?: boolean
+    khuPho?: boolean
+    xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
     chanDoan?: boolean
     chanDoanKhac?: boolean
     khuyenNghi?: boolean
+    benhSu?: boolean
+    loaiBenhSu?: boolean
+    chieuCao?: boolean
+    canNang?: boolean
+    benhLy?: boolean
+    loaiBenhLy?: boolean
+    loaiBenhLyKhac?: boolean
+    huongXuTri?: boolean
+    huongXuTriKhac?: boolean
+    bacSiChiDinh?: boolean
+    nhanVienTuVan?: boolean
+    xacNhanDieuTri?: boolean
+    lyDoKhongDieuTri?: boolean
+    diemKham?: boolean
     bhyt?: boolean
     tuVanVienMa?: boolean
     soTienBao?: boolean
@@ -5968,11 +6168,28 @@ export namespace Prisma {
     diaChi?: boolean
     sdt?: boolean
     sdtNguoiNha?: boolean
+    mucHuongBHYT?: boolean
+    khuPho?: boolean
+    xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
     chanDoan?: boolean
     chanDoanKhac?: boolean
     khuyenNghi?: boolean
+    benhSu?: boolean
+    loaiBenhSu?: boolean
+    chieuCao?: boolean
+    canNang?: boolean
+    benhLy?: boolean
+    loaiBenhLy?: boolean
+    loaiBenhLyKhac?: boolean
+    huongXuTri?: boolean
+    huongXuTriKhac?: boolean
+    bacSiChiDinh?: boolean
+    nhanVienTuVan?: boolean
+    xacNhanDieuTri?: boolean
+    lyDoKhongDieuTri?: boolean
+    diemKham?: boolean
     bhyt?: boolean
     tuVanVienMa?: boolean
     soTienBao?: boolean
@@ -5998,7 +6215,7 @@ export namespace Prisma {
     syncStatus?: boolean
   }
 
-  export type HoSoBenhNhanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "maBN" | "maBNHIS" | "stt" | "buoiKhamId" | "coSoId" | "hoTen" | "gioiTinh" | "ngaySinh" | "namSinh" | "cccd" | "diaChi" | "sdt" | "sdtNguoiNha" | "thiLucMP" | "thiLucMT" | "chanDoan" | "chanDoanKhac" | "khuyenNghi" | "bhyt" | "tuVanVienMa" | "soTienBao" | "ngayDieuTri" | "diemDon" | "gioDon" | "nhom" | "followUpStatus" | "nguoiPhuTrachMa" | "nguoiChotCuoiMa" | "ngayChot" | "daDon" | "ngayMoThucTe" | "soTienThucThu" | "trangThaiDieuTri" | "ngayTaiKham" | "ghiChuMat2" | "trangThai" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "syncStatus", ExtArgs["result"]["hoSoBenhNhan"]>
+  export type HoSoBenhNhanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "maBN" | "maBNHIS" | "stt" | "buoiKhamId" | "coSoId" | "hoTen" | "gioiTinh" | "ngaySinh" | "namSinh" | "cccd" | "diaChi" | "sdt" | "sdtNguoiNha" | "mucHuongBHYT" | "khuPho" | "xaPhuong" | "thiLucMP" | "thiLucMT" | "chanDoan" | "chanDoanKhac" | "khuyenNghi" | "benhSu" | "loaiBenhSu" | "chieuCao" | "canNang" | "benhLy" | "loaiBenhLy" | "loaiBenhLyKhac" | "huongXuTri" | "huongXuTriKhac" | "bacSiChiDinh" | "nhanVienTuVan" | "xacNhanDieuTri" | "lyDoKhongDieuTri" | "diemKham" | "bhyt" | "tuVanVienMa" | "soTienBao" | "ngayDieuTri" | "diemDon" | "gioDon" | "nhom" | "followUpStatus" | "nguoiPhuTrachMa" | "nguoiChotCuoiMa" | "ngayChot" | "daDon" | "ngayMoThucTe" | "soTienThucThu" | "trangThaiDieuTri" | "ngayTaiKham" | "ghiChuMat2" | "trangThai" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "syncStatus", ExtArgs["result"]["hoSoBenhNhan"]>
   export type HoSoBenhNhanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     buoiKham?: boolean | BuoiKhamDefaultArgs<ExtArgs>
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
@@ -6048,11 +6265,28 @@ export namespace Prisma {
       diaChi: string | null
       sdt: string | null
       sdtNguoiNha: string | null
+      mucHuongBHYT: number | null
+      khuPho: string | null
+      xaPhuong: string | null
       thiLucMP: string | null
       thiLucMT: string | null
       chanDoan: string
       chanDoanKhac: string | null
       khuyenNghi: string | null
+      benhSu: boolean | null
+      loaiBenhSu: string
+      chieuCao: string | null
+      canNang: string | null
+      benhLy: string | null
+      loaiBenhLy: string
+      loaiBenhLyKhac: string | null
+      huongXuTri: string | null
+      huongXuTriKhac: string | null
+      bacSiChiDinh: string | null
+      nhanVienTuVan: string | null
+      xacNhanDieuTri: boolean | null
+      lyDoKhongDieuTri: string | null
+      diemKham: string | null
       bhyt: string | null
       tuVanVienMa: string | null
       soTienBao: number | null
@@ -6519,11 +6753,28 @@ export namespace Prisma {
     readonly diaChi: FieldRef<"HoSoBenhNhan", 'String'>
     readonly sdt: FieldRef<"HoSoBenhNhan", 'String'>
     readonly sdtNguoiNha: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly mucHuongBHYT: FieldRef<"HoSoBenhNhan", 'Int'>
+    readonly khuPho: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly xaPhuong: FieldRef<"HoSoBenhNhan", 'String'>
     readonly thiLucMP: FieldRef<"HoSoBenhNhan", 'String'>
     readonly thiLucMT: FieldRef<"HoSoBenhNhan", 'String'>
     readonly chanDoan: FieldRef<"HoSoBenhNhan", 'String'>
     readonly chanDoanKhac: FieldRef<"HoSoBenhNhan", 'String'>
     readonly khuyenNghi: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly benhSu: FieldRef<"HoSoBenhNhan", 'Boolean'>
+    readonly loaiBenhSu: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly chieuCao: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly canNang: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly benhLy: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly loaiBenhLy: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly loaiBenhLyKhac: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly huongXuTri: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly huongXuTriKhac: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly bacSiChiDinh: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly nhanVienTuVan: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly xacNhanDieuTri: FieldRef<"HoSoBenhNhan", 'Boolean'>
+    readonly lyDoKhongDieuTri: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly diemKham: FieldRef<"HoSoBenhNhan", 'String'>
     readonly bhyt: FieldRef<"HoSoBenhNhan", 'String'>
     readonly tuVanVienMa: FieldRef<"HoSoBenhNhan", 'String'>
     readonly soTienBao: FieldRef<"HoSoBenhNhan", 'Float'>
@@ -11240,7 +11491,8 @@ export namespace Prisma {
     hisPort: 'hisPort',
     hisUser: 'hisUser',
     hisPass: 'hisPass',
-    hisDbName: 'hisDbName'
+    hisDbName: 'hisDbName',
+    cauHinhTruong: 'cauHinhTruong'
   };
 
   export type CoSoScalarFieldEnum = (typeof CoSoScalarFieldEnum)[keyof typeof CoSoScalarFieldEnum]
@@ -11265,6 +11517,7 @@ export namespace Prisma {
     ngayKham: 'ngayKham',
     xa: 'xa',
     diaDiem: 'diaDiem',
+    bacSiKham: 'bacSiKham',
     ghiChu: 'ghiChu',
     nguoiTao: 'nguoiTao',
     createdAt: 'createdAt',
@@ -11289,11 +11542,28 @@ export namespace Prisma {
     diaChi: 'diaChi',
     sdt: 'sdt',
     sdtNguoiNha: 'sdtNguoiNha',
+    mucHuongBHYT: 'mucHuongBHYT',
+    khuPho: 'khuPho',
+    xaPhuong: 'xaPhuong',
     thiLucMP: 'thiLucMP',
     thiLucMT: 'thiLucMT',
     chanDoan: 'chanDoan',
     chanDoanKhac: 'chanDoanKhac',
     khuyenNghi: 'khuyenNghi',
+    benhSu: 'benhSu',
+    loaiBenhSu: 'loaiBenhSu',
+    chieuCao: 'chieuCao',
+    canNang: 'canNang',
+    benhLy: 'benhLy',
+    loaiBenhLy: 'loaiBenhLy',
+    loaiBenhLyKhac: 'loaiBenhLyKhac',
+    huongXuTri: 'huongXuTri',
+    huongXuTriKhac: 'huongXuTriKhac',
+    bacSiChiDinh: 'bacSiChiDinh',
+    nhanVienTuVan: 'nhanVienTuVan',
+    xacNhanDieuTri: 'xacNhanDieuTri',
+    lyDoKhongDieuTri: 'lyDoKhongDieuTri',
+    diemKham: 'diemKham',
     bhyt: 'bhyt',
     tuVanVienMa: 'tuVanVienMa',
     soTienBao: 'soTienBao',
@@ -11409,16 +11679,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Float'
+   * Reference to a field of type 'Boolean'
    */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
   /**
-   * Reference to a field of type 'Boolean'
+   * Reference to a field of type 'Float'
    */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
   /**
    * Deep Input Types
@@ -11444,6 +11714,7 @@ export namespace Prisma {
     hisUser?: StringNullableFilter<"CoSo"> | string | null
     hisPass?: StringNullableFilter<"CoSo"> | string | null
     hisDbName?: StringNullableFilter<"CoSo"> | string | null
+    cauHinhTruong?: StringNullableFilter<"CoSo"> | string | null
     buoiKham?: BuoiKhamListRelationFilter
     nguoiDung?: NguoiDungCSRListRelationFilter
     hoSo?: HoSoBenhNhanListRelationFilter
@@ -11465,6 +11736,7 @@ export namespace Prisma {
     hisUser?: SortOrderInput | SortOrder
     hisPass?: SortOrderInput | SortOrder
     hisDbName?: SortOrderInput | SortOrder
+    cauHinhTruong?: SortOrderInput | SortOrder
     buoiKham?: BuoiKhamOrderByRelationAggregateInput
     nguoiDung?: NguoiDungCSROrderByRelationAggregateInput
     hoSo?: HoSoBenhNhanOrderByRelationAggregateInput
@@ -11489,6 +11761,7 @@ export namespace Prisma {
     hisUser?: StringNullableFilter<"CoSo"> | string | null
     hisPass?: StringNullableFilter<"CoSo"> | string | null
     hisDbName?: StringNullableFilter<"CoSo"> | string | null
+    cauHinhTruong?: StringNullableFilter<"CoSo"> | string | null
     buoiKham?: BuoiKhamListRelationFilter
     nguoiDung?: NguoiDungCSRListRelationFilter
     hoSo?: HoSoBenhNhanListRelationFilter
@@ -11510,6 +11783,7 @@ export namespace Prisma {
     hisUser?: SortOrderInput | SortOrder
     hisPass?: SortOrderInput | SortOrder
     hisDbName?: SortOrderInput | SortOrder
+    cauHinhTruong?: SortOrderInput | SortOrder
     _count?: CoSoCountOrderByAggregateInput
     _max?: CoSoMaxOrderByAggregateInput
     _min?: CoSoMinOrderByAggregateInput
@@ -11534,6 +11808,7 @@ export namespace Prisma {
     hisUser?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
     hisPass?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
     hisDbName?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
+    cauHinhTruong?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
   }
 
   export type NguoiDungCSRWhereInput = {
@@ -11625,6 +11900,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFilter<"BuoiKham"> | Date | string
     xa?: StringFilter<"BuoiKham"> | string
     diaDiem?: StringFilter<"BuoiKham"> | string
+    bacSiKham?: StringNullableFilter<"BuoiKham"> | string | null
     ghiChu?: StringNullableFilter<"BuoiKham"> | string | null
     nguoiTao?: StringFilter<"BuoiKham"> | string
     createdAt?: DateTimeFilter<"BuoiKham"> | Date | string
@@ -11640,6 +11916,7 @@ export namespace Prisma {
     ngayKham?: SortOrder
     xa?: SortOrder
     diaDiem?: SortOrder
+    bacSiKham?: SortOrderInput | SortOrder
     ghiChu?: SortOrderInput | SortOrder
     nguoiTao?: SortOrder
     createdAt?: SortOrder
@@ -11658,6 +11935,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFilter<"BuoiKham"> | Date | string
     xa?: StringFilter<"BuoiKham"> | string
     diaDiem?: StringFilter<"BuoiKham"> | string
+    bacSiKham?: StringNullableFilter<"BuoiKham"> | string | null
     ghiChu?: StringNullableFilter<"BuoiKham"> | string | null
     nguoiTao?: StringFilter<"BuoiKham"> | string
     createdAt?: DateTimeFilter<"BuoiKham"> | Date | string
@@ -11673,6 +11951,7 @@ export namespace Prisma {
     ngayKham?: SortOrder
     xa?: SortOrder
     diaDiem?: SortOrder
+    bacSiKham?: SortOrderInput | SortOrder
     ghiChu?: SortOrderInput | SortOrder
     nguoiTao?: SortOrder
     createdAt?: SortOrder
@@ -11691,6 +11970,7 @@ export namespace Prisma {
     ngayKham?: DateTimeWithAggregatesFilter<"BuoiKham"> | Date | string
     xa?: StringWithAggregatesFilter<"BuoiKham"> | string
     diaDiem?: StringWithAggregatesFilter<"BuoiKham"> | string
+    bacSiKham?: StringNullableWithAggregatesFilter<"BuoiKham"> | string | null
     ghiChu?: StringNullableWithAggregatesFilter<"BuoiKham"> | string | null
     nguoiTao?: StringWithAggregatesFilter<"BuoiKham"> | string
     createdAt?: DateTimeWithAggregatesFilter<"BuoiKham"> | Date | string
@@ -11715,11 +11995,28 @@ export namespace Prisma {
     diaChi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdtNguoiNha?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    mucHuongBHYT?: IntNullableFilter<"HoSoBenhNhan"> | number | null
+    khuPho?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    xaPhuong?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoan?: StringFilter<"HoSoBenhNhan"> | string
     chanDoanKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     khuyenNghi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    benhSu?: BoolNullableFilter<"HoSoBenhNhan"> | boolean | null
+    loaiBenhSu?: StringFilter<"HoSoBenhNhan"> | string
+    chieuCao?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    canNang?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    benhLy?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    loaiBenhLy?: StringFilter<"HoSoBenhNhan"> | string
+    loaiBenhLyKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    huongXuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    huongXuTriKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    bacSiChiDinh?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    nhanVienTuVan?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    xacNhanDieuTri?: BoolNullableFilter<"HoSoBenhNhan"> | boolean | null
+    lyDoKhongDieuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    diemKham?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     bhyt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     tuVanVienMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     soTienBao?: FloatNullableFilter<"HoSoBenhNhan"> | number | null
@@ -11766,11 +12063,28 @@ export namespace Prisma {
     diaChi?: SortOrderInput | SortOrder
     sdt?: SortOrderInput | SortOrder
     sdtNguoiNha?: SortOrderInput | SortOrder
+    mucHuongBHYT?: SortOrderInput | SortOrder
+    khuPho?: SortOrderInput | SortOrder
+    xaPhuong?: SortOrderInput | SortOrder
     thiLucMP?: SortOrderInput | SortOrder
     thiLucMT?: SortOrderInput | SortOrder
     chanDoan?: SortOrder
     chanDoanKhac?: SortOrderInput | SortOrder
     khuyenNghi?: SortOrderInput | SortOrder
+    benhSu?: SortOrderInput | SortOrder
+    loaiBenhSu?: SortOrder
+    chieuCao?: SortOrderInput | SortOrder
+    canNang?: SortOrderInput | SortOrder
+    benhLy?: SortOrderInput | SortOrder
+    loaiBenhLy?: SortOrder
+    loaiBenhLyKhac?: SortOrderInput | SortOrder
+    huongXuTri?: SortOrderInput | SortOrder
+    huongXuTriKhac?: SortOrderInput | SortOrder
+    bacSiChiDinh?: SortOrderInput | SortOrder
+    nhanVienTuVan?: SortOrderInput | SortOrder
+    xacNhanDieuTri?: SortOrderInput | SortOrder
+    lyDoKhongDieuTri?: SortOrderInput | SortOrder
+    diemKham?: SortOrderInput | SortOrder
     bhyt?: SortOrderInput | SortOrder
     tuVanVienMa?: SortOrderInput | SortOrder
     soTienBao?: SortOrderInput | SortOrder
@@ -11820,11 +12134,28 @@ export namespace Prisma {
     diaChi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdtNguoiNha?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    mucHuongBHYT?: IntNullableFilter<"HoSoBenhNhan"> | number | null
+    khuPho?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    xaPhuong?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoan?: StringFilter<"HoSoBenhNhan"> | string
     chanDoanKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     khuyenNghi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    benhSu?: BoolNullableFilter<"HoSoBenhNhan"> | boolean | null
+    loaiBenhSu?: StringFilter<"HoSoBenhNhan"> | string
+    chieuCao?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    canNang?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    benhLy?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    loaiBenhLy?: StringFilter<"HoSoBenhNhan"> | string
+    loaiBenhLyKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    huongXuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    huongXuTriKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    bacSiChiDinh?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    nhanVienTuVan?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    xacNhanDieuTri?: BoolNullableFilter<"HoSoBenhNhan"> | boolean | null
+    lyDoKhongDieuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    diemKham?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     bhyt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     tuVanVienMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     soTienBao?: FloatNullableFilter<"HoSoBenhNhan"> | number | null
@@ -11871,11 +12202,28 @@ export namespace Prisma {
     diaChi?: SortOrderInput | SortOrder
     sdt?: SortOrderInput | SortOrder
     sdtNguoiNha?: SortOrderInput | SortOrder
+    mucHuongBHYT?: SortOrderInput | SortOrder
+    khuPho?: SortOrderInput | SortOrder
+    xaPhuong?: SortOrderInput | SortOrder
     thiLucMP?: SortOrderInput | SortOrder
     thiLucMT?: SortOrderInput | SortOrder
     chanDoan?: SortOrder
     chanDoanKhac?: SortOrderInput | SortOrder
     khuyenNghi?: SortOrderInput | SortOrder
+    benhSu?: SortOrderInput | SortOrder
+    loaiBenhSu?: SortOrder
+    chieuCao?: SortOrderInput | SortOrder
+    canNang?: SortOrderInput | SortOrder
+    benhLy?: SortOrderInput | SortOrder
+    loaiBenhLy?: SortOrder
+    loaiBenhLyKhac?: SortOrderInput | SortOrder
+    huongXuTri?: SortOrderInput | SortOrder
+    huongXuTriKhac?: SortOrderInput | SortOrder
+    bacSiChiDinh?: SortOrderInput | SortOrder
+    nhanVienTuVan?: SortOrderInput | SortOrder
+    xacNhanDieuTri?: SortOrderInput | SortOrder
+    lyDoKhongDieuTri?: SortOrderInput | SortOrder
+    diemKham?: SortOrderInput | SortOrder
     bhyt?: SortOrderInput | SortOrder
     tuVanVienMa?: SortOrderInput | SortOrder
     soTienBao?: SortOrderInput | SortOrder
@@ -11924,11 +12272,28 @@ export namespace Prisma {
     diaChi?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     sdtNguoiNha?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    mucHuongBHYT?: IntNullableWithAggregatesFilter<"HoSoBenhNhan"> | number | null
+    khuPho?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    xaPhuong?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     chanDoan?: StringWithAggregatesFilter<"HoSoBenhNhan"> | string
     chanDoanKhac?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     khuyenNghi?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    benhSu?: BoolNullableWithAggregatesFilter<"HoSoBenhNhan"> | boolean | null
+    loaiBenhSu?: StringWithAggregatesFilter<"HoSoBenhNhan"> | string
+    chieuCao?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    canNang?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    benhLy?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    loaiBenhLy?: StringWithAggregatesFilter<"HoSoBenhNhan"> | string
+    loaiBenhLyKhac?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    huongXuTri?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    huongXuTriKhac?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    bacSiChiDinh?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    nhanVienTuVan?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    xacNhanDieuTri?: BoolNullableWithAggregatesFilter<"HoSoBenhNhan"> | boolean | null
+    lyDoKhongDieuTri?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    diemKham?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     bhyt?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     tuVanVienMa?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     soTienBao?: FloatNullableWithAggregatesFilter<"HoSoBenhNhan"> | number | null
@@ -12190,6 +12555,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     buoiKham?: BuoiKhamCreateNestedManyWithoutCoSoInput
     nguoiDung?: NguoiDungCSRCreateNestedManyWithoutCoSoInput
     hoSo?: HoSoBenhNhanCreateNestedManyWithoutCoSoInput
@@ -12211,6 +12577,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     buoiKham?: BuoiKhamUncheckedCreateNestedManyWithoutCoSoInput
     nguoiDung?: NguoiDungCSRUncheckedCreateNestedManyWithoutCoSoInput
     hoSo?: HoSoBenhNhanUncheckedCreateNestedManyWithoutCoSoInput
@@ -12232,6 +12599,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     buoiKham?: BuoiKhamUpdateManyWithoutCoSoNestedInput
     nguoiDung?: NguoiDungCSRUpdateManyWithoutCoSoNestedInput
     hoSo?: HoSoBenhNhanUpdateManyWithoutCoSoNestedInput
@@ -12253,6 +12621,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     buoiKham?: BuoiKhamUncheckedUpdateManyWithoutCoSoNestedInput
     nguoiDung?: NguoiDungCSRUncheckedUpdateManyWithoutCoSoNestedInput
     hoSo?: HoSoBenhNhanUncheckedUpdateManyWithoutCoSoNestedInput
@@ -12274,6 +12643,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
   }
 
   export type CoSoUpdateManyMutationInput = {
@@ -12292,6 +12662,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CoSoUncheckedUpdateManyInput = {
@@ -12310,6 +12681,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type NguoiDungCSRCreateInput = {
@@ -12406,6 +12778,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
@@ -12420,6 +12793,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     nguoiTao: string
     createdAt?: Date | string
@@ -12432,6 +12806,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -12446,6 +12821,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12459,6 +12835,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     nguoiTao: string
     createdAt?: Date | string
@@ -12470,6 +12847,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -12481,6 +12859,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -12500,11 +12879,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -12548,11 +12944,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -12592,11 +13005,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -12640,11 +13070,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -12686,11 +13133,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -12729,11 +13193,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -12771,11 +13252,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -13093,6 +13591,7 @@ export namespace Prisma {
     hisUser?: SortOrder
     hisPass?: SortOrder
     hisDbName?: SortOrder
+    cauHinhTruong?: SortOrder
   }
 
   export type CoSoMaxOrderByAggregateInput = {
@@ -13111,6 +13610,7 @@ export namespace Prisma {
     hisUser?: SortOrder
     hisPass?: SortOrder
     hisDbName?: SortOrder
+    cauHinhTruong?: SortOrder
   }
 
   export type CoSoMinOrderByAggregateInput = {
@@ -13129,6 +13629,7 @@ export namespace Prisma {
     hisUser?: SortOrder
     hisPass?: SortOrder
     hisDbName?: SortOrder
+    cauHinhTruong?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -13237,6 +13738,7 @@ export namespace Prisma {
     ngayKham?: SortOrder
     xa?: SortOrder
     diaDiem?: SortOrder
+    bacSiKham?: SortOrder
     ghiChu?: SortOrder
     nguoiTao?: SortOrder
     createdAt?: SortOrder
@@ -13249,6 +13751,7 @@ export namespace Prisma {
     ngayKham?: SortOrder
     xa?: SortOrder
     diaDiem?: SortOrder
+    bacSiKham?: SortOrder
     ghiChu?: SortOrder
     nguoiTao?: SortOrder
     createdAt?: SortOrder
@@ -13261,6 +13764,7 @@ export namespace Prisma {
     ngayKham?: SortOrder
     xa?: SortOrder
     diaDiem?: SortOrder
+    bacSiKham?: SortOrder
     ghiChu?: SortOrder
     nguoiTao?: SortOrder
     createdAt?: SortOrder
@@ -13301,6 +13805,22 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
   }
 
   export type FloatNullableFilter<$PrismaModel = never> = {
@@ -13344,11 +13864,28 @@ export namespace Prisma {
     diaChi?: SortOrder
     sdt?: SortOrder
     sdtNguoiNha?: SortOrder
+    mucHuongBHYT?: SortOrder
+    khuPho?: SortOrder
+    xaPhuong?: SortOrder
     thiLucMP?: SortOrder
     thiLucMT?: SortOrder
     chanDoan?: SortOrder
     chanDoanKhac?: SortOrder
     khuyenNghi?: SortOrder
+    benhSu?: SortOrder
+    loaiBenhSu?: SortOrder
+    chieuCao?: SortOrder
+    canNang?: SortOrder
+    benhLy?: SortOrder
+    loaiBenhLy?: SortOrder
+    loaiBenhLyKhac?: SortOrder
+    huongXuTri?: SortOrder
+    huongXuTriKhac?: SortOrder
+    bacSiChiDinh?: SortOrder
+    nhanVienTuVan?: SortOrder
+    xacNhanDieuTri?: SortOrder
+    lyDoKhongDieuTri?: SortOrder
+    diemKham?: SortOrder
     bhyt?: SortOrder
     tuVanVienMa?: SortOrder
     soTienBao?: SortOrder
@@ -13377,6 +13914,7 @@ export namespace Prisma {
   export type HoSoBenhNhanAvgOrderByAggregateInput = {
     stt?: SortOrder
     namSinh?: SortOrder
+    mucHuongBHYT?: SortOrder
     soTienBao?: SortOrder
     soTienThucThu?: SortOrder
   }
@@ -13396,11 +13934,28 @@ export namespace Prisma {
     diaChi?: SortOrder
     sdt?: SortOrder
     sdtNguoiNha?: SortOrder
+    mucHuongBHYT?: SortOrder
+    khuPho?: SortOrder
+    xaPhuong?: SortOrder
     thiLucMP?: SortOrder
     thiLucMT?: SortOrder
     chanDoan?: SortOrder
     chanDoanKhac?: SortOrder
     khuyenNghi?: SortOrder
+    benhSu?: SortOrder
+    loaiBenhSu?: SortOrder
+    chieuCao?: SortOrder
+    canNang?: SortOrder
+    benhLy?: SortOrder
+    loaiBenhLy?: SortOrder
+    loaiBenhLyKhac?: SortOrder
+    huongXuTri?: SortOrder
+    huongXuTriKhac?: SortOrder
+    bacSiChiDinh?: SortOrder
+    nhanVienTuVan?: SortOrder
+    xacNhanDieuTri?: SortOrder
+    lyDoKhongDieuTri?: SortOrder
+    diemKham?: SortOrder
     bhyt?: SortOrder
     tuVanVienMa?: SortOrder
     soTienBao?: SortOrder
@@ -13441,11 +13996,28 @@ export namespace Prisma {
     diaChi?: SortOrder
     sdt?: SortOrder
     sdtNguoiNha?: SortOrder
+    mucHuongBHYT?: SortOrder
+    khuPho?: SortOrder
+    xaPhuong?: SortOrder
     thiLucMP?: SortOrder
     thiLucMT?: SortOrder
     chanDoan?: SortOrder
     chanDoanKhac?: SortOrder
     khuyenNghi?: SortOrder
+    benhSu?: SortOrder
+    loaiBenhSu?: SortOrder
+    chieuCao?: SortOrder
+    canNang?: SortOrder
+    benhLy?: SortOrder
+    loaiBenhLy?: SortOrder
+    loaiBenhLyKhac?: SortOrder
+    huongXuTri?: SortOrder
+    huongXuTriKhac?: SortOrder
+    bacSiChiDinh?: SortOrder
+    nhanVienTuVan?: SortOrder
+    xacNhanDieuTri?: SortOrder
+    lyDoKhongDieuTri?: SortOrder
+    diemKham?: SortOrder
     bhyt?: SortOrder
     tuVanVienMa?: SortOrder
     soTienBao?: SortOrder
@@ -13474,6 +14046,7 @@ export namespace Prisma {
   export type HoSoBenhNhanSumOrderByAggregateInput = {
     stt?: SortOrder
     namSinh?: SortOrder
+    mucHuongBHYT?: SortOrder
     soTienBao?: SortOrder
     soTienThucThu?: SortOrder
   }
@@ -13506,6 +14079,30 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -14149,6 +14746,18 @@ export namespace Prisma {
     set?: Date | string | null
   }
 
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
+  }
+
   export type NullableFloatFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -14383,6 +14992,11 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
   export type NestedFloatNullableFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -14440,6 +15054,30 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -14469,6 +15107,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
@@ -14481,6 +15120,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     nguoiTao: string
     createdAt?: Date | string
@@ -14547,11 +15187,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -14593,11 +15250,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -14658,6 +15332,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFilter<"BuoiKham"> | Date | string
     xa?: StringFilter<"BuoiKham"> | string
     diaDiem?: StringFilter<"BuoiKham"> | string
+    bacSiKham?: StringNullableFilter<"BuoiKham"> | string | null
     ghiChu?: StringNullableFilter<"BuoiKham"> | string | null
     nguoiTao?: StringFilter<"BuoiKham"> | string
     createdAt?: DateTimeFilter<"BuoiKham"> | Date | string
@@ -14727,11 +15402,28 @@ export namespace Prisma {
     diaChi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdtNguoiNha?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    mucHuongBHYT?: IntNullableFilter<"HoSoBenhNhan"> | number | null
+    khuPho?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    xaPhuong?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoan?: StringFilter<"HoSoBenhNhan"> | string
     chanDoanKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     khuyenNghi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    benhSu?: BoolNullableFilter<"HoSoBenhNhan"> | boolean | null
+    loaiBenhSu?: StringFilter<"HoSoBenhNhan"> | string
+    chieuCao?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    canNang?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    benhLy?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    loaiBenhLy?: StringFilter<"HoSoBenhNhan"> | string
+    loaiBenhLyKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    huongXuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    huongXuTriKhac?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    bacSiChiDinh?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    nhanVienTuVan?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    xacNhanDieuTri?: BoolNullableFilter<"HoSoBenhNhan"> | boolean | null
+    lyDoKhongDieuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    diemKham?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     bhyt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     tuVanVienMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     soTienBao?: FloatNullableFilter<"HoSoBenhNhan"> | number | null
@@ -14773,6 +15465,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     buoiKham?: BuoiKhamCreateNestedManyWithoutCoSoInput
     hoSo?: HoSoBenhNhanCreateNestedManyWithoutCoSoInput
   }
@@ -14793,6 +15486,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     buoiKham?: BuoiKhamUncheckedCreateNestedManyWithoutCoSoInput
     hoSo?: HoSoBenhNhanUncheckedCreateNestedManyWithoutCoSoInput
   }
@@ -14807,6 +15501,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
@@ -14820,6 +15515,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
@@ -14848,11 +15544,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -14895,11 +15608,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -14947,11 +15677,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -14994,11 +15741,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -15046,11 +15810,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -15093,11 +15874,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -15184,6 +15982,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     buoiKham?: BuoiKhamUpdateManyWithoutCoSoNestedInput
     hoSo?: HoSoBenhNhanUpdateManyWithoutCoSoNestedInput
   }
@@ -15204,6 +16003,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     buoiKham?: BuoiKhamUncheckedUpdateManyWithoutCoSoNestedInput
     hoSo?: HoSoBenhNhanUncheckedUpdateManyWithoutCoSoNestedInput
   }
@@ -15316,6 +16116,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     nguoiDung?: NguoiDungCSRCreateNestedManyWithoutCoSoInput
     hoSo?: HoSoBenhNhanCreateNestedManyWithoutCoSoInput
   }
@@ -15336,6 +16137,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     nguoiDung?: NguoiDungCSRUncheckedCreateNestedManyWithoutCoSoInput
     hoSo?: HoSoBenhNhanUncheckedCreateNestedManyWithoutCoSoInput
   }
@@ -15391,11 +16193,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -15437,11 +16256,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -15504,6 +16340,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiDung?: NguoiDungCSRUpdateManyWithoutCoSoNestedInput
     hoSo?: HoSoBenhNhanUpdateManyWithoutCoSoNestedInput
   }
@@ -15524,6 +16361,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiDung?: NguoiDungCSRUncheckedUpdateManyWithoutCoSoNestedInput
     hoSo?: HoSoBenhNhanUncheckedUpdateManyWithoutCoSoNestedInput
   }
@@ -15588,6 +16426,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
@@ -15601,6 +16440,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     nguoiTao: string
     createdAt?: Date | string
@@ -15628,6 +16468,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     buoiKham?: BuoiKhamCreateNestedManyWithoutCoSoInput
     nguoiDung?: NguoiDungCSRCreateNestedManyWithoutCoSoInput
   }
@@ -15648,6 +16489,7 @@ export namespace Prisma {
     hisUser?: string | null
     hisPass?: string | null
     hisDbName?: string | null
+    cauHinhTruong?: string | null
     buoiKham?: BuoiKhamUncheckedCreateNestedManyWithoutCoSoInput
     nguoiDung?: NguoiDungCSRUncheckedCreateNestedManyWithoutCoSoInput
   }
@@ -15797,6 +16639,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -15810,6 +16653,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -15843,6 +16687,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     buoiKham?: BuoiKhamUpdateManyWithoutCoSoNestedInput
     nguoiDung?: NguoiDungCSRUpdateManyWithoutCoSoNestedInput
   }
@@ -15863,6 +16708,7 @@ export namespace Prisma {
     hisUser?: NullableStringFieldUpdateOperationsInput | string | null
     hisPass?: NullableStringFieldUpdateOperationsInput | string | null
     hisDbName?: NullableStringFieldUpdateOperationsInput | string | null
+    cauHinhTruong?: NullableStringFieldUpdateOperationsInput | string | null
     buoiKham?: BuoiKhamUncheckedUpdateManyWithoutCoSoNestedInput
     nguoiDung?: NguoiDungCSRUncheckedUpdateManyWithoutCoSoNestedInput
   }
@@ -16013,11 +16859,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -16060,11 +16923,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -16152,11 +17032,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -16199,11 +17096,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -16273,6 +17187,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     nguoiTao: string
     createdAt?: Date | string
@@ -16302,11 +17217,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -16337,6 +17269,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -16349,6 +17282,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16361,6 +17295,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -16417,11 +17352,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -16463,11 +17415,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -16508,11 +17477,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -16544,6 +17530,7 @@ export namespace Prisma {
     ngayKham: Date | string
     xa: string
     diaDiem: string
+    bacSiKham?: string | null
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
@@ -16564,11 +17551,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     soTienBao?: number | null
     ngayDieuTri?: Date | string | null
@@ -16608,11 +17612,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -16652,11 +17673,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -16694,6 +17732,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -16707,6 +17746,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -16719,6 +17759,7 @@ export namespace Prisma {
     ngayKham?: DateTimeFieldUpdateOperationsInput | Date | string
     xa?: StringFieldUpdateOperationsInput | string
     diaDiem?: StringFieldUpdateOperationsInput | string
+    bacSiKham?: NullableStringFieldUpdateOperationsInput | string | null
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
@@ -16737,11 +17778,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -16784,11 +17842,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -16829,11 +17904,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -16871,11 +17963,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -16918,11 +18027,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -16963,11 +18089,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -17005,11 +18148,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -17052,11 +18212,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -17097,11 +18274,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -17164,11 +18358,28 @@ export namespace Prisma {
     diaChi?: string | null
     sdt?: string | null
     sdtNguoiNha?: string | null
+    mucHuongBHYT?: number | null
+    khuPho?: string | null
+    xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
     chanDoan?: string
     chanDoanKhac?: string | null
     khuyenNghi?: string | null
+    benhSu?: boolean | null
+    loaiBenhSu?: string
+    chieuCao?: string | null
+    canNang?: string | null
+    benhLy?: string | null
+    loaiBenhLy?: string
+    loaiBenhLyKhac?: string | null
+    huongXuTri?: string | null
+    huongXuTriKhac?: string | null
+    bacSiChiDinh?: string | null
+    nhanVienTuVan?: string | null
+    xacNhanDieuTri?: boolean | null
+    lyDoKhongDieuTri?: string | null
+    diemKham?: string | null
     bhyt?: string | null
     tuVanVienMa?: string | null
     soTienBao?: number | null
@@ -17207,11 +18418,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
     ngayDieuTri?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -17253,11 +18481,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null
@@ -17298,11 +18543,28 @@ export namespace Prisma {
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
     sdtNguoiNha?: NullableStringFieldUpdateOperationsInput | string | null
+    mucHuongBHYT?: NullableIntFieldUpdateOperationsInput | number | null
+    khuPho?: NullableStringFieldUpdateOperationsInput | string | null
+    xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoan?: StringFieldUpdateOperationsInput | string
     chanDoanKhac?: NullableStringFieldUpdateOperationsInput | string | null
     khuyenNghi?: NullableStringFieldUpdateOperationsInput | string | null
+    benhSu?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    loaiBenhSu?: StringFieldUpdateOperationsInput | string
+    chieuCao?: NullableStringFieldUpdateOperationsInput | string | null
+    canNang?: NullableStringFieldUpdateOperationsInput | string | null
+    benhLy?: NullableStringFieldUpdateOperationsInput | string | null
+    loaiBenhLy?: StringFieldUpdateOperationsInput | string
+    loaiBenhLyKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    huongXuTriKhac?: NullableStringFieldUpdateOperationsInput | string | null
+    bacSiChiDinh?: NullableStringFieldUpdateOperationsInput | string | null
+    nhanVienTuVan?: NullableStringFieldUpdateOperationsInput | string | null
+    xacNhanDieuTri?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    lyDoKhongDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
+    diemKham?: NullableStringFieldUpdateOperationsInput | string | null
     bhyt?: NullableStringFieldUpdateOperationsInput | string | null
     tuVanVienMa?: NullableStringFieldUpdateOperationsInput | string | null
     soTienBao?: NullableFloatFieldUpdateOperationsInput | number | null

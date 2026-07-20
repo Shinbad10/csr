@@ -38,6 +38,10 @@ export async function POST(request: Request) {
       total: results.length,
       found: results.filter((r) => r.found).length,
       surgery: results.filter((r) => r.hasSurgery).length,
+      exactMatch: results.filter((r) => r.matchType === "exact").length,
+      partialMatch: results.filter((r) => r.matchType === "partial" && r.found).length,
+      surgeryExact: results.filter((r) => r.hasSurgery && r.matchType === "exact").length,
+      surgeryPartial: results.filter((r) => r.hasSurgery && r.matchType === "partial").length,
     };
 
     return NextResponse.json({

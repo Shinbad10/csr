@@ -19,8 +19,8 @@ function tabNameFor(coSo: { id: string; ten: string }): string {
   const clean = (coSo.ten || coSo.id).replace(/[[\]:\\/?*]/g, " ").replace(/\s+/g, " ").trim().slice(0, 90);
   return clean || coSo.id;
 }
+// Cột "Mã BN" (cuối bảng) là khoá upsert — tìm đúng dòng để ghi đè thay vì thêm trùng.
 const MABN_COL = HOSO_HEADER.indexOf("Mã BN");          // 0-based vị trí cột Mã BN
-const HIS_COL = HOSO_HEADER.indexOf("Mã BN HIS");       // cột do kế toán điền, giữ nguyên khi cập nhật
 // Ghi tiêu đề & mỗi dòng theo một BỀ RỘNG CỐ ĐỊNH (đệm "") để khi bỏ/đổi cột,
 // các ô thừa bên phải bị xoá trắng thay vì để lại dữ liệu cũ.
 const WIDE = 32;
@@ -125,46 +125,44 @@ async function ensureTab(spreadsheetId: string, tab: string): Promise<void> {
   await sheets(`${spreadsheetId}/values/${enc(`${tab}!A1:${WIDE_COL}1`)}?valueInputOption=RAW`, "PUT", { values: [padRow([...HOSO_HEADER])] });
 }
 
+// Xác định (spreadsheetId, tab) của 1 cơ sở theo chế độ dùng chung / file riêng.
+async function targetOf(coSo: { id: string; ten: string; sheetId?: string | null }): Promise<{ spreadsheetId: string; tab: string }> {
+  if (SHARED_ID) {
+    const tab = tabNameFor(coSo);
+    await ensureTab(SHARED_ID, tab);
+    return { spreadsheetId: SHARED_ID, tab };
+  }
+  const resolved = await resolveSheet(coSo);
+  if (!resolved.fresh) await ensureTab(resolved.id, TAB); // file tự tạo đã sẵn tab+header
+  return { spreadsheetId: resolved.id, tab: TAB };
+}
+
+// Ghi lại tiêu đề & XOÁ toàn bộ dòng dữ liệu của cơ sở.
+// Dùng khi đổi bộ cột báo cáo — dòng cũ theo cột cũ sẽ lệch, phải dựng lại từ đầu.
+export async function clearDataRows(coSo: { id: string; ten: string; sheetId?: string | null }): Promise<void> {
+  const { spreadsheetId, tab } = await targetOf(coSo);
+  await sheets(`${spreadsheetId}/values/${enc(`${tab}!A2:${WIDE_COL}`)}:clear`, "POST", {});
+}
+
 // Đẩy 1 hồ sơ lên Sheet của cơ sở tương ứng. Trả về trạng thái để worker quyết định.
 export async function syncHoSo(hoSoId: string): Promise<"updated" | "appended" | "skipped"> {
   const hoSo = await getPrisma().hoSoBenhNhan.findUnique({
     where: { id: hoSoId },
-    include: {
-      coSo: true, buoiKham: true, _count: { select: { nhatKy: true } },
-      tuVanVien: { select: { hoTen: true } }, nguoiChotCuoi: { select: { hoTen: true } },
-    },
+    include: { coSo: true, buoiKham: true, tuVanVien: { select: { hoTen: true } } },
   });
-  if (!hoSo || !hoSo.coSo) return "skipped"; // hồ sơ đã bị xoá → bỏ qua
+  if (!hoSo || !hoSo.coSo) return "skipped"; // hồ sơ đã bị xoá -> bỏ qua
 
-  // Xác định file + tab theo chế độ.
-  let spreadsheetId: string;
-  let tab: string;
-  if (SHARED_ID) {
-    // Dùng chung 1 bảng tính; mỗi cơ sở = 1 tab riêng.
-    spreadsheetId = SHARED_ID;
-    tab = tabNameFor(hoSo.coSo);
-    await ensureTab(spreadsheetId, tab);
-  } else {
-    const resolved = await resolveSheet(hoSo.coSo);
-    spreadsheetId = resolved.id;
-    tab = TAB;
-    if (!resolved.fresh) await ensureTab(spreadsheetId, tab); // file tự tạo đã sẵn tab+header
-  }
+  // Xác định file + tab theo chế độ (dùng chung 1 bảng tính, hoặc mỗi cơ sở 1 file).
+  const { spreadsheetId, tab } = await targetOf(hoSo.coSo);
 
-  // Tìm dòng theo Mã BN trong cột Mã BN của đúng tab.
+  // Tìm dòng theo Mã BN trong cột Mã BN (cột khoá, cuối bảng) của đúng tab.
   const range = `${tab}!${colA(MABN_COL)}:${colA(MABN_COL)}`;
   const col = (await sheets(`${spreadsheetId}/values/${enc(range)}`, "GET")) as { values?: string[][] };
   const idx = (col.values || []).findIndex((r) => (r[0] || "") === hoSo.maBN); // 0-based gồm cả tiêu đề
-  const cells = hoSoToCells({ ...hoSo, soLanLienHe: hoSo._count.nhatKy }, true);
+  const cells = hoSoToCells(hoSo, true);
 
   if (idx >= 0) {
     const rowNum = idx + 1; // Sheets 1-based
-    // Giữ nguyên "Mã BN HIS" do kế toán nhập tay (không để sync ghi đè về trống).
-    if (HIS_COL >= 0) {
-      const cur = (await sheets(`${spreadsheetId}/values/${enc(`${tab}!${colA(HIS_COL)}${rowNum}`)}`, "GET")) as { values?: string[][] };
-      const hisVal = cur.values?.[0]?.[0];
-      if (hisVal && !cells[HIS_COL]) cells[HIS_COL] = hisVal;
-    }
     await sheets(`${spreadsheetId}/values/${enc(`${tab}!A${rowNum}:${WIDE_COL}${rowNum}`)}?valueInputOption=USER_ENTERED`, "PUT", { values: [padRow(cells)] });
     return "updated";
   }
@@ -172,5 +170,72 @@ export async function syncHoSo(hoSoId: string): Promise<"updated" | "appended" |
   return "appended";
 }
 
+// Đồng bộ theo lô tốc độ cao (dùng cho drainSyncQueue / dựng lại báo cáo).
+// Giảm từ 2N request xuống 2 request/cơ sở/lô -> tránh lỗi 429 Quota Exceeded của Google Sheets API.
+export async function batchSyncHoSos(hoSoIds: string[]): Promise<{ processed: number; failed: number }> {
+  if (hoSoIds.length === 0) return { processed: 0, failed: 0 };
+  const prisma = getPrisma();
+  const hoSos = await prisma.hoSoBenhNhan.findMany({
+    where: { id: { in: hoSoIds } },
+    include: { coSo: true, buoiKham: true, tuVanVien: { select: { hoTen: true } } },
+  });
+
+  const byCoSo = new Map<string, typeof hoSos>();
+  for (const h of hoSos) {
+    if (!h.coSo) continue;
+    const list = byCoSo.get(h.coSo.id) || [];
+    list.push(h);
+    byCoSo.set(h.coSo.id, list);
+  }
+
+  let processed = 0, failed = 0;
+  for (const [_, list] of byCoSo) {
+    try {
+      const coSo = list[0].coSo!;
+      const { spreadsheetId, tab } = await targetOf(coSo);
+
+      // Lấy toàn bộ cột Mã BN 1 lần duy nhất cho cả lô
+      const range = `${tab}!${colA(MABN_COL)}:${colA(MABN_COL)}`;
+      const col = (await sheets(`${spreadsheetId}/values/${enc(range)}`, "GET")) as { values?: string[][] };
+      const maBnToRow = new Map<string, number>();
+      (col.values || []).forEach((r, idx) => {
+        if (r[0]) maBnToRow.set(r[0], idx + 1); // 1-based row number
+      });
+
+      const updates: { range: string; values: (string | number)[][] }[] = [];
+      const appends: (string | number)[][] = [];
+
+      for (const h of list) {
+        const cells = padRow(hoSoToCells(h, true));
+        const rowNum = maBnToRow.get(h.maBN);
+        if (rowNum !== undefined) {
+          updates.push({ range: `${tab}!A${rowNum}:${WIDE_COL}${rowNum}`, values: [cells] });
+        } else {
+          appends.push(cells);
+        }
+      }
+
+      if (updates.length > 0) {
+        await sheets(`${spreadsheetId}/values:batchUpdate`, "POST", {
+          valueInputOption: "USER_ENTERED",
+          data: updates,
+        });
+      }
+
+      if (appends.length > 0) {
+        await sheets(`${spreadsheetId}/values/${enc(`${tab}!A1`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, "POST", { values: appends });
+      }
+
+      processed += list.length;
+    } catch (err) {
+      console.error(`[batchSync] Lỗi đồng bộ lô cơ sở ${list[0]?.coSo?.id}:`, err);
+      failed += list.length;
+    }
+  }
+
+  return { processed, failed };
+}
+
 // Có cấu hình Sheet hay không (để worker bỏ qua sớm khi chưa bật tính năng).
 export const sheetEnabled = () => !!process.env.GOOGLE_CREDENTIALS?.trim();
+

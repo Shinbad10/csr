@@ -37,12 +37,26 @@ export async function POST(request: Request) {
       const hisCccd = his.cccd?.trim() || "";
 
       // Tìm khớp (3 lớp định danh: CCCD -> Họ tên & Năm sinh -> Họ tên & SĐT)
-      const matched = csrPatients.find((csr) => {
-        if (hisCccd && csr.cccd && csr.cccd.trim() === hisCccd) return true;
-        if (csr.hoTen.trim().toLowerCase() === hisName && String(csr.namSinh).trim() === hisYear) return true;
-        if (his.sdt && csr.sdt && csr.sdt.trim() === his.sdt.trim() && csr.sdt.trim().length >= 9 && csr.hoTen.trim().toLowerCase() === hisName) return true;
-        return false;
-      });
+      // Trả kèm matchType: "exact" (CCCD) hoặc "partial" (họ tên + năm sinh / SĐT)
+      let matched = null;
+      let matchType: "exact" | "partial" = "partial";
+
+      for (const csr of csrPatients) {
+        if (hisCccd && csr.cccd && csr.cccd.trim() === hisCccd) {
+          matched = csr;
+          matchType = "exact";
+          break; // CCCD là duy nhất, không cần tìm tiếp
+        }
+      }
+
+      if (!matched) {
+        matched = csrPatients.find((csr) => {
+          if (csr.hoTen.trim().toLowerCase() === hisName && String(csr.namSinh).trim() === hisYear) return true;
+          if (his.sdt && csr.sdt && csr.sdt.trim() === his.sdt.trim() && csr.sdt.trim().length >= 9 && csr.hoTen.trim().toLowerCase() === hisName) return true;
+          return false;
+        }) || null;
+        matchType = "partial";
+      }
 
       if (matched) {
         return {
@@ -52,6 +66,7 @@ export async function POST(request: Request) {
             maBN: matched.maBN,
             hoTen: matched.hoTen,
             namSinh: matched.namSinh,
+            cccd: matched.cccd || null,
             sdt: matched.sdt,
             buoiKham: matched.buoiKham
               ? {
@@ -63,6 +78,7 @@ export async function POST(request: Request) {
             trangThaiDieuTri: matched.trangThaiDieuTri,
             maBNHIS: matched.maBNHIS,
             daDon: matched.daDon,
+            matchType,
           },
         };
       }

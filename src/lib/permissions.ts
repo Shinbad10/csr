@@ -62,5 +62,6 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 export function roleLabel(raw?: string | null): string {
+  if (raw === "BacSi" || raw === "Bác sĩ" || raw === "Bác sỹ") return "Bác sĩ";
   return ROLE_LABEL[normalizeRole(raw)];
 }

@@ -6,6 +6,8 @@ import { can, canAny, type Capability } from "@/lib/permissions";
 import { inferNextState } from "@/lib/stateMachine";
 import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
+import { parseDiag } from "@/lib/csr";
+import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -39,12 +41,37 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (body.chanDoan && typeof body.chanDoan !== "string") update.chanDoan = JSON.stringify(body.chanDoan);
 
+    // Các trường mảng của phiếu sàng lọc → JSON string (giống chanDoan)
+    for (const f of ["loaiBenhSu", "loaiBenhLy"] as const)
+      if (body[f] !== undefined && typeof body[f] !== "string") update[f] = JSON.stringify(body[f] ?? []);
+
+    // "Hướng xử trí" đồng bộ sang khuyenNghi để giữ nguyên luồng Tư vấn / Theo dõi / Báo cáo
+    if (body.huongXuTri !== undefined) update.khuyenNghi = huongXuTriToKhuyenNghi(body.huongXuTri);
+
     // BR-07
     if (typeof update.chanDoan === "string" && update.chanDoan.includes("Khác") && !body.chanDoanKhac && !current.chanDoanKhac)
       return NextResponse.json({ error: "Vui lòng nhập Chẩn đoán khác" }, { status: 400 });
 
-    // BR-08 suy trạng thái
-    const next = inferNextState(current.trangThai, { ...body, chanDoan: update.chanDoan });
+    // Validate phiếu sàng lọc — chỉ áp dụng cho trường đang BẬT ở cơ sở này
+    const coSo = await prisma.coSo.findUnique({ where: { id: current.coSoId }, select: { cauHinhTruong: true } });
+    const cfg = parseFieldConfig(coSo?.cauHinhTruong);
+    const eff = (k: string): unknown => (body[k] !== undefined ? body[k] : (current as Record<string, unknown>)[k]);
+    const loaiBenhLyArr: string[] = (() => {
+      const v = eff("loaiBenhLy");
+      return typeof v === "string" ? parseDiag(v) : Array.isArray(v) ? v : [];
+    })();
+
+    if (isFieldOn(cfg, "benhLy") && isFieldOn(cfg, "loaiBenhLy") && eff("benhLy") === "Nghi ngờ bệnh lý" && loaiBenhLyArr.length === 0)
+      return NextResponse.json({ error: "Nghi ngờ bệnh lý: vui lòng chọn ít nhất một Loại bệnh lý" }, { status: 400 });
+    if (loaiBenhLyArr.includes("Khác") && !eff("loaiBenhLyKhac"))
+      return NextResponse.json({ error: "Vui lòng ghi rõ Loại bệnh lý khác" }, { status: 400 });
+    if (isFieldOn(cfg, "huongXuTri") && eff("huongXuTri") === "Điều trị khác" && !eff("huongXuTriKhac"))
+      return NextResponse.json({ error: "Vui lòng ghi rõ nội dung Điều trị khác" }, { status: 400 });
+    if (isFieldOn(cfg, "xacNhanDieuTri") && eff("xacNhanDieuTri") === false && !eff("lyDoKhongDieuTri"))
+      return NextResponse.json({ error: "Xác nhận điều trị = KHÔNG: vui lòng ghi rõ lý do" }, { status: 400 });
+
+    // BR-08 suy trạng thái (dùng khuyenNghi đã đồng bộ từ huongXuTri)
+    const next = inferNextState(current.trangThai, { ...body, chanDoan: update.chanDoan, khuyenNghi: update.khuyenNghi ?? body.khuyenNghi });
     update.trangThai = next;
 
     // BR-04
@@ -74,6 +101,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (body.soTienThucThu !== undefined) update.soTienThucThu = body.soTienThucThu != null ? Number(body.soTienThucThu) : null;
     for (const f of ["ngayDieuTri", "ngayMoThucTe", "ngayTaiKham", "ngayChot"] as const)
       if (body[f] !== undefined) update[f] = body[f] ? new Date(body[f]) : null;
+
+    // Phiếu sàng lọc: Int? và Boolean?
+    if (body.mucHuongBHYT !== undefined) {
+      const n = parseInt(String(body.mucHuongBHYT), 10);
+      update.mucHuongBHYT = Number.isFinite(n) ? n : null;
+    }
+    for (const f of ["benhSu", "xacNhanDieuTri"] as const)
+      if (body[f] !== undefined) update[f] = body[f] == null ? null : Boolean(body[f]);
 
     const data = await prisma.hoSoBenhNhan.update({ where: { id }, data: update });
     await audit(session.user.id, "HoSoBenhNhan", id, "sua", body);

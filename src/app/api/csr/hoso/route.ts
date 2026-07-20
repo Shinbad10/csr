@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { genMaBN } from "@/lib/maBN";
 import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
+import { bhytLevel } from "@/lib/csr";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -62,17 +63,23 @@ export async function POST(request: Request) {
     const buoiKham = await prisma.buoiKham.findUnique({ where: { id: b.buoiKhamId }, include: { coSo: true } });
     if (!buoiKham) return NextResponse.json({ error: "Không tìm thấy buổi khám" }, { status: 404 });
 
-    // Chống trùng trong cùng buổi khám
-    const dup = await prisma.hoSoBenhNhan.findFirst({
-      where: {
-        buoiKhamId: b.buoiKhamId,
-        OR: [
-          ...(b.cccd ? [{ cccd: String(b.cccd).trim() }] : []),
-          { hoTen: b.hoTen.trim(), namSinh },
-        ],
-      },
-    });
-    if (dup) return NextResponse.json({ error: `Bệnh nhân đã có trong buổi khám (STT ${dup.stt}, ${dup.maBN})` }, { status: 409 });
+    // Mức hưởng BHYT: ưu tiên giá trị nhập tay, nếu không thì suy từ mã thẻ (ký tự thứ 3)
+    const mucHuongRaw = b.mucHuongBHYT ?? bhytLevel(b.bhyt);
+    const mucHuongBHYT = Number.isFinite(parseInt(String(mucHuongRaw), 10)) ? parseInt(String(mucHuongRaw), 10) : null;
+
+    // Chống trùng trong cùng buổi khám (Trừ khi người dùng bấm Yes confirm bỏ qua cảnh báo)
+    if (!b.boQuaTrung && !b.forceCreate) {
+      const dup = await prisma.hoSoBenhNhan.findFirst({
+        where: {
+          buoiKhamId: b.buoiKhamId,
+          OR: [
+            ...(b.cccd ? [{ cccd: String(b.cccd).trim() }] : []),
+            { hoTen: b.hoTen.trim(), namSinh },
+          ],
+        },
+      });
+      if (dup) return NextResponse.json({ error: `Bệnh nhân đã có trong buổi khám (STT ${dup.stt}, ${dup.maBN})`, isDuplicate: true }, { status: 409 });
+    }
 
     // BR-02 STT + BR-01 mã BN (transaction)
     const last = await prisma.hoSoBenhNhan.findFirst({ where: { buoiKhamId: b.buoiKhamId }, orderBy: { stt: "desc" } });
@@ -85,6 +92,7 @@ export async function POST(request: Request) {
         hoTen: b.hoTen.trim(), gioiTinh: b.gioiTinh, ngaySinh, namSinh,
         cccd: b.cccd || null, diaChi: b.diaChi || null, sdt: b.sdt || null,
         sdtNguoiNha: b.sdtNguoiNha || null, bhyt: b.bhyt || null,
+        mucHuongBHYT, khuPho: b.khuPho || null, xaPhuong: b.xaPhuong || null,
         trangThai: "TiepNhan", createdBy: session.user.id,
       },
     });

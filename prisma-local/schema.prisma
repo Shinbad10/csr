@@ -25,6 +25,7 @@ model CoSo {
   hisUser     String?        // User HIS
   hisPass     String?        // Pass HIS
   hisDbName   String?        // Tên database HIS
+  cauHinhTruong String?      // JSON { "<fieldKey>": boolean } — bật/tắt trường phiếu khám theo cơ sở
   buoiKham    BuoiKham[]
   nguoiDung   NguoiDungCSR[]
   hoSo        HoSoBenhNhan[]
@@ -53,6 +54,7 @@ model BuoiKham {
   ngayKham    DateTime
   xa          String
   diaDiem     String
+  bacSiKham   String?
   ghiChu      String?
   nguoiTao    String
   nguoiTaoRef NguoiDungCSR   @relation(fields: [nguoiTao], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
@@ -78,11 +80,34 @@ model HoSoBenhNhan {
   diaChi          String?
   sdt             String?
   sdtNguoiNha     String?
+
+  // Hành chính mở rộng (phiếu sàng lọc nhãn khoa)
+  mucHuongBHYT    Int?
+  khuPho          String?
+  xaPhuong        String?
+
   thiLucMP        String?
   thiLucMT        String?
   chanDoan        String         @default("[]")
   chanDoanKhac    String?
   khuyenNghi      String?
+
+  // Phiếu khám sàng lọc nhãn khoa
+  benhSu           Boolean?
+  loaiBenhSu       String        @default("[]")
+  chieuCao         String?
+  canNang          String?
+  benhLy           String?
+  loaiBenhLy       String        @default("[]")
+  loaiBenhLyKhac   String?
+  huongXuTri       String?
+  huongXuTriKhac   String?
+  bacSiChiDinh     String?
+  nhanVienTuVan    String?
+  xacNhanDieuTri   Boolean?
+  lyDoKhongDieuTri String?
+  diemKham         String?
+
   bhyt            String?
   tuVanVienMa     String?
   tuVanVien       NguoiDungCSR?  @relation("TuVanVien", fields: [tuVanVienMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)

@@ -1,14 +1,43 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft } from "lucide-react";
 
 export const labelCls = "block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5";
 
+function usePortalPosition(open: boolean, ref: React.RefObject<HTMLElement | null>, dropdownHeight: number = 280) {
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; width?: number }>({ left: 0 });
+
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const update = () => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      if (openUp) {
+        setPos({ bottom: window.innerHeight - rect.top + 6, left: rect.left, width: rect.width });
+      } else {
+        setPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+      }
+    };
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open, ref, dropdownHeight]);
+
+  return pos;
+}
+
 export function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[13px] font-semibold text-[var(--ink-soft)] mb-1.5">
+      <span className="block text-[13px] font-semibold text-[var(--ink-soft)] mb-1">
         {label} {required && <span className="text-[var(--rose)]">*</span>}
       </span>
       {children}
@@ -18,7 +47,7 @@ export function Field({ label, required, children }: { label: string; required?:
 
 export function SectionHeader({ n, accent }: { n: number; accent: string }) {
   return (
-    <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--line)]">
+    <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
       <h3 className="font-serif text-[17px] font-semibold text-[var(--ink)]">
         <span className="text-[var(--navy)]">{n}.</span>{" "}
         <span className="italic text-[var(--teal-deep)]">{accent}</span>
@@ -46,23 +75,31 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const disp = (o: string) => (o ? labels?.[o] ?? o : placeholder);
+  const pos = usePortalPosition(open, ref, 244);
+
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node) && (!popupRef.current || !popupRef.current.contains(e.target as Node))) {
+        setOpen(false);
+      }
+    };
+    const esc = (e: KeyboardEvent) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Escape") setOpen(false); };
     window.addEventListener("mousedown", h); window.addEventListener("keydown", esc);
     return () => { window.removeEventListener("mousedown", h); window.removeEventListener("keydown", esc); };
   }, [open]);
+
   return (
     <div className="relative" ref={ref}>
       <button type="button" onClick={() => !disabled && setOpen((o) => !o)} disabled={disabled}
-        className={`input-field flex items-center justify-between gap-2 text-left ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)]" : ""}`}>
+        className={`input-field flex items-center justify-between gap-2 text-left w-full ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)]" : ""}`}>
         <span className={`${value ? `text-[var(--ink)] ${mono && !labels ? "font-mono" : ""}` : "text-[var(--mute-soft)]"} truncate`}>{value ? disp(value) : placeholder}</span>
         <ChevronDown className={`w-4 h-4 shrink-0 text-[var(--mute)] transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
-      {open && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] max-h-[244px] overflow-y-auto bg-white border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-lg)] p-1 animate-fade-in">
+      {open && typeof document !== "undefined" && createPortal(
+        <div ref={popupRef} style={{ ...pos }} className="fixed z-[99999] max-h-[244px] overflow-y-auto bg-white border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-fade-in">
           {options.map((o) => (
             <button key={o || "__empty"} type="button" onClick={() => { onChange(o); setOpen(false); }}
               className={`w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-[13px] flex items-center justify-between gap-2 transition-colors ${
@@ -71,7 +108,8 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
               {value === o && o && <Check className="w-3.5 h-3.5 shrink-0" />}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -81,15 +119,22 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
 export function DateField({ label, value, onChange, min, placeholder, disabled }: { label?: string; value: string; onChange: (v: string) => void; min?: string; placeholder?: string; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const fmt = value ? value.split("-").reverse().join("/") : "";
   const phFmt = placeholder ? placeholder.split("-").reverse().join("/") : "dd/mm/yyyy";
   const [viewDate, setViewDate] = useState(() => value ? new Date(value) : new Date());
+  const pos = usePortalPosition(open, ref, 300);
 
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    window.addEventListener("mousedown", h);
-    return () => window.removeEventListener("mousedown", h);
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node) && (!popupRef.current || !popupRef.current.contains(e.target as Node))) {
+        setOpen(false);
+      }
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("mousedown", h); window.addEventListener("keydown", esc);
+    return () => { window.removeEventListener("mousedown", h); window.removeEventListener("keydown", esc); };
   }, [open]);
 
   const year = viewDate.getFullYear();
@@ -108,8 +153,8 @@ export function DateField({ label, value, onChange, min, placeholder, disabled }
         <span className={fmt ? "text-[var(--ink)] font-mono" : "text-[var(--mute-soft)]"}>{fmt || phFmt}</span>
         <CalendarDays className="w-4 h-4 shrink-0 text-[var(--mute)]" />
       </button>
-      {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-[100] w-[280px] bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-xl)] p-4 animate-fade-in">
+      {open && typeof document !== "undefined" && createPortal(
+        <div ref={popupRef} style={{ ...pos, width: pos.width ? Math.max(pos.width, 280) : 280 }} className="fixed z-[99999] bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-xl)] p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-4">
             <button type="button" onClick={() => setViewDate(new Date(year, month - 1, 1))} className="w-7 h-7 flex items-center justify-center hover:bg-[var(--surface-hover)] rounded-full transition-colors"><ChevronLeft className="w-4 h-4 text-[var(--ink-soft)]" /></button>
             <div className="flex gap-1">
@@ -144,7 +189,8 @@ export function DateField({ label, value, onChange, min, placeholder, disabled }
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -154,10 +200,16 @@ export function DateField({ label, value, onChange, min, placeholder, disabled }
 export function Combobox({ value, onChange, options, placeholder, disabled }: { value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string; disabled?: boolean; }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const pos = usePortalPosition(open, ref, 200);
   
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node) && (!popupRef.current || !popupRef.current.contains(e.target as Node))) {
+        setOpen(false);
+      }
+    };
     window.addEventListener("mousedown", h);
     return () => window.removeEventListener("mousedown", h);
   }, [open]);
@@ -179,8 +231,8 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
         />
         <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)] pointer-events-none transition-transform ${open ? "rotate-180" : ""}`} />
       </div>
-      {open && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-[100] max-h-[200px] overflow-y-auto bg-white border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-lg)] p-1 animate-fade-in">
+      {open && typeof document !== "undefined" && createPortal(
+        <div ref={popupRef} style={{ ...pos }} className="fixed z-[99999] max-h-[200px] overflow-y-auto bg-white border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-fade-in">
           {options.length === 0 && !showAdd && (
             <div className="px-3 py-2.5 text-[12.5px] text-[var(--mute)] text-center">Chưa có điểm đón nào.<br/>Nhập để tạo mới.</div>
           )}
@@ -197,7 +249,8 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
               Thêm điểm đón: &quot;{value.trim()}&quot;
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

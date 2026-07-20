@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Search, Check, Save, PhoneCall, CalendarClock, Clock, User, Shield, CreditCard, Send, X, Users, ClipboardList, Phone, CalendarDays, MapPin } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { parseDiag, ageOf, fmtDate, fmtTime, statusOf, bhytLevel, TT_DIEU_TRI, type HoSo } from "@/lib/csr";
+import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, statusOf, bhytLevel, TT_DIEU_TRI, type HoSo } from "@/lib/csr";
 import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/components/csr/fields";
 import { SkeletonList } from "@/components/layout/Skeleton";
 import PageHeader from "@/components/layout/PageHeader";
@@ -29,12 +29,12 @@ export default function TheoDoiPage() {
   const [selBk, setSelBk] = useState<string>("");
   const [showBkModal, setShowBkModal] = useState(true);
   const [bkSearch, setBkSearch] = useState("");
-  const bkLabels = useMemo(() => Object.fromEntries(bks.map((b) => [b.id, `${fmtDate(b.ngayKham)} · ${b.xa}`])), [bks]);
+  const bkLabels = useMemo(() => Object.fromEntries(bks.map((b) => [b.id, `${fmtDate(b.ngayKham)} · ${fmtBuoiKhamName(b)}`])), [bks]);
 
   const filteredBks = useMemo(() => {
     if (!bkSearch.trim()) return bks;
     const q = bkSearch.toLowerCase();
-    return bks.filter(b => b.id.toLowerCase().includes(q) || b.xa.toLowerCase().includes(q) || (b.diaDiem && b.diaDiem.toLowerCase().includes(q)));
+    return bks.filter(b => b.id.toLowerCase().includes(q) || b.xa.toLowerCase().includes(q) || (b.diaDiem && b.diaDiem.toLowerCase().includes(q)) || (b.ghiChu && b.ghiChu.toLowerCase().includes(q)));
   }, [bks, bkSearch]);
 
   useEffect(() => {
@@ -517,7 +517,7 @@ export default function TheoDoiPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[15px] truncate text-[var(--ink)]">{b.xa}</span>
+                    <span className="font-bold text-[15px] truncate text-[var(--ink)]" title={fmtBuoiKhamName(b)}>{fmtBuoiKhamName(b)}</span>
                     <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{b.id}</span>
                   </div>
                   <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">

@@ -26,6 +26,7 @@ model CoSo {
   hisUser     String?        // User HIS
   hisPass     String?        // Pass HIS
   hisDbName   String?        // Tên database HIS
+  cauHinhTruong String?      // JSON { "<fieldKey>": boolean } — bật/tắt trường phiếu khám theo cơ sở
   buoiKham    BuoiKham[]
   nguoiDung   NguoiDungCSR[]
   hoSo        HoSoBenhNhan[]
@@ -53,7 +54,8 @@ model BuoiKham {
   coSo        CoSo           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   ngayKham    DateTime
   xa          String
-  diaDiem     String
+  diaDiem     String         // = "Điểm khám" trên phiếu sàng lọc
+  bacSiKham   String?        // Bác sỹ cho chỉ định của cả đợt khám (áp cho mọi hồ sơ)
   ghiChu      String?
   nguoiTao    String
   nguoiTaoRef NguoiDungCSR   @relation(fields: [nguoiTao], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
@@ -82,12 +84,33 @@ model HoSoBenhNhan {
   sdt         String?
   sdtNguoiNha String?   // BR-06
 
+  // Hành chính mở rộng (phiếu sàng lọc nhãn khoa — trường 6, 8, 9)
+  mucHuongBHYT Int?     // 100 | 95 | 80 — suy từ mã thẻ, cho sửa tay
+  khuPho       String?  // Khu phố (Ấp) nơi đang sinh sống
+  xaPhuong     String?  // Xã/Phường nơi đang sinh sống (khác BuoiKham.xa = xã khám)
+
   // Lâm sàng (Tư vấn viên chép từ phiếu bác sĩ)
   thiLucMP     String?
   thiLucMT     String?
   chanDoan     String  @default("[]") // JSON mảng enum
   chanDoanKhac String? // BR-07
   khuyenNghi   String? // Phẫu thuật | Theo dõi
+
+  // Phiếu khám sàng lọc nhãn khoa (trường 11-20, 23)
+  benhSu           Boolean? // CÓ / KHÔNG
+  loaiBenhSu       String   @default("[]") // JSON mảng — 13 loại bệnh sử
+  chieuCao         String?  // cm
+  canNang          String?  // kg
+  benhLy           String?  // Chưa phát hiện bất thường | Nghi ngờ bệnh lý
+  loaiBenhLy       String   @default("[]") // JSON mảng — 17 mã ICD
+  loaiBenhLyKhac   String?  // ghi rõ khi chọn "Khác"
+  huongXuTri       String?  // Theo dõi | Phẫu thuật | Điều trị khác — đồng bộ sang khuyenNghi
+  huongXuTriKhac   String?  // ghi rõ khi chọn "Điều trị khác"
+  bacSiChiDinh     String?  // Họ tên bác sĩ cho chỉ định tại điểm khám
+  nhanVienTuVan    String?  // Tên nhân viên tư vấn (text, song song quan hệ tuVanVien)
+  xacNhanDieuTri   Boolean? // CÓ / KHÔNG
+  lyDoKhongDieuTri String?  // bắt buộc khi xacNhanDieuTri = false
+  diemKham         String?  // Điểm khám chi tiết (1 xã có thể nhiều điểm)
 
   // Tư vấn & phân nhóm (Tư vấn viên) — màn /tu-van sau buổi khám
   bhyt        String?   // lưu MÃ THẺ; mức hưởng suy từ ký tự thứ 3

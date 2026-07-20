@@ -10,24 +10,25 @@ datasource db {
 // ─── VISI CSR Models ───
 
 model CoSo {
-  id          String         @id
-  ten         String
-  diaChi      String?
-  trangThai   String         @default("active")
-  sheetId     String? // UC-10/BR-15 — spreadsheetId Google Sheet (tự tạo lần đồng bộ đầu)
-  bhxhUser    String? // Tài khoản cổng BHXH của cơ sở
-  bhxhPass    String? // Mật khẩu cổng BHXH của cơ sở
-  bhxhMaCSKCB String? // Mã cơ sở KCB trên cổng BHXH
-  bhxhHoTenCB String? // Họ tên cán bộ tra cứu BHXH
-  bhxhCccdCB  String? // CCCD cán bộ tra cứu BHXH
-  hisHost     String? // Host/IP SQL Server HIS
-  hisPort     String? // Port SQL Server HIS
-  hisUser     String? // User HIS
-  hisPass     String? // Pass HIS
-  hisDbName   String? // Tên database HIS
-  buoiKham    BuoiKham[]
-  nguoiDung   NguoiDungCSR[]
-  hoSo        HoSoBenhNhan[]
+  id            String         @id
+  ten           String
+  diaChi        String?
+  trangThai     String         @default("active")
+  sheetId       String? // UC-10/BR-15 — spreadsheetId Google Sheet (tự tạo lần đồng bộ đầu)
+  bhxhUser      String? // Tài khoản cổng BHXH của cơ sở
+  bhxhPass      String? // Mật khẩu cổng BHXH của cơ sở
+  bhxhMaCSKCB   String? // Mã cơ sở KCB trên cổng BHXH
+  bhxhHoTenCB   String? // Họ tên cán bộ tra cứu BHXH
+  bhxhCccdCB    String? // CCCD cán bộ tra cứu BHXH
+  hisHost       String? // Host/IP SQL Server HIS
+  hisPort       String? // Port SQL Server HIS
+  hisUser       String? // User HIS
+  hisPass       String? // Pass HIS
+  hisDbName     String? // Tên database HIS
+  cauHinhTruong String? // JSON { "<fieldKey>": boolean } — bật/tắt trường phiếu khám theo cơ sở
+  buoiKham      BuoiKham[]
+  nguoiDung     NguoiDungCSR[]
+  hoSo          HoSoBenhNhan[]
 }
 
 model NguoiDungCSR {
@@ -53,6 +54,7 @@ model BuoiKham {
   ngayKham    DateTime
   xa          String
   diaDiem     String
+  bacSiKham   String?
   ghiChu      String?
   nguoiTao    String
   nguoiTaoRef NguoiDungCSR   @relation(fields: [nguoiTao], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
@@ -62,27 +64,50 @@ model BuoiKham {
 }
 
 model HoSoBenhNhan {
-  id               String          @id @default(cuid())
-  maBN             String          @unique
-  maBNHIS          String? // Mã bệnh nhân trên hệ thống HIS bệnh viện
-  stt              Int
-  buoiKhamId       String
-  buoiKham         BuoiKham        @relation(fields: [buoiKhamId], references: [id], onUpdate: NoAction, onDelete: Cascade)
-  coSoId           String
-  coSo             CoSo            @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  hoTen            String
-  gioiTinh         String
-  ngaySinh         DateTime?
-  namSinh          Int
-  cccd             String?
-  diaChi           String?
-  sdt              String?
-  sdtNguoiNha      String?
-  thiLucMP         String?
-  thiLucMT         String?
-  chanDoan         String          @default("[]")
-  chanDoanKhac     String?
-  khuyenNghi       String?
+  id          String    @id @default(cuid())
+  maBN        String    @unique
+  maBNHIS     String? // Mã bệnh nhân trên hệ thống HIS bệnh viện
+  stt         Int
+  buoiKhamId  String
+  buoiKham    BuoiKham  @relation(fields: [buoiKhamId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+  coSoId      String
+  coSo        CoSo      @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  hoTen       String
+  gioiTinh    String
+  ngaySinh    DateTime?
+  namSinh     Int
+  cccd        String?
+  diaChi      String?
+  sdt         String?
+  sdtNguoiNha String?
+
+  // Hành chính mở rộng (phiếu sàng lọc nhãn khoa)
+  mucHuongBHYT Int?
+  khuPho       String?
+  xaPhuong     String?
+
+  thiLucMP     String?
+  thiLucMT     String?
+  chanDoan     String  @default("[]")
+  chanDoanKhac String?
+  khuyenNghi   String?
+
+  // Phiếu khám sàng lọc nhãn khoa
+  benhSu           Boolean?
+  loaiBenhSu       String   @default("[]")
+  chieuCao         String?
+  canNang          String?
+  benhLy           String?
+  loaiBenhLy       String   @default("[]")
+  loaiBenhLyKhac   String?
+  huongXuTri       String?
+  huongXuTriKhac   String?
+  bacSiChiDinh     String?
+  nhanVienTuVan    String?
+  xacNhanDieuTri   Boolean?
+  lyDoKhongDieuTri String?
+  diemKham         String?
+
   bhyt             String?
   tuVanVienMa      String?
   tuVanVien        NguoiDungCSR?   @relation("TuVanVien", fields: [tuVanVienMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)

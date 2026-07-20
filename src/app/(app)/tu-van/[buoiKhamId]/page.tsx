@@ -6,11 +6,11 @@ import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
 import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, RefreshCw, Phone } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { BHYT, NHOM, parseDiag, ageOf, fmtDate, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
+import { BHYT, NHOM, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
 import { Dropdown, DateField, ChoiceRow, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 
-interface BuoiKham { id: string; xa: string; diaDiem: string; ngayKham: string; coSo?: { ten: string } }
+interface BuoiKham { id: string; xa: string; diaDiem: string; ghiChu?: string | null; ngayKham: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null } }
 const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "" };
 const TIME_OPTS = Array.from({ length: 26 }).map((_, i) => `${String(Math.floor(i / 2) + 6).padStart(2, '0')}:${i % 2 === 0 ? '00' : '30'}`);
 
@@ -48,7 +48,8 @@ export default function TuVanSessionPage() {
   }, []);
 
   const fetchPatients = useCallback(async (keepSel?: string, forceForm = false) => {
-    const res = await fetch(`/api/csr/hoso?buoiKhamId=${buoiKhamId}&search=${encodeURIComponent(search)}`);
+    const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
+    const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(targetId)}&search=${encodeURIComponent(search)}`);
     const all: HoSo[] = res.ok ? await res.json() : [];
     const data = all.filter((p) => p.khuyenNghi === "Phẫu thuật");
     setPatients(data);
@@ -58,8 +59,20 @@ export default function TuVanSessionPage() {
 
   useEffect(() => {
     (async () => {
-      const bk: BuoiKham[] = await fetch("/api/csr/buoikham").then((r) => (r.ok ? r.json() : []));
-      setBuoiKham(bk.find((b) => b.id === buoiKhamId) || null);
+      const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
+      let cur: BuoiKham | null = null;
+      try {
+        const res = await fetch(`/api/csr/buoikham/${encodeURIComponent(targetId)}`);
+        if (res.ok) cur = await res.json();
+      } catch {}
+
+      if (!cur) {
+        const bk: BuoiKham[] = await fetch("/api/csr/buoikham").then((r) => (r.ok ? r.json() : []));
+        cur = bk.find((b) => 
+          b.id.normalize("NFC") === targetId || decodeURIComponent(b.id || "").normalize("NFC") === targetId
+        ) || null;
+      }
+      setBuoiKham(cur);
       await fetchPatients();
       setLoading(false);
     })();
@@ -93,7 +106,7 @@ export default function TuVanSessionPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-110px)] flex flex-col gap-4">
+      <div className="h-full min-h-0 flex flex-col gap-4">
         <PageHeader
           title="Tư vấn & Phân nhóm · Đang tải..."
           description="Đang truy xuất danh sách bệnh nhân cần tư vấn..."
@@ -105,7 +118,7 @@ export default function TuVanSessionPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-110px)] flex flex-col gap-4">
+    <div className="h-full min-h-0 flex flex-col gap-4">
       <PageHeader
         title={
           <div className="flex items-center gap-2">
@@ -115,7 +128,7 @@ export default function TuVanSessionPage() {
             <>Tư vấn <span className="italic text-[var(--teal-deep)]">& phân nhóm</span></>
           </div>
         }
-        description={buoiKham ? `Đợt khám: BV - Xã ${buoiKham.xa}, ${buoiKham.diaDiem} · ${fmtDate(buoiKham.ngayKham)}` : "—"}
+        description={buoiKham ? `Đợt khám: ${fmtBuoiKhamName(buoiKham)} · ${fmtDate(buoiKham.ngayKham)}` : "—"}
         guideTitle="Tư vấn & phân nhóm"
         guide={[
           { selector: '[data-tour="tvs-list"]', title: "Chọn bệnh nhân", desc: "Danh sách này là các bệnh nhân được khuyến nghị phẫu thuật của đợt khám này." },
