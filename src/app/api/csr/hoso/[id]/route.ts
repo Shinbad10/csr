@@ -71,7 +71,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Xác nhận điều trị = KHÔNG: vui lòng ghi rõ lý do" }, { status: 400 });
 
     // BR-08 suy trạng thái (dùng khuyenNghi đã đồng bộ từ huongXuTri)
-    const next = inferNextState(current.trangThai, { ...body, chanDoan: update.chanDoan, khuyenNghi: update.khuyenNghi ?? body.khuyenNghi });
+    const next = inferNextState(current.trangThai, { ...body, chanDoan: update.chanDoan, benhLy: eff("benhLy"), khuyenNghi: update.khuyenNghi ?? body.khuyenNghi });
     update.trangThai = next;
 
     // BR-04

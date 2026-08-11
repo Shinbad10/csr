@@ -16,6 +16,34 @@ export const ageOf = (p: { ngaySinh?: Date | string | null; namSinh?: number | n
 };
 export const tomorrowISO = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
 export const fmtDate = (iso?: Date | string | null) => (iso ? new Date(iso).toLocaleDateString("vi-VN") : "—");
+
+// ── Trạng thái đợt khám theo ngày khám ────────────────────────────────────
+// So sánh theo ngày ở múi giờ máy (khớp với fmtDate), không dùng UTC.
+export type BuoiKhamPhase = "SapDienRa" | "DangDienRa" | "DaKetThuc";
+
+/** Số ngày từ hôm nay tới ngày khám: âm = đã qua, 0 = hôm nay, dương = còn tới. */
+export const daysUntil = (iso?: Date | string | null): number | null => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return Math.round((target - today) / 86_400_000);
+};
+
+export const phaseOf = (ngayKham?: Date | string | null): { key: BuoiKhamPhase; label: string; cls: string; hint: string } => {
+  const d = daysUntil(ngayKham);
+  if (d === 0) return { key: "DangDienRa", label: "Đang diễn ra", cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]", hint: "Khám hôm nay" };
+  if (d != null && d > 0) return {
+    key: "SapDienRa", label: "Sắp diễn ra", cls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]",
+    hint: d === 1 ? "Khám vào ngày mai" : `Còn ${d} ngày nữa mới tới ngày khám`,
+  };
+  return {
+    key: "DaKetThuc", label: "Đã kết thúc", cls: "bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]",
+    hint: d == null ? "Chưa có ngày khám" : `Đã qua ${Math.abs(d)} ngày`,
+  };
+};
 export const fmtTime = (iso?: Date | string | null) =>
   iso ? new Date(iso).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 export const fmtBuoiKhamName = (b?: { ghiChu?: string | null; diaDiem?: string | null; xa?: string | null } | null): string => {
@@ -68,7 +96,7 @@ const staffName = (rel?: { hoTen: string } | null, ma?: string | null) =>
 const YN = (b: boolean) => (b ? "YES" : "NO");
 
 export interface HoSoExport {
-  maBN: string; stt: number; hoTen: string; namSinh: number; ngaySinh?: Date | string | null; gioiTinh: string;
+  maBN: string; stt: number; hoTen: string; namSinh: number | null; ngaySinh?: Date | string | null; gioiTinh: string;
   cccd?: string | null; sdt: string | null;
   chanDoan: string; chanDoanKhac: string | null;
   bhyt: string | null; mucHuongBHYT?: number | null;
@@ -155,7 +183,7 @@ export const statusOf = (t?: string | null) =>
 
 export interface HoSo {
   id: string; maBN: string; maBNHIS?: string | null; stt: number; buoiKhamId?: string; hoTen: string; gioiTinh: string;
-  ngaySinh: string | null; namSinh: number; cccd: string | null; diaChi: string | null;
+  ngaySinh: string | null; namSinh: number | null; cccd: string | null; diaChi: string | null;
   sdt: string | null; sdtNguoiNha: string | null;
   thiLucMP: string | null; thiLucMT: string | null;
   chanDoan: string; chanDoanKhac: string | null; khuyenNghi: string | null;

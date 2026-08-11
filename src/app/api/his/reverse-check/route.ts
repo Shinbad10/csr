@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { getHISSurgeryList } from "@/lib/his";
+import { getHISSurgeryList, foldName, foldId, foldPhone } from "@/lib/his";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -32,30 +32,42 @@ export async function POST(request: Request) {
     });
 
     const listWithMatches = hisSurgeries.map((his: any) => {
-      const hisName = his.hoTen.trim().toLowerCase();
+      const hisName = foldName(his.hoTen);
       const hisYear = String(his.namSinh).trim();
-      const hisCccd = his.cccd?.trim() || "";
+      const hisCccd = foldId(his.cccd);
+      const hisPhone = foldPhone(his.sdt);
 
-      // Tìm khớp (3 lớp định danh: CCCD -> Họ tên & Năm sinh -> Họ tên & SĐT)
-      // Trả kèm matchType: "exact" (CCCD) hoặc "partial" (họ tên + năm sinh / SĐT)
+      // Tìm khớp 2 lớp: CCCD (định danh duy nhất) -> Họ tên + Năm sinh / SĐT.
+      // Đếm số ứng viên ở mỗi lớp: nhiều hơn 1 nghĩa là KHÔNG phân biệt được người nào,
+      // phải đánh dấu để chặn liên kết tự động (rất nhiều BN cùng xã trùng tên + năm sinh).
       let matched = null;
       let matchType: "exact" | "partial" = "partial";
+      let ambiguous = false;
+      let candidates = 0;
 
-      for (const csr of csrPatients) {
-        if (hisCccd && csr.cccd && csr.cccd.trim() === hisCccd) {
-          matched = csr;
+      if (hisCccd) {
+        const byCccd = csrPatients.filter((csr) => foldId(csr.cccd) === hisCccd);
+        if (byCccd.length > 0) {
+          matched = byCccd[0];
           matchType = "exact";
-          break; // CCCD là duy nhất, không cần tìm tiếp
+          candidates = byCccd.length;
+          ambiguous = byCccd.length > 1;
         }
       }
 
       if (!matched) {
-        matched = csrPatients.find((csr) => {
-          if (csr.hoTen.trim().toLowerCase() === hisName && String(csr.namSinh).trim() === hisYear) return true;
-          if (his.sdt && csr.sdt && csr.sdt.trim() === his.sdt.trim() && csr.sdt.trim().length >= 9 && csr.hoTen.trim().toLowerCase() === hisName) return true;
-          return false;
-        }) || null;
-        matchType = "partial";
+        const byInfo = csrPatients.filter((csr) => {
+          const name = foldName(csr.hoTen);
+          if (name !== hisName) return false;
+          if (String(csr.namSinh).trim() === hisYear) return true;
+          return !!hisPhone && foldPhone(csr.sdt) === hisPhone;
+        });
+        if (byInfo.length > 0) {
+          matched = byInfo[0];
+          matchType = "partial";
+          candidates = byInfo.length;
+          ambiguous = byInfo.length > 1;
+        }
       }
 
       if (matched) {
@@ -79,6 +91,9 @@ export async function POST(request: Request) {
             maBNHIS: matched.maBNHIS,
             daDon: matched.daDon,
             matchType,
+            /** true = có nhiều hồ sơ CSR cùng khớp, phải chọn tay thay vì liên kết tự động */
+            ambiguous,
+            candidates,
           },
         };
       }

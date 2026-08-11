@@ -2,17 +2,20 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { can } from "@/lib/permissions";
+import { can, canAny } from "@/lib/permissions";
 import { audit } from "@/lib/audit";
 import { sheetEnabled, clearDataRows } from "@/lib/googleSheet";
 import { drainSyncQueue } from "@/lib/syncWorker";
 
 export const dynamic = "force-dynamic";
 
-async function guard() {
+async function guard(allowSync = false) {
   const session = await getServerSession(authOptions);
   if (!session) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  if (!can(session.user.role, "admin.masterdata")) return { error: NextResponse.json({ error: "Không đủ quyền" }, { status: 403 }) };
+  if (!allowSync && !can(session.user.role, "admin.masterdata"))
+    return { error: NextResponse.json({ error: "Không đủ quyền" }, { status: 403 }) };
+  if (allowSync && !canAny(session.user.role, ["buoikham.manage", "hoso.create", "admin.masterdata"]))
+    return { error: NextResponse.json({ error: "Không đủ quyền" }, { status: 403 }) };
   return { session };
 }
 
@@ -60,7 +63,7 @@ export async function PUT(request: Request) {
 // ?rebuild=1 → DỰNG LẠI: xoá hết dòng dữ liệu cũ rồi đẩy lại toàn bộ hồ sơ.
 // Dùng khi đổi bộ cột báo cáo (dòng cũ theo cột cũ sẽ lệch, không tự ghi đè được).
 export async function POST(request: Request) {
-  const g = await guard();
+  const g = await guard(true);
   if (g.error) return g.error;
   if (!sheetEnabled()) return NextResponse.json({ ok: false, error: "Chưa cấu hình GOOGLE_CREDENTIALS trong .env" }, { status: 409 });
 

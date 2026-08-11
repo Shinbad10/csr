@@ -137,11 +137,43 @@ async function targetOf(coSo: { id: string; ten: string; sheetId?: string | null
   return { spreadsheetId: resolved.id, tab: TAB };
 }
 
-// Ghi lại tiêu đề & XOÁ toàn bộ dòng dữ liệu của cơ sở.
-// Dùng khi đổi bộ cột báo cáo — dòng cũ theo cột cũ sẽ lệch, phải dựng lại từ đầu.
+// Ghi lại tiêu đề & XOÁ HẲN toàn bộ dòng dữ liệu của cơ sở (xoá hẳn hàng thay vì chỉ xoá ô).
 export async function clearDataRows(coSo: { id: string; ten: string; sheetId?: string | null }): Promise<void> {
   const { spreadsheetId, tab } = await targetOf(coSo);
-  await sheets(`${spreadsheetId}/values/${enc(`${tab}!A2:${WIDE_COL}`)}:clear`, "POST", {});
+
+  try {
+    const meta = (await sheets(`${spreadsheetId}?fields=sheets.properties(sheetId,title,gridProperties)`, "GET")) as {
+      sheets?: { properties?: { sheetId?: number; title?: string; gridProperties?: { rowCount?: number } } }[];
+    };
+    const s = meta.sheets?.find((x) => x.properties?.title === tab);
+    const sheetNumericId = s?.properties?.sheetId;
+    const rowCount = s?.properties?.gridProperties?.rowCount || 0;
+
+    // 1. Chỉ clear nội dung ô nếu bảng có nhiều hơn 1 dòng
+    if (rowCount > 1) {
+      await sheets(`${spreadsheetId}/values/${enc(`${tab}!A2:${WIDE_COL}`)}:clear`, "POST", {});
+    }
+
+    // 2. Xoá HẲN các hàng từ dòng 2 trở đi để bảng không còn hàng trống
+    if (sheetNumericId != null && rowCount > 2) {
+      await sheets(`${spreadsheetId}:batchUpdate`, "POST", {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId: sheetNumericId,
+                dimension: "ROWS",
+                startIndex: 1,
+                endIndex: rowCount - 1,
+              },
+            },
+          },
+        ],
+      });
+    }
+  } catch (err) {
+    console.warn(`[clearDataRows] warning cho ${tab}:`, err);
+  }
 }
 
 // Đẩy 1 hồ sơ lên Sheet của cơ sở tương ứng. Trả về trạng thái để worker quyết định.

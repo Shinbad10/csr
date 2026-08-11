@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft } from "lucide-react";
 
-export const labelCls = "block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5";
+export const labelCls = "block text-[12px] font-bold text-[var(--ink-soft)] mb-1";
 
-function usePortalPosition(open: boolean, ref: React.RefObject<HTMLElement | null>, dropdownHeight: number = 280) {
+/** Vị trí popup dạng portal: tự lật lên trên khi không đủ chỗ bên dưới.
+ *  `dropdownHeight` là chiều cao tối đa ước lượng của popup, dùng để quyết định lật. */
+export function usePortalPosition(open: boolean, ref: React.RefObject<HTMLElement | null>, dropdownHeight: number = 280) {
   const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; width?: number }>({ left: 0 });
 
   useEffect(() => {
@@ -37,7 +39,7 @@ function usePortalPosition(open: boolean, ref: React.RefObject<HTMLElement | nul
 export function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="block text-[13px] font-semibold text-[var(--ink-soft)] mb-1">
+      <span className="block text-[12px] font-semibold text-[var(--ink-soft)] mb-1">
         {label} {required && <span className="text-[var(--rose)]">*</span>}
       </span>
       {children}
@@ -47,12 +49,11 @@ export function Field({ label, required, children }: { label: string; required?:
 
 export function SectionHeader({ n, accent }: { n: number; accent: string }) {
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)]">
-      <h3 className="font-serif text-[17px] font-semibold text-[var(--ink)]">
+    <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--line)]">
+      <h3 className="font-serif text-[15.5px] font-semibold text-[var(--ink)]">
         <span className="text-[var(--navy)]">{n}.</span>{" "}
         <span className="italic text-[var(--teal-deep)]">{accent}</span>
       </h3>
-      <ChevronRight className="w-4 h-4 text-[var(--mute-soft)]" />
     </div>
   );
 }
@@ -261,12 +262,12 @@ export function ChoiceRow({ options, value, onChange, render, disabled }: {
   options: readonly string[]; value: string; onChange: (v: string) => void; render?: (o: string) => string; disabled?: boolean;
 }) {
   return (
-    <div className={`flex flex-wrap gap-2 ${disabled ? "opacity-70 pointer-events-none" : ""}`}>
+    <div className={`flex flex-wrap gap-1.5 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
       {options.map((o) => {
         const on = value === o;
         return (
           <button key={o} type="button" onClick={() => !disabled && onChange(on ? "" : o)} disabled={disabled}
-            className={`px-4 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors ${
+            className={`px-3.5 py-1 rounded-full text-[12px] font-semibold border transition-colors ${
               on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "bg-white border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"}`}>
             {render ? render(o) : o}
           </button>
@@ -281,17 +282,104 @@ export function PillGroup({ options, selected, onToggle, disabled }: {
   options: readonly string[]; selected: string[]; onToggle: (v: string) => void; disabled?: boolean;
 }) {
   return (
-    <div className={`flex flex-wrap gap-2 ${disabled ? "opacity-70 pointer-events-none" : ""}`}>
+    <div className={`flex flex-wrap gap-1.5 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
       {options.map((o) => {
         const on = selected.includes(o);
         return (
           <button key={o} type="button" onClick={() => !disabled && onToggle(o)} disabled={disabled}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-semibold border transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold border transition-colors ${
               on ? "bg-[var(--gold-soft)] border-[var(--gold-line)] text-[var(--gold-deep)]" : "bg-white border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"}`}>
             {o}{on && !disabled && <X className="w-3.5 h-3.5 opacity-60" />}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** Select box chọn nhiều — dùng cho danh mục dài (mã ICD…) mà pill hiển thị không xuể.
+ *  Trigger gọn 1 dòng, popup có ô tìm nhanh (bỏ dấu), mục đã chọn hiện thành chip bên dưới. */
+export function MultiSelect({ options, selected, onToggle, disabled, placeholder = "Chọn…", searchPlaceholder = "Tìm nhanh…" }: {
+  options: readonly string[]; selected: string[]; onToggle: (v: string) => void;
+  disabled?: boolean; placeholder?: string; searchPlaceholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const pos = usePortalPosition(open, ref, 320);
+  // Đóng kèm xoá từ khoá — làm trong handler, không đặt setState trong effect
+  const close = useCallback(() => { setOpen(false); setQ(""); }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || popupRef.current?.contains(t)) return;
+      close();
+    };
+    const esc = (e: KeyboardEvent) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Escape") close(); };
+    window.addEventListener("mousedown", h); window.addEventListener("keydown", esc);
+    return () => { window.removeEventListener("mousedown", h); window.removeEventListener("keydown", esc); };
+  }, [open, close]);
+
+  // Tìm không dấu để gõ "glocom" vẫn ra "Glôcôm"
+  const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d");
+  const filtered = q.trim() ? options.filter((o) => fold(o).includes(fold(q))) : options;
+
+  return (
+    <div className={`relative ${disabled ? "opacity-60 pointer-events-none" : ""}`} ref={ref}>
+      <button type="button" disabled={disabled} onClick={() => (open ? close() : setOpen(true))}
+        className={`input-field flex items-center justify-between gap-2 text-left w-full ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""}`}>
+        <span className={`truncate ${selected.length ? "text-[var(--ink)] font-semibold" : "text-[var(--mute-soft)]"}`}>
+          {selected.length ? `Đã chọn ${selected.length} mục` : placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 shrink-0 text-[var(--mute)] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {selected.map((v) => (
+            <span key={v} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold bg-[var(--gold-soft)] border border-[var(--gold-line)] text-[var(--gold-deep)]">
+              <span className="min-w-0">{v}</span>
+              {!disabled && (
+                <button type="button" onClick={() => onToggle(v)} title="Bỏ chọn" className="shrink-0 opacity-55 hover:opacity-100 transition-opacity">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {open && !disabled && typeof document !== "undefined" && createPortal(
+        <div ref={popupRef} style={{ ...pos }}
+          className="fixed z-[99999] flex flex-col max-h-[300px] bg-white border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] animate-fade-in">
+          <div className="p-1.5 border-b border-[var(--line-soft)] shrink-0">
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder}
+              className="w-full px-2.5 py-1.5 text-[13px] rounded-[var(--r-sm)] bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-colors" />
+          </div>
+          <div className="overflow-y-auto p-1">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-3 text-[12.5px] text-[var(--mute)] text-center italic">Không có mục nào khớp</div>
+            ) : filtered.map((o) => {
+              const on = selected.includes(o);
+              return (
+                <button key={o} type="button" onClick={() => onToggle(o)}
+                  className={`w-full text-left px-2.5 py-2 rounded-[var(--r-sm)] text-[13px] flex items-center gap-2.5 transition-colors ${
+                    on ? "bg-[var(--navy-50)] text-[var(--navy)] font-semibold" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"}`}>
+                  <span className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 ${
+                    on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "border-[var(--line-heavy)] bg-white"}`}>
+                    {on && <Check className="w-3 h-3 stroke-[3]" />}
+                  </span>
+                  <span className="min-w-0 flex-1">{o}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

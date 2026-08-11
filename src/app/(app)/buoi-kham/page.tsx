@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
-import { Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X, Stethoscope, Pencil } from "lucide-react";
+import { Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X, Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet } from "lucide-react";
 import { can } from "@/lib/permissions";
-import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode } from "@/lib/csr";
+import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
 import { Field, DateField } from "@/components/csr/fields";
 import { SkeletonTable } from "@/components/layout/Skeleton";
+import ImportExcelModal from "@/components/csr/ImportExcelModal";
 import { useToast } from "@/components/providers/ToastProvider";
 
 interface CoSo { id: string; ten: string }
@@ -17,6 +18,59 @@ interface BuoiKham {
   id: string; coSo: CoSo; coSoId: string; ngayKham: string; xa: string; diaDiem: string;
   bacSiKham?: string | null; ghiChu?: string | null; _count: { hoSo: number };
   stats?: { nhomA: number; nhomB: number; daMo: number; chuaMo: number };
+}
+
+/** Nút vào đợt khám theo pha ngày khám.
+ *  Hôm nay = hành động chính; đã qua vẫn mở được để bổ sung/sửa hồ sơ; tương lai thì khoá. */
+function JoinAction({ b, block }: { b: BuoiKham; block?: boolean }) {
+  const p = phaseOf(b.ngayKham);
+  const size = block ? "py-2 px-3 text-[13px] flex-1 justify-center" : "py-1.5 px-3 text-xs";
+  if (p.key === "SapDienRa") {
+    return (
+      <span title={p.hint} className={`btn ${size} font-bold inline-flex border border-[var(--line)] bg-[var(--surface-soft)] text-[var(--mute)] cursor-not-allowed`}>
+        <Lock className="w-3.5 h-3.5" /> Chưa mở
+      </span>
+    );
+  }
+  if (p.key === "DaKetThuc") {
+    return (
+      <Link href={`/kham/${b.id}`} title={`${p.hint} — mở để xem và bổ sung hồ sơ`} className={`btn btn-secondary ${size} font-bold inline-flex`}>
+        <FolderOpen className="w-3.5 h-3.5 text-[var(--ink-soft)]" /> Xem hồ sơ
+      </Link>
+    );
+  }
+  return (
+    <Link href={`/kham/${b.id}`} className={`btn btn-primary ${size} font-bold inline-flex`}>
+      <Stethoscope className="w-3.5 h-3.5 text-[var(--teal)]" /> Tham gia khám
+    </Link>
+  );
+}
+
+/** A/B liền khối cho đọc như một cụm, thay vì hai thẻ rời rạc. */
+function NhomChip({ a, b }: { a: number; b: number }) {
+  return (
+    <div className="inline-flex rounded-[var(--r-sm)] overflow-hidden border border-[var(--line)] font-mono text-[11.5px] font-bold">
+      <span className="px-2 py-0.5 bg-[var(--rose-soft)] text-[var(--rose)]" title="Nhóm A — đã chỉ định mổ">A {a}</span>
+      <span className="px-2 py-0.5 bg-[var(--amber-soft)] text-[var(--amber)] border-l border-[var(--line)]" title="Nhóm B — theo dõi">B {b}</span>
+    </div>
+  );
+}
+
+/** Tiến độ mổ dạng "đã mổ / cần mổ" kèm thanh — gọn và nói được tỉ lệ hơn 2 con số rời. */
+function MoProgress({ done, waiting }: { done: number; waiting: number }) {
+  const need = done + waiting;
+  if (need === 0) return <span className="text-[var(--mute-soft)]">—</span>;
+  const pct = Math.round((done / need) * 100);
+  return (
+    <div className="inline-flex flex-col items-center gap-1 min-w-[72px]" title={`Đã mổ ${done}/${need} ca chỉ định (${pct}%)`}>
+      <span className="font-mono text-[11.5px] font-bold text-[var(--ink-soft)]">
+        {done}<span className="text-[var(--mute-soft)] font-normal">/{need}</span>
+      </span>
+      <span className="w-full h-1 rounded-full bg-[var(--line)] overflow-hidden">
+        <span className="block h-full bg-[var(--teal)] rounded-full" style={{ width: `${pct}%` }} />
+      </span>
+    </div>
+  );
 }
 
 function readCosoCookie(): string {
@@ -45,6 +99,7 @@ export default function BuoiKhamPage() {
   const [bacSiKham, setBacSiKham] = useState("");
   const [ghiChu, setGhiChu] = useState("");
 
+  const [importOpen, setImportOpen] = useState(false);
   const [editModal, setEditModal] = useState<BuoiKham | null>(null);
   const [editXa, setEditXa] = useState("");
   const [editDiaDiem, setEditDiaDiem] = useState("");
@@ -136,15 +191,20 @@ export default function BuoiKhamPage() {
         guide={[
           { selector: '[data-tour="bk-create"]', title: "Tổ chức đợt khám mới", desc: "Bấm nút này, nhập ngày khám, xã/phường, địa điểm rồi lưu (cần quyền quản lý)." },
           { selector: '[data-tour="bk-search"]', title: "Tìm đợt khám", desc: "Gõ vào đây để lọc nhanh theo xã, địa điểm hoặc tên bệnh viện." },
-          { selector: '[data-tour="bk-table"]', title: "Theo dõi tiến độ", desc: "Cột SL BN, Phân nhóm (A/B) và Trạng thái mổ cho biết tình hình từng đợt khám." },
-          { selector: '[data-tour="bk-join"]', title: "Vào khám bệnh nhân", desc: "Bấm \"Tham gia khám\" ở cột thao tác để tiếp nhận và khám cho đợt khám đó." },
+          { selector: '[data-tour="bk-table"]', title: "Theo dõi tiến độ", desc: "Cột SL BN, Phân nhóm (A/B) và Tiến độ mổ cho biết tình hình từng đợt khám." },
+          { selector: '[data-tour="bk-join"]', title: "Vào khám bệnh nhân", desc: "Chỉ đợt khám diễn ra HÔM NAY mới bấm \"Tham gia khám\" được. Đợt đã kết thúc mở bằng \"Xem hồ sơ\" để bổ sung, đợt chưa tới ngày thì khoá." },
         ]}
         guideTip="Các số liệu trong bảng tự cập nhật theo dữ liệu khám thực tế."
         actions={
           canManage && (
-            <button data-tour="bk-create" onClick={() => setOpen(true)} className="btn btn-primary px-4 py-2 font-bold text-[13px]">
-              <Plus className="w-4 h-4" /> Tổ chức đợt khám
-            </button>
+            <>
+              <button onClick={() => setImportOpen(true)} title="Nhập danh sách bệnh nhân các đợt khám cũ từ file Excel" className="btn btn-secondary px-3 py-2 font-bold text-[13px]">
+                <FileSpreadsheet className="w-4 h-4 text-[var(--teal-deep)]" /> Nhập Excel
+              </button>
+              <button data-tour="bk-create" onClick={() => setOpen(true)} className="btn btn-primary px-4 py-2 font-bold text-[13px]">
+                <Plus className="w-4 h-4" /> Tổ chức đợt khám
+              </button>
+            </>
           )
         }
       />
@@ -172,21 +232,26 @@ export default function BuoiKhamPage() {
                     <div className="font-bold text-[14px] text-[var(--ink)]">{fmtBuoiKhamName(b)}</div>
                     <div className="font-mono text-[11px] font-bold text-[var(--navy)] mt-0.5">{fmtBuoiKhamCode(b.id)}</div>
                   </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--mute)]">
-                    <Calendar className="w-3.5 h-3.5" /> {fmtDate(b.ngayKham)}
-                  </span>
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--mute)]">
+                      <Calendar className="w-3.5 h-3.5" /> {fmtDate(b.ngayKham)}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10.5px] font-bold border ${phaseOf(b.ngayKham).cls}`}>
+                      {phaseOf(b.ngayKham).label}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-start gap-1.5 text-[12px] text-[var(--ink-soft)]">
                   <MapPin className="w-3.5 h-3.5 text-[var(--mute)] shrink-0 mt-0.5" /><span className="leading-tight">{b.diaDiem}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-wrap font-mono text-[11.5px] font-bold">
-                  <span className="px-1.5 py-0.5 bg-[var(--navy-50)] text-[var(--navy)] rounded-[4px] border border-[var(--navy-100)]">{b._count?.hoSo ?? 0} BN</span>
-                  <span className="px-1.5 py-0.5 bg-[var(--rose-soft)] text-[var(--rose)] rounded-[4px] border border-[var(--rose)]/20">A: {b.stats?.nhomA ?? 0}</span>
-                  <span className="px-1.5 py-0.5 bg-[var(--amber-soft)] text-[var(--amber)] rounded-[4px] border border-[var(--amber)]/20">B: {b.stats?.nhomB ?? 0}</span>
-                  <span className="px-1.5 py-0.5 bg-[var(--teal-soft)] text-[var(--teal-deep)] rounded-[4px] border border-[var(--teal)]/20 inline-flex items-center gap-1"><Check className="w-3 h-3 text-[var(--teal)]" /> {b.stats?.daMo ?? 0}</span>
-                  <span className="px-1.5 py-0.5 bg-[var(--surface-soft)] text-[var(--mute)] rounded-[4px] border border-[var(--line)]">Chờ: {b.stats?.chuaMo ?? 0}</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-1.5 py-0.5 font-mono text-[11.5px] font-bold bg-[var(--navy-50)] text-[var(--navy)] rounded-[4px] border border-[var(--navy-100)]">{b._count?.hoSo ?? 0} BN</span>
+                  <NhomChip a={b.stats?.nhomA ?? 0} b={b.stats?.nhomB ?? 0} />
+                  <span className="px-1.5 py-0.5 font-mono text-[11.5px] font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] rounded-[4px] border border-[var(--teal)]/20 inline-flex items-center gap-1" title="Đã mổ / cần mổ">
+                    <Check className="w-3 h-3 text-[var(--teal)]" /> {b.stats?.daMo ?? 0}/{(b.stats?.daMo ?? 0) + (b.stats?.chuaMo ?? 0)}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2 pt-1">
@@ -199,9 +264,7 @@ export default function BuoiKhamPage() {
                       <Pencil className="w-3.5 h-3.5 text-[var(--ink-soft)]" /> Sửa
                     </button>
                   )}
-                  <Link href={`/kham/${b.id}`} className="btn btn-primary flex-1 py-2 text-[13px] font-bold justify-center">
-                    <Stethoscope className="w-4 h-4 text-[var(--teal)]" /> Tham gia khám
-                  </Link>
+                  <JoinAction b={b} block />
                 </div>
               </div>
             ))}
@@ -215,18 +278,19 @@ export default function BuoiKhamPage() {
                 <th className="py-3 px-3.5 border-b border-[var(--line)]">Địa điểm</th>
                 <th className="py-3 px-3.5 border-b border-[var(--line)] text-center">SL BN</th>
                 <th className="py-3 px-3.5 border-b border-[var(--line)] text-center">Phân nhóm</th>
-                <th className="py-3 px-3.5 border-b border-[var(--line)] text-center">Trạng thái mổ</th>
+                <th className="py-3 px-3.5 border-b border-[var(--line)] text-center">Tiến độ mổ</th>
                 <th className="py-3 px-3.5 border-b border-[var(--line)]">Ngày khám</th>
+                <th className="py-3 px-3.5 border-b border-[var(--line)] text-center">Trạng thái</th>
                 <th className="py-3 px-3.5 border-b border-[var(--line)] text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
               {loading ? (
-                <SkeletonTable rows={5} cols={8} />
+                <SkeletonTable rows={5} cols={9} />
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={8} className="py-16 text-center text-[var(--mute)]">Chưa có đợt khám nào.</td></tr>
+                <tr><td colSpan={9} className="py-16 text-center text-[var(--mute)]">Chưa có đợt khám nào.</td></tr>
               ) : filtered.map((b, i) => (
-                <tr key={b.id} className="hover:bg-[var(--surface-soft)] transition-colors group">
+                <tr key={b.id} className={`transition-colors group ${phaseOf(b.ngayKham).key === "DangDienRa" ? "bg-[var(--teal-softer)] hover:bg-[var(--teal-soft)]" : "hover:bg-[var(--surface-soft)]"}`}>
                   <td className="py-3.5 px-3.5 text-center align-middle font-mono font-bold text-[var(--navy)] text-[11.5px]">
                     <span className="text-[var(--mute-soft)] font-normal">#</span>{String(i + 1).padStart(2, "0")}
                   </td>
@@ -239,28 +303,19 @@ export default function BuoiKhamPage() {
                   </td>
                   <td className="py-3.5 px-3.5 align-middle text-center font-mono font-bold text-[14px] text-[var(--navy)]">{b._count?.hoSo ?? 0}</td>
                   <td className="py-3.5 px-3.5 align-middle text-center">
-                    <div className="inline-flex items-center gap-1.5 font-mono text-[11.5px] font-bold">
-                      <span className="px-1.5 py-0.5 bg-[var(--rose-soft)] text-[var(--rose)] rounded-[4px] border border-[var(--rose)]/20" title="Nhóm A (chỉ định mổ)">
-                        A: {b.stats?.nhomA ?? 0}
-                      </span>
-                      <span className="px-1.5 py-0.5 bg-[var(--amber-soft)] text-[var(--amber)] rounded-[4px] border border-[var(--amber)]/20" title="Nhóm B (theo dõi)">
-                        B: {b.stats?.nhomB ?? 0}
-                      </span>
-                    </div>
+                    <NhomChip a={b.stats?.nhomA ?? 0} b={b.stats?.nhomB ?? 0} />
                   </td>
                   <td className="py-3.5 px-3.5 align-middle text-center">
-                    <div className="inline-flex items-center gap-1.5 font-mono text-[11.5px] font-bold">
-                      <span className="px-1.5 py-0.5 bg-[var(--teal-soft)] text-[var(--teal-deep)] rounded-[4px] border border-[var(--teal)]/20 flex items-center gap-1" title="Đã phẫu thuật">
-                        <Check className="w-3 h-3 text-[var(--teal)]" /> {b.stats?.daMo ?? 0}
-                      </span>
-                      <span className="px-1.5 py-0.5 bg-[var(--surface-soft)] text-[var(--mute)] rounded-[4px] border border-[var(--line)]" title="Chưa phẫu thuật / Chờ mổ">
-                        Chờ: {b.stats?.chuaMo ?? 0}
-                      </span>
-                    </div>
+                    <MoProgress done={b.stats?.daMo ?? 0} waiting={b.stats?.chuaMo ?? 0} />
                   </td>
                   <td className="py-3.5 px-3.5 align-middle whitespace-nowrap"><div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-[var(--mute)]" /><span className="font-mono text-xs">{fmtDate(b.ngayKham)}</span></div></td>
+                  <td className="py-3.5 px-3.5 align-middle text-center whitespace-nowrap">
+                    <span title={phaseOf(b.ngayKham).hint} className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border ${phaseOf(b.ngayKham).cls}`}>
+                      {phaseOf(b.ngayKham).label}
+                    </span>
+                  </td>
                   <td className="py-3.5 px-3.5 align-middle whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-2">
+                    <div data-tour="bk-join" className="flex items-center justify-end gap-2">
                       {canManage && (
                         <button
                           type="button"
@@ -271,9 +326,7 @@ export default function BuoiKhamPage() {
                           <Pencil className="w-3.5 h-3.5 text-[var(--ink-soft)]" /> Sửa
                         </button>
                       )}
-                      <Link data-tour="bk-join" href={`/kham/${b.id}`} className="btn btn-primary py-1.5 px-3 text-xs font-bold inline-flex">
-                        <Stethoscope className="w-3.5 h-3.5 text-[var(--teal)]" /> Tham gia khám
-                      </Link>
+                      <JoinAction b={b} />
                     </div>
                   </td>
                 </tr>
@@ -292,6 +345,8 @@ export default function BuoiKhamPage() {
           </div>
         </div>
       </div>
+
+      <ImportExcelModal open={importOpen} onClose={() => setImportOpen(false)} onDone={() => { setImportOpen(false); load(); }} />
 
       <Modal
         open={open}

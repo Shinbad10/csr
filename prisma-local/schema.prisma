@@ -75,7 +75,7 @@ model HoSoBenhNhan {
   hoTen           String
   gioiTinh        String
   ngaySinh        DateTime?
-  namSinh         Int
+  namSinh         Int?
   cccd            String?
   diaChi          String?
   sdt             String?

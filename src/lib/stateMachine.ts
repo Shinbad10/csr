@@ -2,6 +2,8 @@
 
 interface Patch {
   chanDoan?: unknown;
+  /** Kết luận bộ sàng lọc mới ("Chưa phát hiện bất thường" / "Nghi ngờ bệnh lý") */
+  benhLy?: unknown;
   khuyenNghi?: string | null;
   nhom?: string | null;
   ngayDieuTri?: string | Date | null;
@@ -43,7 +45,9 @@ export function inferNextState(current: string, p: Patch): string {
       return "CoChiDinhMo";
     }
     if (kn === "theo doi") return "TheoDoi";
-    if (hasDiag(p.chanDoan)) return "DaKham";     // có chẩn đoán, chưa khuyến nghị
+    // Có kết luận khám, chưa có khuyến nghị. Nhận cả bộ cũ (chanDoan) lẫn bộ sàng lọc
+    // mới (benhLy) — cơ sở nào tắt bộ cũ thì hồ sơ vẫn thoát được trạng thái TiepNhan.
+    if (hasDiag(p.chanDoan) || (typeof p.benhLy === "string" && p.benhLy.trim() !== "")) return "DaKham";
   }
 
   // Tư vấn & phân nhóm

@@ -48,6 +48,29 @@ export async function getHisConfig(coSoId: string) {
   }
 }
 
+// ── Chuẩn hoá để đối chiếu giữa CSR và HIS ────────────────────────────────
+// Hai hệ nhập liệu độc lập nên cùng một người vẫn khác nhau về hoa/thường,
+// khoảng trắng thừa, và cách tổ hợp dấu tiếng Việt (NFC vs NFD).
+/** Khử dấu + gộp khoảng trắng + thường hoá. "NGUYỄN  VĂN HÙNG" ≡ "Nguyễn Văn Hùng". */
+export const foldName = (s?: string | null) =>
+  (s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** Chỉ giữ chữ số. Dùng cho CCCD/CMND — HIS hay lưu kèm dấu chấm hoặc khoảng trắng. */
+export const foldId = (s?: string | null) => (s || "").replace(/\D/g, "");
+
+/** 9 số cuối của SĐT — bỏ qua số 0 đầu, +84 và ký tự phân cách. */
+export const foldPhone = (s?: string | null) => {
+  const d = foldId(s);
+  return d.length >= 9 ? d.slice(-9) : "";
+};
+
 export function appendHisNote(oldNote: string | null | undefined, newHisDetail: string): string {
   const clean = (oldNote || "")
     .split("\n")
@@ -61,7 +84,7 @@ export function appendHisNote(oldNote: string | null | undefined, newHisDetail: 
 export async function checkHISForPatient(
   coSoId: string,
   hoTen: string,
-  namSinh: number | string,
+  namSinh: number | string | null,   // hồ sơ lịch sử có thể không có năm sinh
   cccd?: string | null,
   bhyt?: string | null,
   monthStr?: string | null
@@ -221,7 +244,7 @@ export async function batchCheckHISForPatients(
   patients: Array<{
     id: string;
     hoTen: string;
-    namSinh: number | string;
+    namSinh: number | string | null;
     cccd?: string | null;
     bhyt?: string | null;
     buoiKham?: { ngayKham: Date | string } | null;

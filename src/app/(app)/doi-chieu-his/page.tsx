@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import {
   Activity, RefreshCw, CheckCircle2, Search,
   Calendar, Users, ShieldCheck, Database, Check,
@@ -50,6 +51,7 @@ function StatCard({ label, value, sub, icon: Icon, tone }: {
 
 export default function DoiChieuHisPage() {
   const { addToast } = useToast();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<"batch" | "reverse">("batch");
 
   // Tab 1: Batch Check state (Mặc định chọn tháng hiện tại)
@@ -277,12 +279,29 @@ export default function DoiChieuHisPage() {
 
   // Link all matched patients
   const linkAllMatched = async () => {
-    const unlinked = revList.filter((r) => r.matchedCsr && !r.matchedCsr.maBNHIS);
+    const pending = revList.filter((r) => r.matchedCsr && !r.matchedCsr.maBNHIS);
+    // Ca nhập nhằng (nhiều hồ sơ CSR cùng khớp) phải người dùng tự chọn — gán tự động
+    // là gán nhầm hồ sơ, và ghi nhận ca mổ sai người thì không tự hoàn tác được.
+    const unlinked = pending.filter((r) => !r.matchedCsr.ambiguous);
+    const skipped = pending.length - unlinked.length;
     if (unlinked.length === 0) {
-      addToast({ type: "info", message: "Tất cả các BN khớp đều đã được liên kết mã HIS!" });
+      addToast({
+        type: "info",
+        message: skipped > 0
+          ? `${skipped} ca khớp nhiều hồ sơ trùng tên — cần chọn tay, không tự động liên kết được.`
+          : "Tất cả các BN khớp đều đã được liên kết mã HIS!",
+      });
       return;
     }
-    if (!confirm(`Bạn có chắc muốn tự động liên kết mã HIS cho ${unlinked.length} bệnh nhân khớp không?`)) return;
+    if (!(await confirm({
+      title: "Liên kết mã HIS hàng loạt",
+      message: `Sẽ gán mã HIS cho ${unlinked.length} bệnh nhân đang khớp.`,
+      note: skipped > 0
+        ? `Bỏ qua ${skipped} ca khớp nhiều hồ sơ trùng tên — anh/chị cần chọn tay từng ca. Thao tác không thể hoàn tác tự động.`
+        : "Thao tác chạy lần lượt từng hồ sơ và không thể hoàn tác tự động.",
+      confirmLabel: `Liên kết ${unlinked.length} hồ sơ`,
+      tone: "info",
+    }))) return;
 
     setRevLoading(true);
     let successCount = 0;
@@ -890,6 +909,12 @@ export default function DoiChieuHisPage() {
                                   <div className="text-[11.5px] text-[var(--ink-soft)] mt-1 font-medium">
                                     Đợt: {r.matchedCsr.buoiKham?.xa} ({fmtDate(r.matchedCsr.buoiKham?.ngayKham)})
                                   </div>
+                                  {r.matchedCsr.ambiguous && (
+                                    <div className="mt-1.5 inline-flex items-start gap-1.5 text-[11px] font-bold text-[var(--rose)]">
+                                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                                      <span>Trùng {r.matchedCsr.candidates} hồ sơ — phải chọn tay, không liên kết tự động</span>
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs text-[var(--mute)] bg-[var(--surface-hover)] font-medium">

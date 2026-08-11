@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Plus, Building2, Users, ScrollText, X, Check, Pencil, Trash2, FileSpreadsheet, RefreshCw, ExternalLink, Copy, ClipboardList, Lock, Stethoscope, Search } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { fmtTime } from "@/lib/csr";
@@ -739,6 +740,7 @@ interface GSheetStatus { enabled: boolean; shareEmail: string | null; tab: strin
 
 function GoogleSheetPanel() {
   const { addToast } = useToast();
+  const confirm = useConfirm();
   const [status, setStatus] = useState<GSheetStatus | null>(null);
   const [rows, setRows] = useState<GSheetCoSo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -774,7 +776,13 @@ function GoogleSheetPanel() {
 
   // Xoá hết dòng dữ liệu cũ rồi đẩy lại toàn bộ hồ sơ theo bộ cột báo cáo hiện tại.
   const rebuildSheet = async () => {
-    if (!window.confirm("Dựng lại báo cáo?\n\nToàn bộ dòng dữ liệu trên Google Sheet sẽ bị xoá và ghi lại từ đầu theo bộ cột mới. Hàng tiêu đề và mọi cột kế toán tự thêm sẽ bị mất.")) return;
+    if (!(await confirm({
+      title: "Dựng lại báo cáo?",
+      message: "Toàn bộ dòng dữ liệu trên Google Sheet sẽ bị xoá và ghi lại từ đầu theo bộ cột mới.",
+      note: "Hàng tiêu đề và mọi cột kế toán tự thêm sẽ bị mất. Thao tác không thể hoàn tác.",
+      confirmLabel: "Xoá & dựng lại",
+      tone: "danger",
+    }))) return;
     setRebuilding(true);
     const res = await fetch("/api/csr/googlesheet?rebuild=1", { method: "POST" });
     const d = await res.json(); setRebuilding(false);

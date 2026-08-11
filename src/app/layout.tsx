@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Fraunces, JetBrains_Mono } from "next/font/google";
 import SessionProvider from "@/components/providers/SessionProvider";
 import ToastProvider from "@/components/providers/ToastProvider";
+import ConfirmProvider from "@/components/providers/ConfirmProvider";
 import PWARegister from "@/components/providers/PWARegister";
 import "./globals.css";
 
@@ -51,7 +52,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full font-sans bg-[var(--surface-bg)] text-[var(--ink)]" suppressHydrationWarning>
         <PWARegister />
         <SessionProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

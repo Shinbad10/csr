@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
 
 export async function GET(request: Request) {
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     if (!coSoId || !ngayKham || !xa || !diaDiem)
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc (cơ sở, ngày, xã, địa điểm)" }, { status: 400 });
 
-    const dateStr = new Date(ngayKham).toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
+    const dateStr = yymmdd(new Date(ngayKham)); // YYMMDD theo giờ địa phương
     const count = await getPrisma().buoiKham.count({
       where: { id: { startsWith: `ĐK-${dateStr}` } },
     });

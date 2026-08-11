@@ -16,20 +16,48 @@ export async function GET(request: Request) {
   const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
   const buoiKhamId = sp.get("buoiKhamId") || undefined;
   const trangThai = sp.get("trangThai") || undefined;
+  const nhom = sp.get("nhom") || undefined;
   const search = sp.get("search") || "";
+  const isPaginated = sp.has("page") || sp.has("pageSize");
 
   try {
+    const where: any = {
+      AND: [
+        coSoId ? { coSoId } : {},
+        buoiKhamId ? { buoiKhamId } : {},
+        trangThai ? { trangThai } : {},
+        nhom ? { nhom } : {},
+        search
+          ? { OR: [{ maBN: { contains: search } }, { hoTen: { contains: search } }, { sdt: { contains: search } }, { cccd: { contains: search } }] }
+          : {},
+      ],
+    };
+
+    if (isPaginated) {
+      const page = Math.max(1, parseInt(sp.get("page") || "1", 10));
+      const pageSize = Math.min(200, Math.max(10, parseInt(sp.get("pageSize") || "50", 10)));
+      const prisma = getPrisma();
+      const [total, items] = await Promise.all([
+        prisma.hoSoBenhNhan.count({ where }),
+        prisma.hoSoBenhNhan.findMany({
+          where,
+          include: { buoiKham: true, coSo: true, tuVanVien: true },
+          orderBy: [{ stt: "asc" }, { createdAt: "desc" }],
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+      ]);
+      return NextResponse.json({
+        items,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      });
+    }
+
     const data = await getPrisma().hoSoBenhNhan.findMany({
-      where: {
-        AND: [
-          coSoId ? { coSoId } : {},
-          buoiKhamId ? { buoiKhamId } : {},
-          trangThai ? { trangThai } : {},
-          search
-            ? { OR: [{ maBN: { contains: search } }, { hoTen: { contains: search } }, { sdt: { contains: search } }, { cccd: { contains: search } }] }
-            : {},
-        ],
-      },
+      where,
       include: { buoiKham: true, coSo: true, tuVanVien: true },
       orderBy: [{ stt: "asc" }, { createdAt: "desc" }],
     });

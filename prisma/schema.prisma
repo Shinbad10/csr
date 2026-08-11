@@ -78,7 +78,7 @@ model HoSoBenhNhan {
   hoTen       String
   gioiTinh    String   // Nam | Nữ | Khác
   ngaySinh    DateTime? // ngày sinh đầy đủ (tự lấy khi quét thẻ BHYT/CCCD)
-  namSinh     Int       // năm sinh (SRS) — suy từ ngaySinh hoặc nhập tay
+  namSinh     Int?      // năm sinh (SRS) — suy từ ngaySinh hoặc nhập tay; để trống khi dữ liệu lịch sử không có
   cccd        String?
   diaChi      String?
   sdt         String?

@@ -10,6 +10,7 @@ import {
   MapPin, Shield, Camera, AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import {
   CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, statusOf, type HoSo,
 } from "@/lib/csr";
@@ -19,7 +20,7 @@ import {
 } from "@/lib/formFields";
 import { type ThongTinTheBHYT } from "@/lib/bhxh";
 import { DoctorAutocomplete } from "@/components/csr/DoctorAutocomplete";
-import { Field, Select, ChoiceRow, PillGroup, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
+import { Field, Select, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { CameraScannerModal } from "@/components/csr/CameraScannerModal";
@@ -56,7 +57,8 @@ function applyBhxhDataToForm(
   setHoTen: (v: string) => void,
   setNgaySinh: (v: string) => void,
   setGioiTinh: (v: string) => void,
-  setDiaChi: (v: string) => void
+  setDiaChi: (v: string) => void,
+  setCccd?: (v: string) => void
 ) {
   if (the.hoTen) setHoTen(the.hoTen);
   if (the.ngaySinh) {
@@ -76,6 +78,8 @@ function applyBhxhDataToForm(
     else setGioiTinh(gt);
   }
   if (the.diaChi) setDiaChi(the.diaChi);
+  // Chỉ điền khi cổng BHXH thực sự trả CCCD; caller tự quyết định có ghi đè số đang có không
+  if (the.cccd && setCccd) setCccd(the.cccd);
 }
 
 // ── Modal tiếp nhận: quét thẻ BHYT / CCCD / VNeID ──────────────────────────
@@ -111,7 +115,8 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
         setTheBhyt(r.the || null);
         setLookup("ok");
         setLookupMsg(`Tìm thấy thẻ: ${r.maThe}`);
-        if (r.the) applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi);
+        // CCCD: chỉ điền khi ô đang trống, không đè số nhân viên tiếp nhận đã nhập tay
+        if (r.the) applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v));
       } else {
         setTheBhyt(null);
         setLookup("fail");
@@ -396,43 +401,53 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           icon={AlertTriangle}
           maxWidth="max-w-[500px]"
           className="!z-[1100]"
-          noPadding
-        >
-          <div className="p-5 sm:p-6 bg-white space-y-4 text-[14px]">
-            <div className="p-4 bg-[var(--amber-soft)] border border-[var(--amber)]/40 rounded-2xl text-[var(--amber-deep)] flex items-start gap-3.5 shadow-xs">
-              <AlertTriangle className="w-5 h-5 text-[var(--amber-deep)] shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <div className="font-bold text-[14.5px]">Phát hiện hồ sơ đã tồn tại!</div>
-                <div className="mt-1 font-normal text-[13px] leading-relaxed text-[var(--ink)]/90 break-words">{dupWarning}</div>
-              </div>
-            </div>
-            
-            <p className="text-[var(--ink)] leading-relaxed font-medium pt-1">
-              Anh/chị có chắc chắn muốn tiếp tục lưu hồ sơ mới này vào danh sách khám không?
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--line-subtle)]">
+          footer={
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 w-full">
               <button
                 type="button"
                 onClick={handleResetForm}
-                className="btn btn-secondary px-4 py-2.5 font-bold border-[var(--rose)]/30 text-[var(--rose)] hover:bg-[var(--rose-soft)] cursor-pointer rounded-xl h-10 text-[13px]"
+                className="btn btn-secondary h-10 px-4 text-[13px] font-bold border-[var(--rose)]/30 text-[var(--rose)] hover:bg-[var(--rose-soft)] hover:border-[var(--rose)]/50 cursor-pointer"
               >
-                No (Không lưu & Reset form)
+                Không lưu & Reset form
               </button>
               <button
                 type="button"
                 onClick={() => submit(undefined, true)}
                 disabled={saving}
-                className="btn bg-[var(--amber-deep)] hover:bg-[#b45309] text-white font-bold px-5 py-2.5 cursor-pointer shadow-sm flex items-center gap-2 rounded-xl h-10 text-[13px]"
+                className="btn h-10 px-5 text-[13px] font-bold text-white cursor-pointer bg-[var(--amber-deep)] hover:bg-[var(--amber-ink)] shadow-[var(--shadow-sm)] active:scale-[0.98]"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
-                Yes (Tiếp tục lưu)
+                Tiếp tục lưu
               </button>
             </div>
+          }
+        >
+          <div className="space-y-4 text-[14px]">
+            <div className="flex items-start gap-3.5 p-4 rounded-[var(--r-lg)] bg-[var(--amber-soft)] border border-[var(--amber)]/25 border-l-[3px] border-l-[var(--amber)] shadow-[var(--shadow-xs)]">
+              <AlertTriangle className="w-5 h-5 text-[var(--amber-deep)] shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="font-bold text-[14.5px] text-[var(--amber-ink)]">Phát hiện hồ sơ đã tồn tại</div>
+                <div className="mt-1 text-[13px] leading-relaxed text-[var(--ink-soft)] break-words">{dupWarning}</div>
+              </div>
+            </div>
+
+            <p className="text-[var(--ink)] leading-relaxed font-medium">
+              Anh/chị có chắc chắn muốn tiếp tục lưu hồ sơ mới này vào danh sách khám không?
+            </p>
           </div>
         </Modal>
       )}
     </Modal>
+  );
+}
+
+/** Giá trị chỉ-đọc suy từ đợt khám / tài khoản — hiển thị gọn, không giả dạng ô nhập. */
+function Meta({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <div className="flex items-baseline gap-1.5 min-w-0">
+      <dt className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--mute)] shrink-0">{k}</dt>
+      <dd className={`text-[13px] font-semibold text-[var(--ink)] truncate ${mono ? "font-mono" : ""}`}>{v}</dd>
+    </div>
   );
 }
 
@@ -505,7 +520,8 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
         setTheBhyt(r.the || null);
         setLookup("ok");
         setLookupMsg(`Tìm thấy thẻ: ${r.maThe}`);
-        if (r.the) applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi);
+        // CCCD: chỉ điền khi ô đang trống, không đè số nhân viên tiếp nhận đã nhập tay
+        if (r.the) applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v));
       } else {
         setTheBhyt(null);
         setLookup("fail");
@@ -705,6 +721,7 @@ export default function ExamPage() {
   const { buoiKhamId } = useParams<{ buoiKhamId: string }>();
   const { data: session } = useSession();
   const { addToast } = useToast();
+  const confirm = useConfirm();
 
   const [buoiKham, setBuoiKham] = useState<BuoiKham | null>(null);
   const [patients, setPatients] = useState<HoSo[]>([]);
@@ -810,9 +827,14 @@ export default function ExamPage() {
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  const pick = (p: HoSo) => {
+  const pick = async (p: HoSo) => {
     if (p.id === selId) return;
-    if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển bệnh nhân khác và bỏ thay đổi?")) return;
+    if (dirty && !(await confirm({
+      title: "Bỏ thay đổi chưa lưu?",
+      message: `Phiếu khám của ${selected?.hoTen || "bệnh nhân hiện tại"} đang có thay đổi chưa lưu.\nChuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
+      confirmLabel: "Chuyển & bỏ thay đổi",
+      cancelLabel: "Ở lại",
+    }))) return;
     setIsEditing(false);
     setSelId(p.id); loadForm(p);
   };
@@ -822,6 +844,7 @@ export default function ExamPage() {
     const on = (k: string) => isFieldOn(cfg, k);
 
     // Validate phía client (server cũng chặn lại)
+    if (on("benhSu") && on("loaiBenhSu") && f.benhSu === "Có" && f.loaiBenhSu.length === 0) { addToast({ type: "error", message: "Có bệnh sử: chọn ít nhất một Loại bệnh sử." }); return; }
     if (on("chanDoan") && f.chanDoan.includes("Khác") && !f.chanDoanKhac.trim()) { addToast({ type: "error", message: "Vui lòng nhập Chẩn đoán khác." }); return; }
     if (on("benhLy") && on("loaiBenhLy") && f.benhLy === "Nghi ngờ bệnh lý" && f.loaiBenhLy.length === 0) { addToast({ type: "error", message: "Nghi ngờ bệnh lý: chọn ít nhất một Loại bệnh lý." }); return; }
     if (on("loaiBenhLy") && f.loaiBenhLy.includes("Khác") && !f.loaiBenhLyKhac.trim()) { addToast({ type: "error", message: "Vui lòng ghi rõ Loại bệnh lý khác." }); return; }
@@ -894,9 +917,9 @@ export default function ExamPage() {
       desc: selected?.thiLucMP && selected?.thiLucMT ? `MP: ${selected.thiLucMP} · MT: ${selected.thiLucMT}` : "Chưa đo thị lực" 
     },
     { 
-      label: "3. Khám lâm sàng", 
-      done: !!(selected && (parseDiag(selected.chanDoan).length || selected.khuyenNghi)), 
-      desc: selected?.khuyenNghi ? `Khuyến nghị: ${selected.khuyenNghi}` : selected?.chanDoan ? "Đã khám mắt" : "Chưa khám lâm sàng" 
+      label: "3. Khám lâm sàng",
+      done: !!(selected && (parseDiag(selected.chanDoan).length || selected.benhLy || selected.khuyenNghi)),
+      desc: selected?.khuyenNghi ? `Khuyến nghị: ${selected.khuyenNghi}` : selected?.benhLy ? selected.benhLy : selected?.chanDoan ? "Đã khám mắt" : "Chưa khám lâm sàng"
     },
     { 
       label: "4. Tư vấn & Phân nhóm", 
@@ -905,6 +928,30 @@ export default function ExamPage() {
     },
   ], [selected]);
   const doneCount = steps.filter((s) => s.done).length;
+
+  // Khối nào thực sự hiển thị (theo cấu hình trường của cơ sở) — dùng để đánh số mục
+  const showBenhSu = isFieldOn(cfg, "benhSu") || isFieldOn(cfg, "loaiBenhSu");
+  const showDauHieu = isFieldOn(cfg, "chieuCao") || isFieldOn(cfg, "canNang");
+  const showThiLuc = isFieldOn(cfg, "thiLuc");
+  const showChiSo = showDauHieu || showThiLuc; // gộp "Dấu hiệu" + "Đo thị lực" vào 1 thẻ
+  // Danh mục ICD giờ là select box nên không còn phình chiều cao -> lưới 2 cột cố định
+  const showIcd = isFieldOn(cfg, "loaiBenhLy") && (!isFieldOn(cfg, "benhLy") || f.benhLy === "Nghi ngờ bệnh lý");
+  // Loại bệnh sử: luôn hiện, khoá khi chưa chọn "Có"; bắt buộc chọn ≥1 khi đã chọn "Có"
+  const lockLoaiBenhSu = isFieldOn(cfg, "benhSu") && f.benhSu !== "Có";
+  const needLoaiBenhSu = isFieldOn(cfg, "benhSu") && f.benhSu === "Có";
+  // Tư vấn & phân nhóm: luôn hiện để thấy trước các bước, chỉ khoá khi chưa chỉ định mổ
+  const lockTuVan = effKhuyenNghi !== "Phẫu thuật";
+
+  // Số thứ tự mục tính theo khối đang hiện, tránh nhảy số khi cơ sở tắt bớt trường
+  const secNo = useMemo(() => {
+    let i = 0;
+    const m = { benhSu: 0, chiSo: 0, ketLuan: 0, tuVan: 0 };
+    if (showBenhSu) m.benhSu = ++i;
+    if (showChiSo) m.chiSo = ++i;
+    m.ketLuan = ++i;
+    m.tuVan = ++i;
+    return m;
+  }, [showBenhSu, showChiSo]);
 
   if (loading) {
     return (
@@ -1033,6 +1080,17 @@ export default function ExamPage() {
                 {isFieldOn(cfg, "khuPho") && <Row k="Khu phố" v={selected.khuPho || "—"} />}
                 {isFieldOn(cfg, "xaPhuong") && <Row k="Xã/Phường" v={selected.xaPhuong || "—"} />}
               </dl>
+
+              {/* Bối cảnh đợt khám: suy tự động từ đợt khám + tài khoản đăng nhập.
+                  Để ở cột hồ sơ thay vì dựng thành ô nhập trong phiếu khám. */}
+              <dl className="mt-3 pt-3 border-t border-[var(--line-soft)] flex flex-wrap gap-x-5 gap-y-1.5">
+                <Meta k="Ngày khám" v={fmtDate(buoiKham?.ngayKham)} mono />
+                {isFieldOn(cfg, "diemKham") && <Meta k="Điểm khám" v={buoiKham?.diaDiem || "—"} />}
+                <Meta k="Xã khám" v={buoiKham?.xa || "—"} />
+                {isFieldOn(cfg, "nhanVienTuVan") && (
+                  <Meta k="NV tư vấn" v={f.nhanVienTuVan || session?.user?.name || "—"} />
+                )}
+              </dl>
             </div>
             <div className="xl:flex-1 xl:overflow-y-auto px-4 py-4 border-t border-[var(--line)]">
               <div className="flex items-center justify-between mb-3">
@@ -1058,182 +1116,165 @@ export default function ExamPage() {
         {/* COL 3 — phiếu lâm sàng */}
         <main className="flex-1 min-w-0 flex flex-col bg-[var(--surface-bg)] min-h-[70vh] xl:min-h-0">
           {selected ? (<>
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              {/* Bệnh sử của bản thân */}
-              {(isFieldOn(cfg, "benhSu") || isFieldOn(cfg, "loaiBenhSu")) && (
-                <div className="card p-0">
-                  <SectionHeader n={1} accent="Bệnh sử của bản thân" />
-                  <div className="p-5 space-y-5">
-                    {isFieldOn(cfg, "benhSu") && (
+            <div className="@container flex-1 overflow-y-auto p-4">
+              {/* Toàn bộ phiếu khám xếp 2 cột: 1‖2 và 3‖4. Không đặt items-start để
+                  hai thẻ cùng hàng cao bằng nhau. Chia cột theo bề rộng cột phiếu khám
+                  (container query), không theo màn hình, vì cột này còn bị 2 cột
+                  danh sách/hồ sơ bên trái ăn mất chỗ. */}
+              <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-4">
+                {showBenhSu && (
+                  <div className="card p-0">
+                    <SectionHeader n={secNo.benhSu} accent="Bệnh sử của bản thân" />
+                    <div className="p-4 space-y-4">
+                      {isFieldOn(cfg, "benhSu") && (
+                        <div>
+                          <label className={labelCls}>Có bệnh sử không?</label>
+                          <ChoiceRow options={CO_KHONG} value={f.benhSu} onChange={(v) => setF((s) => ({ ...s, benhSu: v, loaiBenhSu: v === "Có" ? s.loaiBenhSu : [] }))} disabled={readOnly} />
+                        </div>
+                      )}
+                      {/* Luôn hiện để thấy trước danh mục; chỉ mở khoá khi đã chọn "Có" */}
+                      {isFieldOn(cfg, "loaiBenhSu") && (
+                        <div>
+                          <label className={labelCls}>
+                            Loại bệnh sử {needLoaiBenhSu && <span className="text-[var(--rose)]">*</span>}{" "}
+                            <span className="font-normal text-[var(--mute)]">
+                              · {lockLoaiBenhSu ? "chọn \"Có\" ở trên để mở" : "chọn nhiều"}
+                            </span>
+                          </label>
+                          <PillGroup options={BENH_SU_OPTIONS} selected={f.loaiBenhSu} onToggle={toggleMulti("loaiBenhSu")} disabled={readOnly || lockLoaiBenhSu} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dấu hiệu + Đo thị lực gộp 1 thẻ: cả hai chỉ có 2 ô, tách ra tốn 2 tiêu đề */}
+                {showChiSo && (
+                  <div data-tour="kh-vision" className="@container card p-0">
+                    <SectionHeader n={secNo.chiSo} accent={showDauHieu && showThiLuc ? "Dấu hiệu & thị lực" : showThiLuc ? "Đo thị lực" : "Dấu hiệu"} />
+                    <div className="p-4 grid grid-cols-1 @sm:grid-cols-2 gap-x-5 gap-y-3.5">
+                      {isFieldOn(cfg, "chieuCao") && (
+                        <Field label="Chiều cao (cm)">
+                          <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
+                        </Field>
+                      )}
+                      {isFieldOn(cfg, "canNang") && (
+                        <Field label="Cân nặng (kg)">
+                          <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55 (không số lẻ)" disabled={readOnly} />
+                        </Field>
+                      )}
+                      {showThiLuc && (<>
+                        <Select label="Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
+                        <Select label="Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
+                      </>)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Kết luận ban đầu */}
+                <div data-tour="kh-exam" className="@container card p-0">
+                  <SectionHeader n={secNo.ketLuan} accent="Kết luận ban đầu" />
+                  <div className="p-4 space-y-4">
+                    {isFieldOn(cfg, "benhLy") && (
                       <div>
-                        <label className={labelCls}>Có bệnh sử không?</label>
-                        <ChoiceRow options={CO_KHONG} value={f.benhSu} onChange={(v) => setF((s) => ({ ...s, benhSu: v, loaiBenhSu: v === "Có" ? s.loaiBenhSu : [] }))} disabled={readOnly} />
+                        <label className={labelCls}>Bệnh lý</label>
+                        <ChoiceRow options={BENH_LY_OPTIONS} value={f.benhLy} onChange={(v) => setF((s) => ({ ...s, benhLy: v, loaiBenhLy: v === "Nghi ngờ bệnh lý" ? s.loaiBenhLy : [], loaiBenhLyKhac: v === "Nghi ngờ bệnh lý" ? s.loaiBenhLyKhac : "" }))} disabled={readOnly} />
                       </div>
                     )}
-                    {isFieldOn(cfg, "loaiBenhSu") && f.benhSu === "Có" && (
+
+                    {showIcd && (
                       <div>
-                        <label className={labelCls}>Loại bệnh sử <span className="font-normal text-[var(--mute)]">· chọn nhiều</span></label>
-                        <PillGroup options={BENH_SU_OPTIONS} selected={f.loaiBenhSu} onToggle={toggleMulti("loaiBenhSu")} disabled={readOnly} />
+                        <label className={labelCls}>Loại bệnh lý <span className="text-[var(--rose)]">*</span> <span className="font-normal text-[var(--mute)]">· theo mã ICD, chọn nhiều</span></label>
+                        <MultiSelect
+                          options={LOAI_BENH_LY_OPTIONS}
+                          selected={f.loaiBenhLy}
+                          onToggle={toggleMulti("loaiBenhLy")}
+                          disabled={readOnly}
+                          placeholder="Chọn mã ICD…"
+                          searchPlaceholder="Gõ mã hoặc tên bệnh (VD: H25, glocom)…"
+                        />
+                        {f.loaiBenhLy.includes("Khác") && (
+                          <input value={f.loaiBenhLyKhac} onChange={(e) => setF((s) => ({ ...s, loaiBenhLyKhac: e.target.value }))} placeholder="Ghi rõ loại bệnh lý khác…" className="input-field mt-3" disabled={readOnly} />
+                        )}
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
 
-              {/* Dấu hiệu */}
-              {(isFieldOn(cfg, "chieuCao") || isFieldOn(cfg, "canNang")) && (
-                <div className="card p-0">
-                  <SectionHeader n={2} accent="Dấu hiệu" />
-                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    {isFieldOn(cfg, "chieuCao") && (
-                      <Field label="Chiều cao (cm)">
-                        <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
+                    {/* Chẩn đoán (bộ cũ) */}
+                    {isFieldOn(cfg, "chanDoan") && (
+                      <div>
+                        <label className={labelCls}>Chẩn đoán <span className="font-normal text-[var(--mute)]">· bộ rút gọn</span></label>
+                        <PillGroup options={CHAN_DOAN} selected={f.chanDoan} onToggle={toggleChanDoan} disabled={readOnly} />
+                        {f.chanDoan.includes("Khác") && <input value={f.chanDoanKhac} onChange={(e) => setF((s) => ({ ...s, chanDoanKhac: e.target.value }))} placeholder="Nhập chẩn đoán khác…" className="input-field mt-3" disabled={readOnly} />}
+                      </div>
+                    )}
+
+                    {/* Hướng xử trí thay cho Khuyến nghị (chỉ hiện 1 trong 2) */}
+                    {isFieldOn(cfg, "huongXuTri") ? (
+                      <div>
+                        <label className={labelCls}>Hướng xử trí <span className="text-[var(--rose)]">*</span></label>
+                        <ChoiceRow options={HUONG_XU_TRI} value={f.huongXuTri} onChange={(v) => setF((s) => ({ ...s, huongXuTri: v, nhom: v === "Phẫu thuật" ? s.nhom : "", huongXuTriKhac: v === "Điều trị khác" ? s.huongXuTriKhac : "" }))} disabled={readOnly} />
+                        {f.huongXuTri === "Điều trị khác" && (
+                          <input value={f.huongXuTriKhac} onChange={(e) => setF((s) => ({ ...s, huongXuTriKhac: e.target.value }))} placeholder="Ghi rõ hướng điều trị khác…" className="input-field mt-3" disabled={readOnly} />
+                        )}
+                      </div>
+                    ) : isFieldOn(cfg, "khuyenNghi") && (
+                      <div>
+                        <label className={labelCls}>Khuyến nghị</label>
+                        <ChoiceRow options={[...KHUYEN_NGHI]} value={f.khuyenNghi} onChange={(v) => setF((s) => ({ ...s, khuyenNghi: v, nhom: v === "Phẫu thuật" ? s.nhom : "" }))} disabled={readOnly} />
+                      </div>
+                    )}
+
+                    {/* Bác sỹ chỉ định thuộc về kết luận (ai ra chỉ định), không phải thông tin đợt khám */}
+                    {isFieldOn(cfg, "bacSiChiDinh") && (
+                      <Field label="Bác sỹ cho chỉ định">
+                        <DoctorAutocomplete
+                          value={f.bacSiChiDinh}
+                          onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
+                          disabled={readOnly}
+                          placeholder="Chọn từ danh sách bác sĩ..."
+                        />
                       </Field>
                     )}
-                    {isFieldOn(cfg, "canNang") && (
-                      <Field label="Cân nặng (kg)">
-                        <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55 (không lấy số lẻ)" disabled={readOnly} />
-                      </Field>
+                  </div>
+                </div>
+
+                {/* Tư vấn & phân nhóm — luôn hiện để thấy trước các bước còn lại,
+                    chỉ khoá khi hướng xử trí/khuyến nghị chưa phải Phẫu thuật.
+                    Gom cả Xác nhận điều trị + Ngày điều trị dự kiến vào đây: cả hai
+                    chỉ có nghĩa với ca đã chốt mổ. */}
+                <div className="@container card p-0">
+                  <SectionHeader n={secNo.tuVan} accent="Tư vấn & phân nhóm" />
+                  <div className="p-4 space-y-4">
+                    {lockTuVan && (
+                      <p className="text-[11.5px] text-[var(--mute)] leading-relaxed">
+                        Chọn <b className="font-bold text-[var(--ink-soft)]">Phẫu thuật</b> ở mục {secNo.ketLuan} để mở phần này.
+                      </p>
                     )}
-                  </div>
-                </div>
-              )}
-
-              {/* Đo thị lực (bộ cũ) */}
-              {isFieldOn(cfg, "thiLuc") && (
-                <div data-tour="kh-vision" className="card p-0">
-                  <SectionHeader n={3} accent="Đo thị lực" />
-                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    <Select label="Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
-                    <Select label="Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
-                  </div>
-                </div>
-              )}
-
-              {/* Kết luận ban đầu */}
-              <div data-tour="kh-exam" className="card p-0">
-                <SectionHeader n={4} accent="Kết luận ban đầu" />
-                <div className="p-5 space-y-5">
-                  {isFieldOn(cfg, "benhLy") && (
-                    <div>
-                      <label className={labelCls}>Bệnh lý</label>
-                      <ChoiceRow options={BENH_LY_OPTIONS} value={f.benhLy} onChange={(v) => setF((s) => ({ ...s, benhLy: v, loaiBenhLy: v === "Nghi ngờ bệnh lý" ? s.loaiBenhLy : [], loaiBenhLyKhac: v === "Nghi ngờ bệnh lý" ? s.loaiBenhLyKhac : "" }))} disabled={readOnly} />
-                    </div>
-                  )}
-
-                  {isFieldOn(cfg, "loaiBenhLy") && (!isFieldOn(cfg, "benhLy") || f.benhLy === "Nghi ngờ bệnh lý") && (
-                    <div>
-                      <label className={labelCls}>Loại bệnh lý <span className="text-[var(--rose)]">*</span> <span className="font-normal text-[var(--mute)]">· theo mã ICD, chọn nhiều</span></label>
-                      <PillGroup options={LOAI_BENH_LY_OPTIONS} selected={f.loaiBenhLy} onToggle={toggleMulti("loaiBenhLy")} disabled={readOnly} />
-                      {f.loaiBenhLy.includes("Khác") && (
-                        <input value={f.loaiBenhLyKhac} onChange={(e) => setF((s) => ({ ...s, loaiBenhLyKhac: e.target.value }))} placeholder="Ghi rõ loại bệnh lý khác…" className="input-field mt-3" disabled={readOnly} />
-                      )}
-                    </div>
-                  )}
-
-                  {/* Chẩn đoán (bộ cũ) */}
-                  {isFieldOn(cfg, "chanDoan") && (
-                    <div>
-                      <label className={labelCls}>Chẩn đoán <span className="font-normal text-[var(--mute)]">· bộ rút gọn</span></label>
-                      <PillGroup options={CHAN_DOAN} selected={f.chanDoan} onToggle={toggleChanDoan} disabled={readOnly} />
-                      {f.chanDoan.includes("Khác") && <input value={f.chanDoanKhac} onChange={(e) => setF((s) => ({ ...s, chanDoanKhac: e.target.value }))} placeholder="Nhập chẩn đoán khác…" className="input-field mt-3" disabled={readOnly} />}
-                    </div>
-                  )}
-
-                  {/* Hướng xử trí thay cho Khuyến nghị (chỉ hiện 1 trong 2) */}
-                  {isFieldOn(cfg, "huongXuTri") ? (
-                    <div>
-                      <label className={labelCls}>Hướng xử trí <span className="text-[var(--rose)]">*</span></label>
-                      <ChoiceRow options={HUONG_XU_TRI} value={f.huongXuTri} onChange={(v) => setF((s) => ({ ...s, huongXuTri: v, nhom: v === "Phẫu thuật" ? s.nhom : "", huongXuTriKhac: v === "Điều trị khác" ? s.huongXuTriKhac : "" }))} disabled={readOnly} />
-                      {f.huongXuTri === "Điều trị khác" && (
-                        <input value={f.huongXuTriKhac} onChange={(e) => setF((s) => ({ ...s, huongXuTriKhac: e.target.value }))} placeholder="Ghi rõ hướng điều trị khác…" className="input-field mt-3" disabled={readOnly} />
-                      )}
-                    </div>
-                  ) : isFieldOn(cfg, "khuyenNghi") && (
-                    <div>
-                      <label className={labelCls}>Khuyến nghị</label>
-                      <ChoiceRow options={[...KHUYEN_NGHI]} value={f.khuyenNghi} onChange={(v) => setF((s) => ({ ...s, khuyenNghi: v, nhom: v === "Phẫu thuật" ? s.nhom : "" }))} disabled={readOnly} />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Thông tin đoàn khám — luôn hiện (Ngày điều trị / Ngày khám / Xã là trường bắt buộc) */}
-              {(
-                <div className="card p-0">
-                  <SectionHeader n={5} accent="Thông tin đoàn khám" />
-                  <div className="p-5 space-y-5">
-                    <p className="text-[11.5px] text-[var(--mute)] -mt-2">
-                      Điểm khám, ngày khám và xã lấy tự động từ đợt khám. Bác sỹ cho chỉ định và Nhân viên tư vấn được ghi nhận theo từng hồ sơ khám.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                      {isFieldOn(cfg, "bacSiChiDinh") && (
-                        <Field label="Bác sỹ cho chỉ định">
-                          <DoctorAutocomplete
-                            value={f.bacSiChiDinh}
-                            onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
-                            disabled={readOnly}
-                            placeholder="Chọn từ danh sách bác sĩ..."
-                          />
-                        </Field>
-                      )}
-                      {isFieldOn(cfg, "diemKham") && (
-                        <Field label="Điểm khám">
-                          <div className="input-field flex items-center bg-[var(--surface-soft)] text-[var(--ink-soft)]">{buoiKham?.diaDiem || "—"}</div>
-                        </Field>
-                      )}
-                      <Field label="Ngày khám">
-                        <div className="input-field flex items-center bg-[var(--surface-soft)] text-[var(--ink-soft)] font-mono">{fmtDate(buoiKham?.ngayKham)}</div>
+                    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-x-6 gap-y-4">
+                      <div>
+                        <label className={labelCls}>Chọn nhóm</label>
+                        <ChoiceRow options={["A", "B"]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly || lockTuVan} />
+                      </div>
+                      <Field label="Số điện thoại" required={f.nhom === "A"}>
+                        <input value={f.sdt} onChange={(e) => setF((s) => ({ ...s, sdt: e.target.value }))} placeholder="Nhập SĐT..." className="input-field font-mono" disabled={readOnly || lockTuVan} />
                       </Field>
-                      <Field label="Xã thực hiện khám">
-                        <div className="input-field flex items-center bg-[var(--surface-soft)] text-[var(--ink-soft)]">{buoiKham?.xa || "—"}</div>
-                      </Field>
-
-                      {isFieldOn(cfg, "nhanVienTuVan") && (
-                        <Field label="Nhân viên tư vấn" required>
-                          <input
-                            value={f.nhanVienTuVan || sessionName.current || session?.user?.name || ""}
-                            readOnly
-                            disabled
-                            className="input-field bg-[var(--surface-soft)] text-[var(--ink-soft)] font-semibold cursor-not-allowed select-none"
-                            placeholder="Mặc định theo tài khoản đăng nhập"
-                          />
-                        </Field>
-                      )}
                       <Field label="Ngày điều trị dự kiến" required={f.nhom === "A"}>
-                        <DateField value={f.ngayDieuTri} onChange={(v) => setF((s) => ({ ...s, ngayDieuTri: v }))} disabled={readOnly} placeholder="dd/mm/yyyy" />
+                        <DateField value={f.ngayDieuTri} onChange={(v) => setF((s) => ({ ...s, ngayDieuTri: v }))} disabled={readOnly || lockTuVan} placeholder="dd/mm/yyyy" />
                       </Field>
                     </div>
 
                     {isFieldOn(cfg, "xacNhanDieuTri") && (
                       <div>
                         <label className={labelCls}>Xác nhận điều trị <span className="text-[var(--rose)]">*</span></label>
-                        <ChoiceRow options={CO_KHONG} value={f.xacNhanDieuTri} onChange={(v) => setF((s) => ({ ...s, xacNhanDieuTri: v, lyDoKhongDieuTri: v === "Không" ? s.lyDoKhongDieuTri : "" }))} disabled={readOnly} />
+                        <ChoiceRow options={CO_KHONG} value={f.xacNhanDieuTri} onChange={(v) => setF((s) => ({ ...s, xacNhanDieuTri: v, lyDoKhongDieuTri: v === "Không" ? s.lyDoKhongDieuTri : "" }))} disabled={readOnly || lockTuVan} />
                         {f.xacNhanDieuTri === "Không" && (
-                          <input value={f.lyDoKhongDieuTri} onChange={(e) => setF((s) => ({ ...s, lyDoKhongDieuTri: e.target.value }))} placeholder="Bắt buộc: ghi rõ lý do không điều trị…" className="input-field mt-3" disabled={readOnly} />
+                          <input value={f.lyDoKhongDieuTri} onChange={(e) => setF((s) => ({ ...s, lyDoKhongDieuTri: e.target.value }))} placeholder="Bắt buộc: ghi rõ lý do không điều trị…" className="input-field mt-2.5" disabled={readOnly || lockTuVan} />
                         )}
                       </div>
                     )}
                   </div>
                 </div>
-              )}
-
-              {/* Tư vấn & phân nhóm — chỉ khi hướng xử trí/khuyến nghị = Phẫu thuật */}
-              {effKhuyenNghi === "Phẫu thuật" && (
-                <div className="card p-0">
-                  <SectionHeader n={6} accent="Tư vấn & phân nhóm" />
-                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-                    <div>
-                      <label className={labelCls}>Chọn nhóm</label>
-                      <ChoiceRow options={["A", "B"]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly} />
-                    </div>
-                    <Field label="Số điện thoại" required={f.nhom === "A"}>
-                      <input value={f.sdt} onChange={(e) => setF((s) => ({ ...s, sdt: e.target.value }))} placeholder="Nhập SĐT..." className="input-field font-mono" disabled={readOnly} />
-                    </Field>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
             <div data-tour="kh-save" className="p-4 border-t border-[var(--line)] bg-white flex items-center justify-between">
               <span className="text-[12px] flex items-center gap-2 min-w-0">

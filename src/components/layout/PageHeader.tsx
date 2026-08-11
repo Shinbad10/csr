@@ -36,20 +36,20 @@ export default function PageHeader({ title, description, actions, guide, guideTi
   };
 
   return (
-    <div className="bg-white border-b border-[var(--line)] px-4 sm:px-6 py-4 sm:py-5 shrink-0 shadow-[var(--shadow-xs)] animate-fade-in">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-4">
+    <div className="bg-white border-b border-[var(--line)] px-4 sm:px-6 py-2.5 sm:py-3 shrink-0 shadow-[var(--shadow-xs)] animate-fade-in">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 lg:gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-[21px] sm:text-[26px] xl:text-[28px] font-bold tracking-[-0.025em] text-[var(--ink)] leading-tight flex items-center flex-wrap">
+          <h1 className="font-serif text-[18px] sm:text-[21px] xl:text-[22px] font-bold tracking-[-0.025em] text-[var(--ink)] leading-tight flex items-center flex-wrap">
             {renderEditorialTitle(title)}
           </h1>
           {description && (
-            <div className="text-[12.5px] sm:text-[13px] text-[var(--mute)] mt-1 flex items-center gap-2 flex-wrap font-medium">
+            <div className="text-[12px] text-[var(--mute)] mt-0.5 flex items-center gap-2 flex-wrap font-medium">
               {description}
             </div>
           )}
         </div>
         {(actions || guide) && (
-          <div className="shrink-0 flex items-center gap-2 sm:gap-2.5 flex-wrap">
+          <div className="shrink-0 flex items-center gap-2 flex-wrap">
             {actions}
             {guide && guide.length > 0 && <HelpGuide title={guideTitle || (typeof title === "string" ? title : undefined)} steps={guide} tip={guideTip} />}
           </div>

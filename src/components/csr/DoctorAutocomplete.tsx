@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, UserCheck, Check, RefreshCw, Loader2 } from "lucide-react";
+import { usePortalPosition } from "./fields";
 
 let globalDoctorsCache: string[] | null = null;
 
@@ -28,6 +30,9 @@ export function DoctorAutocomplete({
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  // Popup dựng qua portal: thoát khỏi vùng cuộn của phiếu khám và tự lật lên khi sát đáy
+  const pos = usePortalPosition(open, containerRef, 300);
 
   useEffect(() => {
     if (globalDoctorsCache) {
@@ -47,14 +52,18 @@ export function DoctorAutocomplete({
   }, []);
 
   useEffect(() => {
+    if (!open) return;
+    // Popup nằm ngoài containerRef (portal) nên phải loại trừ cả popupRef
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const t = e.target as Node;
+      if (containerRef.current?.contains(t) || popupRef.current?.contains(t)) return;
+      setOpen(false);
     };
+    const esc = (e: KeyboardEvent) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", handleClickOutside); window.removeEventListener("keydown", esc); };
+  }, [open]);
 
   const safeSearch = (search ?? "").toString();
   const query = (open ? safeSearch : safeVal)
@@ -120,8 +129,12 @@ export function DoctorAutocomplete({
         )}
       </div>
 
-      {open && !disabled && (
-        <div className="absolute z-50 left-0 right-0 mt-1.5 max-h-60 overflow-y-auto bg-white border border-[var(--line)] rounded-xl shadow-xl py-1.5 text-[13px] animate-in fade-in zoom-in-95 duration-100">
+      {open && !disabled && typeof document !== "undefined" && createPortal(
+        <div
+          ref={popupRef}
+          style={{ ...pos }}
+          className="fixed z-[99999] max-h-60 overflow-y-auto bg-white border border-[var(--line)] rounded-xl shadow-[var(--shadow-xl)] py-1.5 text-[13px] animate-fade-in"
+        >
           <div className="px-3 py-1.5 text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[var(--line-soft)] mb-1">
             <div className="flex items-center gap-1.5">
               <UserCheck className="w-3.5 h-3.5 text-[var(--teal)]" />
@@ -183,7 +196,8 @@ export function DoctorAutocomplete({
               );
             })
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

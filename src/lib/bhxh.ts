@@ -139,6 +139,8 @@ export interface ThongTinTheBHYT {
   ngaySinh?: string;
   diaChi?: string;
   gioiTinh?: string;
+  /** Số định danh cá nhân (CCCD) nếu cổng BHXH trả về kèm thẻ */
+  cccd?: string;
   namNamLienTuc?: string;
 }
 
@@ -192,6 +194,16 @@ export function parseTheBhyt(raw: unknown): ThongTinTheBHYT | null {
   const gioiTinh = getStr("gioiTinh", "GioiTinh", "gioi_tinh");
   const namNamLienTuc = getStr("namNamLienTuc", "nam_nam_lien_tuc", "ngay5Nam", "ngay_5_nam");
 
+  // CCCD/CMND: cổng BHXH đặt tên khoá không thống nhất giữa các phiên bản API
+  const cccdRaw = getStr(
+    "soCCCD", "SoCCCD", "cccd", "CCCD", "so_cccd",
+    "soDinhDanh", "maSoDinhDanh", "soDinhDanhCaNhan", "so_dinh_danh",
+    "soCMND", "cmnd", "CMND", "so_cmnd"
+  );
+  const cccdDigits = (cccdRaw || "").replace(/\D/g, "");
+  // Chỉ nhận 9 số (CMND cũ) hoặc 12 số (CCCD) — tránh nhận nhầm mã vùng/mã tỉnh
+  const cccd = cccdDigits.length === 9 || cccdDigits.length === 12 ? cccdDigits : undefined;
+
   // Mức hưởng: ưu tiên từ cổng, nếu không có tự suy từ ký tự thứ 3 của mã thẻ
   let mucHuong = getStr("mucHuong", "MucHuong", "maQuyenLoi", "quyen_loi", "ty_le") || "";
   if (!mucHuong && maThe.length >= 3) {
@@ -211,6 +223,7 @@ export function parseTheBhyt(raw: unknown): ThongTinTheBHYT | null {
     ngaySinh,
     diaChi,
     gioiTinh,
+    cccd,
     namNamLienTuc,
   };
 }

@@ -57,16 +57,7 @@ export async function GET(request: Request) {
     });
 
     // Gộp tất cả danh sách và lọc trùng, loại bỏ chuỗi rỗng
-    const set = new Set<string>([
-      "BS. Chánh",
-      "BS. Kiền",
-      "BS. Cường",
-      "BS. Tuấn",
-      "BS. Hùng",
-      "BS. Minh",
-      "BS. Long",
-      "BS. Hưng",
-    ]);
+    const set = new Set<string>();
 
     for (const u of users) {
       if (u.hoTen?.trim()) set.add(u.hoTen.trim());

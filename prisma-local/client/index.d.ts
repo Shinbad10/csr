@@ -5879,7 +5879,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh: Date | null
-    namSinh: number
+    namSinh: number | null
     cccd: string | null
     diaChi: string | null
     sdt: string | null
@@ -6260,7 +6260,7 @@ export namespace Prisma {
       hoTen: string
       gioiTinh: string
       ngaySinh: Date | null
-      namSinh: number
+      namSinh: number | null
       cccd: string | null
       diaChi: string | null
       sdt: string | null
@@ -11990,7 +11990,7 @@ export namespace Prisma {
     hoTen?: StringFilter<"HoSoBenhNhan"> | string
     gioiTinh?: StringFilter<"HoSoBenhNhan"> | string
     ngaySinh?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
-    namSinh?: IntFilter<"HoSoBenhNhan"> | number
+    namSinh?: IntNullableFilter<"HoSoBenhNhan"> | number | null
     cccd?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     diaChi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -12058,7 +12058,7 @@ export namespace Prisma {
     hoTen?: SortOrder
     gioiTinh?: SortOrder
     ngaySinh?: SortOrderInput | SortOrder
-    namSinh?: SortOrder
+    namSinh?: SortOrderInput | SortOrder
     cccd?: SortOrderInput | SortOrder
     diaChi?: SortOrderInput | SortOrder
     sdt?: SortOrderInput | SortOrder
@@ -12129,7 +12129,7 @@ export namespace Prisma {
     hoTen?: StringFilter<"HoSoBenhNhan"> | string
     gioiTinh?: StringFilter<"HoSoBenhNhan"> | string
     ngaySinh?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
-    namSinh?: IntFilter<"HoSoBenhNhan"> | number
+    namSinh?: IntNullableFilter<"HoSoBenhNhan"> | number | null
     cccd?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     diaChi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -12197,7 +12197,7 @@ export namespace Prisma {
     hoTen?: SortOrder
     gioiTinh?: SortOrder
     ngaySinh?: SortOrderInput | SortOrder
-    namSinh?: SortOrder
+    namSinh?: SortOrderInput | SortOrder
     cccd?: SortOrderInput | SortOrder
     diaChi?: SortOrderInput | SortOrder
     sdt?: SortOrderInput | SortOrder
@@ -12267,7 +12267,7 @@ export namespace Prisma {
     hoTen?: StringWithAggregatesFilter<"HoSoBenhNhan"> | string
     gioiTinh?: StringWithAggregatesFilter<"HoSoBenhNhan"> | string
     ngaySinh?: DateTimeNullableWithAggregatesFilter<"HoSoBenhNhan"> | Date | string | null
-    namSinh?: IntWithAggregatesFilter<"HoSoBenhNhan"> | number
+    namSinh?: IntNullableWithAggregatesFilter<"HoSoBenhNhan"> | number | null
     cccd?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     diaChi?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
@@ -12874,7 +12874,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -12939,7 +12939,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -13000,7 +13000,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13065,7 +13065,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13128,7 +13128,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -13188,7 +13188,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13247,7 +13247,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15182,7 +15182,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15245,7 +15245,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15397,7 +15397,7 @@ export namespace Prisma {
     hoTen?: StringFilter<"HoSoBenhNhan"> | string
     gioiTinh?: StringFilter<"HoSoBenhNhan"> | string
     ngaySinh?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
-    namSinh?: IntFilter<"HoSoBenhNhan"> | number
+    namSinh?: IntNullableFilter<"HoSoBenhNhan"> | number | null
     cccd?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     diaChi?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     sdt?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -15539,7 +15539,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15603,7 +15603,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15672,7 +15672,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15736,7 +15736,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15805,7 +15805,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -15869,7 +15869,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -16188,7 +16188,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -16251,7 +16251,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -16854,7 +16854,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -16918,7 +16918,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -17027,7 +17027,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17091,7 +17091,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17212,7 +17212,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -17347,7 +17347,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17410,7 +17410,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17472,7 +17472,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17546,7 +17546,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -17607,7 +17607,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -17668,7 +17668,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -17773,7 +17773,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17837,7 +17837,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17899,7 +17899,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17958,7 +17958,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18022,7 +18022,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18084,7 +18084,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18143,7 +18143,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18207,7 +18207,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18269,7 +18269,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18353,7 +18353,7 @@ export namespace Prisma {
     hoTen: string
     gioiTinh: string
     ngaySinh?: Date | string | null
-    namSinh: number
+    namSinh?: number | null
     cccd?: string | null
     diaChi?: string | null
     sdt?: string | null
@@ -18413,7 +18413,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18476,7 +18476,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18538,7 +18538,7 @@ export namespace Prisma {
     hoTen?: StringFieldUpdateOperationsInput | string
     gioiTinh?: StringFieldUpdateOperationsInput | string
     ngaySinh?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    namSinh?: IntFieldUpdateOperationsInput | number
+    namSinh?: NullableIntFieldUpdateOperationsInput | number | null
     cccd?: NullableStringFieldUpdateOperationsInput | string | null
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
     sdt?: NullableStringFieldUpdateOperationsInput | string | null

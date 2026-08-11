@@ -71,5 +71,14 @@ export async function drainSyncQueue(limit = 50): Promise<DrainResult> {
 // Gọi không chờ (không chặn response). Nuốt lỗi vì hàng đợi đã giữ việc cho cron retry.
 export function triggerSync(): void {
   if (!sheetEnabled()) return;
-  drainSyncQueue().catch((e) => console.error("[sync] triggerSync lỗi:", e));
+  (async () => {
+    try {
+      while (true) {
+        const res = await drainSyncQueue(500);
+        if (res.skipped || res.processed === 0) break;
+      }
+    } catch (e) {
+      console.error("[sync] triggerSync lỗi:", e);
+    }
+  })();
 }

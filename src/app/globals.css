@@ -70,11 +70,15 @@ html {
   /* đường kẻ */
   --line: #eef0f5;
   --line-strong: #e2e5ed;
+  --line-heavy: #d3d7e2;
   --line-soft: #f4f5f9;
+  --line-subtle: #f2f3f8;
 
   /* trạng thái */
   --amber: #d97706;
   --amber-soft: #fef6eb;
+  --amber-deep: #b45309;
+  --amber-ink: #92400e;
   --warning: #d97706;
   --rose: #e11d48;
   --rose-soft: #fef1f4;
@@ -83,6 +87,7 @@ html {
 
   /* pill vàng (chẩn đoán / chỉ định) */
   --gold: #b88600;
+  --gold-50: #fefaf0;
   --gold-soft: #fdf3d3;
   --gold-line: #ecd9a3;
   --gold-deep: #946a00;
@@ -92,6 +97,7 @@ html {
   --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
   --shadow-md: 0 4px 12px rgba(13, 16, 37, 0.06), 0 2px 4px rgba(13, 16, 37, 0.03);
   --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.08);
+  --shadow-xl: 0 24px 56px rgba(13, 16, 37, 0.12), 0 8px 20px rgba(13, 16, 37, 0.05);
   --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
   --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
 

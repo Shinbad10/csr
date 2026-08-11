@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, Shield, Phone, CreditCard, MapPin, User, Users, Pencil, CalendarDays } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { BHYT, NHOM, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
 import { Dropdown, Select, DateField, ChoiceRow, StatusBadge, labelCls, Combobox, SectionHeader } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
@@ -20,6 +21,7 @@ const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gio
 
 export default function TuVanSessionPage() {
   const { addToast } = useToast();
+  const confirm = useConfirm();
   const [patients, setPatients] = useState<HoSo[]>([]);
   const [selId, setSelId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -95,9 +97,15 @@ export default function TuVanSessionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const pick = (p: HoSo) => {
+  const pick = async (p: HoSo) => {
     if (p.id === selId) return;
-    if (dirty && !window.confirm("Có thay đổi chưa lưu. Chuyển bệnh nhân khác và bỏ thay đổi?")) return;
+    if (dirty && !(await confirm({
+      title: "Bỏ thay đổi chưa lưu?",
+      message: `Phiếu tư vấn đang có thay đổi chưa lưu.
+Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
+      confirmLabel: "Chuyển & bỏ thay đổi",
+      cancelLabel: "Ở lại",
+    }))) return;
     setIsEditing(false);
     setSelId(p.id); loadForm(p);
   };

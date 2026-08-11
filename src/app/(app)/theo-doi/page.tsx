@@ -11,6 +11,8 @@ import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 
 const FOLLOW = ["", "Đang follow-up", "Quá 28 ngày–chuyển CSKH", "Đã chốt", "Ngừng"];
+/** Các trạng thái thuộc luồng mổ (nhóm A). Gồm cả CoChiDinhMo — ca chưa chốt ngày, cần nhắc lịch. */
+const A_STATES = ["CoChiDinhMo", "NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau", "HuyKhongDen"];
 const EMPTY_DIEUTRI = { daDon: false, ngayMoThucTe: "", soTienThucThu: "", trangThaiDieuTri: "", ngayTaiKham: "", ghiChuMat2: "" };
 
 interface NhatKy { id: string; ngay: string; noiDung: string; nguoiGoi?: { hoTen: string } }
@@ -23,7 +25,7 @@ export default function TheoDoiPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [sel, setSel] = useState<HoSoDetail | null>(null);
-  const [stats, setStats] = useState({ tong: 0, chiDinh: 0, daDen: 0, chuaDen: 0, quaHan: 0 });
+  const [stats, setStats] = useState({ tong: 0, chiDinh: 0, daDen: 0, chuaDen: 0, quaHan: 0, soA: 0, soB: 0 });
 
   const [bks, setBks] = useState<any[]>([]);
   const [selBk, setSelBk] = useState<string>("");
@@ -135,11 +137,17 @@ export default function TheoDoiPage() {
     const res = await fetch(`/api/csr/hoso?buoiKhamId=${selBk}&search=${encodeURIComponent(search)}`);
     const all: HoSo[] = res.ok ? await res.json() : [];
 
+    // Nhóm A = đã xếp nhóm A HOẶC đang ở một trạng thái thuộc luồng mổ.
+    // "CoChiDinhMo" (chỉ định mổ, chưa chốt ngày) chính là nhóm cần nhắc lịch nhất,
+    // trước đây bị bỏ sót khỏi danh sách nên có số liệu mà không có dòng nào.
+    const isB = (r: HoSo) => r.nhom === "B" || r.trangThai === "NhomB";
+    const isA = (r: HoSo) => !isB(r) && (r.nhom === "A" || A_STATES.includes(r.trangThai));
+
     let data: HoSo[] = [];
     if (tab === "B") {
-      data = all.filter((r) => r.nhom === "B" || r.trangThai === "NhomB");
+      data = all.filter(isB);
     } else {
-      data = all.filter((r) => ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau", "HuyKhongDen"].includes(r.trangThai)).sort((a, b) => (a.ngayDieuTri || "").localeCompare(b.ngayDieuTri || ""));
+      data = all.filter(isA).sort((a, b) => (a.ngayDieuTri || "").localeCompare(b.ngayDieuTri || ""));
     }
 
     setRows(data);
@@ -150,13 +158,15 @@ export default function TheoDoiPage() {
       setSel(null);
     }
 
+    // Các ô "Nhóm A (…)" chỉ đếm trên nhóm A, không lẫn nhóm B như trước.
     const today = new Date().toISOString().slice(0, 10);
+    const nhomA = all.filter(isA);
     const tong = all.length;
-    const chiDinh = all.filter(p => p.nhom).length;
-    const daDen = all.filter(p => p.daDon).length;
-    const chuaDen = chiDinh - daDen;
-    const quaHan = all.filter(p => !p.daDon && p.ngayDieuTri && p.ngayDieuTri < today).length;
-    setStats({ tong, chiDinh, daDen, chuaDen, quaHan });
+    const chiDinh = all.filter((p) => isA(p) || isB(p)).length;
+    const daDen = nhomA.filter((p) => p.daDon).length;
+    const chuaDen = nhomA.length - daDen;
+    const quaHan = nhomA.filter((p) => !p.daDon && p.ngayDieuTri && p.ngayDieuTri.slice(0, 10) < today).length;
+    setStats({ tong, chiDinh, daDen, chuaDen, quaHan, soA: nhomA.length, soB: all.filter(isB).length });
 
     setLoading(false);
   }, [tab, search, sel?.id, selBk]);
@@ -254,33 +264,31 @@ export default function TheoDoiPage() {
         }
       />
 
-      {/* --- STATS BANNER (Compact Strip - No truncation, wraps cleanly) --- */}
-      <div className="px-5 py-2.5 border-b border-[var(--line)] bg-[var(--surface-soft)] text-xs shrink-0 font-medium">
-        <div className="flex items-center gap-x-6 gap-y-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Tổng BN:</span>
-            <span className="font-mono font-bold text-[var(--navy)] text-sm">{stats.tong}</span>
-          </div>
-          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Chỉ định (A/B):</span>
-            <span className="font-mono font-bold text-[var(--teal-deep)] text-sm">{stats.chiDinh}</span> <span className="text-[11px] text-[var(--mute)]">/ {stats.tong}</span>
-          </div>
-          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Nhóm A (Đã đến BV):</span>
-            <span className="font-mono font-bold text-[var(--green)] text-sm">{stats.daDen}</span>
-          </div>
-          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Nhóm A (Chưa đến):</span>
-            <span className="font-mono font-bold text-[var(--amber)] text-sm">{stats.chuaDen}</span>
-          </div>
-          <div className="h-3.5 w-px bg-[var(--line)] hidden sm:block" />
-          <div className="flex items-center gap-1.5">
-            <span className="text-[var(--mute)] uppercase text-[10px] font-bold tracking-wider">Nhóm A (Quá hạn):</span>
-            <span className="font-mono font-bold text-[var(--rose)] text-sm">{stats.quaHan}</span>
-          </div>
+      {/* --- Dải chỉ số: nhãn nhỏ chữ hoa + số lớn, mỗi ô có gạch màu dẫn ---
+           Trước đây là một dòng chữ nhỏ đều nhau nên không đọc lướt được số nào quan trọng. */}
+      <div className="px-4 sm:px-5 py-3 border-b border-[var(--line)] bg-[var(--surface-soft)] shrink-0">
+        <div className="flex items-stretch gap-x-3 gap-y-2.5 flex-wrap">
+          {[
+            { k: "Tổng BN", v: stats.tong, accent: "var(--navy)", tone: "text-[var(--navy)]" },
+            { k: "Chỉ định A/B", v: stats.chiDinh, sub: `/ ${stats.tong}`, accent: "var(--teal)", tone: "text-[var(--teal-deep)]" },
+            { k: "Nhóm A · đã đến BV", v: stats.daDen, accent: "var(--green)", tone: "text-[var(--green)]" },
+            { k: "Nhóm A · chưa đến", v: stats.chuaDen, accent: "var(--amber)", tone: "text-[var(--amber-deep)]" },
+            { k: "Nhóm A · quá hạn", v: stats.quaHan, accent: "var(--rose)", tone: "text-[var(--rose)]", alert: stats.quaHan > 0 },
+          ].map((s) => (
+            <div
+              key={s.k}
+              className={`relative flex-1 min-w-[132px] pl-3 pr-3 py-1.5 rounded-[var(--r-md)] bg-white border transition-colors ${
+                s.alert ? "border-[var(--rose)]/35 shadow-[var(--shadow-xs)]" : "border-[var(--line)]"
+              }`}
+            >
+              <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style={{ background: s.accent }} />
+              <div className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--mute)] whitespace-nowrap">{s.k}</div>
+              <div className="flex items-baseline gap-1">
+                <span className={`font-mono text-[18px] font-bold leading-tight ${s.tone}`}>{s.v}</span>
+                {s.sub && <span className="font-mono text-[11px] text-[var(--mute-soft)]">{s.sub}</span>}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -290,9 +298,32 @@ export default function TheoDoiPage() {
 
         {/* COL 1 — List */}
         <aside className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${showList ? "translate-x-0" : "translate-x-full"} xl:static xl:translate-x-0 xl:w-[360px] xl:shrink-0 xl:border-r xl:border-[var(--line)] xl:shadow-none xl:z-0`}>
-          <div data-tour="td-tabs" className="p-3 border-b border-[var(--line)] bg-[var(--surface-bg)] flex gap-2">
-            <button onClick={() => { setTab("A"); setSel(null); }} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-bold transition-all ${tab === "A" ? "bg-[var(--navy)] text-white shadow-md" : "bg-white border border-[var(--line)] text-[var(--mute)] hover:bg-[var(--surface-hover)]"}`}><CalendarClock className="w-4 h-4" /> Nhóm A (Mổ)</button>
-            <button onClick={() => { setTab("B"); setSel(null); }} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[12.5px] font-bold transition-all ${tab === "B" ? "bg-[var(--navy)] text-white shadow-md" : "bg-white border border-[var(--line)] text-[var(--mute)] hover:bg-[var(--surface-hover)]"}`}><PhoneCall className="w-4 h-4" /> Nhóm B (K/N)</button>
+          {/* Segmented control: hiện luôn số lượng mỗi nhóm để biết tab kia có dữ liệu hay không,
+              thay vì phải bấm sang mới biết. */}
+          <div data-tour="td-tabs" className="p-3 border-b border-[var(--line)] bg-[var(--surface-bg)]">
+            <div className="flex gap-1 p-1 rounded-[var(--r-md)] bg-[var(--surface-hover)] border border-[var(--line)]">
+              {([
+                { k: "A" as const, icon: CalendarClock, label: "Nhóm A (Mổ)", n: stats.soA },
+                { k: "B" as const, icon: PhoneCall, label: "Nhóm B (K/N)", n: stats.soB },
+              ]).map(({ k, icon: Icon, label, n }) => {
+                const on = tab === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => { setTab(k); setSel(null); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-[var(--r-sm)] text-[12.5px] font-bold transition-all ${
+                      on ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:bg-white"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${on ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+                    <span className="truncate">{label}</span>
+                    <span className={`font-mono text-[11px] font-bold px-1.5 rounded-full ${
+                      on ? "bg-white/20 text-white" : "bg-[var(--surface-bg)] text-[var(--mute)] border border-[var(--line)]"
+                    }`}>{n}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="px-4 py-3.5 flex items-center justify-between border-b border-[var(--line-soft)] xl:hidden">
             <h2 className="text-[13px] font-extrabold uppercase tracking-[0.1em] text-[var(--navy)] flex items-center gap-2"><Users className="w-4 h-4" /> Danh sách bệnh nhân</h2>
@@ -301,16 +332,36 @@ export default function TheoDoiPage() {
           <div className="p-3 flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tên, mã, SĐT…" className="w-full h-10 rounded-xl border border-[var(--line)] bg-[var(--surface-bg)] pl-9 pr-4 text-[13px] outline-none focus:border-[var(--navy)] focus:ring-1 focus:ring-[var(--navy)]" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tên, mã, SĐT…" className="w-full h-10 rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--surface-bg)] pl-9 pr-4 text-[13px] outline-none transition-all focus:bg-white focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)]" />
             </div>
           </div>
           <div data-tour="td-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
             {loading ? <SkeletonList items={6} />
-              : rows.length === 0 ? <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không khớp tìm kiếm hoặc chưa có bệnh nhân.</div>
+              : rows.length === 0 ? (
+                <div className="flex flex-col items-center text-center gap-2 py-14 px-6">
+                  <Users className="w-8 h-8 text-[var(--mute-soft)]" />
+                  <p className="text-[12.5px] text-[var(--mute)] leading-relaxed">
+                    {search
+                      ? <>Không có bệnh nhân nào khớp <b className="text-[var(--ink-soft)]">“{search}”</b>.</>
+                      : tab === "A"
+                        ? "Chưa có bệnh nhân nhóm A. Ca được chỉ định phẫu thuật ở màn khám sẽ xuất hiện tại đây."
+                        : "Chưa có bệnh nhân nhóm B. Ca chọn “suy nghĩ thêm” khi tư vấn sẽ xuất hiện tại đây."}
+                  </p>
+                  {/* Sai tab là nhầm lẫn hay gặp nhất — chỉ thẳng sang tab còn lại nếu bên đó có dữ liệu */}
+                  {!search && (tab === "A" ? stats.soB : stats.soA) > 0 && (
+                    <button
+                      onClick={() => { setTab(tab === "A" ? "B" : "A"); setSel(null); }}
+                      className="text-[12px] font-bold text-[var(--navy)] hover:underline"
+                    >
+                      Nhóm {tab === "A" ? "B" : "A"} đang có {tab === "A" ? stats.soB : stats.soA} bệnh nhân →
+                    </button>
+                  )}
+                </div>
+              )
                 : rows.map((p) => {
                   const active = sel?.id === p.id;
                   return (
-                    <button key={p.id} onClick={() => { openDetail(p); if (window.innerWidth < 1280) setShowList(false); }} className={`w-full text-left rounded-[16px] border px-3 py-2.5 transition-all duration-150 ${active ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-md ring-1 ring-[var(--navy)]" : "border-[var(--line)] bg-white hover:border-[var(--line-strong)] hover:shadow-sm"}`}>
+                    <button key={p.id} onClick={() => { openDetail(p); if (window.innerWidth < 1280) setShowList(false); }} className={`w-full text-left rounded-[var(--r-lg)] border px-3 py-2.5 transition-all duration-150 ${active ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-[0_0_0_1px_var(--navy)]" : "border-[var(--line)] bg-white hover:border-[var(--navy-100)] hover:bg-[var(--surface-soft)]"}`}>
                       <div className="flex items-center justify-between gap-2">
                         <span className={`text-[13.5px] font-bold truncate ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>{p.hoTen}</span>
                         <span className={`font-mono text-[11px] font-bold px-1.5 py-0.5 rounded shrink-0 ${active ? "text-[var(--navy)] bg-white/50" : "text-[var(--teal-deep)] bg-[var(--surface-bg)]"}`}>{p.maBN.split("-").pop()}</span>
