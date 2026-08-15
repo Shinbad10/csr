@@ -46,16 +46,16 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[var(--r-md)] text-[13px] font-semibold whitespace-nowrap transition-colors ${
+        className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-[var(--r-md)] text-[13px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
           groupActive || open ? "bg-[var(--navy-50)] text-[var(--navy)]" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:text-[var(--navy)]"
         }`}
       >
         {group.title}
-        <ChevronDown className={`w-3.5 h-3.5 text-[var(--mute)] transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 w-[260px] bg-white border border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow-lg)] p-1.5 animate-fade-in">
+        <div className="absolute left-0 top-full mt-1.5 z-50 w-[260px] bg-white border border-[var(--line-strong)] rounded-xl shadow-[var(--shadow-xl)] p-1.5 animate-dropdown">
           {group.items.map((it) => {
             const Icon = it.icon;
             const active = isNavActive(pathname, it.href);
@@ -64,8 +64,8 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
                 key={it.href}
                 href={it.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-md)] text-[13px] font-semibold transition-colors ${
-                  active ? "bg-[var(--navy)] text-white" : "text-[var(--ink-soft)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-semibold transition-all ${
+                  active ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:text-[var(--navy)]"
                 }`}
               >
                 <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />

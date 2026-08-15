@@ -73,9 +73,9 @@ export default function Topbar() {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-2 z-50 w-[252px] bg-white border border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow-lg)] overflow-hidden animate-fade-in">
+          <div className="absolute right-0 top-full mt-2 z-50 w-[252px] bg-white border border-[var(--line-strong)] rounded-xl shadow-[var(--shadow-xl)] overflow-hidden animate-dropdown">
             <div className="px-4 py-3.5 bg-[var(--surface-soft)] border-b border-[var(--line)] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-xs border border-white/10">{initial}</div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-xs border border-white/10">{initial}</div>
               <div className="min-w-0">
                 <div className="text-[14px] font-bold text-[var(--ink)] truncate">{name}</div>
                 <div className="text-[11px] font-mono text-[var(--mute)]">{session?.user?.id}</div>
@@ -87,12 +87,12 @@ export default function Topbar() {
             </div>
             <button
               onClick={() => { setOpen(false); setChangePwOpen(true); }}
-              className="w-full px-4 py-2.5 flex items-center gap-2.5 text-[13px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-hover)] transition-colors border-b border-[var(--line-soft)]"
+              className="w-full px-4 py-2.5 flex items-center gap-2.5 text-[13px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-hover)] transition-colors border-b border-[var(--line-soft)] cursor-pointer"
             >
               <KeyRound className="w-4 h-4 text-[var(--teal-deep)]" /> Đổi mật khẩu
             </button>
             <button onClick={() => signOut({ callbackUrl: "/login" })}
-              className="w-full px-4 py-3 flex items-center gap-2.5 text-[13px] font-semibold text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-colors">
+              className="w-full px-4 py-3 flex items-center gap-2.5 text-[13px] font-semibold text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-colors cursor-pointer">
               <LogOut className="w-4 h-4" /> Đăng xuất
             </button>
           </div>

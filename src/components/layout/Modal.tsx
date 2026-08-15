@@ -51,28 +51,28 @@ export default function Modal({
 
   const content = (
     <div
-      className={`fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--navy-ink)]/45 backdrop-blur-sm p-3 sm:p-6 pointer-events-auto animate-fade-in ${className}`}
+      className={`fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in ${className}`}
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-[var(--r-xl)] border border-[var(--line)] shadow-[var(--shadow-lg)] w-full ${maxWidth} flex flex-col max-h-[95vh] sm:max-h-[94vh] overflow-hidden animate-scale-up`}
+        className={`bg-white rounded-2xl border border-[var(--line-strong)] shadow-[var(--shadow-xl)] w-full ${maxWidth} flex flex-col max-h-[92vh] overflow-hidden animate-scale-up`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Editorial Header */}
         {(title || Icon) && (
-          <div className={`px-4 sm:px-6 py-4 sm:py-5 border-b border-[var(--line-soft)] flex items-center justify-between shrink-0 ${headerStyle || "bg-white"}`}>
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0 pr-3">
+          <div className={`px-5 sm:px-6 py-4 sm:py-4.5 border-b border-[var(--line)] flex items-center justify-between shrink-0 ${headerStyle || "bg-white"}`}>
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 pr-2">
               {Icon && (
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-[var(--r-md)] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
-                  <Icon className="w-5 h-5 text-[var(--teal)]" />
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0 border border-white/20">
+                  <Icon className="w-5 h-5 text-[var(--teal)] stroke-[2.5]" />
                 </div>
               )}
               <div className="min-w-0">
-                <h2 className="font-serif text-[17px] sm:text-[22px] font-bold text-[var(--ink)] leading-tight truncate">
+                <h2 className="font-serif text-[18px] sm:text-[21px] font-bold text-[var(--ink)] leading-tight truncate">
                   {title}
                 </h2>
                 {subtitle && (
-                  <p className="text-[13px] text-[var(--mute)] mt-0.5 font-medium truncate">
+                  <p className="text-[12.5px] text-[var(--mute)] mt-0.5 font-medium truncate">
                     {subtitle}
                   </p>
                 )}
@@ -81,8 +81,8 @@ export default function Modal({
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-[var(--r-md)] hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] active:scale-95 transition-colors shrink-0"
-              title="Đóng"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] active:scale-95 transition-all shrink-0 cursor-pointer"
+              title="Đóng (Esc)"
             >
               <X className="w-5 h-5" />
             </button>
@@ -90,13 +90,13 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className={`flex-1 overflow-y-auto ${noPadding ? "" : "p-4 sm:p-6"} bg-[var(--surface-bg)]`}>
+        <div className={`flex-1 overflow-y-auto ${noPadding ? "" : "p-5 sm:p-6"} bg-white`}>
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-[var(--line-soft)] bg-white flex items-center justify-end gap-3 shrink-0 flex-wrap">
+          <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-[var(--line)] bg-[var(--surface-soft)] flex items-center justify-end gap-2.5 shrink-0 flex-wrap">
             {footer}
           </div>
         )}

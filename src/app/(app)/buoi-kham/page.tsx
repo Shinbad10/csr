@@ -92,8 +92,16 @@ export default function BuoiKhamPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
+  const getTodayIso = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
   const [coSoId, setCoSoId] = useState("");
-  const [ngayKham, setNgayKham] = useState("");
+  const [ngayKham, setNgayKham] = useState(getTodayIso);
   const [xa, setXa] = useState("");
   const [diaDiem, setDiaDiem] = useState("");
   const [bacSiKham, setBacSiKham] = useState("");
@@ -108,6 +116,16 @@ export default function BuoiKhamPage() {
   const [editBacSiKham, setEditBacSiKham] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editErr, setEditErr] = useState("");
+
+  const openCreateModal = () => {
+    setNgayKham(getTodayIso());
+    setXa("");
+    setDiaDiem("");
+    setBacSiKham("");
+    setGhiChu("");
+    setErr("");
+    setOpen(true);
+  };
 
   const openEditModal = (b: BuoiKham) => {
     setEditXa(b.xa || "");
@@ -173,7 +191,7 @@ export default function BuoiKhamPage() {
       });
       const data = await res.json();
       if (!res.ok) { setErr(data.error || "Không thể tạo"); return; }
-      setOpen(false); setNgayKham(""); setXa(""); setDiaDiem(""); setBacSiKham(""); setGhiChu("");
+      setOpen(false); setNgayKham(getTodayIso()); setXa(""); setDiaDiem(""); setBacSiKham(""); setGhiChu("");
       addToast({ type: "success", title: "Đã tạo đợt khám", message: `Xã ${data.xa}` });
       load();
     } catch { setErr("Mất kết nối máy chủ"); }
@@ -201,7 +219,7 @@ export default function BuoiKhamPage() {
               <button onClick={() => setImportOpen(true)} title="Nhập danh sách bệnh nhân các đợt khám cũ từ file Excel" className="btn btn-secondary px-3 py-2 font-bold text-[13px]">
                 <FileSpreadsheet className="w-4 h-4 text-[var(--teal-deep)]" /> Nhập Excel
               </button>
-              <button data-tour="bk-create" onClick={() => setOpen(true)} className="btn btn-primary px-4 py-2 font-bold text-[13px]">
+              <button data-tour="bk-create" onClick={openCreateModal} className="btn btn-primary px-4 py-2 font-bold text-[13px] cursor-pointer">
                 <Plus className="w-4 h-4" /> Tổ chức đợt khám
               </button>
             </>
@@ -209,12 +227,33 @@ export default function BuoiKhamPage() {
         }
       />
 
-      <div className="flex-1 flex flex-col min-h-0 card p-0">
-        <div className="bg-[var(--surface-bg)] border-b border-[var(--line-soft)] p-3.5">
+      <div className="flex-1 flex flex-col min-h-0 card p-0 overflow-hidden">
+        <div className="bg-[var(--surface-bg)] border-b border-[var(--line)] p-3.5 flex items-center justify-between gap-3 flex-wrap">
           <div data-tour="bk-search" className="relative w-full sm:w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm theo xã, địa điểm, bệnh viện…"
-              className="input-field pl-9 bg-white" />
+            <input 
+              value={q} 
+              onChange={(e) => setQ(e.target.value)} 
+              placeholder="Tìm theo xã, địa điểm, bệnh viện…"
+              className="input-field pl-9 pr-8 bg-white" 
+            />
+            {q && (
+              <button 
+                type="button" 
+                onClick={() => setQ("")} 
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer p-0.5"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="text-xs text-[var(--mute)] font-medium hidden sm:block">
+            {filtered.length === list.length ? (
+              <span>Tổng số <b className="text-[var(--navy)] font-mono">{list.length}</b> đợt khám</span>
+            ) : (
+              <span>Tìm thấy <b className="text-[var(--navy)] font-mono">{filtered.length}</b> / {list.length} đợt</span>
+            )}
           </div>
         </div>
 
@@ -271,7 +310,7 @@ export default function BuoiKhamPage() {
           </div>
 
           <table className="hidden md:table w-full min-w-[850px] text-left border-collapse">
-            <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
+            <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)] sticky top-0 z-10">
               <tr className="[&>th]:whitespace-nowrap">
                 <th className="py-3 px-3.5 border-b border-[var(--line)] w-[50px] text-center">STT</th>
                 <th className="py-3 px-3.5 border-b border-[var(--line)]">Đợt khám</th>
@@ -354,36 +393,36 @@ export default function BuoiKhamPage() {
         title="Tổ chức đợt khám mới"
         subtitle="Tạo lịch khám tầm soát cộng đồng tại cơ sở y tế"
         icon={CalendarDays}
-        maxWidth="max-w-[600px]"
+        maxWidth="max-w-[580px]"
         noPadding
       >
-        <form onSubmit={create} className="p-4 sm:p-7 space-y-5 bg-white">
+        <form onSubmit={create} className="p-5 sm:p-6 space-y-4 bg-white">
           {err && (
             <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2">
               <X className="w-4 h-4 shrink-0" /> {err}
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Ngày khám" required>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Ngày khám" required hint="Chọn ngày tổ chức">
               <DateField value={ngayKham} onChange={setNgayKham} placeholder="dd/mm/yyyy" />
             </Field>
-            <Field label="Xã / phường" required>
+            <Field label="Xã / phường" required hint="Địa bàn tiếp nhận">
               <input value={xa} onChange={(e) => setXa(e.target.value)} required className="input-field h-10" placeholder="VD: Vĩnh Thạnh" />
             </Field>
           </div>
 
-          <Field label="Địa điểm khám (= Điểm khám trên phiếu)" required>
+          <Field label="Địa điểm khám (= Điểm khám trên phiếu)" required hint="In trên phiếu khám của bệnh nhân">
             <input value={diaDiem} onChange={(e) => setDiaDiem(e.target.value)} required className="input-field h-10" placeholder="VD: Trạm y tế / UBND xã…" />
           </Field>
 
-          <Field label="Ghi chú đợt khám">
-            <textarea value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2.5" placeholder="Ghi chú thêm về công tác chuẩn bị, nhân sự..." />
+          <Field label="Ghi chú đợt khám" hint="Không bắt buộc">
+            <textarea value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2" placeholder="Ghi chú thêm về công tác chuẩn bị, nhân sự, số lượng dự kiến..." />
           </Field>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--line-soft)] mt-6">
-            <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
-            <button type="submit" disabled={saving || !ngayKham || !xa || !diaDiem} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg">
+          <div className="flex items-center justify-end gap-3 pt-3.5 border-t border-[var(--line-soft)] mt-4">
+            <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl cursor-pointer">Hủy bỏ</button>
+            <button type="submit" disabled={saving || !ngayKham || !xa || !diaDiem} className="btn btn-primary px-7 py-2.5 font-bold rounded-xl cursor-pointer">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />} Tạo đợt khám
             </button>
           </div>
@@ -396,36 +435,36 @@ export default function BuoiKhamPage() {
         title="Chỉnh sửa thông tin Đợt khám"
         subtitle={`Cập nhật thông tin cho đợt khám ${fmtBuoiKhamCode(editModal?.id)}`}
         icon={Pencil}
-        maxWidth="max-w-[600px]"
+        maxWidth="max-w-[580px]"
         noPadding
       >
-        <form onSubmit={handleSaveEdit} className="p-4 sm:p-7 space-y-5 bg-white">
+        <form onSubmit={handleSaveEdit} className="p-5 sm:p-6 space-y-4 bg-white">
           {editErr && (
             <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2">
               <X className="w-4 h-4 shrink-0" /> {editErr}
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Ngày khám" required>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Ngày khám" required hint="Chọn ngày tổ chức">
               <DateField value={editNgayKham} onChange={setEditNgayKham} placeholder="dd/mm/yyyy" />
             </Field>
-            <Field label="Xã / phường" required>
+            <Field label="Xã / phường" required hint="Địa bàn tiếp nhận">
               <input value={editXa} onChange={(e) => setEditXa(e.target.value)} required className="input-field h-10" placeholder="VD: Vĩnh Thạnh" />
             </Field>
           </div>
 
-          <Field label="Địa điểm khám (= Điểm khám trên phiếu)" required>
+          <Field label="Địa điểm khám (= Điểm khám trên phiếu)" required hint="In trên phiếu khám của bệnh nhân">
             <input value={editDiaDiem} onChange={(e) => setEditDiaDiem(e.target.value)} required className="input-field h-10" placeholder="VD: Trạm y tế / UBND xã…" />
           </Field>
 
-          <Field label="Ghi chú đợt khám (Tên hiển thị)">
-            <textarea value={editGhiChu} onChange={(e) => setEditGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2.5" placeholder="Ghi chú thêm hoặc tên đợt khám cụ thể..." />
+          <Field label="Ghi chú đợt khám (Tên hiển thị)" hint="Không bắt buộc">
+            <textarea value={editGhiChu} onChange={(e) => setEditGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2" placeholder="Ghi chú thêm hoặc tên đợt khám cụ thể..." />
           </Field>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--line-soft)] mt-6">
-            <button type="button" onClick={() => setEditModal(null)} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
-            <button type="submit" disabled={editSaving || !editNgayKham || !editXa || !editDiaDiem} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg">
+          <div className="flex items-center justify-end gap-3 pt-3.5 border-t border-[var(--line-soft)] mt-4">
+            <button type="button" onClick={() => setEditModal(null)} className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl cursor-pointer">Hủy bỏ</button>
+            <button type="submit" disabled={editSaving || !editNgayKham || !editXa || !editDiaDiem} className="btn btn-primary px-7 py-2.5 font-bold rounded-xl cursor-pointer">
               {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />} Lưu thay đổi
             </button>
           </div>

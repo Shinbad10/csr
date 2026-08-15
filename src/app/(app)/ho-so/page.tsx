@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ChevronDown,
   RotateCw,
+  X,
 } from "lucide-react";
 import { ageOf, fmtDate, fmtBuoiKhamName, parseDiag, statusOf, bhytLevel, type HoSo } from "@/lib/csr";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
@@ -175,8 +176,18 @@ export default function HoSoPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm tên, mã BN, SĐT, CCCD…"
-              className="input-field pl-9 bg-white"
+              className="input-field pl-9 pr-8 bg-white"
             />
+            {search && (
+              <button 
+                type="button" 
+                onClick={() => setSearch("")} 
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer p-0.5"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
           <div className="flex-1 min-w-[150px] sm:flex-none sm:w-[210px]">
             <Dropdown value={tt} placeholder="Tất cả trạng thái" mono={false} labels={TT_LABELS} options={TT_OPTS} onChange={setTt} />
@@ -195,7 +206,7 @@ export default function HoSoPage() {
                 type="button"
                 onClick={() => handleSyncGoogleSheet(false)}
                 disabled={syncing}
-                className="btn border border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-3 text-[12.5px] font-bold flex items-center gap-1.5 rounded-l-lg rounded-r-none cursor-pointer disabled:opacity-50"
+                className="btn border border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-3 text-[12.5px] font-bold flex items-center gap-1.5 rounded-l-lg rounded-r-none cursor-pointer disabled:opacity-50 transition-all"
               >
                 {syncing ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--navy)]" />
@@ -209,7 +220,7 @@ export default function HoSoPage() {
                 type="button"
                 onClick={() => setSyncMenuOpen((o) => !o)}
                 disabled={syncing}
-                className="btn border border-l-0 border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-2 rounded-r-lg rounded-l-none cursor-pointer disabled:opacity-50"
+                className="btn border border-l-0 border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-2 rounded-r-lg rounded-l-none cursor-pointer disabled:opacity-50 transition-all"
                 title="Tùy chọn đồng bộ Sheet"
               >
                 <ChevronDown className="w-3.5 h-3.5" />
@@ -218,11 +229,11 @@ export default function HoSoPage() {
 
             {/* Menu thả xuống lựa chọn chế độ đồng bộ */}
             {syncMenuOpen && (
-              <div className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white shadow-lg py-1 z-50 text-[12.5px] font-medium animate-fade-in">
+              <div className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white shadow-[var(--shadow-xl)] py-1 z-50 text-[12.5px] font-medium animate-dropdown">
                 <button
                   type="button"
                   onClick={() => handleSyncGoogleSheet(false)}
-                  className="w-full text-left px-3 py-2 hover:bg-[var(--surface-soft)] text-[var(--ink)] flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--surface-soft)] text-[var(--ink)] flex items-center gap-2.5 cursor-pointer transition-colors"
                 >
                   <RefreshCw className="w-4 h-4 text-[var(--navy)] shrink-0" />
                   <div>
@@ -236,7 +247,7 @@ export default function HoSoPage() {
                 <button
                   type="button"
                   onClick={() => handleSyncGoogleSheet(true)}
-                  className="w-full text-left px-3 py-2 hover:bg-[var(--rose-soft)] text-[var(--rose)] flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--rose-soft)] text-[var(--rose)] flex items-center gap-2.5 cursor-pointer transition-colors"
                 >
                   <RotateCw className="w-4 h-4 text-[var(--rose)] shrink-0" />
                   <div>

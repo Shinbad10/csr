@@ -332,7 +332,22 @@ export default function TheoDoiPage() {
           <div className="p-3 flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tên, mã, SĐT…" className="w-full h-10 rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--surface-bg)] pl-9 pr-4 text-[13px] outline-none transition-all focus:bg-white focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)]" />
+              <input 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+                placeholder="Tên, mã, SĐT…" 
+                className="w-full h-10 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-white pl-9 pr-8 text-[13px] outline-none transition-all focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)]" 
+              />
+              {search && (
+                <button 
+                  type="button" 
+                  onClick={() => setSearch("")} 
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer p-0.5"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
           <div data-tour="td-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
@@ -552,8 +567,18 @@ export default function TheoDoiPage() {
               placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..." 
               value={bkSearch} 
               onChange={(e) => setBkSearch(e.target.value)} 
-              className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs" 
+              className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-white pl-10 pr-9 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs" 
             />
+            {bkSearch && (
+              <button 
+                type="button" 
+                onClick={() => setBkSearch("")} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer p-0.5"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -609,8 +634,18 @@ export default function TheoDoiPage() {
                 onChange={(e) => setHisQuery(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runHisSearch(); } }}
                 placeholder="Nhập họ tên / CCCD / mã HIS…"
-                className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line)] bg-white pl-10 pr-4 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs"
+                className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-white pl-10 pr-9 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs"
               />
+              {hisQuery && (
+                <button 
+                  type="button" 
+                  onClick={() => setHisQuery("")} 
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer p-0.5"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
             <button onClick={runHisSearch} disabled={hisSearching || !hisQuery.trim()} className="btn btn-primary px-6 shrink-0 font-bold">
               {hisSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4 text-[var(--teal)]" />} Tìm
