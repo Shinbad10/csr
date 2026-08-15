@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { triggerSync } from "@/lib/syncWorker";
 import { appendHisNote } from "@/lib/his";
+import { broadcastEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -57,11 +58,22 @@ export async function POST(request: Request) {
 
     triggerSync();
 
+    if (updatedCount > 0) {
+      broadcastEvent({
+        type: "hoso_change",
+        action: "update",
+      });
+      broadcastEvent({
+        type: "buoikham_change",
+        action: "update",
+      });
+    }
+
     return NextResponse.json({
       success: true,
       count: updatedCount,
     });
-  } catch (e: any) {
+  } catch (e) {
     console.error("Link Reverse HIS Error:", e);
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi server" }, { status: 500 });
   }

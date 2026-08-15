@@ -5,8 +5,10 @@
 export const BENH_SU_OPTIONS = [
   "Tăng huyết áp", "Đái tháo đường", "Phổi tắc nghẽn mạn tính", "Hen phế quản",
   "Ung thư", "Suy tim", "Thoái hóa khớp", "Bệnh thận mạn", "Nhồi máu cơ tim",
-  "Đột quỵ", "Trầm cảm", "Rối loạn lo âu", "Sa sút trí tuệ",
+  "Đột quỵ", "Trầm cảm", "Rối loạn lo âu", "Sa sút trí tuệ", "Khác",
 ] as const;
+
+export const MAT_OPTIONS = ["Mắt phải", "Mắt trái", "Hai mắt"] as const;
 
 export const BENH_LY_OPTIONS = ["Chưa phát hiện bất thường", "Nghi ngờ bệnh lý"] as const;
 

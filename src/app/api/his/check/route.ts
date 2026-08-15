@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { checkHISForPatient, appendHisNote } from "@/lib/his";
 import { triggerSync } from "@/lib/syncWorker";
+import { broadcastEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -84,6 +85,22 @@ export async function POST(request: Request) {
       await prisma.syncQueue.create({ data: { hoSoId } });
       triggerSync();
     } catch {}
+
+    broadcastEvent({
+      type: "hoso_change",
+      action: "update",
+      coSoId: hoSo.coSoId,
+      buoiKhamId: hoSo.buoiKhamId,
+      hoSoId: hoSo.id,
+      data: updated,
+    });
+
+    broadcastEvent({
+      type: "buoikham_change",
+      action: "update",
+      coSoId: hoSo.coSoId,
+      buoiKhamId: hoSo.buoiKhamId,
+    });
 
     return NextResponse.json({
       success: true,

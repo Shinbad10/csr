@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, Shield, Phone, CreditCard, MapPin, User, Users, Pencil, CalendarDays } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
+import { useRealtimeEvent } from "@/lib/useRealtime";
 import { BHYT, NHOM, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
 import { Dropdown, Select, DateField, ChoiceRow, StatusBadge, labelCls, Combobox, SectionHeader } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
@@ -96,6 +97,18 @@ export default function TuVanSessionPage() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  // Cập nhật danh sách tư vấn thời gian thực (SSE)
+  useRealtimeEvent(["hoso_change", "buoikham_change"], (evt) => {
+    if (evt.type === "buoikham_change") {
+      fetch("/api/csr/buoikham").then((r) => r.json()).then((data) => {
+        setBks(data);
+      });
+    }
+    if (selBk && evt.type === "hoso_change") {
+      fetchPatients(selId ?? undefined, false);
+    }
+  }, [selBk, selId, fetchPatients]);
 
   const pick = async (p: HoSo) => {
     if (p.id === selId) return;

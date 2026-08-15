@@ -4,6 +4,7 @@ import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
+import { broadcastEvent } from "@/lib/events";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -70,7 +71,17 @@ export async function POST(request: Request) {
 
     const data = await getPrisma().buoiKham.create({
       data: { id, coSoId, ngayKham: new Date(ngayKham), xa, diaDiem, bacSiKham: bacSiKham?.trim() || null, ghiChu: ghiChu || null, nguoiTao: session.user.id },
+      include: { coSo: true, _count: { select: { hoSo: true } } },
     });
+
+    broadcastEvent({
+      type: "buoikham_change",
+      action: "create",
+      coSoId: data.coSoId,
+      buoiKhamId: data.id,
+      data,
+    });
+
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });

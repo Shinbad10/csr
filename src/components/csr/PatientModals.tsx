@@ -152,6 +152,12 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     <span className="text-[var(--mute)]">Thị lực mắt trái (MT):</span>
                     <span className="font-mono font-bold text-[var(--teal-deep)]">{data.thiLucMT || "—"}</span>
                   </div>
+                  {data.matKham && (
+                    <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
+                      <span className="text-[var(--mute)]">Chỉ định mắt:</span>
+                      <span className="font-bold text-[var(--navy)]">{data.matKham}</span>
+                    </div>
+                  )}
                   <div className="py-0.5 border-b border-[var(--line-soft)]">
                     <span className="text-[var(--mute)] block mb-1">Chẩn đoán bác sĩ:</span>
                     <div className="flex flex-wrap gap-1">

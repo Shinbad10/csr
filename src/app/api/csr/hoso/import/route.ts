@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { genMaBN, yymmdd } from "@/lib/maBN";
 import type { ImportRow } from "@/lib/importExcel";
 import { triggerSync } from "@/lib/syncWorker";
+import { broadcastEvent } from "@/lib/events";
 
 interface BlockPayload {
   /** Gán vào đợt khám có sẵn; bỏ trống thì tạo đợt mới từ 4 trường bên dưới */
@@ -168,6 +169,20 @@ export async function POST(request: Request) {
     }
 
     const total = results.reduce((s, r) => s + r.created, 0);
+
+    if (total > 0) {
+      broadcastEvent({
+        type: "buoikham_change",
+        action: "create",
+        coSoId,
+      });
+      broadcastEvent({
+        type: "hoso_change",
+        action: "create",
+        coSoId,
+      });
+    }
+
     return NextResponse.json({ success: true, total, results });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi nhập dữ liệu" }, { status: 500 });

@@ -7,6 +7,7 @@ import { genMaBN } from "@/lib/maBN";
 import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
 import { bhytLevel } from "@/lib/csr";
+import { broadcastEvent } from "@/lib/events";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -121,13 +122,32 @@ export async function POST(request: Request) {
         cccd: b.cccd || null, diaChi: b.diaChi || null, sdt: b.sdt || null,
         sdtNguoiNha: b.sdtNguoiNha || null, bhyt: b.bhyt || null,
         mucHuongBHYT, khuPho: b.khuPho || null, xaPhuong: b.xaPhuong || null,
+        bacSiChiDinh: buoiKham.bacSiKham || null,
         trangThai: "TiepNhan", createdBy: session.user.id,
       },
+      include: { buoiKham: true, coSo: true, tuVanVien: true },
     });
 
     await audit(session.user.id, "HoSoBenhNhan", data.id, "them", { maBN, hoTen: data.hoTen });
     await prisma.syncQueue.create({ data: { hoSoId: data.id } }); // BR-15
     triggerSync(); // đẩy Sheet ngay, không chặn response
+
+    broadcastEvent({
+      type: "hoso_change",
+      action: "create",
+      coSoId: data.coSoId,
+      buoiKhamId: data.buoiKhamId,
+      hoSoId: data.id,
+      data,
+    });
+
+    broadcastEvent({
+      type: "buoikham_change",
+      action: "update",
+      coSoId: data.coSoId,
+      buoiKhamId: data.buoiKhamId,
+    });
+
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });

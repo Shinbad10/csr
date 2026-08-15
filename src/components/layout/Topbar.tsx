@@ -8,9 +8,11 @@ import { roleLabel } from "@/lib/permissions";
 import { ChangePasswordModal } from "@/components/layout/ChangePasswordModal";
 import TopbarNav from "@/components/layout/TopbarNav";
 import FacilitySwitcher from "@/components/layout/FacilitySwitcher";
+import { useRealtime } from "@/lib/useRealtime";
 
 export default function Topbar() {
   const { data: session, status } = useSession();
+  const { isConnected, status: realtimeStatus } = useRealtime();
   const [open, setOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -45,6 +47,30 @@ export default function Topbar() {
       </Link>
 
       <div className="w-px h-7 bg-[var(--line)] shrink-0 hidden lg:block order-2 mx-1" />
+
+      {/* Realtime Live Indicator */}
+      <div className="order-4 hidden sm:flex items-center">
+        {isConnected ? (
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--teal-soft)]/70 border border-[var(--teal)]/30 text-[11px] font-semibold text-[var(--teal-deep)] shadow-xs select-none transition-all"
+            title="Hệ thống đang kết nối thời gian thực (SSE). Mọi thay đổi dữ liệu được đồng bộ tức thì qua các máy."
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--teal)] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--teal)]"></span>
+            </span>
+            <span>Realtime</span>
+          </div>
+        ) : (
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--amber-soft)]/70 border border-[var(--amber)]/30 text-[11px] font-semibold text-[var(--amber-deep)] select-none transition-all"
+            title="Đang kết nối lại thời gian thực..."
+          >
+            <span className="w-2 h-2 rounded-full bg-[var(--amber)] animate-pulse" />
+            <span>Đang nối...</span>
+          </div>
+        )}
+      </div>
 
       <div className="flex-1 order-4" />
 

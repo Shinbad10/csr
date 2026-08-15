@@ -8,6 +8,7 @@ import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
 import { parseDiag } from "@/lib/csr";
 import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
+import { broadcastEvent } from "@/lib/events";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -48,9 +49,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // "Hướng xử trí" đồng bộ sang khuyenNghi để giữ nguyên luồng Tư vấn / Theo dõi / Báo cáo
     if (body.huongXuTri !== undefined) update.khuyenNghi = huongXuTriToKhuyenNghi(body.huongXuTri);
 
+    if (update.bacSiChiDinh === undefined && !current.bacSiChiDinh) {
+      const bk = await prisma.buoiKham.findUnique({ where: { id: current.buoiKhamId }, select: { bacSiKham: true } });
+      if (bk?.bacSiKham) update.bacSiChiDinh = bk.bacSiKham;
+    }
+
     // BR-07
     if (typeof update.chanDoan === "string" && update.chanDoan.includes("Khác") && !body.chanDoanKhac && !current.chanDoanKhac)
       return NextResponse.json({ error: "Vui lòng nhập Chẩn đoán khác" }, { status: 400 });
+    if (typeof update.loaiBenhSu === "string" && update.loaiBenhSu.includes("Khác") && !body.loaiBenhSuKhac && !current.loaiBenhSuKhac)
+      return NextResponse.json({ error: "Vui lòng nhập Loại bệnh sử khác" }, { status: 400 });
 
     // Validate phiếu sàng lọc — chỉ áp dụng cho trường đang BẬT ở cơ sở này
     const coSo = await prisma.coSo.findUnique({ where: { id: current.coSoId }, select: { cauHinhTruong: true } });
@@ -110,10 +118,31 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     for (const f of ["benhSu", "xacNhanDieuTri"] as const)
       if (body[f] !== undefined) update[f] = body[f] == null ? null : Boolean(body[f]);
 
-    const data = await prisma.hoSoBenhNhan.update({ where: { id }, data: update });
+    const data = await prisma.hoSoBenhNhan.update({
+      where: { id },
+      data: update,
+      include: { buoiKham: true, coSo: true, tuVanVien: true },
+    });
     await audit(session.user.id, "HoSoBenhNhan", id, "sua", body);
     await prisma.syncQueue.create({ data: { hoSoId: id } }); // BR-15
     triggerSync(); // đẩy Sheet ngay, không chặn response
+
+    broadcastEvent({
+      type: "hoso_change",
+      action: "update",
+      coSoId: data.coSoId,
+      buoiKhamId: data.buoiKhamId,
+      hoSoId: data.id,
+      data,
+    });
+
+    broadcastEvent({
+      type: "buoikham_change",
+      action: "update",
+      coSoId: data.coSoId,
+      buoiKhamId: data.buoiKhamId,
+    });
+
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });

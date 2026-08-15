@@ -7,12 +7,13 @@ import PageHeader from "@/components/layout/PageHeader";
 import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, RefreshCw, Phone } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
+import { useRealtimeEvent } from "@/lib/useRealtime";
 import { BHYT, NHOM, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
 import { Dropdown, DateField, ChoiceRow, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 
 interface BuoiKham { id: string; xa: string; diaDiem: string; ghiChu?: string | null; ngayKham: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null } }
-const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "" };
+const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "", ghiChuTuVan: "" };
 const TIME_OPTS = Array.from({ length: 26 }).map((_, i) => `${String(Math.floor(i / 2) + 6).padStart(2, '0')}:${i % 2 === 0 ? '00' : '30'}`);
 
 function Info({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
@@ -45,7 +46,15 @@ export default function TuVanSessionPage() {
   const uniqueDiemDon = useMemo(() => Array.from(new Set(patients.map((p) => p.diemDon).filter(Boolean))) as string[], [patients]);
 
   const loadForm = useCallback((p: HoSo) => {
-    const next = { bhyt: p.bhyt || "", soTienBao: p.soTienBao != null ? String(p.soTienBao) : "", nhom: p.nhom || "", ngayHen: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "", diemDon: p.diemDon || "", gioDon: p.gioDon || "" };
+    const next = {
+      bhyt: p.bhyt || "",
+      soTienBao: p.soTienBao != null ? String(p.soTienBao) : "",
+      nhom: p.nhom || "",
+      ngayHen: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "",
+      diemDon: p.diemDon || "",
+      gioDon: p.gioDon || "",
+      ghiChuTuVan: p.ghiChuTuVan || "",
+    };
     setF(next); setBaseline(JSON.stringify(next));
   }, []);
 
@@ -87,6 +96,15 @@ export default function TuVanSessionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  // Cập nhật danh sách tư vấn thời gian thực (SSE)
+  useRealtimeEvent("hoso_change", (evt) => {
+    const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
+    if (evt.buoiKhamId && decodeURIComponent(evt.buoiKhamId).normalize("NFC") !== targetId) {
+      return;
+    }
+    fetchPatients(selId ?? undefined, false);
+  }, [buoiKhamId, selId, fetchPatients]);
+
   const pick = async (p: HoSo) => {
     if (p.id === selId) return;
     if (dirty && !(await confirm({
@@ -104,7 +122,19 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
     if (f.nhom === "A" && !f.ngayHen) { addToast({ type: "error", message: "Nhóm A bắt buộc nhập Ngày điều trị." }); return; }
     setSaving(true);
     try {
-      const res = await fetch(`/api/csr/hoso/${selected.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bhyt: f.bhyt, soTienBao: f.soTienBao ? Number(f.soTienBao) : null, nhom: f.nhom || null, ngayDieuTri: f.ngayHen || null, diemDon: f.diemDon, gioDon: f.gioDon }) });
+      const res = await fetch(`/api/csr/hoso/${selected.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bhyt: f.bhyt,
+          soTienBao: f.soTienBao ? Number(f.soTienBao) : null,
+          nhom: f.nhom || null,
+          ngayDieuTri: f.ngayHen || null,
+          diemDon: f.diemDon,
+          gioDon: f.gioDon,
+          ghiChuTuVan: f.ghiChuTuVan || null,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) { addToast({ type: "error", message: data.error || "Không thể lưu" }); return; }
       addToast({ type: "success", title: `Đã lưu: ${selected.hoTen}`, message: "Cập nhật tư vấn & phân nhóm." });
@@ -267,6 +297,16 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
                   <div className="grid grid-cols-[100px_1fr] gap-3 col-span-2 lg:col-span-1">
                     <div><label className={labelCls}>Giờ đón</label><Combobox value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} options={TIME_OPTS} placeholder="--:--" /></div>
                     <div><label className={labelCls}>Điểm đón</label><Combobox value={f.diemDon} onChange={(v) => setF((s) => ({ ...s, diemDon: v }))} options={uniqueDiemDon} placeholder="VD: Ngã ba xã / xe nhà…" /></div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className={labelCls}>Ghi chú tư vấn</label>
+                    <textarea
+                      value={f.ghiChuTuVan}
+                      onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
+                      placeholder="Nhập ghi chú tư vấn, nguyện vọng, người liên hệ, hẹn gọi lại…"
+                      rows={2}
+                      className="input-field resize-none py-2"
+                    />
                   </div>
                 </div>
               </div>

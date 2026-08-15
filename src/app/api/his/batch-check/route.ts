@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { batchCheckHISForPatients } from "@/lib/his";
+import { broadcastEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -43,6 +44,21 @@ export async function POST(request: Request) {
       surgeryExact: results.filter((r) => r.hasSurgery && r.matchType === "exact").length,
       surgeryPartial: results.filter((r) => r.hasSurgery && r.matchType === "partial").length,
     };
+
+    if (summary.found > 0) {
+      broadcastEvent({
+        type: "hoso_change",
+        action: "update",
+        coSoId,
+        buoiKhamId,
+      });
+      broadcastEvent({
+        type: "buoikham_change",
+        action: "update",
+        coSoId,
+        buoiKhamId,
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -186,10 +186,13 @@ export interface HoSo {
   ngaySinh: string | null; namSinh: number | null; cccd: string | null; diaChi: string | null;
   sdt: string | null; sdtNguoiNha: string | null;
   thiLucMP: string | null; thiLucMT: string | null;
+  matKham?: string | null;
+  chanDoanMP?: string | null; chanDoanKhacMP?: string | null;
+  chanDoanMT?: string | null; chanDoanKhacMT?: string | null;
   chanDoan: string; chanDoanKhac: string | null; khuyenNghi: string | null;
   // Phiếu khám sàng lọc nhãn khoa
   mucHuongBHYT?: number | null; khuPho?: string | null; xaPhuong?: string | null;
-  benhSu?: boolean | null; loaiBenhSu?: string | null;
+  benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null;
   chieuCao?: string | null; canNang?: string | null;
   benhLy?: string | null; loaiBenhLy?: string | null; loaiBenhLyKhac?: string | null;
   huongXuTri?: string | null; huongXuTriKhac?: string | null;
@@ -199,8 +202,10 @@ export interface HoSo {
   diemDon: string | null; gioDon?: string | null; nhom: string | null; followUpStatus?: string | null;
   daDon?: boolean; ngayMoThucTe?: string | null; soTienThucThu?: number | null;
   trangThaiDieuTri?: string | null; ngayTaiKham?: string | null; ghiChuMat2?: string | null;
+  ghiChuTuVan?: string | null;
   trangThai: string;
   tuVanVien?: { maNV: string; hoTen: string } | null;
   buoiKham?: { xa: string; diaDiem: string; ngayKham: string } | null;
+  createdAt?: string | null;
   updatedAt?: string | null; updatedBy?: string | null;
 }

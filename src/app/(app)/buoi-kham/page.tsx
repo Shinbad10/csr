@@ -5,13 +5,15 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
-import { Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X, Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet } from "lucide-react";
+import { Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X, Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet, UserCheck } from "lucide-react";
 import { can } from "@/lib/permissions";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
 import { Field, DateField } from "@/components/csr/fields";
+import { DoctorAutocomplete } from "@/components/csr/DoctorAutocomplete";
 import { SkeletonTable } from "@/components/layout/Skeleton";
 import ImportExcelModal from "@/components/csr/ImportExcelModal";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useRealtimeEvent } from "@/lib/useRealtime";
 
 interface CoSo { id: string; ten: string }
 interface BuoiKham {
@@ -182,6 +184,11 @@ export default function BuoiKhamPage() {
 
   useEffect(() => { (async () => { await load(); })(); }, [load]);
 
+  // Cập nhật danh sách đợt khám & số liệu bệnh nhân thời gian thực (SSE)
+  useRealtimeEvent(["buoikham_change", "hoso_change"], () => {
+    load();
+  }, [load]);
+
   const create = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setSaving(true);
     try {
@@ -269,7 +276,14 @@ export default function BuoiKhamPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-bold text-[14px] text-[var(--ink)]">{fmtBuoiKhamName(b)}</div>
-                    <div className="font-mono text-[11px] font-bold text-[var(--navy)] mt-0.5">{fmtBuoiKhamCode(b.id)}</div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="font-mono text-[11px] font-bold text-[var(--navy)]">{fmtBuoiKhamCode(b.id)}</span>
+                      {b.bacSiKham && (
+                        <span className="text-[11px] text-[var(--teal-deep)] font-semibold flex items-center gap-1 bg-[var(--teal-soft)] px-1.5 py-0.2 rounded">
+                          <UserCheck className="w-3 h-3 text-[var(--teal-deep)]" /> BS: {b.bacSiKham}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="shrink-0 flex flex-col items-end gap-1">
                     <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--mute)]">
@@ -335,7 +349,14 @@ export default function BuoiKhamPage() {
                   </td>
                   <td className="py-3.5 px-3.5 align-middle whitespace-nowrap">
                     <div className="font-bold text-[var(--ink)] group-hover:text-[var(--navy)] text-[13px]" title={fmtBuoiKhamName(b)}>{fmtBuoiKhamName(b)}</div>
-                    <div className="font-mono text-[11px] font-bold text-[var(--navy)] mt-0.5">{fmtBuoiKhamCode(b.id)}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="font-mono text-[11px] font-bold text-[var(--navy)]">{fmtBuoiKhamCode(b.id)}</span>
+                      {b.bacSiKham && (
+                        <span className="text-[11px] text-[var(--teal-deep)] font-medium flex items-center gap-1 bg-[var(--teal-soft)] px-1.5 py-0.2 rounded">
+                          <UserCheck className="w-3 h-3 text-[var(--teal-deep)]" /> BS: {b.bacSiKham}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3.5 px-3.5 align-middle">
                     <div className="flex items-start gap-1.5 max-w-[240px]"><MapPin className="w-3.5 h-3.5 text-[var(--mute)] shrink-0 mt-0.5" /><span className="text-[12px] leading-tight truncate" title={b.diaDiem}>{b.diaDiem}</span></div>
@@ -416,6 +437,14 @@ export default function BuoiKhamPage() {
             <input value={diaDiem} onChange={(e) => setDiaDiem(e.target.value)} required className="input-field h-10" placeholder="VD: Trạm y tế / UBND xã…" />
           </Field>
 
+          <Field label="Bác sĩ khám / chỉ định" hint="Bác sĩ phụ trách toàn bộ đợt khám">
+            <DoctorAutocomplete
+              value={bacSiKham}
+              onChange={setBacSiKham}
+              placeholder="Chọn hoặc nhập tên bác sĩ khám..."
+            />
+          </Field>
+
           <Field label="Ghi chú đợt khám" hint="Không bắt buộc">
             <textarea value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2" placeholder="Ghi chú thêm về công tác chuẩn bị, nhân sự, số lượng dự kiến..." />
           </Field>
@@ -456,6 +485,14 @@ export default function BuoiKhamPage() {
 
           <Field label="Địa điểm khám (= Điểm khám trên phiếu)" required hint="In trên phiếu khám của bệnh nhân">
             <input value={editDiaDiem} onChange={(e) => setEditDiaDiem(e.target.value)} required className="input-field h-10" placeholder="VD: Trạm y tế / UBND xã…" />
+          </Field>
+
+          <Field label="Bác sĩ khám / chỉ định" hint="Bác sĩ phụ trách toàn bộ đợt khám">
+            <DoctorAutocomplete
+              value={editBacSiKham}
+              onChange={setEditBacSiKham}
+              placeholder="Chọn hoặc nhập tên bác sĩ khám..."
+            />
           </Field>
 
           <Field label="Ghi chú đợt khám (Tên hiển thị)" hint="Không bắt buộc">

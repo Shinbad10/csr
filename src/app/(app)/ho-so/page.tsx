@@ -23,6 +23,7 @@ import { SkeletonTable } from "@/components/layout/Skeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import { PatientInfoModal, PatientHistoryModal } from "@/components/csr/PatientModals";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useRealtimeEvent } from "@/lib/useRealtime";
 
 const TT_OPTS = ["", "TiepNhan", "DaKham", "TheoDoi", "CoChiDinhMo", "NhomA", "NhomB", "DaMoHauPhau", "HuyKhongDen"];
 const TT_LABELS: Record<string, string> = Object.fromEntries(TT_OPTS.filter(Boolean).map((k) => [k, statusOf(k).label]));
@@ -106,6 +107,11 @@ export default function HoSoPage() {
       load();
     }, 250);
     return () => clearTimeout(t);
+  }, [load]);
+
+  // Cập nhật danh sách hồ sơ thời gian thực (SSE)
+  useRealtimeEvent(["hoso_change", "buoikham_change"], () => {
+    load();
   }, [load]);
 
   // Hàm xử lý đồng bộ Google Sheet

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
+import { broadcastEvent } from "@/lib/events";
 
 export async function GET(
   request: Request,
@@ -51,6 +52,15 @@ export async function PATCH(
     const updated = await getPrisma().buoiKham.update({
       where: { id },
       data: updateData,
+      include: { coSo: true, _count: { select: { hoSo: true } } },
+    });
+
+    broadcastEvent({
+      type: "buoikham_change",
+      action: "update",
+      coSoId: updated.coSoId,
+      buoiKhamId: id,
+      data: updated,
     });
 
     return NextResponse.json(updated);
@@ -81,6 +91,14 @@ export async function DELETE(
     if (!existing) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
 
     await getPrisma().buoiKham.delete({ where: { id } });
+
+    broadcastEvent({
+      type: "buoikham_change",
+      action: "delete",
+      coSoId: existing.coSoId,
+      buoiKhamId: id,
+    });
+
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });

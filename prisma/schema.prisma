@@ -92,13 +92,19 @@ model HoSoBenhNhan {
   // Lâm sàng (Tư vấn viên chép từ phiếu bác sĩ)
   thiLucMP     String?
   thiLucMT     String?
-  chanDoan     String  @default("[]") // JSON mảng enum
-  chanDoanKhac String? // BR-07
-  khuyenNghi   String? // Phẫu thuật | Theo dõi
+  matKham        String? // Mắt phải | Mắt trái | Hai mắt
+  chanDoanMP     String? // JSON mảng chẩn đoán Mắt phải
+  chanDoanKhacMP String? // Chẩn đoán khác Mắt phải
+  chanDoanMT     String? // JSON mảng chẩn đoán Mắt trái
+  chanDoanKhacMT String? // Chẩn đoán khác Mắt trái
+  chanDoan       String  @default("[]") // JSON mảng enum tổng hợp
+  chanDoanKhac   String? // BR-07
+  khuyenNghi     String? // Phẫu thuật | Theo dõi
 
   // Phiếu khám sàng lọc nhãn khoa (trường 11-20, 23)
   benhSu           Boolean? // CÓ / KHÔNG
-  loaiBenhSu       String   @default("[]") // JSON mảng — 13 loại bệnh sử
+  loaiBenhSu       String   @default("[]") // JSON mảng — loại bệnh sử
+  loaiBenhSuKhac   String?  // ghi rõ khi chọn "Khác"
   chieuCao         String?  // cm
   canNang          String?  // kg
   benhLy           String?  // Chưa phát hiện bất thường | Nghi ngờ bệnh lý
@@ -121,6 +127,7 @@ model HoSoBenhNhan {
   diemDon     String?
   gioDon      String?
   nhom        String?   // A | B
+  ghiChuTuVan String?
 
   // Theo dõi nhóm B
   followUpStatus  String?

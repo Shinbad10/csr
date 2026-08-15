@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Loader2, Search, Check, Save, PhoneCall, CalendarClock, Clock, User, Shield, CreditCard, Send, X, Users, ClipboardList, Phone, CalendarDays, MapPin } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useRealtimeEvent } from "@/lib/useRealtime";
 import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, statusOf, bhytLevel, TT_DIEU_TRI, type HoSo } from "@/lib/csr";
 import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/components/csr/fields";
 import { SkeletonList } from "@/components/layout/Skeleton";
@@ -175,6 +176,18 @@ export default function TheoDoiPage() {
     const t = setTimeout(() => { load(); }, 250);
     return () => clearTimeout(t);
   }, [search, tab, selBk]);
+
+  // Đồng bộ thời gian thực cho theo dõi A/B, nhật ký liên hệ và danh sách đợt khám (SSE)
+  useRealtimeEvent(["hoso_change", "nhatky_change", "buoikham_change"], (evt) => {
+    if (evt.type === "buoikham_change") {
+      fetch("/api/csr/buoikham").then((r) => r.json()).then((data) => {
+        setBks(data);
+      });
+    }
+    if (selBk && (evt.type === "hoso_change" || evt.type === "nhatky_change")) {
+      load(sel?.id);
+    }
+  }, [selBk, sel?.id, load]);
 
   const openDetail = async (p: HoSo) => {
     const res = await fetch(`/api/csr/hoso/${p.id}`);

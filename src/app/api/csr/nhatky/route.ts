@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { triggerSync } from "@/lib/syncWorker";
+import { broadcastEvent } from "@/lib/events";
 
 // UC-04: thêm dòng nhật ký theo dõi cho hồ sơ nhóm B.
 export async function POST(request: Request) {
@@ -18,10 +19,25 @@ export async function POST(request: Request) {
     const prisma = getPrisma();
     const log = await prisma.nhatKyTheoDoi.create({
       data: { hoSoId, ngay: new Date(), nguoiGoiMa: session.user.id, noiDung: noiDung.trim() },
+      include: { nguoiGoi: true },
     });
     if (followUpStatus) await prisma.hoSoBenhNhan.update({ where: { id: hoSoId }, data: { followUpStatus, nguoiPhuTrachMa: session.user.id } });
     await prisma.syncQueue.create({ data: { hoSoId } });
     triggerSync(); // đẩy Sheet ngay, không chặn response
+
+    broadcastEvent({
+      type: "nhatky_change",
+      action: "create",
+      hoSoId,
+      data: log,
+    });
+
+    broadcastEvent({
+      type: "hoso_change",
+      action: "update",
+      hoSoId,
+    });
+
     return NextResponse.json(log);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });

@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { CalendarHeart, ClipboardList, BarChart3, ArrowRight, PhoneCall, Users, Calendar, HeartHandshake, CheckCircle2, Activity, Loader2 } from "lucide-react";
 import { can } from "@/lib/permissions";
 import PageHeader from "@/components/layout/PageHeader";
 import { STATUS, statusOf } from "@/lib/csr";
 import { Donut, BarChart, CHART_COLORS, type Slice } from "@/components/charts";
+import { useRealtimeEvent } from "@/lib/useRealtime";
 
 const TILES = [
   { label: "Đợt khám tầm soát", desc: "Tiếp nhận, đo thị lực, khám mắt & tư vấn theo đợt", href: "/buoi-kham", icon: CalendarHeart, cap: undefined },
@@ -36,9 +37,25 @@ export default function Dashboard() {
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch("/api/csr/reports").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setStats(d); }).catch(() => {}).finally(() => setLoading(false));
+
+  const loadStats = useCallback(() => {
+    fetch("/api/csr/reports")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setStats(d);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Tự động cập nhật số liệu KPI & biểu đồ khi có ca khám/tiếp nhận/đợt khám mới (SSE)
+  useRealtimeEvent(["buoikham_change", "hoso_change", "stats_change"], () => {
+    loadStats();
+  }, [loadStats]);
 
   // Chỉ render khi đã có phiên đăng nhập + số liệu → tránh nháy dữ liệu tạm (tên, quyền, KPI)
   const ready = status !== "loading" && !loading;

@@ -88,6 +88,11 @@ model HoSoBenhNhan {
 
   thiLucMP        String?
   thiLucMT        String?
+  matKham         String?
+  chanDoanMP      String?
+  chanDoanKhacMP  String?
+  chanDoanMT      String?
+  chanDoanKhacMT  String?
   chanDoan        String         @default("[]")
   chanDoanKhac    String?
   khuyenNghi      String?
@@ -95,6 +100,7 @@ model HoSoBenhNhan {
   // Phiếu khám sàng lọc nhãn khoa
   benhSu           Boolean?
   loaiBenhSu       String        @default("[]")
+  loaiBenhSuKhac   String?
   chieuCao         String?
   canNang          String?
   benhLy           String?
@@ -116,6 +122,7 @@ model HoSoBenhNhan {
   diemDon         String?
   gioDon          String?
   nhom            String?
+  ghiChuTuVan     String?
   followUpStatus  String?
   nguoiPhuTrachMa String?
   nguoiPhuTrach   NguoiDungCSR?  @relation("PhuTrach", fields: [nguoiPhuTrachMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
