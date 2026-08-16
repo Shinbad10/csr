@@ -2237,9 +2237,9 @@ export default function ExamPage() {
                 <button
                   type="button"
                   onClick={handleQuickNormal}
-                  disabled={saving}
-                  className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:pointer-events-none"
-                  title="Lưu nhanh kết quả Bình thường (Thị lực 10/10, Theo dõi) và tự động chuyển ca kế tiếp"
+                  disabled={saving || !!isDone}
+                  className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                  title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 10/10, Theo dõi) và tự động chuyển ca kế tiếp"}
                 >
                   <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
                   <span className="hidden sm:inline">Khám bình thường</span>
