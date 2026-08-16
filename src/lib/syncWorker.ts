@@ -32,7 +32,7 @@ export async function drainSyncQueue(limit = 50): Promise<DrainResult> {
       byHoSo.set(r.hoSoId, g);
     }
 
-    if (byHoSo.size > 1) {
+    if (byHoSo.size >= 1) {
       // Đồng bộ theo lô tốc độ cao (2 request API thay vì 2N request)
       const hoSoIds = Array.from(byHoSo.keys());
       const allIds = rows.map((r) => r.id);

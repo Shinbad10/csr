@@ -60,11 +60,17 @@ function getClient(): JWT {
   return _client;
 }
 
-// fetch có Authorization + timeout 10s + retry 1 lần khi 401 (token hết hạn) hoặc lỗi mạng.
-async function request(url: string, method: string, body?: unknown, retry = true): Promise<unknown> {
+// Cache các tab đã kiểm tra tồn tại để không gọi GET metadata liên tục gây 429
+const _verifiedTabs = new Set<string>();
+
+// Cache vị trí cột Mã BN theo spreadsheetId + tab (hạn 30s) để giảm tải Read request
+const _maBnCache = new Map<string, { map: Map<string, number>; expires: number }>();
+
+// fetch có Authorization + timeout 15s + retry tự động với 401 & 429 (exponential backoff).
+async function request(url: string, method: string, body?: unknown, retryCount = 0): Promise<unknown> {
   const token = (await getClient().getAccessToken()).token;
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
   try {
     const res = await fetch(url, {
       method,
@@ -72,12 +78,23 @@ async function request(url: string, method: string, body?: unknown, retry = true
       body: body ? JSON.stringify(body) : undefined,
       signal: ctrl.signal,
     });
-    if (res.status === 401 && retry) { _client = null; return request(url, method, body, false); }
+    if (res.status === 401 && retryCount < 2) {
+      _client = null;
+      return request(url, method, body, retryCount + 1);
+    }
+    if (res.status === 429 && retryCount < 4) {
+      const backoff = Math.pow(2, retryCount) * 1500 + Math.floor(Math.random() * 500);
+      console.warn(`[googleSheet] Rate limited (429), chờ ${backoff}ms và thử lại (lần ${retryCount + 1}/4)...`);
+      await new Promise((r) => setTimeout(r, backoff));
+      return request(url, method, body, retryCount + 1);
+    }
     if (!res.ok) throw new Error(`Google ${res.status}: ${await res.text()}`);
     return res.status === 204 ? null : await res.json();
   } catch (e) {
-    if (retry && e instanceof Error && (e.name === "AbortError" || e.message.includes("fetch")))
-      return request(url, method, body, false);
+    if (retryCount < 2 && e instanceof Error && (e.name === "AbortError" || e.message.includes("fetch"))) {
+      await new Promise((r) => setTimeout(r, 1000));
+      return request(url, method, body, retryCount + 1);
+    }
     throw e;
   } finally {
     clearTimeout(timer);
@@ -101,6 +118,7 @@ async function createSpreadsheet(coSo: { id: string; ten: string }): Promise<str
   else console.warn(`[sync] Đã tạo Sheet cho ${coSo.id} nhưng GOOGLE_SHARE_EMAIL trống → chỉ service account thấy file.`);
 
   await getPrisma().coSo.update({ where: { id: coSo.id }, data: { sheetId: id } });
+  _verifiedTabs.add(`${id}::${TAB}`);
   return id;
 }
 
@@ -113,8 +131,11 @@ async function resolveSheet(coSo: { id: string; ten: string; sheetId?: string | 
   return { id: await createSpreadsheet(coSo), fresh: true };
 }
 
-// Đảm bảo spreadsheet có TAB `tab` + hàng tiêu đề. Idempotent (tạo tab nếu thiếu).
+// Đảm bảo spreadsheet có TAB `tab` + hàng tiêu đề. Idempotent (tạo tab nếu thiếu, có cache).
 async function ensureTab(spreadsheetId: string, tab: string): Promise<void> {
+  const key = `${spreadsheetId}::${tab}`;
+  if (_verifiedTabs.has(key)) return;
+
   const meta = (await sheets(`${spreadsheetId}?fields=sheets.properties.title`, "GET")) as {
     sheets?: { properties?: { title?: string } }[];
   };
@@ -123,6 +144,7 @@ async function ensureTab(spreadsheetId: string, tab: string): Promise<void> {
 
   // Luôn ghi lại hàng tiêu đề (idempotent, đệm rộng) để cột mới/bỏ cột lan tới cả tab đã tồn tại.
   await sheets(`${spreadsheetId}/values/${enc(`${tab}!A1:${WIDE_COL}1`)}?valueInputOption=RAW`, "PUT", { values: [padRow([...HOSO_HEADER])] });
+  _verifiedTabs.add(key);
 }
 
 // Xác định (spreadsheetId, tab) của 1 cơ sở theo chế độ dùng chung / file riêng.
@@ -226,13 +248,22 @@ export async function batchSyncHoSos(hoSoIds: string[]): Promise<{ processed: nu
       const coSo = list[0].coSo!;
       const { spreadsheetId, tab } = await targetOf(coSo);
 
-      // Lấy toàn bộ cột Mã BN 1 lần duy nhất cho cả lô
-      const range = `${tab}!${colA(MABN_COL)}:${colA(MABN_COL)}`;
-      const col = (await sheets(`${spreadsheetId}/values/${enc(range)}`, "GET")) as { values?: string[][] };
-      const maBnToRow = new Map<string, number>();
-      (col.values || []).forEach((r, idx) => {
-        if (r[0]) maBnToRow.set(r[0], idx + 1); // 1-based row number
-      });
+      // Lấy toàn bộ cột Mã BN (có cache 30s) cho cả lô
+      const cacheKey = `${spreadsheetId}::${tab}`;
+      const now = Date.now();
+      let maBnToRow: Map<string, number>;
+      const cached = _maBnCache.get(cacheKey);
+      if (cached && cached.expires > now) {
+        maBnToRow = cached.map;
+      } else {
+        const range = `${tab}!${colA(MABN_COL)}:${colA(MABN_COL)}`;
+        const col = (await sheets(`${spreadsheetId}/values/${enc(range)}`, "GET")) as { values?: string[][] };
+        maBnToRow = new Map<string, number>();
+        (col.values || []).forEach((r, idx) => {
+          if (r[0]) maBnToRow.set(r[0], idx + 1); // 1-based row number
+        });
+        _maBnCache.set(cacheKey, { map: maBnToRow, expires: now + 30_000 });
+      }
 
       const updates: { range: string; values: (string | number)[][] }[] = [];
       const appends: (string | number)[][] = [];
@@ -256,6 +287,7 @@ export async function batchSyncHoSos(hoSoIds: string[]): Promise<{ processed: nu
 
       if (appends.length > 0) {
         await sheets(`${spreadsheetId}/values/${enc(`${tab}!A1`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, "POST", { values: appends });
+        _maBnCache.delete(cacheKey);
       }
 
       processed += list.length;
