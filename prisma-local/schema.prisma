@@ -33,6 +33,7 @@ model CoSo {
 
 model NguoiDungCSR {
   maNV          String          @id
+  maHIS         String?         // Mã nhân sự / bác sĩ trên HIS (NULL nếu tạo trên CSR)
   hoTen         String
   vaiTro        String
   coSoId        String?

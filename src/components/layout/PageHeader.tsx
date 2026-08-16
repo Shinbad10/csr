@@ -15,7 +15,7 @@ interface PageHeaderProps {
   guideTitle?: string;
 }
 
-export default function PageHeader({ title, description, actions, guide, guideTip, guideTitle }: PageHeaderProps) {
+export default function PageHeader({ title, description, actions }: PageHeaderProps) {
   // Helper to format string titles into VisiHub's signature editorial style (Fraunces + italic teal accent)
   const renderEditorialTitle = (t: React.ReactNode) => {
     if (typeof t !== "string") return t;
@@ -30,28 +30,27 @@ export default function PageHeader({ title, description, actions, guide, guideTi
     return (
       <>
         <span>{mainText}</span>
-        <span className="italic font-normal text-[var(--teal)] ml-1.5">{accentText}</span>
+        <span className="italic font-normal text-[var(--teal-deep)] ml-1.5">{accentText}</span>
       </>
     );
   };
 
   return (
-    <div className="bg-white border-b border-[var(--line)] px-4 sm:px-6 py-2.5 sm:py-3 shrink-0 shadow-[var(--shadow-xs)] animate-fade-in">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 lg:gap-4">
+    <div className="bg-white rounded-xl border border-[var(--line-strong)] px-4 sm:px-5 py-1.5 sm:py-2 shadow-xs animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="font-serif text-[18px] sm:text-[21px] xl:text-[22px] font-bold tracking-[-0.025em] text-[var(--ink)] leading-tight flex items-center flex-wrap">
+          <h1 className="font-serif text-[14.5px] sm:text-[16px] font-bold tracking-[-0.01em] text-[var(--ink)] leading-tight flex items-center flex-wrap">
             {renderEditorialTitle(title)}
           </h1>
           {description && (
-            <div className="text-[12px] text-[var(--mute)] mt-0.5 flex items-center gap-2 flex-wrap font-medium">
+            <div className="text-[11px] sm:text-[11.5px] text-[var(--mute)] mt-0.5 flex items-center gap-1.5 flex-wrap font-medium">
               {description}
             </div>
           )}
         </div>
-        {(actions || guide) && (
-          <div className="shrink-0 flex items-center gap-2 flex-wrap">
+        {actions && (
+          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
             {actions}
-            {guide && guide.length > 0 && <HelpGuide title={guideTitle || (typeof title === "string" ? title : undefined)} steps={guide} tip={guideTip} />}
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@
  * Server không bao giờ tin client: mọi mutation đều gọi can() trong handler.
  */
 
-export type Role = "CSKH" | "TuVanVien" | "KeToan" | "QuanLy";
+export type Role = "MKT" | "TuVanVien" | "KeToan" | "QuanLy";
 
 export type Capability =
   | "buoikham.manage" // tạo / quản lý buổi khám
@@ -16,12 +16,31 @@ export type Capability =
   | "admin.masterdata"; // quản trị cơ sở / tài khoản
 
 const MATRIX: Record<Role, Capability[]> = {
-  CSKH: ["buoikham.manage", "hoso.create", "hoso.treatment", "hoso.followup"],
-  TuVanVien: ["hoso.clinical", "hoso.followup"],
+  MKT: [
+    "buoikham.manage",
+    "hoso.create",
+    "hoso.clinical",
+    "hoso.treatment",
+    "hoso.followup",
+    "report.export",
+  ],
+  TuVanVien: [
+    "buoikham.manage",
+    "hoso.create",
+    "hoso.clinical",
+    "hoso.treatment",
+    "hoso.followup",
+    "report.export",
+  ],
   KeToan: ["report.export"],
   QuanLy: [
-    "buoikham.manage", "hoso.create", "hoso.clinical", "hoso.treatment",
-    "hoso.followup", "report.export", "admin.masterdata",
+    "buoikham.manage",
+    "hoso.create",
+    "hoso.clinical",
+    "hoso.treatment",
+    "hoso.followup",
+    "report.export",
+    "admin.masterdata",
   ],
 };
 
@@ -35,10 +54,12 @@ export function normalizeRole(raw?: string | null): Role {
       return "TuVanVien";
     case "KeToan":
       return "KeToan";
+    case "MKT":
+    case "Marketing":
     case "CSKH":
-      return "CSKH";
+      return "MKT";
     default:
-      return "CSKH";
+      return "MKT";
   }
 }
 
@@ -55,7 +76,7 @@ export function isCorporate(role: string | null | undefined): boolean {
 }
 
 export const ROLE_LABEL: Record<Role, string> = {
-  CSKH: "CSKH",
+  MKT: "Marketing (MKT)",
   TuVanVien: "Tư vấn viên",
   KeToan: "Kế toán",
   QuanLy: "Quản lý",
@@ -63,5 +84,6 @@ export const ROLE_LABEL: Record<Role, string> = {
 
 export function roleLabel(raw?: string | null): string {
   if (raw === "BacSi" || raw === "Bác sĩ" || raw === "Bác sỹ") return "Bác sĩ";
+  if (raw === "MKT" || raw === "Marketing" || raw === "CSKH") return "MKT";
   return ROLE_LABEL[normalizeRole(raw)];
 }

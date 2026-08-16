@@ -33,6 +33,7 @@ model CoSo {
 
 model NguoiDungCSR {
   maNV         String          @id
+  maHIS        String? // Mã nhân sự / bác sĩ trên HIS (NULL nếu tạo trên CSR)
   hoTen        String
   vaiTro       String
   coSoId       String?
@@ -86,15 +87,21 @@ model HoSoBenhNhan {
   khuPho       String?
   xaPhuong     String?
 
-  thiLucMP     String?
-  thiLucMT     String?
-  chanDoan     String  @default("[]")
-  chanDoanKhac String?
-  khuyenNghi   String?
+  thiLucMP       String?
+  thiLucMT       String?
+  matKham        String?
+  chanDoanMP     String?
+  chanDoanKhacMP String?
+  chanDoanMT     String?
+  chanDoanKhacMT String?
+  chanDoan       String  @default("[]")
+  chanDoanKhac   String?
+  khuyenNghi     String?
 
   // Phiếu khám sàng lọc nhãn khoa
   benhSu           Boolean?
   loaiBenhSu       String   @default("[]")
+  loaiBenhSuKhac   String?
   chieuCao         String?
   canNang          String?
   benhLy           String?
@@ -116,6 +123,7 @@ model HoSoBenhNhan {
   diemDon          String?
   gioDon           String?
   nhom             String?
+  ghiChuTuVan      String?
   followUpStatus   String?
   nguoiPhuTrachMa  String?
   nguoiPhuTrach    NguoiDungCSR?   @relation("PhuTrach", fields: [nguoiPhuTrachMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)

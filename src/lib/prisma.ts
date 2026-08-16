@@ -7,6 +7,12 @@ import { getDbMode } from "./db-mode";
 
 const g = global as unknown as { cloudPrisma?: CloudClient; localPrisma?: LocalClient };
 
+// Xoá instance cache cũ trong dev mode để nạp Prisma Client mới sinh
+if (process.env.NODE_ENV !== "production") {
+  g.cloudPrisma = undefined;
+  g.localPrisma = undefined;
+}
+
 // Parse chuỗi sqlserver://host:port;database=..;user=..;password=..;encrypt=..;trustServerCertificate=..
 function parseSqlServerUrl(url: string) {
   const m = url.match(/sqlserver:\/\/([^;:]+)(?::(\d+))?;?(.*)/);
@@ -41,7 +47,7 @@ export function getLocalPrisma(): LocalClient {
   if (g.localPrisma) return g.localPrisma;
   const adapter = new PrismaBetterSqlite3({ url: process.env.LOCAL_DATABASE_URL || "file:./local.db" });
   const prisma = new LocalClient({ adapter, log: ["error"] });
-  if (process.env.NODE_ENV !== "production") g.localPrisma = prisma;
+  g.localPrisma = prisma;
   return prisma;
 }
 

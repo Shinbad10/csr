@@ -40,7 +40,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const update: Record<string, unknown> = { ...body, updatedBy: session.user.id };
     delete update.daNhacLich; // cờ kích hoạt, không phải cột trong DB
 
-    if (body.chanDoan && typeof body.chanDoan !== "string") update.chanDoan = JSON.stringify(body.chanDoan);
+    if (body.chanDoan !== undefined && typeof body.chanDoan !== "string") {
+      update.chanDoan = JSON.stringify(body.chanDoan ?? []);
+    }
+    if (body.chanDoanMP !== undefined && typeof body.chanDoanMP !== "string") {
+      update.chanDoanMP = body.chanDoanMP == null ? null : JSON.stringify(body.chanDoanMP);
+    }
+    if (body.chanDoanMT !== undefined && typeof body.chanDoanMT !== "string") {
+      update.chanDoanMT = body.chanDoanMT == null ? null : JSON.stringify(body.chanDoanMT);
+    }
 
     // Các trường mảng của phiếu sàng lọc → JSON string (giống chanDoan)
     for (const f of ["loaiBenhSu", "loaiBenhLy"] as const)
@@ -68,23 +76,31 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       const v = eff("loaiBenhLy");
       return typeof v === "string" ? parseDiag(v) : Array.isArray(v) ? v : [];
     })();
+    const chanDoanArr: string[] = (() => {
+      const v = eff("chanDoan");
+      return typeof v === "string" ? parseDiag(v) : Array.isArray(v) ? v : [];
+    })();
+    const chanDoanMPArr: string[] = (() => {
+      const v = eff("chanDoanMP");
+      return typeof v === "string" ? parseDiag(v) : Array.isArray(v) ? v : [];
+    })();
+    const chanDoanMTArr: string[] = (() => {
+      const v = eff("chanDoanMT");
+      return typeof v === "string" ? parseDiag(v) : Array.isArray(v) ? v : [];
+    })();
+    const hasEyeDiag = chanDoanArr.length > 0 || chanDoanMPArr.length > 0 || chanDoanMTArr.length > 0;
 
-    if (isFieldOn(cfg, "benhLy") && isFieldOn(cfg, "loaiBenhLy") && eff("benhLy") === "Nghi ngờ bệnh lý" && loaiBenhLyArr.length === 0)
+    // Chỉ bắt buộc loaiBenhLy khi cơ sở dùng phiếu tổng quát (không dùng chẩn đoán mắt) và chưa có bất kỳ chẩn đoán nào
+    if (!isFieldOn(cfg, "chanDoan") && isFieldOn(cfg, "benhLy") && isFieldOn(cfg, "loaiBenhLy") && eff("benhLy") === "Nghi ngờ bệnh lý" && loaiBenhLyArr.length === 0 && !hasEyeDiag)
       return NextResponse.json({ error: "Nghi ngờ bệnh lý: vui lòng chọn ít nhất một Loại bệnh lý" }, { status: 400 });
     if (loaiBenhLyArr.includes("Khác") && !eff("loaiBenhLyKhac"))
       return NextResponse.json({ error: "Vui lòng ghi rõ Loại bệnh lý khác" }, { status: 400 });
     if (isFieldOn(cfg, "huongXuTri") && eff("huongXuTri") === "Điều trị khác" && !eff("huongXuTriKhac"))
       return NextResponse.json({ error: "Vui lòng ghi rõ nội dung Điều trị khác" }, { status: 400 });
-    if (isFieldOn(cfg, "xacNhanDieuTri") && eff("xacNhanDieuTri") === false && !eff("lyDoKhongDieuTri"))
-      return NextResponse.json({ error: "Xác nhận điều trị = KHÔNG: vui lòng ghi rõ lý do" }, { status: 400 });
 
     // BR-08 suy trạng thái (dùng khuyenNghi đã đồng bộ từ huongXuTri)
     const next = inferNextState(current.trangThai, { ...body, chanDoan: update.chanDoan, benhLy: eff("benhLy"), khuyenNghi: update.khuyenNghi ?? body.khuyenNghi });
     update.trangThai = next;
-
-    // BR-04
-    if (next === "NhomA" && !body.ngayDieuTri && !current.ngayDieuTri)
-      return NextResponse.json({ error: "Nhóm A bắt buộc nhập Ngày điều trị" }, { status: 400 });
 
     // BR-03 người chốt (tư vấn viên) = người đăng nhập khi LƯU phần tư vấn (nhóm A/B)
     if ((next === "NhomA" || next === "NhomB") && !current.tuVanVienMa) update.tuVanVienMa = session.user.id;

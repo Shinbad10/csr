@@ -26,57 +26,69 @@ export async function GET(request: Request) {
       });
     }
 
-    // 1. Lấy danh sách người dùng có vai trò Bác sĩ (bao gồm cả bác sĩ đã đồng bộ từ DMNhanSu HIS)
-    const users = await prisma.nguoiDungCSR.findMany({
-      where: {
-        trangThai: "active",
-        OR: [
-          { vaiTro: "BacSi" },
-          { vaiTro: { contains: "Bác sỹ" } },
-          { vaiTro: { contains: "Bác sĩ" } },
-          { hoTen: { startsWith: "BS" } },
-          { hoTen: { startsWith: "Bác sỹ" } },
-          { hoTen: { startsWith: "Bác sĩ" } },
-        ],
-      },
-      select: { hoTen: true },
-    });
+    // 1. Chỉ lấy danh sách người dùng chính thức có vai trò Bác sĩ (bao gồm cả bác sĩ đã đồng bộ từ DMNhanSu HIS)
+    let users: any[] = [];
+    try {
+      users = await prisma.nguoiDungCSR.findMany({
+        where: {
+          trangThai: "active",
+          OR: [
+            { vaiTro: "BacSi" },
+            { vaiTro: { contains: "BacSi" } },
+            { vaiTro: { contains: "Bác sỹ" } },
+            { vaiTro: { contains: "Bác sĩ" } },
+            { hoTen: { startsWith: "BS" } },
+            { hoTen: { startsWith: "Bác sỹ" } },
+            { hoTen: { startsWith: "Bác sĩ" } },
+          ],
+        },
+        select: { maNV: true, hoTen: true, maHIS: true, coSoId: true } as any,
+        orderBy: { hoTen: "asc" },
+      });
+    } catch (err) {
+      // Fallback nếu Prisma client đang reload
+      users = await prisma.nguoiDungCSR.findMany({
+        where: {
+          trangThai: "active",
+          OR: [
+            { vaiTro: "BacSi" },
+            { vaiTro: { contains: "BacSi" } },
+            { vaiTro: { contains: "Bác sỹ" } },
+            { vaiTro: { contains: "Bác sĩ" } },
+            { hoTen: { startsWith: "BS" } },
+            { hoTen: { startsWith: "Bác sỹ" } },
+            { hoTen: { startsWith: "Bác sĩ" } },
+          ],
+        },
+        select: { maNV: true, hoTen: true, coSoId: true },
+        orderBy: { hoTen: "asc" },
+      });
+    }
 
-    // 2. Lấy danh sách bác sĩ đã từng ghi nhận tại các buổi khám
-    const buoiKhams = await prisma.buoiKham.findMany({
-      where: { bacSiKham: { not: null } },
-      select: { bacSiKham: true },
-      distinct: ["bacSiKham"],
-    });
-
-    // 3. Lấy danh sách bác sĩ chỉ định trên hồ sơ bệnh nhân
-    const hoSos = await prisma.hoSoBenhNhan.findMany({
-      where: { bacSiChiDinh: { not: null } },
-      select: { bacSiChiDinh: true },
-      distinct: ["bacSiChiDinh"],
-    });
-
-    // Gộp tất cả danh sách và lọc trùng, loại bỏ chuỗi rỗng
-    const set = new Set<string>();
-
+    // Lọc trùng theo họ tên
+    const map = new Map<string, { maNV: string; hoTen: string; maHIS: string | null; coSoId: string | null }>();
     for (const u of users) {
-      if (u.hoTen?.trim()) set.add(u.hoTen.trim());
-    }
-    for (const b of buoiKhams) {
-      if (b.bacSiKham?.trim()) set.add(b.bacSiKham.trim());
-    }
-    for (const h of hoSos) {
-      if (h.bacSiChiDinh?.trim()) set.add(h.bacSiChiDinh.trim());
+      const name = u.hoTen?.trim();
+      if (name && name.length >= 3) {
+        if (!map.has(name) || (!map.get(name)?.maHIS && u.maHIS)) {
+          map.set(name, {
+            maNV: u.maNV,
+            hoTen: name,
+            maHIS: u.maHIS || null,
+            coSoId: u.coSoId || null,
+          });
+        }
+      }
     }
 
-    const doctors = Array.from(set).sort((a, b) => a.localeCompare(b, "vi"));
+    const doctors = Array.from(map.values()).sort((a, b) => a.hoTen.localeCompare(b.hoTen, "vi"));
     return NextResponse.json(doctors);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }
 }
 
-// Endpoint POST cho phép đồng bộ ngay lập tức từ bảng DMNhanSu HIS của từng bệnh viện
+// Endpoint POST cho phép đồng bộ từ HIS hoặc thêm bác sĩ mới (để trống mã HIS)
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -84,7 +96,61 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const coSoId = body.coSoId || session?.user?.coSoId || null;
+    const prisma = getPrisma();
 
+    // 1. Thêm bác sĩ mới thủ công (để trống mã HIS chờ đồng bộ sau)
+    if (body.action === "create" || (body.hoTen && body.hoTen.trim())) {
+      const hoTen = String(body.hoTen).trim();
+      let existing = await prisma.nguoiDungCSR.findFirst({
+        where: { hoTen: { equals: hoTen } },
+      });
+
+      if (!existing) {
+        const cleanName = hoTen.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+        const rand = Math.random().toString(36).slice(2, 6);
+        const maNV = `BS-${Date.now().toString().slice(-6)}-${rand}`.toUpperCase();
+        const tenDangNhap = `bs_${cleanName || "user"}_${rand}`.slice(0, 50);
+
+        try {
+          existing = await (prisma.nguoiDungCSR as any).create({
+            data: {
+              maNV,
+              maHIS: null, // Để trống mã HIS theo yêu cầu
+              hoTen,
+              vaiTro: "BacSi",
+              coSoId,
+              tenDangNhap,
+              matKhauHash: "CSR_LOCAL_CREATED",
+              trangThai: "active",
+            },
+          });
+        } catch {
+          existing = await prisma.nguoiDungCSR.create({
+            data: {
+              maNV,
+              hoTen,
+              vaiTro: "BacSi",
+              coSoId,
+              tenDangNhap,
+              matKhauHash: "CSR_LOCAL_CREATED",
+              trangThai: "active",
+            },
+          });
+        }
+      }
+
+      return NextResponse.json({
+        ok: true,
+        doctor: {
+          maNV: existing?.maNV || `BS-${Date.now()}`,
+          hoTen: existing?.hoTen || hoTen,
+          maHIS: (existing as any)?.maHIS || null,
+        },
+        message: `Đã lưu bác sĩ "${hoTen}" (Mã HIS: Trống - Chờ đồng bộ)`,
+      });
+    }
+
+    // 2. Đồng bộ danh mục bác sĩ từ HIS
     const res = await syncHisDoctors(coSoId);
     lastSyncTimestamp = Date.now();
 
@@ -95,6 +161,6 @@ export async function POST(request: Request) {
       message: `Đã đồng bộ ${res.syncedCount} bác sĩ từ HIS DMNhanSu`,
     });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi đồng bộ HIS" }, { status: 500 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi xử lý" }, { status: 500 });
   }
 }

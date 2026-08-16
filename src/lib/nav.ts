@@ -20,8 +20,8 @@ export const MENU_GROUPS: NavGroup[] = [
   {
     title: "Điều trị & Chăm sóc",
     items: [
-      { label: "Phân nhóm A/B", icon: UserCog, href: "/tu-van" },
-      { label: "Theo dõi A/B", icon: PhoneCall, href: "/theo-doi", cap: "hoso.followup" },
+      { label: "Tư vấn điều trị", icon: UserCog, href: "/tu-van" },
+      { label: "Theo dõi & Chăm sóc", icon: PhoneCall, href: "/theo-doi", cap: "hoso.followup" },
       { label: "Đối chiếu HIS", icon: Activity, href: "/doi-chieu-his", cap: "hoso.followup" },
     ],
   },

@@ -15,7 +15,7 @@ interface CoSo { id: string; ten: string; diaChi: string | null; trangThai: stri
 interface NguoiDung { maNV: string; hoTen: string; vaiTro: string; coSoId: string | null; tenDangNhap: string; trangThai: string; coSo?: { ten: string } }
 interface Audit { id: number; bang: string; banGhiId: string; hanhDong: string; nguoiDung: string; thoiDiem: string }
 
-const ROLES = ["BacSi", "CSKH", "TuVanVien", "KeToan", "QuanLy"];
+const ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "QuanLy"];
 
 export default function QuanTriPage() {
   const { addToast } = useToast();
@@ -552,7 +552,7 @@ function UserModal({ cosos, users, edit, onClose, onDone }: { cosos: CoSo[]; use
     return `${prefix}${String(maxNum + 1).padStart(2, "0")}`;
   }, [edit, users]);
 
-  const [maNV, setMaNV] = useState((edit && edit.maNV) ? edit.maNV : autoMaNV); const [hoTen, setHoTen] = useState(edit?.hoTen ?? ""); const [vaiTro, setVaiTro] = useState(edit?.vaiTro ?? "CSKH"); const [coSoId, setCoSoId] = useState(edit?.coSoId ?? ""); const [tenDangNhap, setTen] = useState(edit?.tenDangNhap ?? ""); const [matKhau, setMk] = useState(""); const [saving, setSaving] = useState(false); const [err, setErr] = useState("");
+  const [maNV, setMaNV] = useState((edit && edit.maNV) ? edit.maNV : autoMaNV); const [hoTen, setHoTen] = useState(edit?.hoTen ?? ""); const [vaiTro, setVaiTro] = useState(edit?.vaiTro ?? "MKT"); const [coSoId, setCoSoId] = useState(edit?.coSoId ?? ""); const [tenDangNhap, setTen] = useState(edit?.tenDangNhap ?? ""); const [matKhau, setMk] = useState(""); const [saving, setSaving] = useState(false); const [err, setErr] = useState("");
   
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setErr(""); setSaving(true);
@@ -596,7 +596,7 @@ function UserModal({ cosos, users, edit, onClose, onDone }: { cosos: CoSo[]; use
           <SectionHeader n={2} accent="Phân quyền & Vai trò" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Vai trò hệ thống" required>
-              <Dropdown value={vaiTro} mono={false} options={ROLES} labels={{ BacSi: "Bác sĩ", TuVanVien: "Tư vấn viên", KeToan: "Kế toán", QuanLy: "Quản lý", CSKH: "CSKH" }} onChange={setVaiTro} />
+              <Dropdown value={vaiTro} mono={false} options={ROLES} labels={{ BacSi: "Bác sĩ", MKT: "Marketing (MKT)", TuVanVien: "Tư vấn viên", KeToan: "Kế toán", QuanLy: "Quản lý", CSKH: "Marketing (MKT)" }} onChange={setVaiTro} />
             </Field>
             <Field label="Cơ sở làm việc">
               <Dropdown value={coSoId} mono={false} placeholder={vaiTro === "QuanLy" ? "Toàn hệ thống" : "Chọn cơ sở…"} options={["", ...cosos.filter((c) => c.trangThai === "active").map((c) => c.id)]} labels={Object.fromEntries(cosos.map((c) => [c.id, c.ten]))} onChange={setCoSoId} />
@@ -608,7 +608,7 @@ function UserModal({ cosos, users, edit, onClose, onDone }: { cosos: CoSo[]; use
           <SectionHeader n={3} accent="Thông tin đăng nhập" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Tên đăng nhập" required>
-              <input value={tenDangNhap} onChange={(e) => setTen(e.target.value)} required disabled={!!edit} className="input-field font-mono h-10 disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="VD: cskh.hcm" />
+              <input value={tenDangNhap} onChange={(e) => setTen(e.target.value)} required disabled={!!edit} className="input-field font-mono h-10 disabled:bg-[var(--surface-hover)] disabled:text-[var(--mute)]" placeholder="VD: mkt.hcm" />
             </Field>
             <Field label={edit ? "Mật khẩu mới" : "Mật khẩu"} required={!edit}>
               <input type="text" value={matKhau} onChange={(e) => setMk(e.target.value)} required={!edit} className="input-field font-mono h-10" placeholder={edit ? "Để trống nếu không đổi..." : "Nhập mật khẩu..."} />

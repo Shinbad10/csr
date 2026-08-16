@@ -6,8 +6,9 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import {
   Loader2, Search, UserPlus, SlidersHorizontal, RefreshCw, Check, Printer,
-  LogOut, X, ScanLine, Save, ClipboardList, Pencil, Users,
-  MapPin, Shield, Camera, AlertTriangle, ArrowUpDown, ChevronRight, ChevronDown, CheckCircle2, Clock, Sparkles, UserCheck,
+  LogOut, X, ScanLine, Save, ClipboardList, Pencil, Users, Plus,
+  MapPin, Shield, Camera, AlertTriangle, ArrowUpDown, ChevronRight, ChevronLeft, ChevronDown, CheckCircle2, Clock, Sparkles, UserCheck,
+  Copy, ArrowRightLeft, Trash2, Eye, ArrowRight, ArrowLeft, Zap, CheckCheck,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -21,6 +22,7 @@ import {
 } from "@/lib/formFields";
 import { type ThongTinTheBHYT } from "@/lib/bhxh";
 import { Field, Select, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
+import { DoctorAutocomplete, parseDoctorList } from "@/components/csr/DoctorAutocomplete";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { CameraScannerModal } from "@/components/csr/CameraScannerModal";
@@ -291,22 +293,40 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
                     placeholder="VD: DN4838321436964"
                     maxLength={15}
                   />
-                  {bhyt && <button type="button" onClick={() => { setBhyt(""); setTheBhyt(null); setLookup("idle"); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"><X className="w-4 h-4" /></button>}
+                  {bhyt && (
+                    <button
+                      type="button"
+                      onClick={() => { setBhyt(""); setTheBhyt(null); setLookup("idle"); }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <button
                   type="button"
-                  onClick={() => lookupBhxh(bhyt, hoTen, ngaySinh)}
-                  disabled={!bhyt.trim() || lookup === "loading"}
-                  className="btn btn-secondary px-3.5 font-bold shrink-0 border-[var(--line-strong)] hover:border-[var(--navy)] text-[var(--navy)] text-[13px]"
-                  title="Tra cứu BHYT"
+                  onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+                  disabled={(!bhyt.trim() && !cccd.trim()) || lookup === "loading"}
+                  className="btn btn-secondary px-3.5 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-white hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  title="Bấm để tra cứu thông tin thẻ BHYT trên cổng BHXH"
                 >
-                  {lookup === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  {lookup === "loading" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[var(--teal-deep)]" />
+                      <span>Đang tra...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 text-[var(--teal-deep)]" />
+                      <span>Tra cứu BHYT</span>
+                    </>
+                  )}
                 </button>
               </div>
             </Field>
           </div>
 
-          {/* Row 2: Giới tính * (6) | CCCD (6 - bỏ required) */}
+          {/* Row 2: Giới tính * (6) | CCCD (6) */}
           <div className="sm:col-span-6">
             <Field label="Giới tính" required>
               <div className="flex items-center gap-5 h-10 px-1">
@@ -337,7 +357,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
             </Field>
           </div>
 
-          {/* Row 4: Địa chỉ (12) - Đã bỏ khu phố, xã phường */}
+          {/* Row 4: Địa chỉ (12) */}
           {isFieldOn(cfg, "diaChi") && (
             <div className="sm:col-span-12">
               <Field label="Địa chỉ">
@@ -346,10 +366,34 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
             </div>
           )}
 
-          {/* Nếu có nhập BHYT hoặc có thông tin tra cứu -> hiển thị Mức hưởng & kết quả tra cứu */}
-          {(bhyt.trim().length > 0 || theBhyt) && (
+          {/* Nếu có BHYT / lỗi tra cứu / có dữ liệu thẻ -> Hiển thị Mức hưởng BHYT (%) để nhân viên chọn */}
+          {(bhyt.trim().length > 0 || theBhyt || lookup === "fail") && (
             <div className="sm:col-span-6">
-              <Select label="Mức hưởng BHYT (%)" req value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+              <Select label="Mức hưởng BHYT (%)" value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+            </div>
+          )}
+
+          {/* Thông báo lỗi tra cứu BHYT kèm hướng dẫn trấn an không ảnh hưởng tiếp nhận */}
+          {lookup === "fail" && (
+            <div className="sm:col-span-12 p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-[12.5px] text-amber-900 flex items-start justify-between gap-3 animate-fade-in shadow-2xs">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-bold text-amber-900">
+                    {lookupMsg || "Chưa kết nối được cổng BHXH"}
+                  </div>
+                  <div className="text-[12px] text-amber-700 mt-0.5 leading-relaxed">
+                    Lỗi tra cứu không ảnh hưởng đến tiếp nhận. Bạn vẫn có thể nhập Mã thẻ BH hoặc chọn <b>Mức hưởng BHYT (%)</b> để tiếp nhận bình thường.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+                className="px-3 py-1.5 text-xs font-bold bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-100 shrink-0 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Thử lại
+              </button>
             </div>
           )}
 
@@ -650,13 +694,32 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
             </div>
             <button
               type="button"
-              onClick={() => lookupBhxh(bhyt, hoTen, ngaySinh)}
-              disabled={!bhyt.trim() || lookup === "loading"}
-              className="btn btn-secondary px-4 font-bold shrink-0 border-[var(--line-strong)] hover:border-[var(--navy)] text-[var(--navy)]"
+              onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+              disabled={(!bhyt.trim() && !cccd.trim()) || lookup === "loading"}
+              className="btn btn-secondary px-4 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-white hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              title="Bấm để tra cứu thông tin thẻ BHYT trên cổng BHXH"
             >
-              {lookup === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Tra cứu
+              {lookup === "loading" ? <Loader2 className="w-4 h-4 animate-spin text-[var(--teal-deep)]" /> : <Search className="w-4 h-4 text-[var(--teal-deep)]" />} Tra cứu BHYT
             </button>
           </div>
+          {lookup === "fail" && (
+            <div className="mt-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-[12px] text-amber-900 flex items-start justify-between gap-2.5 animate-fade-in shadow-2xs">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-bold text-amber-900">{lookupMsg || "Chưa kết nối được cổng BHXH"}</div>
+                  <div className="text-[11.5px] text-amber-700 mt-0.5">Không ảnh hưởng đến lưu hồ sơ. Bạn có thể tự chỉnh sửa thông tin hoặc bấm Thử lại.</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+                className="px-2.5 py-1 text-xs font-bold bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-100 shrink-0 flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Thử lại
+              </button>
+            </div>
+          )}
           {lookup === "ok" && (
             <div className="mt-2 text-[12.5px] font-semibold text-[var(--teal-deep)] flex items-center justify-between">
               <span className="flex items-center gap-1.5">
@@ -703,7 +766,7 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
           )}
         </Field>
 
-        <Select label="Mức hưởng BHYT (%)" req value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+        <Select label="Mức hưởng BHYT (%)" value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
 
         {isFieldOn(cfg, "diaChi") && (
           <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" placeholder="Số nhà, đường, thôn/ấp..." /></Field>
@@ -739,10 +802,13 @@ export default function ExamPage() {
   const [loading, setLoading] = useState(true);
   const [showReg, setShowReg] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showCompletePending, setShowCompletePending] = useState(false);
+  const [completingPending, setCompletingPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
   const [sortBy, setSortBy] = useState<"queue" | "stt_asc" | "stt_desc" | "latest">("queue");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [newPatientAnimation, setNewPatientAnimation] = useState(false);
 
   const [f, setF] = useState(EMPTY);
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
@@ -757,7 +823,7 @@ export default function ExamPage() {
 
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
   const isDone = selected && selected.trangThai !== "TiepNhan";
-  const readOnly = !!isDone && !isEditing;
+  const readOnly = false;
 
   /** Khuyến nghị hiệu lực: nếu bật "Hướng xử trí" thì suy từ đó, không thì dùng trường cũ. */
   const effKhuyenNghi = isFieldOn(cfg, "huongXuTri") ? huongXuTriToKhuyenNghi(f.huongXuTri) : f.khuyenNghi;
@@ -802,7 +868,7 @@ export default function ExamPage() {
       chieuCao: p.chieuCao || "", canNang: p.canNang || "",
       benhLy: p.benhLy || "", loaiBenhLy: parseDiag(p.loaiBenhLy ?? "[]"), loaiBenhLyKhac: p.loaiBenhLyKhac || "",
       huongXuTri: p.huongXuTri || "", huongXuTriKhac: p.huongXuTriKhac || "",
-      bacSiChiDinh: p.bacSiChiDinh || buoiKham?.bacSiKham || "",
+      bacSiChiDinh: p.bacSiChiDinh || (parseDoctorList(buoiKham?.bacSiKham).length === 1 ? parseDoctorList(buoiKham?.bacSiKham)[0] : ""),
       nhanVienTuVan: p.nhanVienTuVan || sessionName.current || session?.user?.name || "",
       xacNhanDieuTri: boolToChoice(p.xacNhanDieuTri), lyDoKhongDieuTri: p.lyDoKhongDieuTri || "",
       ngayDieuTri: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "",
@@ -816,10 +882,37 @@ export default function ExamPage() {
     const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(targetId)}&search=${encodeURIComponent(search)}`);
     const data: HoSo[] = res.ok ? await res.json() : [];
     setPatients(data);
-    const next = data.find((p) => p.id === (keepSel ?? selId)) || data[0] || null;
-    if (next) { if (forceForm || next.id !== selId) loadForm(next); setSelId(next.id); } else setSelId(null);
+
+    // Tự động chọn bệnh nhân:
+    // 1. keepSel chỉ định rõ
+    // 2. selId hiện tại nếu còn tồn tại
+    // 3. Ca đầu tiên đang chờ khám (TiepNhan)
+    // 4. Ca đầu tiên bất kỳ trong đợt
+    const next = (keepSel ? data.find((p) => p.id === keepSel) : null)
+      || (selId ? data.find((p) => p.id === selId) : null)
+      || data.find((p) => p.trangThai === "TiepNhan")
+      || data[0]
+      || null;
+
+    if (next) {
+      if (forceForm || next.id !== selId) loadForm(next);
+      setSelId(next.id);
+    } else {
+      setSelId(null);
+    }
     return data;
   }, [buoiKhamId, search, selId, loadForm]);
+
+  // Đảm bảo luôn tự động chọn bệnh nhân đầu tiên khi có danh sách bệnh nhân
+  useEffect(() => {
+    if (patients.length > 0 && !selId) {
+      const firstPatient = patients.find((p) => p.trangThai === "TiepNhan") || patients[0];
+      if (firstPatient) {
+        setSelId(firstPatient.id);
+        loadForm(firstPatient);
+      }
+    }
+  }, [patients, selId, loadForm]);
 
   useEffect(() => {
     (async () => {
@@ -874,15 +967,10 @@ export default function ExamPage() {
     }
 
     if (evt.action === "create") {
-      // Có bệnh nhân mới vừa được tiếp nhận từ máy khác
+      // Có bệnh nhân mới vừa được tiếp nhận từ máy khác -> tự động nạp danh sách và kích hoạt hiệu ứng +1 tại nút DS
       fetchPatients(selId ?? undefined, false);
-      if (evt.data?.hoTen) {
-        addToast({
-          type: "info",
-          title: "Bệnh nhân mới",
-          message: `${evt.data.hoTen} (${evt.data.maBN || "vừa tiếp nhận"}) đã vào danh sách`,
-        });
-      }
+      setNewPatientAnimation(true);
+      setTimeout(() => setNewPatientAnimation(false), 3000);
     } else if (evt.action === "update") {
       // Có cập nhật thông tin khám / trạng thái từ máy khác
       setPatients((prev) => {
@@ -927,8 +1015,7 @@ export default function ExamPage() {
     if (!on("chanDoan") && on("benhLy") && on("loaiBenhLy") && f.benhLy === "Nghi ngờ bệnh lý" && f.loaiBenhLy.length === 0) { addToast({ type: "error", message: "Nghi ngờ bệnh lý: chọn ít nhất một Loại bệnh lý." }); return; }
     if (!on("chanDoan") && on("loaiBenhLy") && f.loaiBenhLy.includes("Khác") && !f.loaiBenhLyKhac.trim()) { addToast({ type: "error", message: "Vui lòng ghi rõ Loại bệnh lý khác." }); return; }
     if (on("huongXuTri") && f.huongXuTri === "Điều trị khác" && !f.huongXuTriKhac.trim()) { addToast({ type: "error", message: "Vui lòng ghi rõ nội dung Điều trị khác." }); return; }
-    if (on("xacNhanDieuTri") && f.xacNhanDieuTri === "Không" && !f.lyDoKhongDieuTri.trim()) { addToast({ type: "error", message: "Xác nhận điều trị = KHÔNG: vui lòng ghi rõ lý do." }); return; }
-    if (f.nhom === "A" && !f.sdt.trim()) { addToast({ type: "error", message: "Vui lòng nhập số điện thoại khi chọn nhóm A." }); return; }
+    if (f.nhom === "A" && !f.sdt.trim()) { addToast({ type: "error", message: "Vui lòng nhập số điện thoại khi chọn Đồng ý điều trị." }); return; }
 
     // Chỉ gửi các trường đang BẬT để không ghi đè dữ liệu của trường đã tắt
     const payload: Record<string, unknown> = { sdt: f.sdt || undefined, nhom: f.nhom || undefined };
@@ -960,8 +1047,9 @@ export default function ExamPage() {
     if (on("benhSu")) payload.benhSu = choiceToBool(f.benhSu);
     if (on("loaiBenhSu")) { payload.loaiBenhSu = f.loaiBenhSu; payload.loaiBenhSuKhac = f.loaiBenhSuKhac; }
     if (on("chieuCao")) payload.chieuCao = f.chieuCao;
-    if (on("canNang")) payload.canNang = f.canNang;
-    payload.bacSiChiDinh = buoiKham?.bacSiKham || f.bacSiChiDinh || selected.bacSiChiDinh || null;
+    const teamDocs = parseDoctorList(buoiKham?.bacSiKham);
+    const defaultDoc = teamDocs.length === 1 ? teamDocs[0] : null;
+    payload.bacSiChiDinh = f.bacSiChiDinh || defaultDoc || selected.bacSiChiDinh || null;
     if (on("diemKham")) payload.diemKham = buoiKham?.diaDiem || null;
     if (on("nhanVienTuVan")) payload.nhanVienTuVan = f.nhanVienTuVan || sessionName.current || session?.user?.name || null;
     if (on("xacNhanDieuTri")) { payload.xacNhanDieuTri = choiceToBool(f.xacNhanDieuTri); payload.lyDoKhongDieuTri = f.lyDoKhongDieuTri; }
@@ -976,12 +1064,98 @@ export default function ExamPage() {
       });
       const data = await res.json();
       if (!res.ok) { addToast({ type: "error", message: data.error || "Không thể lưu" }); return; }
-      addToast({ type: "success", title: `Đã lưu: ${selected.hoTen}`, message: "Cập nhật kết quả khám." });
-      setIsEditing(false);
-      await fetchPatients(selected.id, true);
+      addToast({ type: "success", message: `Đã lưu kết quả khám: ${selected.hoTen}` });
+      setBaseline(JSON.stringify(f));
+      await fetchPatients(selected.id, false);
     } catch { addToast({ type: "error", message: "Mất kết nối máy chủ" }); }
     finally { setSaving(false); }
   }, [selected, f, cfg, buoiKham, addToast, fetchPatients]);
+
+  const handleQuickNormal = useCallback(async () => {
+    if (!selected) return;
+    const teamDocs = parseDoctorList(buoiKham?.bacSiKham);
+    const defaultDoc = teamDocs.length === 1 ? teamDocs[0] : null;
+
+    const normalPayload: Record<string, unknown> = {
+      thiLucMP: "10/10",
+      thiLucMT: "10/10",
+      chanDoanMP: "[]",
+      chanDoanKhacMP: null,
+      chanDoanMT: "[]",
+      chanDoanKhacMT: null,
+      chanDoan: "[]",
+      chanDoanKhac: null,
+      matKham: null,
+      benhLy: "Chưa phát hiện bất thường",
+      loaiBenhLy: "[]",
+      loaiBenhLyKhac: null,
+      huongXuTri: "Theo dõi",
+      huongXuTriKhac: null,
+      khuyenNghi: "Theo dõi",
+      benhSu: false,
+      loaiBenhSu: "[]",
+      loaiBenhSuKhac: null,
+      nhom: null,
+      sdt: f.sdt || undefined,
+      bacSiChiDinh: f.bacSiChiDinh || defaultDoc || selected.bacSiChiDinh || null,
+      diemKham: buoiKham?.diaDiem || null,
+      nhanVienTuVan: f.nhanVienTuVan || sessionName.current || session?.user?.name || null,
+    };
+
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/csr/hoso/${selected.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(normalPayload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        addToast({ type: "error", message: data.error || "Không thể lưu" });
+        return;
+      }
+      addToast({
+        type: "success",
+        message: `⚡ Đã lưu khám bình thường: ${selected.hoTen}`,
+      });
+      setIsEditing(false);
+      await fetchPatients(selected.id, true);
+
+      const nextWait = patients.find((p) => p.trangThai === "TiepNhan" && p.id !== selected.id);
+      if (nextWait) {
+        pick(nextWait);
+      }
+    } catch {
+      addToast({ type: "error", message: "Mất kết nối máy chủ" });
+    } finally {
+      setSaving(false);
+    }
+  }, [selected, buoiKham, f, session, patients, addToast, fetchPatients, pick]);
+
+  const handleBatchCompletePending = useCallback(async () => {
+    if (!buoiKham) return;
+    setCompletingPending(true);
+    try {
+      const res = await fetch(`/api/csr/buoikham/${buoiKham.id}/complete-pending`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        addToast({ type: "error", message: data.error || "Không thể xử lý ca chờ" });
+        return;
+      }
+      addToast({
+        type: "success",
+        message: `Đã chốt xong ${data.updatedCount ?? 0} ca chờ.`,
+      });
+      setShowCompletePending(false);
+      await fetchPatients(selected?.id, true);
+    } catch {
+      addToast({ type: "error", message: "Mất kết nối máy chủ" });
+    } finally {
+      setCompletingPending(false);
+    }
+  }, [buoiKham, selected, addToast, fetchPatients]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); if (selected && dirty && !saving) save(); } };
@@ -993,9 +1167,67 @@ export default function ExamPage() {
   const toggleMulti = (key: "chanDoan" | "loaiBenhSu" | "loaiBenhLy") => (v: string) =>
     setF((s) => ({ ...s, [key]: s[key].includes(v) ? s[key].filter((x) => x !== v) : [...s[key], v] }));
   const toggleChanDoanMP = (v: string) =>
-    setF((s) => ({ ...s, chanDoanMP: s.chanDoanMP.includes(v) ? s.chanDoanMP.filter((x) => x !== v) : [...s.chanDoanMP, v] }));
+    setF((s) => {
+      const nextMP = s.chanDoanMP.includes(v) ? s.chanDoanMP.filter((x) => x !== v) : [...s.chanDoanMP, v];
+      let nextHuong = s.huongXuTri;
+      let nextNhom = s.nhom;
+      if (!s.chanDoanMP.includes(v) && (v === "Đục thủy tinh thể" || v === "Mộng")) {
+        if (!nextHuong) nextHuong = "Phẫu thuật";
+        if (!nextNhom) nextNhom = "A";
+      }
+      return { ...s, chanDoanMP: nextMP, huongXuTri: nextHuong, nhom: nextNhom };
+    });
+
   const toggleChanDoanMT = (v: string) =>
-    setF((s) => ({ ...s, chanDoanMT: s.chanDoanMT.includes(v) ? s.chanDoanMT.filter((x) => x !== v) : [...s.chanDoanMT, v] }));
+    setF((s) => {
+      const nextMT = s.chanDoanMT.includes(v) ? s.chanDoanMT.filter((x) => x !== v) : [...s.chanDoanMT, v];
+      let nextHuong = s.huongXuTri;
+      let nextNhom = s.nhom;
+      if (!s.chanDoanMT.includes(v) && (v === "Đục thủy tinh thể" || v === "Mộng")) {
+        if (!nextHuong) nextHuong = "Phẫu thuật";
+        if (!nextNhom) nextNhom = "A";
+      }
+      return { ...s, chanDoanMT: nextMT, huongXuTri: nextHuong, nhom: nextNhom };
+    });
+
+  const copyMPtoMT = () => {
+    if (readOnly) return;
+    setF((s) => ({
+      ...s,
+      chanDoanMT: [...s.chanDoanMP],
+      chanDoanKhacMT: s.chanDoanKhacMP,
+    }));
+  };
+
+  const copyMTtoMP = () => {
+    if (readOnly) return;
+    setF((s) => ({
+      ...s,
+      chanDoanMP: [...s.chanDoanMT],
+      chanDoanKhacMP: s.chanDoanKhacMT,
+    }));
+  };
+
+  const setBothEyes = (diag: string) => {
+    if (readOnly) return;
+    setF((s) => {
+      const isBoth = s.chanDoanMP.includes(diag) && s.chanDoanMT.includes(diag);
+      const nextMP = isBoth ? s.chanDoanMP.filter((x) => x !== diag) : (s.chanDoanMP.includes(diag) ? s.chanDoanMP : [...s.chanDoanMP, diag]);
+      const nextMT = isBoth ? s.chanDoanMT.filter((x) => x !== diag) : (s.chanDoanMT.includes(diag) ? s.chanDoanMT : [...s.chanDoanMT, diag]);
+      let nextHuong = s.huongXuTri;
+      let nextNhom = s.nhom;
+      if (!isBoth && (diag === "Đục thủy tinh thể" || diag === "Mộng")) {
+        if (!nextHuong) nextHuong = "Phẫu thuật";
+        if (!nextNhom) nextNhom = "A";
+      }
+      return { ...s, chanDoanMP: nextMP, chanDoanMT: nextMT, huongXuTri: nextHuong, nhom: nextNhom };
+    });
+  };
+
+  const clearBothEyes = () => {
+    if (readOnly) return;
+    setF((s) => ({ ...s, chanDoanMP: [], chanDoanKhacMP: "", chanDoanMT: [], chanDoanKhacMT: "" }));
+  };
 
   const SORT_OPTS = [
     { key: "queue", label: "Ưu tiên ca chờ khám", desc: "Ca chưa khám lên đầu (xếp theo STT)" },
@@ -1038,6 +1270,22 @@ export default function ExamPage() {
     }
     return arr;
   }, [patients, sortBy]);
+
+  const curPatientIndex = useMemo(() => {
+    return sortedPatients.findIndex((p) => p.id === selId);
+  }, [sortedPatients, selId]);
+
+  const prevPatient = useMemo(() => {
+    if (curPatientIndex > 0) return sortedPatients[curPatientIndex - 1];
+    return null;
+  }, [sortedPatients, curPatientIndex]);
+
+  const nextPatient = useMemo(() => {
+    if (curPatientIndex >= 0 && curPatientIndex < sortedPatients.length - 1) {
+      return sortedPatients[curPatientIndex + 1];
+    }
+    return null;
+  }, [sortedPatients, curPatientIndex]);
 
   const visible = useMemo(() => {
     return sortedPatients.filter((p) => {
@@ -1096,8 +1344,8 @@ export default function ExamPage() {
   // Loại bệnh sử: luôn hiện, khoá khi chưa chọn "Có"; bắt buộc chọn ≥1 khi đã chọn "Có"
   const lockLoaiBenhSu = isFieldOn(cfg, "benhSu") && f.benhSu !== "Có";
   const needLoaiBenhSu = isFieldOn(cfg, "benhSu") && f.benhSu === "Có";
-  // Tư vấn & phân nhóm: luôn hiện để thấy trước các bước, chỉ khoá khi chưa chỉ định mổ
-  const lockTuVan = effKhuyenNghi !== "Phẫu thuật";
+  // Tư vấn & phân nhóm: luôn mở để bác sĩ/tư vấn viên có thể phân nhóm và ghi nhận thông tin bất cứ lúc nào
+  const lockTuVan = false;
 
   // Số thứ tự mục tính theo khối đang hiện, tránh nhảy số khi cơ sở tắt bớt trường
   const secNo = useMemo(() => {
@@ -1125,33 +1373,12 @@ export default function ExamPage() {
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--surface-bg)] overflow-hidden" suppressHydrationWarning>
-      <PageHeader
-        title={buoiKham ? `Đợt khám · ${fmtBuoiKhamName(buoiKham)}` : "Đợt khám"}
-        description={buoiKham ? `${buoiKham.coSo?.ten || ""} · ${buoiKham.diaDiem}` : "—"}
-        guide={[
-          { selector: '[data-tour="kh-reg"]', title: "Đăng ký bệnh nhân", desc: "Bấm nút ＋ này rồi quét mã QR trên thẻ BHYT / CCCD / VNeID để tự điền thông tin." },
-          { selector: '[data-tour="kh-list"]', title: "Chọn bệnh nhân", desc: "Bấm vào tên trong danh sách để mở phiếu khám của bệnh nhân đó." },
-          { selector: '[data-tour="kh-vision"]', title: "Đo thị lực", desc: "Chọn thị lực mắt phải (MP) và mắt trái (MT). (Chọn 1 bệnh nhân để thấy phần này)" },
-          { selector: '[data-tour="kh-exam"]', title: "Khám mắt & khuyến nghị", desc: "Chọn chẩn đoán và khuyến nghị. Nếu chọn \"Phẫu thuật\" sẽ hiện thêm phần tư vấn & phân nhóm." },
-          { selector: '[data-tour="kh-save"]', title: "Lưu kết quả khám", desc: "Bấm \"Lưu kết quả khám\" ở thanh dưới (hoặc Ctrl+S). Nếu đã khám xong, bấm \"Sửa kết quả\" để chỉnh lại." },
-        ]}
-        guideTip="Cột giữa hiển thị tiến độ 4 bước cho từng bệnh nhân đang chọn."
-        actions={
-          <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-            <Link href="/buoi-kham" className="btn btn-secondary px-2.5 sm:px-3 py-1 text-[11.5px] sm:text-[12.5px] font-semibold h-7 sm:h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors">
-              <span className="sm:inline hidden">Các đợt khám</span>
-              <span className="sm:hidden inline">Đợt khám</span>
-            </Link>
-            <Link href={`/tu-van`} className="btn btn-secondary px-2.5 sm:px-3 py-1 text-[11.5px] sm:text-[12.5px] font-semibold h-7 sm:h-8 rounded-[var(--r-sm)] border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors">
-              <span className="sm:inline hidden">Tư vấn & Phân nhóm</span>
-              <span className="sm:hidden inline">Tư vấn</span>
-            </Link>
-            <button onClick={() => fetchPatients(selId ?? undefined)} className="p-1 sm:p-1.5 rounded text-[var(--mute)] hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--line)] transition-colors" title="Tải lại">
-              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-          </div>
-        }
-      />
+      <div className="hidden sm:block">
+        <PageHeader
+          title={buoiKham ? `Đợt khám · ${fmtBuoiKhamName(buoiKham)}` : "Đợt khám"}
+          description={buoiKham ? `${buoiKham.coSo?.ten || ""} · ${buoiKham.diaDiem}` : "—"}
+        />
+      </div>
 
       <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-t border-[var(--line)] overflow-y-auto xl:overflow-hidden relative">
         {/* Backdrop for Mobile Patient Drawer */}
@@ -1292,24 +1519,38 @@ export default function ExamPage() {
               )}
             </div>
 
-            {/* Nút Gọi ca tiếp theo */}
-            <button
-              type="button"
-              onClick={() => {
-                if (nextWaitingPatient) {
-                  pick(nextWaitingPatient);
-                } else {
-                  addToast({ type: "info", message: "Không còn bệnh nhân nào đang chờ khám!" });
-                }
-              }}
-              disabled={!nextWaitingPatient}
-              className={`flex items-center gap-0.5 font-bold transition-all cursor-pointer ${nextWaitingPatient ? "text-[var(--teal-deep)] hover:underline active:scale-95" : "text-[var(--mute-soft)] cursor-not-allowed"
-                }`}
-              title={nextWaitingPatient ? `Gọi ca tiếp: ${nextWaitingPatient.hoTen} (STT ${String(nextWaitingPatient.stt).padStart(2, "0")})` : "Đã hết ca chờ"}
-            >
-              <span>Ca tiếp</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <div className="flex items-center gap-1.5">
+              {counts.waiting > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowCompletePending(true)}
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 transition-all cursor-pointer shadow-2xs active:scale-95"
+                  title={`Tự động kết luận Bình thường cho ${counts.waiting} ca đang chờ khám để hoàn tất đợt khám`}
+                >
+                  <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
+                  <span>Chốt {counts.waiting} ca</span>
+                </button>
+              )}
+
+              {/* Nút Gọi ca tiếp theo */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (nextWaitingPatient) {
+                    pick(nextWaitingPatient);
+                  } else {
+                    addToast({ type: "info", message: "Không còn bệnh nhân nào đang chờ khám!" });
+                  }
+                }}
+                disabled={!nextWaitingPatient}
+                className={`flex items-center gap-0.5 font-bold transition-all cursor-pointer ${nextWaitingPatient ? "text-[var(--teal-deep)] hover:underline active:scale-95" : "text-[var(--mute-soft)] cursor-not-allowed"
+                  }`}
+                title={nextWaitingPatient ? `Gọi ca tiếp: ${nextWaitingPatient.hoTen} (STT ${String(nextWaitingPatient.stt).padStart(2, "0")})` : "Đã hết ca chờ"}
+              >
+                <span>Ca tiếp</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
           {/* Danh sách thẻ bệnh nhân */}
@@ -1326,7 +1567,7 @@ export default function ExamPage() {
                 Không khớp bộ lọc.
               </div>
             ) : (
-              visible.map((p) => {
+              visible.map((p, i) => {
                 const active = selId === p.id;
                 const isWaiting = p.trangThai === "TiepNhan";
                 const st = statusOf(p.trangThai);
@@ -1359,10 +1600,10 @@ export default function ExamPage() {
                       setShowList(false);
                     }}
                     className={`w-full text-left rounded-lg border px-2.5 py-1.5 transition-all duration-150 relative cursor-pointer ${active
-                      ? "border-[var(--navy)] bg-white shadow-xs border-l-[3px] border-l-[var(--navy)]"
+                      ? "border-[var(--navy)] bg-white shadow-xs border-l-[3.5px] border-l-[var(--navy)]"
                       : isWaiting
-                        ? "border-[var(--line)] bg-white hover:border-[var(--navy-200)] hover:bg-slate-50"
-                        : "border-[var(--line-soft)] bg-white/75 hover:bg-white hover:border-[var(--line)] opacity-85 hover:opacity-100"
+                        ? `${i % 2 === 0 ? "bg-white" : "bg-slate-50"} border-[var(--line)] hover:border-[var(--navy-200)] hover:bg-slate-100/80`
+                        : `${i % 2 === 0 ? "bg-white/80" : "bg-slate-50/90"} border-[var(--line-soft)] hover:bg-white hover:border-[var(--line)] opacity-85 hover:opacity-100`
                       }`}
                   >
                     <div className="flex items-center gap-2">
@@ -1461,14 +1702,14 @@ export default function ExamPage() {
         {/* COL 3 — phiếu lâm sàng */}
         <main className="flex-1 min-w-0 flex flex-col bg-[var(--surface-bg)] min-h-[70vh] xl:min-h-0">
           {selected ? (<>
-            {/* Thanh thông tin bệnh nhân thu gọn riêng cho Mobile */}
-            <div className="xl:hidden bg-white border-b border-[var(--line)] px-3 py-2 shrink-0 shadow-2xs">
+            {/* Thanh thông tin bệnh nhân thu gọn riêng cho Mobile - Dính cố định ở đỉnh để bác sĩ theo dõi khi cuộn */}
+            <div className="xl:hidden bg-white/95 backdrop-blur-sm border-b border-[var(--line)] px-3 py-2 shrink-0 shadow-xs sticky top-0 z-20">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <button
                     type="button"
                     onClick={() => setShowList(true)}
-                    className="h-8 px-2 rounded-lg bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/25 font-mono font-extrabold text-xs flex items-center gap-1 shrink-0 active:scale-95 transition-transform"
+                    className="h-8 px-2 rounded-lg bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/25 font-mono font-extrabold text-xs flex items-center gap-1 shrink-0 active:scale-95 transition-transform cursor-pointer"
                     title="Mở danh sách bệnh nhân"
                   >
                     <span className="text-[8px] font-sans font-bold opacity-70">STT</span>
@@ -1476,10 +1717,10 @@ export default function ExamPage() {
                   </button>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-[13.5px] text-[var(--ink)] truncate leading-tight uppercase">{selected.hoTen}</h3>
+                      <h3 className="font-bold text-[13px] sm:text-[13.5px] text-[var(--ink)] truncate leading-tight uppercase">{selected.hoTen}</h3>
                       <StatusBadge label={statusOf(selected.trangThai).label} cls={statusOf(selected.trangThai).cls} sm />
                     </div>
-                    <div className="text-[11px] text-[var(--mute)] truncate font-medium mt-0.5">
+                    <div className="text-[10.5px] sm:text-[11px] text-[var(--mute)] truncate font-medium mt-0.5">
                       <span>{selected.gioiTinh} · {ageOf(selected)}t</span>
                       {selected.mucHuongBHYT ? <span> · BH {selected.mucHuongBHYT}%</span> : selected.bhyt ? <span> · {bhytLevel(selected.bhyt)}</span> : null}
                       {selected.sdt && <span> · {selected.sdt}</span>}
@@ -1487,19 +1728,19 @@ export default function ExamPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => setShowEdit(true)}
                     title="Sửa thông tin"
-                    className="p-1.5 rounded-md hover:bg-[var(--surface-soft)] text-[var(--navy)] border border-[var(--line)]"
+                    className="p-1.5 rounded-md hover:bg-[var(--surface-soft)] text-[var(--navy)] border border-[var(--line)] cursor-pointer active:scale-90 transition-transform"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowMobileDetail((v) => !v)}
-                    className={`px-2 py-1 rounded-md text-[11px] font-bold border transition-colors flex items-center gap-1 ${showMobileDetail
+                    className={`px-2 py-1 rounded-md text-[10.5px] sm:text-[11px] font-bold border transition-colors flex items-center gap-1 cursor-pointer ${showMobileDetail
                       ? "bg-[var(--navy)] text-white border-[var(--navy)]"
                       : "bg-white text-[var(--ink-soft)] border-[var(--line)] hover:bg-[var(--surface-soft)]"
                       }`}
@@ -1558,12 +1799,12 @@ export default function ExamPage() {
               )}
             </div>
 
-            <div className="@container flex-1 overflow-y-auto p-3 sm:p-4">
-              <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-3 sm:gap-4">
+            <div className="@container flex-1 overflow-y-auto p-2.5 sm:p-4">
+              <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-2.5 sm:gap-4 items-stretch">
                 {showBenhSu && (
-                  <div className="card p-0">
+                  <div className="card p-0 h-full flex flex-col">
                     <SectionHeader n={secNo.benhSu} accent="Bệnh sử của bản thân" />
-                    <div className="p-4 space-y-4">
+                    <div className="p-3 sm:p-4 flex-1 space-y-2.5">
                       {isFieldOn(cfg, "benhSu") && (
                         <div>
                           <label className={labelCls}>Có bệnh sử không?</label>
@@ -1585,7 +1826,7 @@ export default function ExamPage() {
                               value={f.loaiBenhSuKhac}
                               onChange={(e) => setF((s) => ({ ...s, loaiBenhSuKhac: e.target.value }))}
                               placeholder="Ghi rõ loại bệnh sử khác…"
-                              className="input-field mt-2.5"
+                              className="input-field mt-2 text-xs h-8 animate-fade-in"
                               disabled={readOnly || lockLoaiBenhSu}
                             />
                           )}
@@ -1597,31 +1838,33 @@ export default function ExamPage() {
 
                 {/* Dấu hiệu + Đo thị lực gộp 1 thẻ: cả hai chỉ có 2 ô, tách ra tốn 2 tiêu đề */}
                 {showChiSo && (
-                  <div data-tour="kh-vision" className="@container card p-0">
+                  <div data-tour="kh-vision" className="@container card p-0 h-full flex flex-col">
                     <SectionHeader n={secNo.chiSo} accent={showDauHieu && showThiLuc ? "Dấu hiệu & thị lực" : showThiLuc ? "Đo thị lực" : "Dấu hiệu"} />
-                    <div className="p-4 grid grid-cols-1 @sm:grid-cols-2 gap-x-5 gap-y-3.5">
-                      {isFieldOn(cfg, "chieuCao") && (
-                        <Field label="Chiều cao (cm)">
-                          <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
-                        </Field>
-                      )}
-                      {isFieldOn(cfg, "canNang") && (
-                        <Field label="Cân nặng (kg)">
-                          <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55 (không số lẻ)" disabled={readOnly} />
-                        </Field>
-                      )}
-                      {showThiLuc && (<>
-                        <Select label="Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
-                        <Select label="Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
-                      </>)}
+                    <div className="p-3 sm:p-4 flex-1 space-y-2.5">
+                      <div className="grid grid-cols-1 @sm:grid-cols-2 gap-x-4 gap-y-2.5">
+                        {isFieldOn(cfg, "chieuCao") && (
+                          <Field label="Chiều cao (cm)">
+                            <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
+                          </Field>
+                        )}
+                        {isFieldOn(cfg, "canNang") && (
+                          <Field label="Cân nặng (kg)">
+                            <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55 (không số lẻ)" disabled={readOnly} />
+                          </Field>
+                        )}
+                        {showThiLuc && (<>
+                          <Select label="Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
+                          <Select label="Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
+                        </>)}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Kết luận ban đầu */}
-                <div data-tour="kh-exam" className="@container card p-0">
+                <div data-tour="kh-exam" className="@container card p-0 h-full flex flex-col">
                   <SectionHeader n={secNo.ketLuan} accent="Kết luận ban đầu" />
-                  <div className="p-4 space-y-4">
+                  <div className="p-3 sm:p-4 flex-1 space-y-2.5">
                     {/* Chỉ hiển thị bộ mã ICD nếu cơ sở TẮT trường Chẩn đoán nhãn khoa */}
                     {!isFieldOn(cfg, "chanDoan") && isFieldOn(cfg, "benhLy") && (
                       <div>
@@ -1647,70 +1890,157 @@ export default function ExamPage() {
                       </div>
                     )}
 
-                    {/* Chẩn đoán tách biệt theo từng mắt (MP / MT) */}
+                    {/* Chẩn đoán bệnh lý mắt (MP / MT) dạng trên - dưới gọn gàng */}
                     {isFieldOn(cfg, "chanDoan") && (
                       <div className="space-y-2.5">
-                        <label className={labelCls}>Chẩn đoán bệnh lý mắt <span className="font-normal text-[var(--mute)]">· chọn bệnh lý cho từng mắt (MP / MT)</span></label>
-                        <div className="grid grid-cols-1 @sm:grid-cols-2 gap-3 items-start">
-                          {/* Mắt phải (MP) */}
-                          <div className="bg-[var(--surface-soft)]/50 border border-[var(--line-soft)] rounded-xl p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[var(--navy)] flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-[var(--teal)]" />
-                                Mắt phải (MP)
-                              </span>
-                              {f.chanDoanMP.length > 0 && (
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <label className={labelCls}>
+                            Chẩn đoán bệnh lý <span className="font-normal text-[var(--mute)]">· MP / MT</span>
+                          </label>
+                          {!readOnly && (
+                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setBothEyes("Đục thủy tinh thể")}
+                                className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                                  f.chanDoanMP.includes("Đục thủy tinh thể") && f.chanDoanMT.includes("Đục thủy tinh thể")
+                                    ? "bg-emerald-700 text-white border-emerald-700"
+                                    : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50 hover:border-emerald-400"
+                                }`}
+                                title="Chọn Đục thủy tinh thể cho cả 2 mắt"
+                              >
+                                ĐTT 2 mắt
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBothEyes("Mộng")}
+                                className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                                  f.chanDoanMP.includes("Mộng") && f.chanDoanMT.includes("Mộng")
+                                    ? "bg-amber-700 text-white border-amber-700"
+                                    : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50 hover:border-amber-400"
+                                }`}
+                                title="Chọn Mộng cho cả 2 mắt"
+                              >
+                                Mộng 2 mắt
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBothEyes("Đục bao sau")}
+                                className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                                  f.chanDoanMP.includes("Đục bao sau") && f.chanDoanMT.includes("Đục bao sau")
+                                    ? "bg-indigo-700 text-white border-indigo-700"
+                                    : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50 hover:border-indigo-400"
+                                }`}
+                                title="Chọn Đục bao sau cho cả 2 mắt"
+                              >
+                                Đục bao sau 2 mắt
+                              </button>
+                              <button
+                                type="button"
+                                onClick={copyMPtoMT}
+                                className="px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold text-[#031da6] bg-[#eef2ff] border border-[#c7d2fe] hover:bg-[#e0e7ff] transition-all cursor-pointer shadow-2xs"
+                                title="Sao chép chẩn đoán từ Mắt phải sang Mắt trái"
+                              >
+                                MP ➔ MT
+                              </button>
+                              {(f.chanDoanMP.length > 0 || f.chanDoanMT.length > 0) && (
                                 <button
                                   type="button"
-                                  onClick={() => setF((s) => ({ ...s, chanDoanMP: [], chanDoanKhacMP: "" }))}
-                                  className="text-[10.5px] text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
-                                  disabled={readOnly}
+                                  onClick={clearBothEyes}
+                                  className="text-[10px] sm:text-[11px] text-[#94a3b8] hover:text-[var(--rose)] cursor-pointer ml-0.5"
+                                  title="Xóa chẩn đoán cả 2 mắt"
                                 >
                                   Xóa
                                 </button>
                               )}
                             </div>
-                            <PillGroup options={CHAN_DOAN} selected={f.chanDoanMP} onToggle={toggleChanDoanMP} disabled={readOnly} />
-                            {f.chanDoanMP.includes("Khác") && (
+                          )}
+                        </div>
+
+                        {/* Dòng 1: MP (Mắt phải) */}
+                        <div className="p-1.5 sm:p-2 bg-emerald-50/40 rounded-lg sm:rounded-xl border border-emerald-200/70 space-y-1">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="text-[11px] sm:text-[12px] font-extrabold text-emerald-900 shrink-0 flex items-center gap-1 min-w-[34px] px-1 py-0.5 rounded bg-emerald-100/60">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-2xs" />
+                              <span>MP</span>
+                            </span>
+                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap flex-1">
+                              {CHAN_DOAN.map((o) => {
+                                const on = f.chanDoanMP.includes(o);
+                                return (
+                                  <button
+                                    key={o}
+                                    type="button"
+                                    onClick={() => !readOnly && toggleChanDoanMP(o)}
+                                    disabled={readOnly}
+                                    className={`px-2 sm:px-2.5 py-0.8 sm:py-1 rounded-md sm:rounded-lg text-[11px] sm:text-[12px] font-semibold border transition-all cursor-pointer ${
+                                      on
+                                        ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs font-bold"
+                                        : "bg-white text-[#334155] border-[#cbd5e1] hover:bg-emerald-50 hover:border-emerald-300"
+                                    }`}
+                                  >
+                                    {o}
+                                    {on && !readOnly && <Check className="w-2.5 h-2.5 stroke-[3] inline ml-1" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {f.chanDoanMP.includes("Khác") && (
+                            <div className="pl-0 sm:pl-[44px] animate-fade-in pt-0.5">
                               <input
                                 value={f.chanDoanKhacMP}
                                 onChange={(e) => setF((s) => ({ ...s, chanDoanKhacMP: e.target.value }))}
                                 placeholder="Ghi rõ chẩn đoán Mắt phải…"
-                                className="input-field mt-1.5"
+                                className="w-full h-7 sm:h-7.5 px-2 text-xs bg-white border border-emerald-300 rounded-md outline-hidden focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 text-[#0f172a]"
                                 disabled={readOnly}
+                                autoFocus
                               />
-                            )}
-                          </div>
-
-                          {/* Mắt trái (MT) */}
-                          <div className="bg-[var(--surface-soft)]/50 border border-[var(--line-soft)] rounded-xl p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[var(--navy)] flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-[var(--navy)]" />
-                                Mắt trái (MT)
-                              </span>
-                              {f.chanDoanMT.length > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setF((s) => ({ ...s, chanDoanMT: [], chanDoanKhacMT: "" }))}
-                                  className="text-[10.5px] text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
-                                  disabled={readOnly}
-                                >
-                                  Xóa
-                                </button>
-                              )}
                             </div>
-                            <PillGroup options={CHAN_DOAN} selected={f.chanDoanMT} onToggle={toggleChanDoanMT} disabled={readOnly} />
-                            {f.chanDoanMT.includes("Khác") && (
+                          )}
+                        </div>
+
+                        {/* Dòng 2: MT (Mắt trái) */}
+                        <div className="p-1.5 sm:p-2 bg-blue-50/40 rounded-lg sm:rounded-xl border border-blue-200/70 space-y-1">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="text-[11px] sm:text-[12px] font-extrabold text-[#031da6] shrink-0 flex items-center gap-1 min-w-[34px] px-1 py-0.5 rounded bg-blue-100/60">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#031da6] shadow-2xs" />
+                              <span>MT</span>
+                            </span>
+                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap flex-1">
+                              {CHAN_DOAN.map((o) => {
+                                const on = f.chanDoanMT.includes(o);
+                                return (
+                                  <button
+                                    key={o}
+                                    type="button"
+                                    onClick={() => !readOnly && toggleChanDoanMT(o)}
+                                    disabled={readOnly}
+                                    className={`px-2 sm:px-2.5 py-0.8 sm:py-1 rounded-md sm:rounded-lg text-[11px] sm:text-[12px] font-semibold border transition-all cursor-pointer ${
+                                      on
+                                        ? "bg-[#031da6] text-white border-[#031da6] shadow-2xs font-bold"
+                                        : "bg-white text-[#334155] border-[#cbd5e1] hover:bg-blue-50 hover:border-blue-300"
+                                    }`}
+                                  >
+                                    {o}
+                                    {on && !readOnly && <Check className="w-2.5 h-2.5 stroke-[3] inline ml-1" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {f.chanDoanMT.includes("Khác") && (
+                            <div className="pl-0 sm:pl-[44px] animate-fade-in pt-0.5">
                               <input
                                 value={f.chanDoanKhacMT}
                                 onChange={(e) => setF((s) => ({ ...s, chanDoanKhacMT: e.target.value }))}
                                 placeholder="Ghi rõ chẩn đoán Mắt trái…"
-                                className="input-field mt-1.5"
+                                className="w-full h-7 sm:h-7.5 px-2 text-xs bg-white border border-blue-300 rounded-md outline-hidden focus:border-[#031da6] focus:ring-1 focus:ring-[#031da6]/20 text-[#0f172a]"
                                 disabled={readOnly}
+                                autoFocus
                               />
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1721,13 +2051,64 @@ export default function ExamPage() {
                         <label className={labelCls}>Hướng xử trí <span className="text-[var(--rose)]">*</span></label>
                         <ChoiceRow options={HUONG_XU_TRI} value={f.huongXuTri} onChange={(v) => setF((s) => ({ ...s, huongXuTri: v, nhom: v === "Phẫu thuật" ? s.nhom : "", huongXuTriKhac: v === "Điều trị khác" ? s.huongXuTriKhac : "" }))} disabled={readOnly} />
                         {f.huongXuTri === "Điều trị khác" && (
-                          <input value={f.huongXuTriKhac} onChange={(e) => setF((s) => ({ ...s, huongXuTriKhac: e.target.value }))} placeholder="Ghi rõ hướng điều trị khác…" className="input-field mt-3" disabled={readOnly} />
+                          <input value={f.huongXuTriKhac} onChange={(e) => setF((s) => ({ ...s, huongXuTriKhac: e.target.value }))} placeholder="Ghi rõ hướng điều trị khác…" className="input-field mt-2 h-8.5 text-xs animate-fade-in" disabled={readOnly} autoFocus />
                         )}
                       </div>
                     ) : isFieldOn(cfg, "khuyenNghi") && (
                       <div>
                         <label className={labelCls}>Khuyến nghị</label>
                         <ChoiceRow options={[...KHUYEN_NGHI]} value={f.khuyenNghi} onChange={(v) => setF((s) => ({ ...s, khuyenNghi: v, nhom: v === "Phẫu thuật" ? s.nhom : "" }))} disabled={readOnly} />
+                      </div>
+                    )}
+
+                    {/* Bác sĩ khám / chỉ định ca này */}
+                    {isFieldOn(cfg, "bacSiChiDinh") && (
+                      <div className="pt-3 border-t border-[var(--line-soft)]">
+                        <label className={labelCls}>
+                          Bác sĩ khám / cho chỉ định {parseDoctorList(buoiKham?.bacSiKham).length > 1 && !f.bacSiChiDinh && (
+                            <span className="text-[var(--rose)]">* (Chọn bác sĩ khám ca này)</span>
+                          )}
+                        </label>
+                        {parseDoctorList(buoiKham?.bacSiKham).length > 1 ? (
+                          <div className="space-y-2 mt-1">
+                            {/* Phím chọn nhanh 1 chạm cho các bác sĩ trong đoàn */}
+                            <div className="flex flex-wrap gap-1.5">
+                              {parseDoctorList(buoiKham?.bacSiKham).map((doc) => {
+                                const active = f.bacSiChiDinh === doc;
+                                return (
+                                  <button
+                                    key={doc}
+                                    type="button"
+                                    onClick={() => setF((s) => ({ ...s, bacSiChiDinh: doc }))}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                      active
+                                        ? "bg-[#031da6] text-white shadow-xs scale-102"
+                                        : "bg-[#f1f5f9] text-[#334155] hover:bg-[#e2e8f0] border border-[#cbd5e1]"
+                                    }`}
+                                    disabled={readOnly}
+                                  >
+                                    <UserCheck className={`w-3.5 h-3.5 ${active ? "text-[#02b8a9]" : "text-[#64748b]"}`} />
+                                    <span>{doc}</span>
+                                    {active && <Check className="w-3 h-3 text-[#02b8a9]" strokeWidth={3} />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <DoctorAutocomplete
+                              value={f.bacSiChiDinh}
+                              onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
+                              placeholder="Hoặc chọn/nhập bác sĩ khác..."
+                              disabled={readOnly}
+                            />
+                          </div>
+                        ) : (
+                          <DoctorAutocomplete
+                            value={f.bacSiChiDinh}
+                            onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
+                            placeholder="Chọn hoặc nhập tên bác sĩ khám..."
+                            disabled={readOnly}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
@@ -1737,46 +2118,50 @@ export default function ExamPage() {
                     chỉ khoá khi hướng xử trí/khuyến nghị chưa phải Phẫu thuật.
                     Gom cả Xác nhận điều trị + Ngày điều trị dự kiến vào đây: cả hai
                     chỉ có nghĩa với ca đã chốt mổ. */}
-                <div className="@container card p-0">
-                  <SectionHeader n={secNo.tuVan} accent="Tư vấn & phân nhóm" />
-                  <div className="p-4 space-y-4">
-                    {lockTuVan && (
-                      <p className="text-[11.5px] text-[var(--mute)] leading-relaxed">
-                        Chọn <b className="font-bold text-[var(--ink-soft)]">Phẫu thuật</b> ở mục {secNo.ketLuan} để mở phần này.
-                      </p>
-                    )}
-                    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-x-6 gap-y-4">
+                {/* Tư vấn & phân nhóm — luôn hiện để thấy trước các bước còn lại,
+                    chỉ khoá khi hướng xử trí/khuyến nghị chưa phải Phẫu thuật.
+                    Gom cả Xác nhận điều trị + Ngày điều trị dự kiến vào đây: cả hai
+                    chỉ có nghĩa với ca đã chốt mổ. */}
+                <div className="@container card p-0 h-full flex flex-col">
+                  <SectionHeader n={secNo.tuVan} accent="Tư vấn & ghi chú" />
+                  <div className="p-3 sm:p-4 flex-1 flex flex-col space-y-2.5">
+                    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-x-4 gap-y-2.5">
                       <div>
-                        <label className={labelCls}>Chọn nhóm</label>
-                        <ChoiceRow options={["A", "B"]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v }))} render={(o) => o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)"} disabled={readOnly || lockTuVan} />
+                        <label className={labelCls}>Ý kiến / Nguyện vọng điều trị</label>
+                        <ChoiceRow
+                          options={["A", "B", "TheoDoi"]}
+                          value={f.nhom}
+                          onChange={(v) => setF((s) => ({ ...s, nhom: v }))}
+                          render={(o) =>
+                            o === "A"
+                              ? "Đồng ý điều trị tại BV"
+                              : o === "B"
+                              ? "Cần suy nghĩ thêm"
+                              : "Theo dõi tại nhà"
+                          }
+                          disabled={readOnly}
+                        />
                       </div>
                       <Field label="Số điện thoại" required={f.nhom === "A"}>
-                        <input value={f.sdt} onChange={(e) => setF((s) => ({ ...s, sdt: e.target.value }))} placeholder="Nhập SĐT..." className="input-field font-mono" disabled={readOnly || lockTuVan} />
-                      </Field>
-                      <Field label="Ngày điều trị dự kiến" required={f.nhom === "A"}>
-                        <DateField value={f.ngayDieuTri} onChange={(v) => setF((s) => ({ ...s, ngayDieuTri: v }))} disabled={readOnly || lockTuVan} placeholder="dd/mm/yyyy" />
+                        <input
+                          value={f.sdt}
+                          onChange={(e) => setF((s) => ({ ...s, sdt: e.target.value }))}
+                          placeholder="Nhập SĐT..."
+                          className="input-field font-mono"
+                          disabled={readOnly}
+                        />
                       </Field>
                     </div>
 
-                    {isFieldOn(cfg, "xacNhanDieuTri") && (
-                      <div>
-                        <label className={labelCls}>Xác nhận điều trị <span className="text-[var(--rose)]">*</span></label>
-                        <ChoiceRow options={CO_KHONG} value={f.xacNhanDieuTri} onChange={(v) => setF((s) => ({ ...s, xacNhanDieuTri: v, lyDoKhongDieuTri: v === "Không" ? s.lyDoKhongDieuTri : "" }))} disabled={readOnly || lockTuVan} />
-                        {f.xacNhanDieuTri === "Không" && (
-                          <input value={f.lyDoKhongDieuTri} onChange={(e) => setF((s) => ({ ...s, lyDoKhongDieuTri: e.target.value }))} placeholder="Bắt buộc: ghi rõ lý do không điều trị…" className="input-field mt-2.5" disabled={readOnly || lockTuVan} />
-                        )}
-                      </div>
-                    )}
-
-                    <div>
-                      <Field label="Ghi chú " >
+                    <div className="flex-1 flex flex-col">
+                      <Field label="Ghi chú tư vấn & dặn dò">
                         <textarea
                           value={f.ghiChuTuVan}
                           onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
                           placeholder="Nhập ghi chú tư vấn hoặc dặn dò bệnh nhân…"
-                          rows={2}
-                          className="input-field resize-none py-2"
-                          disabled={readOnly || lockTuVan}
+                          rows={3}
+                          className="input-field resize-none py-2 text-[12px] flex-1 min-h-[75px]"
+                          disabled={readOnly}
                         />
                       </Field>
                     </div>
@@ -1784,67 +2169,225 @@ export default function ExamPage() {
                 </div>
               </div>
             </div>
-            <div data-tour="kh-save" className="px-3 sm:px-4 py-2 sm:py-3 border-t border-[var(--line)] bg-white/95 backdrop-blur-sm sticky bottom-0 z-20 flex items-center justify-between gap-2 shadow-md">
-              <div className="flex items-center gap-2 min-w-0">
-                {/* Nút mở danh sách bệnh nhân trên mobile tích hợp vào bottom bar */}
-                <button
-                  type="button"
-                  onClick={() => setShowList(true)}
-                  className="xl:hidden h-8 sm:h-9 px-2.5 rounded-lg bg-[var(--navy-50)] hover:bg-[var(--navy-100)] border border-[var(--navy)]/20 text-[var(--navy)] font-bold text-[11.5px] flex items-center gap-1.5 shrink-0 transition-colors"
-                >
-                  <Users className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
-                  <span>DS ({counts.total})</span>
-                </button>
+            <div data-tour="kh-save" className="px-2 sm:px-4 py-1.5 sm:py-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] border-t border-[var(--line)] bg-white/95 backdrop-blur-sm sticky bottom-0 z-30 flex items-center justify-between gap-1.5 sm:gap-2 shadow-lg">
+              <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+                {/* Nút mở danh sách bệnh nhân trên mobile chuẩn theo style Phân nhóm kèm hiệu ứng +1 */}
+                <div className="relative inline-flex shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowList(true)}
+                    className={`xl:hidden h-8 px-2.5 rounded-lg bg-[#002b7f] hover:bg-[var(--navy-deep)] text-white font-bold text-[12px] flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer active:scale-95 ${
+                      newPatientAnimation ? "ring-2 ring-emerald-400 scale-105" : ""
+                    }`}
+                  >
+                    <Users className={`w-3.5 h-3.5 ${newPatientAnimation ? "text-emerald-300 animate-bounce" : "text-[#00d2d3]"}`} />
+                    <span className="font-extrabold text-[12px] text-white">DS</span>
+                    <span className={`min-w-[18px] h-[18px] px-1 bg-[#e11d48] text-white font-mono text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs transition-transform ${
+                      newPatientAnimation ? "scale-125 bg-emerald-500 animate-bounce" : ""
+                    }`}>
+                      {counts.total}
+                    </span>
+                  </button>
+                  {newPatientAnimation && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white font-mono font-black text-[9.5px] px-1.5 py-0.5 rounded-full shadow-md animate-bounce pointer-events-none border border-white whitespace-nowrap z-40">
+                      +1
+                    </span>
+                  )}
+                </div>
 
-                <span className="text-[12px] flex items-center gap-1.5 min-w-0 truncate">
+                {/* Bộ phím chuyển ca Trước / Sau nhanh cho Mobile */}
+                <div className="xl:hidden flex items-center gap-0.5 border border-[var(--line)] rounded-lg p-0.5 bg-[var(--surface-soft)] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => prevPatient && pick(prevPatient)}
+                    disabled={!prevPatient}
+                    className="p-1 rounded text-[var(--ink-soft)] hover:bg-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                    title="Ca trước"
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                  </button>
+                  <span className="text-[9.5px] sm:text-[10px] font-mono font-bold px-0.5 text-[var(--mute)]">
+                    {curPatientIndex >= 0 ? `${curPatientIndex + 1}/${sortedPatients.length}` : "—"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => nextPatient && pick(nextPatient)}
+                    disabled={!nextPatient}
+                    className="p-1 rounded text-[var(--ink-soft)] hover:bg-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                    title="Ca tiếp"
+                  >
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <span className="hidden md:inline-flex text-[11px] sm:text-[12px] items-center gap-1 min-w-0 truncate">
                   {dirty ? (
-                    <span className="inline-flex items-center gap-1 font-semibold text-[var(--amber)] text-[11px] sm:text-[12px] truncate">
+                    <span className="inline-flex items-center gap-1 font-semibold text-[var(--amber)] truncate">
                       <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse shrink-0" /> Chưa lưu
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[var(--mute)] text-[11px] sm:text-[12px] truncate">
+                    <span className="inline-flex items-center gap-1 text-[var(--mute)] truncate">
                       <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" /> Đã lưu
                     </span>
                   )}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                {readOnly ? (
-                  <button onClick={() => setIsEditing(true)} className="btn btn-secondary px-3.5 sm:px-6 py-2 font-bold h-8 sm:h-9 text-[12px] sm:text-[13px]">
-                    <Pencil className="w-3.5 h-3.5 text-[var(--navy)]" /> Sửa kết quả
-                  </button>
-                ) : (
-                  <>
-                    {!!isDone && isEditing && (
-                      <button
-                        onClick={() => {
-                          setIsEditing(false);
-                          setF(JSON.parse(baseline));
-                        }}
-                        className="btn btn-secondary px-2.5 sm:px-4 py-1.5 text-[11.5px] sm:text-[12.5px] font-semibold h-8 sm:h-9"
-                      >
-                        Hủy
-                      </button>
-                    )}
-                    <button
-                      onClick={save}
-                      disabled={saving || !dirty}
-                      className="btn btn-primary px-3.5 sm:px-6 py-1.5 font-bold h-8 sm:h-9 text-[12px] sm:text-[13px] shrink-0"
-                    >
-                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
-                      <span>Lưu kết quả khám</span>
-                    </button>
-                  </>
-                )}
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleQuickNormal}
+                  disabled={saving}
+                  className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-50 disabled:pointer-events-none"
+                  title="Lưu nhanh kết quả Bình thường (Thị lực 10/10, Theo dõi) và tự động chuyển ca kế tiếp"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                  <span className="hidden sm:inline">Khám bình thường</span>
+                  <span className="sm:hidden">Bình thường</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={save}
+                  disabled={saving || !dirty}
+                  className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                >
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
+                  <span>Lưu</span>
+                  <span className="hidden sm:inline"> kết quả</span>
+                  <span className="hidden md:inline font-mono text-[10.5px] opacity-70 font-normal">(Ctrl+S)</span>
+                </button>
               </div>
             </div>
-          </>) : <div className="flex-1 flex items-center justify-center text-[var(--mute)] text-[14px] px-8 text-center">Chọn bệnh nhân hoặc đăng ký mới để nhập kết quả khám.</div>}
+          </>) : (
+            <div className="flex-1 flex flex-col justify-between min-h-0">
+              <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-16 gap-3.5">
+                <div className="w-13 h-13 rounded-2xl bg-white border border-[var(--line)] shadow-sm flex items-center justify-center text-[var(--navy)]">
+                  <UserPlus className="w-6 h-6 text-[var(--teal-deep)]" />
+                </div>
+                <div className="max-w-[320px]">
+                  <h3 className="font-bold text-[15px] text-[var(--ink)]">
+                    {counts.total > 0 ? "Chưa chọn bệnh nhân" : "Chưa có bệnh nhân tiếp nhận"}
+                  </h3>
+                  <p className="text-[12px] text-[var(--mute)] mt-1">
+                    {counts.total > 0
+                      ? `Đợt khám có ${counts.total} bệnh nhân. Mở danh sách để chọn ca khám.`
+                      : "Đăng ký tiếp nhận bệnh nhân đầu tiên để bắt đầu quá trình khám mắt."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  {counts.total > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowList(true)}
+                      className="btn btn-secondary px-4 py-2 text-[12.5px] font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-sm active:scale-95"
+                    >
+                      <Users className="w-4 h-4 text-[var(--navy)]" />
+                      <span>Danh sách ({counts.total})</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowReg(true)}
+                    className="btn btn-primary px-4 py-2 text-[12.5px] font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-md active:scale-95"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Tiếp nhận</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile Fallback Bottom Bar */}
+              <div className="xl:hidden px-3 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] border-t border-[var(--line)] bg-white/95 backdrop-blur-sm sticky bottom-0 z-30 flex items-center justify-between shadow-lg shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowList(true)}
+                  className="h-8 px-2.5 rounded-lg bg-[#002b7f] hover:bg-[var(--navy-deep)] text-white font-bold text-[12px] flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                >
+                  <Users className="w-3.5 h-3.5 text-[#00d2d3]" />
+                  <span className="font-extrabold text-[12px] text-white">DS</span>
+                  <span className="min-w-[18px] h-[18px] px-1 bg-[#e11d48] text-white font-mono text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                    {counts.total}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReg(true)}
+                  className="btn btn-primary h-8 px-3 text-[12px] font-bold rounded-lg flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Tiếp nhận
+                </button>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
       {showReg && buoiKham && <RegisterModal buoiKham={buoiKham} cfg={cfg} onClose={() => setShowReg(false)} onCreated={(p) => { setShowReg(false); fetchPatients(p.id, true); }} />}
       {showEdit && selected && <EditInfoModal patient={selected} cfg={cfg} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); fetchPatients(selected.id, true); }} />}
+
+      {/* Modal xác nhận chốt nhanh các ca còn chờ để kết thúc đợt khám */}
+      {showCompletePending && (
+        <Modal
+          open={showCompletePending}
+          title="Chốt nhanh ca chờ · Kết thúc đợt khám"
+          onClose={() => !completingPending && setShowCompletePending(false)}
+        >
+          <div className="space-y-4 p-1">
+            <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-amber-900 font-bold text-[13.5px]">
+                <Zap className="w-4 h-4 text-amber-600 fill-amber-600" />
+                <span>Tự động hoàn tất các ca chưa có kết luận</span>
+              </div>
+              <p className="text-[12px] text-amber-800/90 leading-relaxed">
+                Đợt khám hiện có <b className="font-bold text-amber-950">{counts.total} bệnh nhân</b>. Trong đó còn{" "}
+                <b className="font-bold text-amber-950">{counts.waiting} bệnh nhân</b> đang ở trạng thái <i>Tiếp nhận (chưa khám)</i>.
+              </p>
+            </div>
+
+            <div className="space-y-2 text-[12.5px] text-[var(--ink-soft)] bg-[var(--surface-soft)]/60 p-3 rounded-xl border border-[var(--line-soft)]">
+              <div className="font-bold text-[var(--ink)] flex items-center gap-1.5">
+                <CheckCheck className="w-4 h-4 text-emerald-600" />
+                <span>Quy trình tự động thực hiện:</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-[12px] text-[var(--mute)] pl-1">
+                <li>Chuyển trạng thái <b className="text-[var(--ink)]">{counts.waiting} ca</b> sang <b>ĐÃ KHÁM</b></li>
+                <li>Gán kết quả <b>Bình thường (Chưa phát hiện bất thường)</b></li>
+                <li>Thị lực mặc định <b>10/10 hai mắt</b>, hướng xử trí <b>Theo dõi</b></li>
+                <li>Gán bác sĩ chỉ định theo đợt khám để hồ sơ đầy đủ pháp lý</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--line)]">
+              <button
+                type="button"
+                onClick={() => setShowCompletePending(false)}
+                disabled={completingPending}
+                className="btn btn-secondary px-4 py-2 text-[12.5px] font-semibold cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleBatchCompletePending}
+                disabled={completingPending || counts.waiting === 0}
+                className="btn btn-primary px-5 py-2 text-[12.5px] font-bold cursor-pointer flex items-center gap-1.5 shadow-md"
+              >
+                {completingPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Đang xử lý {counts.waiting} ca...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3.5 h-3.5 text-[var(--teal)] fill-[var(--teal)]" />
+                    <span>Xác nhận chốt {counts.waiting} ca chờ</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

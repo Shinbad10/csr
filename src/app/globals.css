@@ -1,216 +1,334 @@
 @import "tailwindcss";
 
-/* ── Company design tokens (VISI) ─────────────────────────────
-   navy = chữ ký thương hiệu · teal = chỉ cho "sống / thành công"
-   Manrope (tiêu đề/body) · Fraunces (editorial serif) · JetBrains Mono (số/mã/giờ)
-   ───────────────────────────────────────────────────────────── */
 @theme {
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-manrope), 'Manrope', ui-sans-serif, system-ui;
+  --font-serif: var(--font-fraunces), 'Fraunces', ui-serif, Georgia;
+  --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular;
 
-  --animate-fade-in: fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  --animate-scale-up: scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  --animate-slide-up: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  --animate-slide-in-right: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  --animate-dropdown: dropdown-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: translateY(4px) scale(0.99); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  @keyframes scale-up {
-    from { opacity: 0; transform: scale(0.96) translateY(6px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  @keyframes slide-up {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes slide-in-right {
-    from { opacity: 0; transform: translateX(-8px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  @keyframes dropdown-in {
-    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-}
-
-/* ── Smooth scrolling ─────────────────────────────────────── */
-html {
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-:root {
-  /* navy — thương hiệu */
   --navy: #031da6;
-  --navy-hover: #021685;
   --navy-deep: #020f5c;
   --navy-ink: #010833;
   --navy-50: rgba(3, 29, 166, 0.05);
   --navy-100: rgba(3, 29, 166, 0.09);
-  --navy-soft: #eef1ff;
 
-  /* teal — chỉ dùng cho success / "đang sống" */
   --teal: #02b8a9;
+  --teal-deep: #018a7f;
   --teal-soft: #e6faf7;
   --teal-softer: #f2fcfa;
-  --teal-deep: #018a7f;
 
-  /* mực & chữ */
+  --bg: #f1f4fa;
+  --surface: #ffffff;
+  --surface-bg: #f1f4fa;
+  --surface-soft: #f8fafd;
+  --surface-hover: #f1f4f9;
   --ink: #0d1025;
   --ink-soft: #45495e;
-  --text-light: #45495e;
-  --text-muted: #8a8fa3;
   --mute: #8a8fa3;
   --mute-soft: #b8bcca;
 
-  /* nền & bề mặt */
-  --surface: #ffffff;
-  --surface-bg: #f7f8fc;
-  --surface-hover: #f1f3f9;
-  --surface-soft: #fafbfd;
+  --line: #e2e8f0;
+  --line-soft: #f1f4f9;
+  --line-strong: #d3dbe8;
 
-  /* đường kẻ */
-  --line: #eef0f5;
-  --line-strong: #e2e5ed;
-  --line-heavy: #d3d7e2;
-  --line-soft: #f4f5f9;
-  --line-subtle: #f2f3f8;
-
-  /* trạng thái */
   --amber: #d97706;
   --amber-soft: #fef6eb;
-  --amber-deep: #b45309;
-  --amber-ink: #92400e;
-  --warning: #d97706;
   --rose: #e11d48;
   --rose-soft: #fef1f4;
   --green: #059669;
   --green-soft: #ecfdf5;
 
-  /* pill vàng (chẩn đoán / chỉ định) */
-  --gold: #b88600;
-  --gold-50: #fefaf0;
-  --gold-soft: #fdf3d3;
-  --gold-line: #ecd9a3;
-  --gold-deep: #946a00;
-
-  /* bóng đổ (ink-tinted shadows theo VISI) */
-  --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
-  --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
-  --shadow-md: 0 4px 14px rgba(13, 16, 37, 0.07), 0 2px 4px rgba(13, 16, 37, 0.03);
-  --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.09);
-  --shadow-xl: 0 20px 48px rgba(13, 16, 37, 0.13), 0 8px 20px rgba(13, 16, 37, 0.06);
-  --navy-shadow: 0 4px 14px -2px rgba(3, 29, 166, 0.32);
-  --navy-shadow-hover: 0 6px 18px -2px rgba(3, 29, 166, 0.42);
-
-  /* bo góc chuẩn VISI */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 14px;
   --r-xl: 18px;
+
+  --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
+  --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
+  --shadow-md: 0 4px 12px rgba(13, 16, 37, 0.06), 0 2px 4px rgba(13, 16, 37, 0.03);
+  --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.08);
+
+  --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
+  --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
 }
 
-body {
-  background-color: var(--surface-bg);
+@variant dark (&:where(.dark, .dark *));
+
+/* Prevent mobile browser auto-zoom on input focus */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@layer base {
+  :root {
+    --scrollbar-thumb: rgba(3, 29, 166, 0.2);
+    --scrollbar-track: transparent;
+
+    --navy: #031da6;
+    --navy-deep: #020f5c;
+    --navy-ink: #010833;
+    --navy-50: rgba(3, 29, 166, 0.05);
+    --navy-100: rgba(3, 29, 166, 0.09);
+    --navy-soft: #eef2ff;
+    --navy-200: #c7d2fe;
+
+    --teal: #02b8a9;
+    --teal-deep: #018a7f;
+    --teal-soft: #e6faf7;
+    --teal-softer: #f2fcfa;
+
+    --bg: #f1f4fa;
+    --surface: #ffffff;
+    --surface-bg: #f1f4fa;
+    --surface-soft: #f8fafd;
+    --surface-hover: #f1f4f9;
+    --ink: #0d1025;
+    --ink-soft: #45495e;
+    --mute: #8a8fa3;
+    --mute-soft: #b8bcca;
+
+    --line: #e2e8f0;
+    --line-soft: #f1f4f9;
+    --line-strong: #d3dbe8;
+
+    --amber: #d97706;
+    --amber-soft: #fef6eb;
+    --amber-deep: #b45309;
+    --rose: #e11d48;
+    --rose-soft: #fef1f4;
+    --green: #059669;
+    --green-soft: #ecfdf5;
+    --green-deep: #047857;
+
+    --b0: var(--surface);
+    --b1: var(--surface-soft);
+    --b2: var(--line);
+    --bg1: var(--surface);
+
+    --t1: var(--ink);
+    --t2: var(--ink-soft);
+    --t3: var(--mute);
+
+    --acc: var(--navy);
+    --acc-lt: var(--navy-50);
+    --acc-glow: 0 8px 24px -6px rgba(3, 29, 166, 0.35);
+
+    --bg-card: var(--surface);
+    --bg-page: var(--bg);
+    --border: var(--line);
+    --border-glass: rgba(255, 255, 255, 0.3);
+  }
+
+  .dark {
+    --bg: #020617;
+    --surface: #0f172a;
+    --surface-bg: #020617;
+    --surface-soft: #1e293b;
+    --surface-hover: #334155;
+    --ink: #f8fafc;
+    --ink-soft: #cbd5e1;
+    --mute: #94a3b8;
+    --mute-soft: #475569;
+    --line: rgba(255, 255, 255, 0.06);
+    --line-soft: rgba(255, 255, 255, 0.03);
+    --line-strong: rgba(255, 255, 255, 0.12);
+
+    --navy: #02b8a9;
+    --navy-deep: #018a7f;
+    --navy-50: rgba(2, 184, 169, 0.1);
+
+    --teal-soft: rgba(2, 184, 169, 0.1);
+    --teal-softer: rgba(2, 184, 169, 0.05);
+    --rose-soft: rgba(225, 29, 72, 0.1);
+    --amber-soft: rgba(217, 119, 6, 0.1);
+
+    --scrollbar-thumb: rgba(2, 184, 169, 0.3);
+    --navy-shadow: 0 4px 12px -2px rgba(2, 184, 169, 0.35);
+    --navy-shadow-hover: 0 6px 16px -2px rgba(2, 184, 169, 0.45);
+
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+
+    --navy-soft: rgba(2, 184, 169, 0.12);
+    --navy-200: rgba(2, 184, 169, 0.28);
+    --amber-deep: #fbbf24;
+    --green-deep: #34d399;
+    --acc-glow: 0 8px 24px -6px rgba(2, 184, 169, 0.40);
+    --border-glass: rgba(255, 255, 255, 0.08);
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    font-family: var(--font-sans);
+  }
+}
+
+/* ── Common Utilities ── */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--r-md);
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+  white-space: nowrap;
+}
+
+@utility btn-primary {
+  @apply btn;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+  color: #ffffff;
+  border: 1px solid transparent;
+  box-shadow: var(--navy-shadow);
+
+  &:hover {
+    background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-ink) 100%);
+    box-shadow: var(--navy-shadow-hover);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@utility btn-secondary {
+  @apply btn;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-xs);
+
+  &:hover {
+    background: var(--surface-soft);
+    border-color: var(--navy-100);
+    color: var(--navy);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:active {
+    background: var(--surface-hover);
+  }
+}
+
+@utility btn-outline {
+  @apply btn;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+
+  &:hover {
+    background: var(--navy-50);
+    border-color: var(--navy);
+    color: var(--navy);
+  }
+}
+
+@utility btn-teal {
+  @apply btn;
+  background: var(--teal);
+  color: var(--navy-ink);
+  box-shadow: 0 4px 12px -2px rgba(2, 184, 169, 0.4);
+
+  &:hover {
+    background: var(--teal-deep);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+}
+
+@utility btn-danger {
+  @apply btn;
+  background: var(--rose-soft);
+  color: var(--rose);
+  border: 1px solid rgba(225, 29, 72, 0.2);
+
+  &:hover {
+    background: var(--rose);
+    color: #ffffff;
+  }
+}
+
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xs);
+  transition: all 0.2s ease-in-out;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--navy-100);
+  }
+}
+
+@utility input-field {
+  width: 100%;
+  padding: 5px 9px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
   color: var(--ink);
   font-family: var(--font-sans);
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.35;
+  outline: none;
+  transition: all 0.15s ease-in-out;
+
+  &:focus {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 2px var(--navy-50);
+  }
+
+  &::placeholder {
+    color: var(--mute-soft);
+  }
 }
 
-/* font-feature cho số ở JetBrains Mono */
-.font-mono { font-variant-numeric: tabular-nums; }
-
-/* ── Smooth page transitions ──────────────────────────────── */
-main > * {
-  animation: slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+/* Standard Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-/* ── Custom slim scrollbars ───────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--scrollbar-track);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(138, 143, 163, 0.25);
-  border-radius: 9999px;
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+  transition: all 0.2s;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(138, 143, 163, 0.45);
+  background: var(--navy);
 }
 
-/* ── Performant transitions (GPU-accelerated) ─────────────── */
-.card,
-.btn,
-.btn-primary,
-.btn-secondary,
-.btn-success,
-a[class*="group"] {
-  will-change: transform;
-  transform: translateZ(0);
+.scrollbar-none, .no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-/* ── Smooth focus rings ──────────────────────────────────── */
-*:focus-visible:not(input):not(textarea):not(select):not(.input-field) {
-  outline: 2px solid var(--navy);
-  outline-offset: 2px;
-  border-radius: var(--r-sm);
-  transition: outline-offset 0.15s ease;
+.scrollbar-none::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
-
-@layer components {
-  .card {
-    @apply bg-[var(--surface)] rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] p-4 transition-all duration-200;
-  }
-
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-[13.5px] font-semibold rounded-[var(--r-md)] transition-all duration-150 disabled:opacity-45 disabled:cursor-not-allowed select-none;
-  }
-  .btn-primary {
-    @apply bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] hover:brightness-105 active:scale-[0.98];
-  }
-  .btn-secondary {
-    @apply bg-white border border-[var(--line-strong)] text-[var(--text-light)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] hover:border-[var(--navy-100)] active:scale-[0.98];
-  }
-  .btn-outline {
-    @apply bg-transparent border border-[var(--line-strong)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:border-[var(--navy)] hover:text-[var(--navy)] active:scale-[0.98];
-  }
-  .btn-success {
-    @apply bg-gradient-to-br from-[var(--teal)] to-[var(--teal-deep)] text-white shadow-sm hover:brightness-105 active:scale-[0.98];
-  }
-
-  .input-field {
-    @apply w-full rounded-[var(--r-md)] border border-[var(--line-strong)] bg-white px-3 py-2 text-[13.5px] text-[var(--ink)] outline-none transition-all duration-150 focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)];
-  }
-
-  /* Vùng cuộn ngang (tab, bảng): ẩn thanh cuộn nhưng vẫn cuộn được. */
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-/* Cảm ứng: cuộn ngang trong bảng không kéo lệch cả trang. */
-@media (max-width: 1023px) {
-  .overflow-x-auto,
-  .overflow-auto {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-  }
-}
-

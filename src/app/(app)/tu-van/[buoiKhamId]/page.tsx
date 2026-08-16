@@ -4,17 +4,65 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, RefreshCw, Phone } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { BHYT, NHOM, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, isCardNumber, statusOf, type HoSo } from "@/lib/csr";
-import { Dropdown, DateField, ChoiceRow, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
+import { parseDiag, ageOf, fmtDate, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, type HoSo } from "@/lib/csr";
+import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 
 interface BuoiKham { id: string; xa: string; diaDiem: string; ghiChu?: string | null; ngayKham: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null } }
 const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "", ghiChuTuVan: "" };
 const TIME_OPTS = Array.from({ length: 26 }).map((_, i) => `${String(Math.floor(i / 2) + 6).padStart(2, '0')}:${i % 2 === 0 ? '00' : '30'}`);
+
+const PHUONG_AN_TU_VAN = [
+  { key: "A", label: "Đồng ý điều trị tại BV", tone: "bg-emerald-600 text-white border-emerald-600" },
+  { key: "B", label: "Cần suy nghĩ thêm", tone: "bg-amber-500 text-white border-amber-500" },
+  { key: "TheoDoi", label: "Theo dõi tại nhà", tone: "bg-sky-600 text-white border-sky-600" },
+];
+
+function getPatientDiags(p: HoSo): string[] {
+  const diags: string[] = [];
+  if (p.chanDoanMP) {
+    try {
+      const arr = typeof p.chanDoanMP === "string" ? JSON.parse(p.chanDoanMP) : p.chanDoanMP;
+      if (Array.isArray(arr)) arr.forEach((item) => item && diags.push(`MP: ${item}`));
+    } catch { diags.push(`MP: ${p.chanDoanMP}`); }
+  }
+  if (p.chanDoanKhacMP) diags.push(`MP: ${p.chanDoanKhacMP}`);
+  if (p.chanDoanMT) {
+    try {
+      const arr = typeof p.chanDoanMT === "string" ? JSON.parse(p.chanDoanMT) : p.chanDoanMT;
+      if (Array.isArray(arr)) arr.forEach((item) => item && diags.push(`MT: ${item}`));
+    } catch { diags.push(`MT: ${p.chanDoanMT}`); }
+  }
+  if (p.chanDoanKhacMT) diags.push(`MT: ${p.chanDoanKhacMT}`);
+  if (p.chanDoan && p.chanDoan !== "[]") {
+    try {
+      const arr = typeof p.chanDoan === "string" ? JSON.parse(p.chanDoan) : p.chanDoan;
+      if (Array.isArray(arr)) arr.forEach((item) => item && !diags.some((d) => d.includes(item)) && diags.push(item));
+    } catch {}
+  }
+  if (p.chanDoanKhac && !diags.includes(p.chanDoanKhac)) diags.push(p.chanDoanKhac);
+  if (p.loaiBenhLy && p.loaiBenhLy !== "[]") {
+    try {
+      const arr = typeof p.loaiBenhLy === "string" ? JSON.parse(p.loaiBenhLy) : p.loaiBenhLy;
+      if (Array.isArray(arr)) arr.forEach((item) => item && !diags.some((d) => d.includes(item)) && diags.push(item));
+    } catch {}
+  }
+  if (p.loaiBenhLyKhac && !diags.includes(p.loaiBenhLyKhac)) diags.push(p.loaiBenhLyKhac);
+  return diags;
+}
+
+function isBenhLyPatient(p: HoSo): boolean {
+  const diags = getPatientDiags(p);
+  if (diags.length > 0) return true;
+  if (p.benhLy && p.benhLy !== "Chưa phát hiện bất thường" && p.benhLy !== "Bình thường") return true;
+  if (p.khuyenNghi === "Phẫu thuật" || p.huongXuTri === "Phẫu thuật" || p.huongXuTri === "Điều trị khác") return true;
+  if (p.nhom || p.xacNhanDieuTri != null) return true;
+  return false;
+}
 
 function Info({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   return (
@@ -49,7 +97,7 @@ export default function TuVanSessionPage() {
     const next = {
       bhyt: p.bhyt || "",
       soTienBao: p.soTienBao != null ? String(p.soTienBao) : "",
-      nhom: p.nhom || "",
+      nhom: p.nhom || (p.xacNhanDieuTri === true ? "A" : p.xacNhanDieuTri === false ? "B" : ""),
       ngayHen: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "",
       diemDon: p.diemDon || "",
       gioDon: p.gioDon || "",
@@ -62,7 +110,7 @@ export default function TuVanSessionPage() {
     const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
     const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(targetId)}&search=${encodeURIComponent(search)}`);
     const all: HoSo[] = res.ok ? await res.json() : [];
-    const data = all.filter((p) => p.khuyenNghi === "Phẫu thuật");
+    const data = all.filter(isBenhLyPatient);
     setPatients(data);
     const next = data.find((p) => p.id === (keepSel ?? selId)) || data[0] || null;
     if (next) { if (forceForm || next.id !== selId) loadForm(next); setSelId(next.id); } else setSelId(null);
@@ -109,8 +157,7 @@ export default function TuVanSessionPage() {
     if (p.id === selId) return;
     if (dirty && !(await confirm({
       title: "Bỏ thay đổi chưa lưu?",
-      message: `Phiếu tư vấn đang có thay đổi chưa lưu.
-Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
+      message: `Phiếu tư vấn đang có thay đổi chưa lưu.\nChuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
       confirmLabel: "Chuyển & bỏ thay đổi",
       cancelLabel: "Ở lại",
     }))) return;
@@ -119,7 +166,6 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
 
   const save = async () => {
     if (!selected) return;
-    if (f.nhom === "A" && !f.ngayHen) { addToast({ type: "error", message: "Nhóm A bắt buộc nhập Ngày điều trị." }); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/csr/hoso/${selected.id}`, {
@@ -129,6 +175,7 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
           bhyt: f.bhyt,
           soTienBao: f.soTienBao ? Number(f.soTienBao) : null,
           nhom: f.nhom || null,
+          xacNhanDieuTri: f.nhom === "A" ? true : f.nhom === "B" ? false : null,
           ngayDieuTri: f.ngayHen || null,
           diemDon: f.diemDon,
           gioDon: f.gioDon,
@@ -137,22 +184,32 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
       });
       const data = await res.json();
       if (!res.ok) { addToast({ type: "error", message: data.error || "Không thể lưu" }); return; }
-      addToast({ type: "success", title: `Đã lưu: ${selected.hoTen}`, message: "Cập nhật tư vấn & phân nhóm." });
+      addToast({ type: "success", message: `Đã lưu tư vấn: ${selected.hoTen}` });
       await fetchPatients(selected.id, true);
     } catch { addToast({ type: "error", message: "Mất kết nối máy chủ" }); }
     finally { setSaving(false); }
   };
 
-  const visible = useMemo(() => patients.filter((p) => { if (!filter) return true; if (filter === "chua") return !p.nhom; return p.nhom === filter; }), [patients, filter]);
-  const FILTERS = [{ key: "", label: "Tất cả" }, { key: "chua", label: "Chưa phân nhóm" }, { key: "A", label: "Nhóm A · đã chốt mổ" }, { key: "B", label: "Nhóm B · theo dõi" }];
+  const visible = useMemo(() => patients.filter((p) => {
+    const isDone = !!p.nhom || p.xacNhanDieuTri != null;
+    if (!filter) return true;
+    if (filter === "chua") return !isDone;
+    if (filter === "done") return isDone;
+    return true;
+  }), [patients, filter]);
+
+  const FILTERS = [
+    { key: "", label: "Tất cả" },
+    { key: "chua", label: "Chưa tư vấn" },
+    { key: "done", label: "Đã tư vấn" },
+  ];
 
   if (loading) {
     return (
       <div className="h-full min-h-0 flex flex-col gap-4">
         <PageHeader
-          title="Tư vấn & Phân nhóm · Đang tải..."
+          title="Tư vấn điều trị · Đang tải..."
           description="Đang truy xuất danh sách bệnh nhân cần tư vấn..."
-          guide={[]}
         />
         <Skeleton3Column />
       </div>
@@ -167,24 +224,15 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
             <Link href="/buoi-kham" className="p-1.5 -ml-1.5 rounded-[var(--r-md)] text-[var(--mute)] hover:bg-[var(--surface-hover)] hover:text-[var(--navy)]" title="Về danh sách đợt khám">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <>Tư vấn <span className="italic text-[var(--teal-deep)]">& phân nhóm</span></>
+            <>Tư vấn <span className="italic text-[var(--teal-deep)]">điều trị</span></>
           </div>
         }
         description={buoiKham ? `Đợt khám: ${fmtBuoiKhamName(buoiKham)} · ${fmtDate(buoiKham.ngayKham)}` : "—"}
-        guideTitle="Tư vấn & phân nhóm"
-        guide={[
-          { selector: '[data-tour="tvs-list"]', title: "Chọn bệnh nhân", desc: "Danh sách này là các bệnh nhân được khuyến nghị phẫu thuật của đợt khám này." },
-          { selector: '[data-tour="tvs-clinical"]', title: "Xem kết quả khám", desc: "Thẻ \"Kết quả khám lâm sàng\" cho biết thị lực và chẩn đoán để tư vấn." },
-          { selector: '[data-tour="tvs-bhyt"]', title: "Xác nhận BHYT", desc: "Mức hưởng tự lấy từ mã thẻ; nếu chưa có thẻ, chọn mức hưởng thủ công." },
-          { selector: '[data-tour="tvs-nhom"]', title: "Phân nhóm & lịch mổ", desc: "Chọn Nhóm A/B, nhập ngày điều trị, giờ đón và điểm đón." },
-          { selector: '[data-tour="tvs-save"]', title: "Lưu tư vấn", desc: "Bấm \"Lưu tư vấn\" để hoàn tất phân nhóm." },
-        ]}
-        guideTip="Nhóm A (đồng ý mổ) bắt buộc phải nhập Ngày điều trị."
       />
 
       <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
         <aside className="w-full lg:w-[330px] shrink-0 max-lg:h-[42vh] card p-0 flex flex-col min-h-0 overflow-hidden">
-          <div className="px-4 pt-4 pb-3"><h2 className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--navy)]">Bệnh nhân</h2></div>
+          <div className="px-4 pt-4 pb-3"><h2 className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--navy)]">Bệnh nhân ({patients.length})</h2></div>
           <div className="px-3 pb-3 flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
@@ -206,15 +254,90 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
           </div>
           <div data-tour="tvs-list" className="flex-1 overflow-y-auto px-2 pb-3 space-y-1.5">
             {searching ? <SkeletonList items={5} />
-              : patients.length === 0 ? <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2"><Stethoscope className="w-8 h-8 text-[var(--mute-soft)]" /><span>Đợt khám này chưa có BN nào được khuyến nghị phẫu thuật.</span></div>
+              : patients.length === 0 ? <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2"><Stethoscope className="w-8 h-8 text-[var(--mute-soft)]" /><span>Đợt khám này chưa có BN nào phát hiện bệnh lý.</span></div>
               : visible.length === 0 ? <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không khớp bộ lọc.</div>
-                : visible.map((p) => {
-                  const active = selId === p.id; const cds = parseDiag(p.chanDoan); return (
-                    <button key={p.id} onClick={() => pick(p)} className={`w-full text-left rounded-[var(--r-md)] border px-3 py-2.5 transition-all ${active ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-[0_0_0_1px_var(--navy)]" : "border-[var(--line)] bg-white hover:border-[var(--navy-100)] hover:bg-[var(--surface-soft)]"}`}>
-                      <div className="flex items-center justify-between gap-2"><span className="text-[13.5px] font-bold text-[var(--ink)] truncate">{p.stt}. {p.hoTen}</span><span className="font-mono text-[11px] font-bold text-[var(--teal-deep)] shrink-0">{p.maBN.split("-").pop()}</span></div>
-                      <div className="text-[11px] text-[var(--mute)] mt-0.5 truncate">{p.gioiTinh} · {ageOf(p)}t · {cds.join(", ") || "—"}</div>
-                      <div className="flex items-center gap-1.5 mt-1.5"><StatusBadge label={statusOf(p.trangThai).label} cls={statusOf(p.trangThai).cls} sm />{p.nhom && !p.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${p.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />}</div>
-                    </button>);
+                : visible.map((p, idx) => {
+                  const active = selId === p.id;
+                  const diags = getPatientDiags(p);
+                  const sttPadded = String(p.stt ?? idx + 1).padStart(2, "0");
+                  const age = ageOf(p);
+                  const infoSub = [
+                    p.gioiTinh || null,
+                    age > 0 ? `${age}t` : null,
+                    p.bhyt ? `BH ${bhytLevel(p.bhyt)}` : null,
+                  ].filter(Boolean).join(" · ");
+
+                  // STT badge color
+                  let sttBadgeCls = "bg-slate-100 text-slate-700 border-slate-200";
+                  if (p.nhom === "A" || p.xacNhanDieuTri === true) {
+                    sttBadgeCls = "bg-emerald-50 text-emerald-800 border-emerald-300";
+                  } else if (p.nhom === "B" || p.xacNhanDieuTri === false) {
+                    sttBadgeCls = "bg-amber-50 text-amber-800 border-amber-300";
+                  } else if (p.nhom === "TheoDoi") {
+                    sttBadgeCls = "bg-sky-50 text-sky-800 border-sky-300";
+                  }
+
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => pick(p)}
+                      className={`w-full text-left rounded-lg border px-2.5 py-1.5 transition-all duration-150 relative cursor-pointer ${
+                        active
+                          ? "border-[var(--navy)] bg-white shadow-xs border-l-[3.5px] border-l-[var(--navy)]"
+                          : idx % 2 === 0
+                          ? "bg-white border-[var(--line)] hover:border-[var(--navy-200)] hover:bg-slate-50"
+                          : "bg-slate-50/80 border-[var(--line-soft)] hover:border-[var(--navy-200)] hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {/* STT Box gọn gàng */}
+                        <div
+                          className={`w-8 h-8 rounded-lg font-mono flex flex-col items-center justify-center shrink-0 border ${sttBadgeCls} shadow-2xs`}
+                        >
+                          <span className="text-[7.5px] font-sans font-bold uppercase tracking-wider opacity-60 leading-none mb-0.5">STT</span>
+                          <span className="text-[12px] font-black leading-none">{sttPadded}</span>
+                        </div>
+
+                        {/* Thông tin chính */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <h4 className={`text-[12.5px] font-bold truncate leading-tight ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
+                              {p.hoTen}
+                            </h4>
+
+                            {/* Status Badge */}
+                            {p.nhom === "A" || p.xacNhanDieuTri === true ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300 shrink-0">
+                                Đồng ý
+                              </span>
+                            ) : p.nhom === "B" || p.xacNhanDieuTri === false ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 shrink-0">
+                                Suy nghĩ
+                              </span>
+                            ) : p.nhom === "TheoDoi" ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300 shrink-0">
+                                Theo dõi
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                                Chưa tư vấn
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Dòng tóm tắt: Nhân khẩu + Chẩn đoán bệnh lý */}
+                          <div className="flex items-center gap-1.5 text-[11px] text-[var(--mute)] mt-0.5 truncate">
+                            {infoSub && <span>{infoSub}</span>}
+                            {diags.length > 0 && (
+                              <span className="text-rose-600 font-semibold truncate">
+                                {infoSub ? "· " : ""}{diags.join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
                 })}
           </div>
         </aside>
@@ -222,16 +345,26 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
         <main className="flex-1 min-w-0 card p-0 flex flex-col min-h-0">
           {selected ? (<>
             <div className="flex-1 overflow-y-auto p-6 space-y-5">
-              {/* COMPACT PATIENT HEADER STRIP (FULL INFO - NO TRUNCATION) */}
+              {/* COMPACT PATIENT HEADER STRIP */}
               <div className="bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-4 shadow-2xs flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <h2 className="font-serif font-bold text-[19px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
                     <span className="font-mono font-bold text-[var(--navy)] bg-white px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
-                    <StatusBadge label={statusOf(selected.trangThai).label} cls={statusOf(selected.trangThai).cls} sm />
-                    {selected.nhom && !selected.trangThai.startsWith("Nhom") && <StatusBadge label={`Nhóm ${selected.nhom}`} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />}
+                    {selected.nhom === "A" || selected.xacNhanDieuTri === true ? (
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300">Đồng ý điều trị</span>
+                    ) : selected.nhom === "B" || selected.xacNhanDieuTri === false ? (
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">Cần suy nghĩ</span>
+                    ) : selected.nhom === "TheoDoi" ? (
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300">Theo dõi tại nhà</span>
+                    ) : null}
                     <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
                   </div>
+                  {getPatientDiags(selected).length > 0 && (
+                    <div className="text-[12px] font-bold text-[var(--rose)] bg-rose-50 px-2.5 py-1 rounded border border-rose-200">
+                      Chẩn đoán: {getPatientDiags(selected).join(" · ")}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-xs text-[var(--ink-soft)] pt-1.5 border-t border-[var(--line-soft)]/80">
@@ -275,31 +408,63 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
                   <Info label="Thị lực Mắt phải (MP)" value={selected.thiLucMP} />
                   <Info label="Thị lực Mắt trái (MT)" value={selected.thiLucMT} />
                   <Info label="Khuyến nghị điều trị" value={selected.khuyenNghi} />
-                  <div className="md:col-span-3"><Info label="Chẩn đoán chi tiết" value={[...parseDiag(selected.chanDoan), selected.chanDoanKhac].filter(Boolean).join(", ")} /></div>
+                  <div className="md:col-span-3"><Info label="Chẩn đoán chi tiết" value={getPatientDiags(selected).join(", ") || "—"} /></div>
                 </div>
               </div>
 
               <div className="card p-5 space-y-5">
-                <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] flex items-center gap-2"><UserCog className="w-4 h-4 text-[var(--teal-deep)]" /> Tư vấn & phân nhóm</h3>
+                <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] flex items-center gap-2"><UserCog className="w-4 h-4 text-[var(--teal-deep)]" /> Phương án & Kế hoạch điều trị</h3>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  <div data-tour="tvs-bhyt">
-                    <label className={labelCls}>BHYT <span className="font-normal text-[var(--mute)]">· tự động từ mã thẻ</span></label>
-                    {f.bhyt ? (
-                      <div className="input-field flex items-center justify-between gap-2 bg-[var(--surface-soft)]">
-                        <span className="inline-flex items-center gap-2 min-w-0"><span className="font-bold text-[var(--teal-deep)]">{bhytLevel(f.bhyt) || "Không rõ"}</span>{isCardNumber(f.bhyt) && <span className="font-mono text-[11px] text-[var(--mute)] truncate">· thẻ {f.bhyt}</span>}</span>
-                        <button type="button" onClick={() => setF((s) => ({ ...s, bhyt: "" }))} className="shrink-0 text-[var(--mute)] hover:text-[var(--rose)]"><X className="w-4 h-4" /></button>
-                      </div>
-                    ) : <Dropdown value="" placeholder="Chưa có thẻ — chọn mức hưởng…" options={[...BHYT]} onChange={(v) => setF((s) => ({ ...s, bhyt: v }))} />}
-                  </div>
-                  <div><label className={labelCls}>Số tiền báo</label><input inputMode="numeric" value={f.soTienBao} onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 5000000" /></div>
-                  <div data-tour="tvs-nhom" className="col-span-2"><label className={labelCls}>Phân nhóm</label><ChoiceRow options={[...NHOM]} value={f.nhom} onChange={(v) => setF((s) => ({ ...s, nhom: v, ngayHen: v === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen }))} render={(o) => (o === "A" ? "Nhóm A (Đồng ý mổ)" : "Nhóm B (Suy nghĩ thêm)")} /></div>
-                  <div><label className={labelCls}>Ngày điều trị (ĐK mổ){f.nhom === "A" && <span className="text-[var(--rose)]"> *</span>}<span className="font-normal text-[var(--mute)]"> · mặc định ngày mai</span></label><DateField value={f.ngayHen} min={tomorrowISO()} onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))} /></div>
-                  <div className="grid grid-cols-[100px_1fr] gap-3 col-span-2 lg:col-span-1">
-                    <div><label className={labelCls}>Giờ đón</label><Combobox value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} options={TIME_OPTS} placeholder="--:--" /></div>
-                    <div><label className={labelCls}>Điểm đón</label><Combobox value={f.diemDon} onChange={(v) => setF((s) => ({ ...s, diemDon: v }))} options={uniqueDiemDon} placeholder="VD: Ngã ba xã / xe nhà…" /></div>
-                  </div>
                   <div className="col-span-2">
-                    <label className={labelCls}>Ghi chú tư vấn</label>
+                    <label className={labelCls}>Phương án / Quyết định của bệnh nhân *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                      {PHUONG_AN_TU_VAN.map((opt) => {
+                        const active = f.nhom === opt.key;
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => setF((s) => ({
+                              ...s,
+                              nhom: opt.key,
+                              ngayHen: opt.key === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen,
+                            }))}
+                            className={`p-3 rounded-xl border text-center transition-all cursor-pointer font-bold text-[13px] ${
+                              active
+                                ? `${opt.tone} shadow-sm ring-2 ring-offset-1 ring-slate-400`
+                                : "bg-white border-[var(--line-strong)] text-[var(--ink-soft)] hover:bg-[var(--surface-soft)]"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {f.nhom === "A" ? (
+                    <>
+                      <div><label className={labelCls}>Số tiền dự kiến (đồng)</label><input inputMode="numeric" value={f.soTienBao ? new Intl.NumberFormat("vi-VN").format(Number(f.soTienBao)) : ""} onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono font-bold text-[var(--teal-deep)]" placeholder="VD: 5.000.000" /></div>
+                      <div><label className={labelCls}>Ngày điều trị tại BV</label><DateField value={f.ngayHen} min={tomorrowISO()} onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))} /></div>
+                      <div className="grid grid-cols-[100px_1fr] gap-3 col-span-2 lg:col-span-1">
+                        <div><label className={labelCls}>Giờ đón</label><Combobox value={f.gioDon} onChange={(v) => setF((s) => ({ ...s, gioDon: v }))} options={TIME_OPTS} placeholder="--:--" /></div>
+                        <div><label className={labelCls}>Điểm đón</label><Combobox value={f.diemDon} onChange={(v) => setF((s) => ({ ...s, diemDon: v }))} options={uniqueDiemDon} placeholder="VD: Ngã ba xã / xe nhà…" /></div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-2 text-xs text-[var(--ink-soft)] flex items-center gap-2 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-200">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
+                      <span>
+                        {f.nhom === "B"
+                          ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
+                          : f.nhom === "TheoDoi"
+                          ? "Bệnh nhân theo dõi tại nhà — Không cần xếp lịch đưa đón tại viện. Vui lòng nhập dặn dò tái khám vào ô ghi chú bên dưới."
+                          : "Vui lòng chọn quyết định điều trị của bệnh nhân."}
+                      </span>
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <label className={labelCls}>Ghi chú tư vấn / Dặn dò bệnh nhân</label>
                     <textarea
                       value={f.ghiChuTuVan}
                       onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
@@ -313,9 +478,9 @@ Chuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
             </div>
             <div className="shrink-0 border-t border-[var(--line)] px-6 py-3 flex items-center justify-between gap-4">
               <span className="text-[12px] flex items-center gap-2 min-w-0">{dirty ? <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--amber)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse" /> Chưa lưu</span> : <span className="inline-flex items-center gap-1.5 text-[var(--mute)]"><Check className="w-3.5 h-3.5 text-[var(--teal)]" /> Đã lưu</span>}{selected.tuVanVien && <span className="text-[var(--mute)] truncate hidden md:inline">· Người chốt: <b>{selected.tuVanVien.hoTen}</b></span>}</span>
-              <button data-tour="tvs-save" onClick={save} disabled={saving || !dirty} className="btn btn-primary px-8 py-2.5 font-bold shrink-0">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal)]" />} Lưu tư vấn</button>
+              <button onClick={save} disabled={saving || !dirty || !f.nhom} className="btn btn-primary px-8 py-2.5 font-bold shrink-0 cursor-pointer">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal)]" />} Lưu tư vấn</button>
             </div>
-          </>) : <div className="flex-1 flex flex-col items-center justify-center text-[var(--mute)] text-center px-8 gap-2"><Stethoscope className="w-10 h-10 text-[var(--mute-soft)]" /><span className="text-[14px]">Chọn bệnh nhân trong hàng chờ để tư vấn & phân nhóm.</span></div>}
+          </>) : <div className="flex-1 flex flex-col items-center justify-center text-[var(--mute)] text-center px-8 gap-2"><Stethoscope className="w-10 h-10 text-[var(--mute-soft)]" /><span className="text-[14px]">Chọn bệnh nhân trong hàng chờ để tư vấn điều trị.</span></div>}
         </main>
       </div>
     </div>

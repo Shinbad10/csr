@@ -32,10 +32,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
-  title: "VISI · Khám tầm soát cộng đồng",
+  title: "VISI CSR · Khám tầm soát cộng đồng",
   description: "Hệ thống Quản lý Khám tầm soát cộng đồng & Tư vấn phẫu thuật — VISI Medical Group",
   appleWebApp: {
     capable: true,

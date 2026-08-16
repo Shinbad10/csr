@@ -99,6 +99,8 @@ export interface HoSoExport {
   maBN: string; stt: number; hoTen: string; namSinh: number | null; ngaySinh?: Date | string | null; gioiTinh: string;
   cccd?: string | null; sdt: string | null;
   chanDoan: string; chanDoanKhac: string | null;
+  chanDoanMP?: string | null; chanDoanKhacMP?: string | null;
+  chanDoanMT?: string | null; chanDoanKhacMT?: string | null;
   bhyt: string | null; mucHuongBHYT?: number | null;
   benhLy?: string | null; loaiBenhLy?: string | null; loaiBenhLyKhac?: string | null;
   bacSiChiDinh?: string | null; nhanVienTuVan?: string | null;
@@ -109,6 +111,16 @@ export interface HoSoExport {
   buoiKham?: { ngayKham: Date | string; xa: string; diaDiem: string } | null;
 }
 
+const foldStr = (s?: string | null) =>
+  (s || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
 // Một dòng dữ liệu theo đúng thứ tự HOSO_HEADER. Giá trị rỗng = "" để Sheet/Excel hiển thị gọn.
 // forSheet=true: ép SĐT thành text (dấu ' đầu) để Google Sheet không mất số 0 đầu.
 export function hoSoToCells(h: HoSoExport, forSheet = false): (string | number)[] {
@@ -116,21 +128,43 @@ export function hoSoToCells(h: HoSoExport, forSheet = false): (string | number)[
 
   const icd = parseDiag(h.loaiBenhLy ?? "[]");        // mã ICD (bộ mới)
   const cds = parseDiag(h.chanDoan);                  // chẩn đoán rút gọn (bộ cũ)
+  const mp = parseDiag(h.chanDoanMP ?? null);
+  const mt = parseDiag(h.chanDoanMT ?? null);
 
-  // Yes/No: ưu tiên mã ICD, bổ sung bằng bộ chẩn đoán cũ.
-  const ducTTT = icd.some((x) => x.startsWith("H25")) || cds.includes("Đục thủy tinh thể");
-  const mong = cds.includes("Mộng"); // danh mục ICD không có mục "Mộng"
-  const khac = icd.some((x) => !x.startsWith("H25") && x !== "Khác")
-    || icd.includes("Khác")
-    || cds.some((x) => x !== "Đục thủy tinh thể" && x !== "Mộng");
+  const allDiags = [...icd, ...cds, ...mp, ...mt];
 
-  // Chi tiết chẩn đoán: gộp mã ICD + chẩn đoán cũ, thay "Khác" bằng nội dung ghi rõ.
-  const detail = Array.from(new Set([
-    ...icd.map((x) => (x === "Khác" ? (h.loaiBenhLyKhac || "Khác") : x)),
-    ...cds.map((x) => (x === "Khác" ? (h.chanDoanKhac || "Khác") : x)),
-  ])).join(", ");
+  const hasDucTTT = (s: string) => {
+    const f = foldStr(s);
+    return f.includes("duc thuy tinh the") || f.includes("dtt") || s.startsWith("H25");
+  };
 
-  const coBenhLy = h.benhLy === "Nghi ngờ bệnh lý" || icd.length > 0 || cds.length > 0;
+  const hasMong = (s: string) => {
+    const f = foldStr(s);
+    return f.includes("mong");
+  };
+
+  const isKnown = (s: string) => hasDucTTT(s) || hasMong(s);
+
+  // Yes/No: kiểm tra trên toàn bộ các nguồn chẩn đoán
+  const ducTTT = allDiags.some(hasDucTTT);
+  const mong = allDiags.some(hasMong);
+  const khac = allDiags.some((x) => x.trim() !== "" && !isKnown(x))
+    || Boolean(h.loaiBenhLyKhac?.trim())
+    || Boolean(h.chanDoanKhac?.trim())
+    || Boolean(h.chanDoanKhacMP?.trim())
+    || Boolean(h.chanDoanKhacMT?.trim());
+
+  // Chi tiết chẩn đoán: gộp mã ICD + chẩn đoán mắt, thay "Khác" bằng nội dung ghi rõ.
+  const detailItems: string[] = [];
+  icd.forEach((x) => detailItems.push(x === "Khác" ? (h.loaiBenhLyKhac || "Khác") : x));
+  cds.forEach((x) => detailItems.push(x === "Khác" ? (h.chanDoanKhac || "Khác") : x));
+  if (detailItems.length === 0) {
+    mp.forEach((x) => detailItems.push(x === "Khác" ? (h.chanDoanKhacMP || "Khác (MP)") : `${x} (MP)`));
+    mt.forEach((x) => detailItems.push(x === "Khác" ? (h.chanDoanKhacMT || "Khác (MT)") : `${x} (MT)`));
+  }
+  const detail = Array.from(new Set(detailItems.filter(Boolean))).join(", ");
+
+  const coBenhLy = h.benhLy === "Nghi ngờ bệnh lý" || ducTTT || mong || khac || allDiags.length > 0;
 
   // Mức hưởng BHYT dạng số (100/95/80); suy từ mã thẻ nếu chưa lưu.
   const mucHuong = h.mucHuongBHYT ?? (() => {

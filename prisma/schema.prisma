@@ -34,8 +34,9 @@ model CoSo {
 
 model NguoiDungCSR {
   maNV         String          @id // PK; dùng làm mã ghi công CSR
+  maHIS        String?         // Mã nhân sự / bác sĩ trên hệ thống HIS bệnh viện (NULL nếu tạo mới trên CSR)
   hoTen        String
-  vaiTro       String          // CSKH | TuVanVien | KeToan | QuanLy
+  vaiTro       String          // CSKH | TuVanVien | KeToan | QuanLy | BacSi
   coSoId       String?         // NULL nếu Quản lý toàn hệ thống
   coSo         CoSo?           @relation(fields: [coSoId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   tenDangNhap  String          @unique

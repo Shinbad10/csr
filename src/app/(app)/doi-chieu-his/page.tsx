@@ -497,7 +497,7 @@ export default function DoiChieuHisPage() {
                 {/* Pipeline 3 bước có mũi tên kết nối */}
                 <div className="flex flex-col md:flex-row items-stretch gap-3 md:gap-0 max-w-4xl mx-auto">
                   {[
-                    { n: 1, chip: "bg-[var(--navy)] text-white", t: "So khớp Hành chính", tbl: "QLyCapThe", d: "Đối chiếu Họ tên · Năm sinh · SĐT trên bảng" },
+                    { n: 1, chip: "bg-[var(--navy)] text-white", t: "So khớp CCCD & BHYT", tbl: "QLyCapThe", d: "Đối chiếu tự động CCCD · Mã thẻ BHYT · Họ tên · Năm sinh trên bảng" },
                     { n: 2, chip: "bg-[var(--teal-deep)] text-white", t: "Gán Mã BN HIS", tbl: "MaBNHIS", d: "Tự động lấy mã hồ sơ bệnh viện từ bảng" },
                     { n: 3, chip: "bg-[var(--gold)] text-white", t: "Xác nhận Phẫu thuật", tbl: "QLyPhongMo", d: "Truy vấn lịch sử mổ & cập nhật trạng thái trên" },
                   ].map((s, idx) => (
@@ -619,8 +619,12 @@ export default function DoiChieuHisPage() {
                           <td className="py-3.5 px-4 align-middle">
                             {r.found ? (
                               r.matchType === "exact" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/30">
-                                  <ShieldCheck className="w-3 h-3" /> CCCD khớp
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
+                                  r.matchReason?.includes("BHYT")
+                                    ? "bg-blue-50 text-blue-700 border-blue-300"
+                                    : "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/30"
+                                }`}>
+                                  <ShieldCheck className="w-3 h-3" /> {r.matchReason || "Khớp CCCD"}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[var(--amber-soft)] text-[var(--amber-deep)] border border-[var(--amber)]/30">
@@ -875,7 +879,12 @@ export default function DoiChieuHisPage() {
                             </td>
                             <td className="py-3.5 px-4 align-middle">
                               <div className="text-[var(--ink)] font-bold group-hover:text-[var(--navy)] text-[14px]">{r.hoTen}</div>
-                              <div className="text-xs text-[var(--mute-soft)] mt-0.5 font-mono">NS: {r.namSinh} | SĐT: {r.sdt || "—"}</div>
+                              <div className="text-xs text-[var(--mute)] mt-0.5 font-mono flex items-center gap-1.5 flex-wrap">
+                                <span>NS: {r.namSinh}</span>
+                                {r.cccd && <span>· CCCD: <b className="text-[var(--ink)] font-semibold">{r.cccd}</b></span>}
+                                {r.bhyt && <span>· BHYT: <b className="text-blue-700 font-semibold">{r.bhyt}</b></span>}
+                                {r.sdt && <span>· SĐT: {r.sdt}</span>}
+                              </div>
                             </td>
                             <td className="py-3.5 px-4 align-middle whitespace-nowrap font-mono text-xs font-semibold text-[var(--ink-soft)]">
                               {r.ngayMo ? fmtDate(r.ngayMo.slice(0, 10)) : "—"}
@@ -888,16 +897,24 @@ export default function DoiChieuHisPage() {
                               {r.matchedCsr ? (
                                 <div className={`p-2.5 rounded-[var(--r-md)] border ${
                                   r.matchedCsr.matchType === "exact"
-                                    ? "bg-[var(--teal-soft)] border-[var(--teal)]/40"
+                                    ? r.matchedCsr.matchReason?.includes("BHYT")
+                                      ? "bg-blue-50/70 border-blue-200"
+                                      : "bg-[var(--teal-soft)] border-[var(--teal)]/40"
                                     : "bg-[var(--amber-soft)] border-[var(--amber)]/40"
                                 }`}>
                                   <div className={`text-xs font-extrabold flex items-center gap-1.5 ${
-                                    r.matchedCsr.matchType === "exact" ? "text-[var(--teal-deep)]" : "text-[var(--amber-deep)]"
+                                    r.matchedCsr.matchType === "exact"
+                                      ? r.matchedCsr.matchReason?.includes("BHYT")
+                                        ? "text-blue-800"
+                                        : "text-[var(--teal-deep)]"
+                                      : "text-[var(--amber-deep)]"
                                   }`}>
                                     {r.matchedCsr.matchType === "exact" ? (
                                       <>
-                                        <span className="w-2 h-2 rounded-full bg-[var(--teal)] animate-pulse" />
-                                        <span>🎯 CCCD khớp: {r.matchedCsr.hoTen} (<span className="font-mono">{r.matchedCsr.maBN}</span>)</span>
+                                        <span className={`w-2 h-2 rounded-full animate-pulse ${
+                                          r.matchedCsr.matchReason?.includes("BHYT") ? "bg-blue-600" : "bg-[var(--teal)]"
+                                        }`} />
+                                        <span>🎯 {r.matchedCsr.matchReason || "Khớp CCCD"}: {r.matchedCsr.hoTen} (<span className="font-mono">{r.matchedCsr.maBN}</span>)</span>
                                       </>
                                     ) : (
                                       <>
@@ -906,8 +923,10 @@ export default function DoiChieuHisPage() {
                                       </>
                                     )}
                                   </div>
-                                  <div className="text-[11.5px] text-[var(--ink-soft)] mt-1 font-medium">
-                                    Đợt: {r.matchedCsr.buoiKham?.xa} ({fmtDate(r.matchedCsr.buoiKham?.ngayKham)})
+                                  <div className="text-[11.5px] text-[var(--ink-soft)] mt-1 font-medium flex items-center gap-1.5 flex-wrap">
+                                    <span>Đợt: {r.matchedCsr.buoiKham?.xa} ({fmtDate(r.matchedCsr.buoiKham?.ngayKham)})</span>
+                                    {r.matchedCsr.cccd && <span className="font-mono text-[11px]">· CCCD: <b>{r.matchedCsr.cccd}</b></span>}
+                                    {r.matchedCsr.bhyt && <span className="font-mono text-[11px] text-blue-700">· BHYT: <b>{r.matchedCsr.bhyt}</b></span>}
                                   </div>
                                   {r.matchedCsr.ambiguous && (
                                     <div className="mt-1.5 inline-flex items-start gap-1.5 text-[11px] font-bold text-[var(--rose)]">

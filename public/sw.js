@@ -61,6 +61,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Skip caching on localhost/dev
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.pathname.includes("_next/static/chunks")) {
+    return;
+  }
+
   // Static assets (images, fonts, css, js): cache-first
   if (
     url.pathname.match(/\.(js|css|woff2?|ttf|otf|png|jpg|jpeg|gif|svg|ico|webp)$/)

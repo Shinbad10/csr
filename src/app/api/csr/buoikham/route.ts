@@ -69,8 +69,36 @@ export async function POST(request: Request) {
     const id = `ĐK-${dateStr}-${String(count + 1).padStart(2, "0")}`;
 
 
+    const trimmedBacSi = bacSiKham?.trim() || null;
+    if (trimmedBacSi) {
+      const docNames = trimmedBacSi.split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean);
+      for (const docName of docNames) {
+        const existingUser = await getPrisma().nguoiDungCSR.findFirst({
+          where: { hoTen: { equals: docName } },
+        });
+        if (!existingUser) {
+          const cleanName = docName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+          const rand = Math.random().toString(36).slice(2, 6);
+          const maNV = `BS-${Date.now().toString().slice(-6)}-${rand}`.toUpperCase();
+          const tenDangNhap = `bs_${cleanName || "user"}_${rand}`.slice(0, 50);
+          await getPrisma().nguoiDungCSR.create({
+            data: {
+              maNV,
+              maHIS: null, // Để trống mã HIS theo yêu cầu, chờ đồng bộ sau
+              hoTen: docName,
+              vaiTro: "BacSi",
+              coSoId,
+              tenDangNhap,
+              matKhauHash: "CSR_LOCAL_CREATED",
+              trangThai: "active",
+            },
+          }).catch((err) => console.error("Auto create doctor error:", err));
+        }
+      }
+    }
+
     const data = await getPrisma().buoiKham.create({
-      data: { id, coSoId, ngayKham: new Date(ngayKham), xa, diaDiem, bacSiKham: bacSiKham?.trim() || null, ghiChu: ghiChu || null, nguoiTao: session.user.id },
+      data: { id, coSoId, ngayKham: new Date(ngayKham), xa, diaDiem, bacSiKham: trimmedBacSi, ghiChu: ghiChu || null, nguoiTao: session.user.id },
       include: { coSo: true, _count: { select: { hoSo: true } } },
     });
 

@@ -329,7 +329,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
       return "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/20";
     if (role.toLowerCase().includes("tư vấn") || role.toLowerCase().includes("bhyt"))
       return "bg-[var(--amber-soft)] text-[var(--amber)] border-[var(--amber)]/20";
-    if (role.toLowerCase().includes("cskh") || role.toLowerCase().includes("tiếp nhận"))
+    if (role.toLowerCase().includes("mkt") || role.toLowerCase().includes("marketing") || role.toLowerCase().includes("cskh") || role.toLowerCase().includes("tiếp nhận"))
       return "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/20";
     return "bg-[var(--surface-soft)] text-[var(--ink-soft)] border-[var(--line)]";
   };

@@ -35,26 +35,54 @@ export async function POST(request: Request) {
       const hisName = foldName(his.hoTen);
       const hisYear = String(his.namSinh).trim();
       const hisCccd = foldId(his.cccd);
+      const hisBhyt = (his.bhyt || "").toUpperCase().trim();
+      const hisBhytDigits = foldId(hisBhyt);
       const hisPhone = foldPhone(his.sdt);
 
-      // Tìm khớp 2 lớp: CCCD (định danh duy nhất) -> Họ tên + Năm sinh / SĐT.
-      // Đếm số ứng viên ở mỗi lớp: nhiều hơn 1 nghĩa là KHÔNG phân biệt được người nào,
-      // phải đánh dấu để chặn liên kết tự động (rất nhiều BN cùng xã trùng tên + năm sinh).
+      // Tìm khớp 3 tầng: 
+      // 1. CCCD (định danh 9-12 số)
+      // 2. BHYT (mã thẻ 15 ký tự hoặc 10 số cuối BHXH)
+      // 3. Họ tên + Năm sinh / SĐT
       let matched = null;
       let matchType: "exact" | "partial" = "partial";
+      let matchReason = "";
       let ambiguous = false;
       let candidates = 0;
 
-      if (hisCccd) {
+      // 1. Khớp theo CCCD
+      if (hisCccd && hisCccd.length >= 9) {
         const byCccd = csrPatients.filter((csr) => foldId(csr.cccd) === hisCccd);
         if (byCccd.length > 0) {
           matched = byCccd[0];
           matchType = "exact";
+          matchReason = "Khớp CCCD";
           candidates = byCccd.length;
           ambiguous = byCccd.length > 1;
         }
       }
 
+      // 2. Khớp theo mã thẻ BHYT (nếu chưa khớp CCCD)
+      if (!matched && (hisBhyt.length >= 10 || hisBhytDigits.length >= 10)) {
+        const byBhyt = csrPatients.filter((csr) => {
+          const csrBhyt = (csr.bhyt || "").toUpperCase().trim();
+          if (!csrBhyt) return false;
+          if (csrBhyt === hisBhyt) return true;
+          const csrDigits = foldId(csrBhyt);
+          if (csrDigits.length >= 10 && hisBhytDigits.length >= 10) {
+            return csrDigits.endsWith(hisBhytDigits.slice(-10)) || hisBhytDigits.endsWith(csrDigits.slice(-10));
+          }
+          return false;
+        });
+        if (byBhyt.length > 0) {
+          matched = byBhyt[0];
+          matchType = "exact";
+          matchReason = "Khớp thẻ BHYT";
+          candidates = byBhyt.length;
+          ambiguous = byBhyt.length > 1;
+        }
+      }
+
+      // 3. Khớp theo Họ tên + Năm sinh / SĐT
       if (!matched) {
         const byInfo = csrPatients.filter((csr) => {
           const name = foldName(csr.hoTen);
@@ -65,6 +93,7 @@ export async function POST(request: Request) {
         if (byInfo.length > 0) {
           matched = byInfo[0];
           matchType = "partial";
+          matchReason = "Khớp Họ tên + Năm sinh";
           candidates = byInfo.length;
           ambiguous = byInfo.length > 1;
         }
@@ -79,6 +108,7 @@ export async function POST(request: Request) {
             hoTen: matched.hoTen,
             namSinh: matched.namSinh,
             cccd: matched.cccd || null,
+            bhyt: matched.bhyt || null,
             sdt: matched.sdt,
             buoiKham: matched.buoiKham
               ? {
@@ -89,11 +119,10 @@ export async function POST(request: Request) {
               : null,
             trangThaiDieuTri: matched.trangThaiDieuTri,
             maBNHIS: matched.maBNHIS,
-            daDon: matched.daDon,
             matchType,
-            /** true = có nhiều hồ sơ CSR cùng khớp, phải chọn tay thay vì liên kết tự động */
-            ambiguous,
+            matchReason,
             candidates,
+            ambiguous,
           },
         };
       }

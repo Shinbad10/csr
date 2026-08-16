@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Camera, X, Check, Loader2, Scan, RefreshCw } from "lucide-react";
+import { Camera, X, Check, Loader2, Scan, RefreshCw, AlertCircle } from "lucide-react";
 
 interface BarcodeScannerInputProps {
   /** Hàm được gọi khi nhận diện thành công chuỗi quét trọn vẹn (hoặc khi bấm Enter / Áp dụng) */
@@ -406,17 +406,24 @@ export function BarcodeScannerInput({
         </div>
       )}
       {lookupStatus === "fail" && (
-        <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--rose)] animate-fade-in w-full sm:w-auto">
-          <X className="w-4 h-4 shrink-0 stroke-[3]" /> <span className="truncate">{lookupMsg}</span>
+        <div className="flex items-center gap-2 text-[12.5px] font-semibold text-amber-800 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 animate-fade-in w-full sm:w-auto">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+          <span className="truncate">{lookupMsg || "Chưa kết nối cổng BHXH"}</span>
           {onRetryLookup && (
-            <button type="button" onClick={onRetryLookup} className="text-[12px] font-bold underline hover:no-underline shrink-0 cursor-pointer">Thử lại</button>
+            <button
+              type="button"
+              onClick={onRetryLookup}
+              className="text-[12px] font-bold text-amber-900 underline hover:no-underline shrink-0 cursor-pointer ml-1"
+            >
+              Thử lại
+            </button>
           )}
         </div>
       )}
       {lookupStatus === "ok" && (
         <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--teal-deep)] animate-fade-in w-full sm:w-auto">
           <Check className="w-4 h-4 shrink-0 stroke-[3]" /> <span className="truncate">{lookupMsg}</span>
-          {theBhytMa && <span className="font-mono bg-[var(--teal)] text-white px-2 py-0.5 rounded-md text-[11px] shrink-0">{theBhytMa}</span>}
+          {theBhytMa && <span className="font-mono bg-[var(--teal)] text-white px-2 py-0.5 rounded-md text-[11px] shrink-0 font-bold">{theBhytMa}</span>}
         </div>
       )}
     </div>
