@@ -81,31 +81,76 @@ export function appendHisNote(oldNote: string | null | undefined, newHisDetail: 
   return res.slice(0, 950);
 }
 
-/** Tự dò tên cột thực tế trong bảng QLyCapThe của HIS SQL Server */
-async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{ cmndCol: string; bhytCol: string; addrCol: string }> {
-  let cmndCol = "CMND";
-  let bhytCol = "Sothe";
-  let addrCol = "";
+/** Tự dò tên bảng và tên cột thực tế trong bảng QLyCapThe của HIS SQL Server */
+async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
+  tableName: string;
+  cmndCol: string | null;
+  bhytCol: string | null;
+  addrCol: string | null;
+  sdtCol: string | null;
+}> {
+  let tableName = "QLyCapThe";
+  let cmndCol: string | null = null;
+  let bhytCol: string | null = null;
+  let addrCol: string | null = null;
+  let sdtCol: string | null = null;
 
   try {
     const colRes = await pool.request().query(`
-      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = 'QLyCapThe'
+      SELECT c.name AS COLUMN_NAME, t.name AS TABLE_NAME
+      FROM sys.columns c
+      JOIN sys.tables t ON c.object_id = t.object_id
+      WHERE LOWER(t.name) LIKE '%capthe%' OR LOWER(t.name) LIKE '%benhnhan%' OR LOWER(t.name) = 'dmbenhnhan'
+      UNION
+      SELECT COLUMN_NAME, TABLE_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE LOWER(TABLE_NAME) LIKE '%capthe%' OR LOWER(TABLE_NAME) LIKE '%benhnhan%' OR LOWER(TABLE_NAME) = 'dmbenhnhan'
     `);
-    const cols = (colRes.recordset || []).map((r: any) => String(r.COLUMN_NAME));
-    const findCol = (candidates: string[]) => candidates.find((c) => cols.some((col) => col.toLowerCase() === c.toLowerCase()));
+    const records = colRes.recordset || [];
 
-    const foundCmnd = findCol(["CMND", "SoCMND", "CCCD", "SoCCCD", "CMT"]);
-    if (foundCmnd) cmndCol = foundCmnd;
+    const capTheRecord =
+      records.find((r: any) => String(r.TABLE_NAME).toLowerCase() === "qlycapthe") ||
+      records.find((r: any) => String(r.TABLE_NAME).toLowerCase().includes("capthe")) ||
+      records[0];
 
-    const foundBhyt = findCol(["Sothe", "MaTheBHYT", "BHYT", "SoTheBHYT", "MaThe", "SoThe"]);
-    if (foundBhyt) bhytCol = foundBhyt;
+    if (capTheRecord?.TABLE_NAME) {
+      tableName = String(capTheRecord.TABLE_NAME);
+    }
 
-    const foundAddr = findCol(["Diachi", "DiaChi", "ThuongTru", "NoiO", "DiaChiThuongTru"]);
-    if (foundAddr) addrCol = foundAddr;
-  } catch {}
+    const tableCols = records
+      .filter((r: any) => String(r.TABLE_NAME).toLowerCase() === tableName.toLowerCase())
+      .map((r: any) => String(r.COLUMN_NAME).trim());
 
-  return { cmndCol, bhytCol, addrCol };
+    const findCol = (candidates: string[]) =>
+      candidates.find((c) => tableCols.some((col) => col.toLowerCase() === c.toLowerCase())) ||
+      tableCols.find((col) => candidates.some((c) => col.toLowerCase().includes(c.toLowerCase())));
+
+    cmndCol =
+      findCol([
+        "CMND", "SoCMND", "CCCD", "SoCCCD", "CMT", "SoCMT",
+        "So_CMND", "So_CCCD", "MaDinhDanh", "SoDinhDanh"
+      ]) || null;
+
+    bhytCol =
+      findCol([
+        "Sothe", "MaTheBHYT", "BHYT", "SoTheBHYT", "MaThe", "SoThe",
+        "MatheBHYT", "TheBHYT", "MaTheBH", "SoBHYT", "Ma_The", "Ma_The_BHYT", "So_The", "So_The_BHYT"
+      ]) || null;
+
+    addrCol =
+      findCol([
+        "Diachi", "DiaChi", "ThuongTru", "NoiO", "DiaChiThuongTru", "DiaChi_ThuongTru", "DC"
+      ]) || null;
+
+    sdtCol =
+      findCol([
+        "Dienthoai", "DienThoai", "SDT", "SoDienThoai", "Phone", "Mobile", "Tel"
+      ]) || null;
+  } catch (err) {
+    console.error("Error inspecting QLyCapThe columns:", err);
+  }
+
+  return { tableName, cmndCol, bhytCol, addrCol, sdtCol };
 }
 
 export async function checkHISForPatient(
@@ -135,7 +180,7 @@ export async function checkHISForPatient(
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { cmndCol, bhytCol } = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, bhytCol, sdtCol } = await getQLyCapTheColumns(pool);
 
     const hoTenClean = (hoTen || "").trim();
     const namSinhStr = String(namSinh || "").trim();
@@ -145,15 +190,32 @@ export async function checkHISForPatient(
     const bhytDigits = foldId(bhytClean);
     const bhytLast10 = bhytDigits.length >= 10 ? bhytDigits.slice(-10) : "";
 
+    const cmndSelect = cmndCol ? `c.[${cmndCol}] as CMND,` : `NULL as CMND,`;
+    const bhytSelect = bhytCol ? `c.[${bhytCol}] as Sothe,` : `NULL as Sothe,`;
+    const sdtSelect = sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`;
+
+    const whereClauses: string[] = [];
+    if (cmndCol) {
+      whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
+      whereClauses.push(`(REPLACE(c.[${cmndCol}], ' ', '') = @cccdDigits AND @cccdDigits <> '')`);
+    }
+    if (bhytCol) {
+      whereClauses.push(`(c.[${bhytCol}] = @bhyt AND @bhyt <> '')`);
+      whereClauses.push(`(c.[${bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')`);
+    }
+    whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
+
+    const whereSql = whereClauses.join(" OR ");
+
     // Truy vấn tổng hợp từ QLyCapThe (so khớp cả CCCD và mã thẻ BHYT)
     const query = `
       SELECT TOP 5
         c.Ma as maHIS,
         c.Hoten,
         c.Namsinh,
-        c.[${cmndCol}] as CMND,
-        c.[${bhytCol}] as Sothe,
-        c.Dienthoai,
+        ${cmndSelect}
+        ${bhytSelect}
+        ${sdtSelect}
         mo.Ngaymo,
         mo.Khoa as khoaMo,
         hsba.Chandoan_Ravien as chanDoanRavien,
@@ -162,15 +224,11 @@ export async function checkHISForPatient(
         hsba.Ngayra,
         bm.BsDieutri,
         bm.ChandoanChinh as chanDoanBM
-      FROM QLyCapThe c
+      FROM [${tableName}] c
       LEFT JOIN QLyPhongMo mo ON c.Ma = mo.MaBenhnhan
       LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
       LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
-      WHERE (c.[${cmndCol}] = @cccd AND @cccd <> '')
-         OR (REPLACE(c.[${cmndCol}], ' ', '') = @cccdDigits AND @cccdDigits <> '')
-         OR (c.[${bhytCol}] = @bhyt AND @bhyt <> '')
-         OR (c.[${bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')
-         OR (LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)
+      WHERE ${whereSql}
       ORDER BY mo.Ngaymo DESC, hsba.Ngayvao DESC
     `;
 
@@ -330,7 +388,11 @@ export async function batchCheckHISForPatients(
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
     const prisma = getPrisma();
-    const { cmndCol, bhytCol } = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, bhytCol, sdtCol } = await getQLyCapTheColumns(pool);
+
+    const cmndSelect = cmndCol ? `c.[${cmndCol}] as CMND,` : `NULL as CMND,`;
+    const bhytSelect = bhytCol ? `c.[${bhytCol}] as Sothe,` : `NULL as Sothe,`;
+    const sdtSelect = sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`;
 
     for (const p of patients) {
       try {
@@ -343,21 +405,30 @@ export async function batchCheckHISForPatients(
         const bhytLast10 = bhytDigits.length >= 10 ? bhytDigits.slice(-10) : "";
         const mStr = monthStr || (p.buoiKham?.ngayKham ? new Date(p.buoiKham.ngayKham).toISOString().slice(0, 7) : null);
 
+        const whereClauses: string[] = [];
+        if (cmndCol) {
+          whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
+          whereClauses.push(`(REPLACE(c.[${cmndCol}], ' ', '') = @cccdDigits AND @cccdDigits <> '')`);
+        }
+        if (bhytCol) {
+          whereClauses.push(`(c.[${bhytCol}] = @bhyt AND @bhyt <> '')`);
+          whereClauses.push(`(c.[${bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')`);
+        }
+        whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
+
+        const whereSql = whereClauses.join(" OR ");
+
         const query = `
           SELECT TOP 5
-            c.Ma as maHIS, c.Hoten, c.Namsinh, c.[${cmndCol}] as CMND, c.[${bhytCol}] as Sothe, c.Dienthoai,
+            c.Ma as maHIS, c.Hoten, c.Namsinh, ${cmndSelect} ${bhytSelect} ${sdtSelect}
             mo.Ngaymo, mo.Khoa as khoaMo,
             hsba.Chandoan_Ravien as chanDoanRavien, hsba.Chandoan_Vaovien as chanDoanVaovien,
             hsba.Ngayvao, hsba.Ngayra, bm.BsDieutri, bm.ChandoanChinh as chanDoanBM
-          FROM QLyCapThe c
+          FROM [${tableName}] c
           LEFT JOIN QLyPhongMo mo ON c.Ma = mo.MaBenhnhan
           LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
           LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
-          WHERE (c.[${cmndCol}] = @cccd AND @cccd <> '')
-             OR (REPLACE(c.[${cmndCol}], ' ', '') = @cccdDigits AND @cccdDigits <> '')
-             OR (c.[${bhytCol}] = @bhyt AND @bhyt <> '')
-             OR (c.[${bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')
-             OR (LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)
+          WHERE ${whereSql}
           ORDER BY mo.Ngaymo DESC, hsba.Ngayvao DESC
         `;
         const req = pool.request();
@@ -498,8 +569,17 @@ export async function searchHIS(coSoId: string, keyword: string) {
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { cmndCol, bhytCol, addrCol } = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, bhytCol, addrCol, sdtCol } = await getQLyCapTheColumns(pool);
+    const cmndSelect = cmndCol ? `c.[${cmndCol}] as cccd,` : `NULL as cccd,`;
+    const bhytSelect = bhytCol ? `c.[${bhytCol}] as bhyt,` : `NULL as bhyt,`;
+    const sdtSelect = sdtCol ? `c.[${sdtCol}] as sdt,` : `NULL as sdt,`;
     const addrSelect = addrCol ? `c.[${addrCol}] as diaChi,` : `NULL as diaChi,`;
+
+    const whereClauses = [`LOWER(c.Hoten) LIKE LOWER(@kw)`];
+    if (cmndCol) whereClauses.push(`c.[${cmndCol}] LIKE @kw`);
+    if (bhytCol) whereClauses.push(`c.[${bhytCol}] LIKE @kw`);
+    whereClauses.push(`c.Ma = @kwRaw`);
+    const whereSql = whereClauses.join(" OR ");
 
     const req = pool.request();
     req.input("kw", sql.NVarChar, `%${kw}%`);
@@ -510,9 +590,9 @@ export async function searchHIS(coSoId: string, keyword: string) {
         c.Ma as maHIS,
         c.Hoten as hoTen,
         c.Namsinh as namSinh,
-        c.[${cmndCol}] as cccd,
-        c.[${bhytCol}] as bhyt,
-        c.Dienthoai as sdt,
+        ${cmndSelect}
+        ${bhytSelect}
+        ${sdtSelect}
         ${addrSelect}
         mo.Ngaymo as ngayMo,
         mo.Khoa as khoaMo,
@@ -520,14 +600,11 @@ export async function searchHIS(coSoId: string, keyword: string) {
         hsba.Chandoan_Vaovien as chanDoanVaovien,
         bm.BsDieutri as bsDieuTri,
         bm.ChandoanChinh as chanDoanBM
-      FROM QLyCapThe c
+      FROM [${tableName}] c
       LEFT JOIN QLyPhongMo mo ON c.Ma = mo.MaBenhnhan
       LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
       LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
-      WHERE LOWER(c.Hoten) LIKE LOWER(@kw)
-         OR c.[${cmndCol}] LIKE @kw
-         OR c.[${bhytCol}] LIKE @kw
-         OR c.Ma = @kwRaw
+      WHERE ${whereSql}
       ORDER BY mo.Ngaymo DESC
     `;
 
@@ -577,7 +654,10 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { cmndCol, bhytCol } = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, bhytCol, sdtCol } = await getQLyCapTheColumns(pool);
+    const cmndSelect = cmndCol ? `c.[${cmndCol}] as cccd,` : `NULL as cccd,`;
+    const bhytSelect = bhytCol ? `c.[${bhytCol}] as bhyt,` : `NULL as bhyt,`;
+    const sdtSelect = sdtCol ? `c.[${sdtCol}] as sdt,` : `NULL as sdt,`;
 
     let monthFilter = "";
     const req = pool.request();
@@ -598,9 +678,9 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
         c.Ma as maHIS,
         c.Hoten as hoTen,
         c.Namsinh as namSinh,
-        c.[${cmndCol}] as cccd,
-        c.[${bhytCol}] as bhyt,
-        c.Dienthoai as sdt,
+        ${cmndSelect}
+        ${bhytSelect}
+        ${sdtSelect}
         mo.Ngaymo as ngayMo,
         mo.Khoa as khoaMo,
         hsba.Chandoan_Ravien as chanDoanRavien,
@@ -608,7 +688,7 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
         bm.BsDieutri as bsDieuTri,
         bm.ChandoanChinh as chanDoanBM
       FROM QLyPhongMo mo
-      JOIN QLyCapThe c ON mo.MaBenhnhan = c.Ma
+      JOIN [${tableName}] c ON mo.MaBenhnhan = c.Ma
       LEFT JOIN Noitru_HSBA hsba ON c.Ma = hsba.MaBenhnhan AND (mo.MaBenhAn = hsba.SoBenhAn OR mo.Ngaymo BETWEEN hsba.Ngayvao AND hsba.Ngayra)
       LEFT JOIN BN_Master bm ON c.Ma = bm.MaBN AND (mo.Ngaymo = bm.Ngay OR hsba.Ngayvao = bm.Ngay)
       WHERE mo.Ngaymo IS NOT NULL ${monthFilter}

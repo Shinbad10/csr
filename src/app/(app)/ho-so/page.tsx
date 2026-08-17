@@ -18,9 +18,10 @@ import {
   X,
 } from "lucide-react";
 import { ageOf, fmtDate, fmtBuoiKhamName, parseDiag, statusOf, bhytLevel, type HoSo } from "@/lib/csr";
+import { isCorporate } from "@/lib/permissions";
+import { useSession } from "next-auth/react";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
 import { SkeletonTable } from "@/components/layout/Skeleton";
-import PageHeader from "@/components/layout/PageHeader";
 import { PatientInfoModal, PatientHistoryModal } from "@/components/csr/PatientModals";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -31,6 +32,8 @@ const NHOM_LABELS = { A: "Nhóm A · đã chốt mổ", B: "Nhóm B · theo dõi
 const PAGE_SIZE_OPTS = [20, 50, 100, 200];
 
 export default function HoSoPage() {
+  const { data: session } = useSession();
+  const isAdmin = isCorporate(session?.user?.role);
   const { addToast } = useToast();
   const [rows, setRows] = useState<HoSo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,21 +163,9 @@ export default function HoSoPage() {
   const endItem = Math.min(page * pageSize, total);
 
   return (
-    <div>
-      <PageHeader
-        title="Hồ sơ bệnh nhân"
-        description="Tra cứu toàn bộ hồ sơ trong cơ sở. Lọc theo trạng thái / nhóm, tìm theo tên · mã · SĐT · CCCD."
-        guide={[
-          { selector: '[data-tour="hs-search"]', title: "Tìm kiếm hồ sơ", desc: "Nhập tên, mã bệnh nhân, số điện thoại hoặc CCCD vào ô này." },
-          { selector: '[data-tour="hs-filter"]', title: "Lọc danh sách", desc: "Dùng bộ lọc theo trạng thái hoặc nhóm (A/B) để thu hẹp kết quả." },
-          { selector: '[data-tour="hs-info"]', title: "Xem thông tin", desc: 'Bấm "Thông tin" ở mỗi dòng để xem chi tiết hồ sơ bệnh nhân.' },
-          { selector: '[data-tour="hs-history"]', title: "Xem lịch sử", desc: 'Bấm "Lịch sử" để xem toàn bộ thao tác đã thực hiện trên hồ sơ.' },
-        ]}
-        guideTip="Đây là nơi tra cứu tổng hợp toàn bộ hồ sơ của cơ sở đang làm việc."
-      />
-
+    <div className="space-y-3">
       {/* bộ lọc + nút hành động */}
-      <div data-tour="hs-filter" className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 mt-5">
+      <div data-tour="hs-filter" className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
           <div data-tour="hs-search" className="relative w-full sm:w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
@@ -203,74 +194,76 @@ export default function HoSoPage() {
           </div>
         </div>
 
-        {/* Nút Đồng bộ Google Sheet + Chọn số bản ghi mỗi trang */}
+        {/* Nút Đồng bộ Google Sheet (Chỉ Admin) + Chọn số bản ghi mỗi trang */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Nút Đồng bộ Google Sheet với Menu Lựa Chọn */}
-          <div className="relative" ref={menuRef}>
-            <div className="inline-flex rounded-lg shadow-xs">
-              <button
-                type="button"
-                onClick={() => handleSyncGoogleSheet(false)}
-                disabled={syncing}
-                className="btn border border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-3 text-[12.5px] font-bold flex items-center gap-1.5 rounded-l-lg rounded-r-none cursor-pointer disabled:opacity-50 transition-all"
-              >
-                {syncing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--navy)]" />
-                ) : (
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
-                )}
-                <span>{syncing ? "Đang đồng bộ…" : "Đồng bộ Google Sheet"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSyncMenuOpen((o) => !o)}
-                disabled={syncing}
-                className="btn border border-l-0 border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-2 rounded-r-lg rounded-l-none cursor-pointer disabled:opacity-50 transition-all"
-                title="Tùy chọn đồng bộ Sheet"
-              >
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Menu thả xuống lựa chọn chế độ đồng bộ */}
-            {syncMenuOpen && (
-              <div className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white shadow-[var(--shadow-xl)] py-1 z-50 text-[12.5px] font-medium animate-dropdown">
+          {/* Nút Đồng bộ Google Sheet với Menu Lựa Chọn - Chỉ Admin */}
+          {isAdmin && (
+            <div className="relative" ref={menuRef}>
+              <div className="inline-flex rounded-lg shadow-xs">
                 <button
                   type="button"
                   onClick={() => handleSyncGoogleSheet(false)}
-                  className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--surface-soft)] text-[var(--ink)] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  disabled={syncing}
+                  className="btn border border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-3 text-[12.5px] font-bold flex items-center gap-1.5 rounded-l-lg rounded-r-none cursor-pointer disabled:opacity-50 transition-all"
                 >
-                  <RefreshCw className="w-4 h-4 text-[var(--navy)] shrink-0" />
-                  <div>
-                    <div className="font-bold text-[12.5px]">Đồng bộ hàng đợi</div>
-                    <div className="text-[11px] text-[var(--mute)]">Đẩy các thay đổi mới nhất lên Sheet</div>
-                  </div>
+                  {syncing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--navy)]" />
+                  ) : (
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
+                  )}
+                  <span>{syncing ? "Đang đồng bộ…" : "Đồng bộ Google Sheet"}</span>
                 </button>
-
-                <div className="border-t border-[var(--line)] my-1"></div>
 
                 <button
                   type="button"
-                  onClick={() => handleSyncGoogleSheet(true)}
-                  className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--rose-soft)] text-[var(--rose)] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  onClick={() => setSyncMenuOpen((o) => !o)}
+                  disabled={syncing}
+                  className="btn border border-l-0 border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-2 rounded-r-lg rounded-l-none cursor-pointer disabled:opacity-50 transition-all"
+                  title="Tùy chọn đồng bộ Sheet"
                 >
-                  <RotateCw className="w-4 h-4 text-[var(--rose)] shrink-0" />
-                  <div>
-                    <div className="font-bold text-[12.5px]">Dựng lại Sheet từ đầu</div>
-                    <div className="text-[11px] text-[var(--rose)]/80">Xóa dữ liệu cũ trên Sheet & đẩy lại 100%</div>
-                  </div>
+                  <ChevronDown className="w-3.5 h-3.5" />
                 </button>
               </div>
-            )}
-          </div>
+
+              {/* Menu thả xuống lựa chọn chế độ đồng bộ */}
+              {syncMenuOpen && (
+                <div className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white shadow-[var(--shadow-xl)] py-1 z-50 text-[12.5px] font-medium animate-dropdown">
+                  <button
+                    type="button"
+                    onClick={() => handleSyncGoogleSheet(false)}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--surface-soft)] text-[var(--ink)] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4 text-[var(--navy)] shrink-0" />
+                    <div>
+                      <div className="font-bold text-[12.5px]">Đồng bộ hàng đợi</div>
+                      <div className="text-[11px] text-[var(--mute)]">Đẩy các thay đổi mới nhất lên Sheet</div>
+                    </div>
+                  </button>
+
+                  <div className="border-t border-[var(--line)] my-1"></div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSyncGoogleSheet(true)}
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--rose-soft)] text-[var(--rose)] flex items-center gap-2.5 cursor-pointer transition-colors"
+                  >
+                    <RotateCw className="w-4 h-4 text-[var(--rose)] shrink-0" />
+                    <div>
+                      <div className="font-bold text-[12.5px]">Dựng lại Sheet từ đầu</div>
+                      <div className="text-[11px] text-[var(--rose)]/80">Xóa dữ liệu cũ trên Sheet & đẩy lại 100%</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2 text-xs text-[var(--mute)] font-medium">
             <span>Hiển thị:</span>
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="input-field h-9 py-0 px-2 font-mono text-[12px] bg-white w-20 cursor-pointer"
+              className="input-field h-9 py-0 pl-2.5 pr-7 text-[12px] bg-white w-28 min-w-[115px] font-sans font-medium cursor-pointer"
             >
               {PAGE_SIZE_OPTS.map((sz) => (
                 <option key={sz} value={sz}>

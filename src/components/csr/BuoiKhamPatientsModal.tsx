@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, type HoSo } from "@/lib/csr";
 import { parseDoctorList } from "./DoctorAutocomplete";
+import { useToast } from "@/components/providers/ToastProvider";
 
 interface BuoiKhamSummary {
   id: string;
@@ -32,10 +33,62 @@ export default function BuoiKhamPatientsModal({
   onClose,
   buoiKham,
 }: BuoiKhamPatientsModalProps) {
+  const { addToast } = useToast();
   const [patients, setPatients] = useState<HoSo[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "CHUA_MO">("ALL");
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!buoiKham?.id || exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/csr/export?buoiKhamId=${encodeURIComponent(buoiKham.id)}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể xuất file Excel");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      const disp = res.headers.get("Content-Disposition");
+      let filename = "";
+      if (disp) {
+        const matchStar = disp.match(/filename\*=UTF-8''([^;]+)/i);
+        if (matchStar) filename = decodeURIComponent(matchStar[1]);
+        else {
+          const matchPlain = disp.match(/filename="?([^";]+)"?/i);
+          if (matchPlain) filename = matchPlain[1];
+        }
+      }
+      if (!filename) {
+        const dateStr = buoiKham.ngayKham ? new Date(buoiKham.ngayKham).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+        const cleanXa = (buoiKham.xa || "KhamMat").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
+        filename = `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast({
+        type: "success",
+        title: "Xuất Excel thành công",
+        message: `Đã tải file danh sách khám mắt ${buoiKham.xa || fmtBuoiKhamName(buoiKham)}`,
+      });
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Lỗi xuất file",
+        message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!open || !buoiKham?.id) {
@@ -230,6 +283,17 @@ export default function BuoiKhamPatientsModal({
                 <span className="font-mono bg-black/10 px-1.5 py-0.5 rounded text-[11px] font-black">{stats.daMo}</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting || patients.length === 0}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ml-auto bg-white text-[#018a7f] border border-[#02b8a9]/40 hover:bg-[#e6faf7] shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Xuất danh sách khám mắt theo mẫu Excel"
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02b8a9]" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-[#02b8a9]" />}
+              <span>Xuất Excel ({patients.length})</span>
+            </button>
           </div>
         </div>
 

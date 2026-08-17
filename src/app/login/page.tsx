@@ -17,7 +17,7 @@ import {
   Sparkles,
   Building2,
 } from "lucide-react";
-import { getActiveFacilities, setSelectedFacilityCookie } from "./actions";
+import { getActiveFacilities, setSelectedFacilityCookie, getLoginUserFacility } from "./actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -94,10 +94,23 @@ export default function LoginPage() {
           setError("Tên đăng nhập hoặc mật khẩu không chính xác.");
           setIsLoading(false);
         } else {
-          if (facilities.length > 0) {
+          // Kiểm tra vai trò & đơn vị mặc định của người dùng
+          const userCtx = await getLoginUserFacility(username);
+
+          // Tài khoản không phải Quản lý hoặc có đơn vị cố định: Tự động dùng đơn vị mặc định, không bắt chọn
+          if (!userCtx.isCorporate && userCtx.defaultCoSoId) {
+            await setSelectedFacilityCookie(userCtx.defaultCoSoId);
+            setIsRedirecting(true);
+            router.push("/");
+            router.refresh();
+          } else if (userCtx.isCorporate && facilities.length > 0) {
+            // Chỉ tài khoản Quản trị / Quản lý mới hiện bảng chọn đơn vị
             setShowFacilityModal(true);
             setIsLoading(false);
           } else {
+            if (userCtx.defaultCoSoId || facilities[0]?.id) {
+              await setSelectedFacilityCookie(userCtx.defaultCoSoId || facilities[0]?.id);
+            }
             setIsRedirecting(true);
             router.push("/");
             router.refresh();

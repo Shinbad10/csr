@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
 // ?rebuild=1 → DỰNG LẠI: xoá hết dòng dữ liệu cũ rồi đẩy lại toàn bộ hồ sơ.
 // Dùng khi đổi bộ cột báo cáo (dòng cũ theo cột cũ sẽ lệch, không tự ghi đè được).
 export async function POST(request: Request) {
-  const g = await guard(true);
+  const g = await guard(false);
   if (g.error) return g.error;
   if (!sheetEnabled()) return NextResponse.json({ ok: false, error: "Chưa cấu hình GOOGLE_CREDENTIALS trong .env" }, { status: 409 });
 

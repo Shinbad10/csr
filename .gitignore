@@ -40,3 +40,5 @@ local.db
 *.db
 prisma-local/client/
 
+# scratch
+scratch/

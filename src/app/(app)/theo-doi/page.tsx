@@ -671,16 +671,16 @@ export default function TheoDoiPage() {
                         onClick={() => checkHisPatient(sel)}
                         disabled={checkingHis}
                         title="Đối chiếu HIS tự động"
-                        className="btn px-2.5 sm:px-3 py-1 h-7 text-xs font-bold rounded-[var(--r-sm)] bg-gradient-to-r from-[var(--amber-soft)] to-white border border-[var(--amber)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="px-2.5 sm:px-3 py-1 h-7 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white transition-all flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <>⚡ Đối chiếu HIS</>}
                       </button>
                       <button
                         onClick={() => openHisSearch(sel)}
                         title="Tìm & chọn ca mổ trong HIS thủ công"
-                        className="btn px-2.5 sm:px-3 py-1 h-7 text-xs font-bold rounded-[var(--r-sm)] bg-white border border-[var(--navy-100)] text-[var(--navy)] hover:bg-[var(--navy-50)] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                        className="px-2.5 sm:px-3 py-1 h-7 text-xs font-bold rounded-lg bg-white hover:bg-slate-50 active:scale-95 border border-slate-300 text-slate-700 hover:text-slate-900 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                       >
-                        <Search className="w-3.5 h-3.5" /> Tìm HIS
+                        <Search className="w-3.5 h-3.5 text-slate-500" /> Tìm HIS
                       </button>
                     </div>
                   </div>

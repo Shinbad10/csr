@@ -238,6 +238,57 @@ export default function BuoiKhamPage() {
   const [editBacSiKham, setEditBacSiKham] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editErr, setEditErr] = useState("");
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  const handleExportBuoiKham = async (b: BuoiKham) => {
+    if (exportingId) return;
+    setExportingId(b.id);
+    try {
+      const res = await fetch(`/api/csr/export?buoiKhamId=${encodeURIComponent(b.id)}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể xuất file Excel");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      const disp = res.headers.get("Content-Disposition");
+      let filename = "";
+      if (disp) {
+        const matchStar = disp.match(/filename\*=UTF-8''([^;]+)/i);
+        if (matchStar) filename = decodeURIComponent(matchStar[1]);
+        else {
+          const matchPlain = disp.match(/filename="?([^";]+)"?/i);
+          if (matchPlain) filename = matchPlain[1];
+        }
+      }
+      if (!filename) {
+        const dateStr = b.ngayKham ? new Date(b.ngayKham).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+        const cleanXa = (b.xa || "KhamMat").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
+        filename = `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast({
+        type: "success",
+        title: "Xuất Excel thành công",
+        message: `Đã tải file danh sách khám mắt ${b.xa || fmtBuoiKhamName(b)}`,
+      });
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Lỗi xuất file",
+        message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel",
+      });
+    } finally {
+      setExportingId(null);
+    }
+  };
 
   const openCreateModal = () => {
     setNgayKham(getTodayIso());
@@ -704,7 +755,21 @@ export default function BuoiKhamPage() {
                       <MoProgress done={b.stats?.daMo ?? 0} waiting={b.stats?.chuaMo ?? 0} />
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleExportBuoiKham(b)}
+                        disabled={exportingId === b.id}
+                        className="btn btn-secondary h-7.5 px-2 text-[11px] font-semibold inline-flex items-center gap-1 bg-white hover:bg-teal-50 text-[#018a7f] border border-[#cbd5e1] shadow-2xs"
+                        title="Xuất danh sách khám mắt theo mẫu Excel"
+                      >
+                        {exportingId === b.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-[#02b8a9]" />
+                        ) : (
+                          <FileSpreadsheet className="w-3 h-3 text-[#02b8a9]" />
+                        )}
+                        <span>Excel</span>
+                      </button>
                       {canManage && (
                         <button
                           type="button"
@@ -850,23 +915,33 @@ export default function BuoiKhamPage() {
 
                     {/* Thao tác */}
                     <td className="py-3.5 px-3.5 pr-4 align-middle whitespace-nowrap text-right">
-                      {isEnded ? (
-                        <span className="text-[#cbd5e1] font-mono text-xs select-none pr-3">—</span>
-                      ) : (
-                        <div data-tour="bk-join" className="flex items-center justify-end gap-1.5">
-                          {canManage && (
-                            <button
-                              type="button"
-                              onClick={() => openEditModal(b)}
-                              className="btn btn-outline py-1.5 px-2.5 text-xs inline-flex items-center gap-1 hover:border-[#031da6] shadow-2xs text-[#475569]"
-                              title="Chỉnh sửa đợt khám"
-                            >
-                              <Pencil className="w-3.5 h-3.5 text-[#64748b]" /> Sửa
-                            </button>
+                      <div data-tour="bk-join" className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleExportBuoiKham(b)}
+                          disabled={exportingId === b.id}
+                          className="btn btn-outline py-1.5 px-2.5 text-xs inline-flex items-center gap-1 hover:border-[#02b8a9] hover:text-[#018a7f] hover:bg-[#e6faf7] shadow-2xs text-[#475569] transition-all cursor-pointer"
+                          title="Xuất file Excel danh sách khám mắt theo mẫu"
+                        >
+                          {exportingId === b.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02b8a9]" />
+                          ) : (
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-[#02b8a9]" />
                           )}
-                          <JoinAction b={b} />
-                        </div>
-                      )}
+                          <span>Xuất Excel</span>
+                        </button>
+                        {canManage && !isEnded && (
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(b)}
+                            className="btn btn-outline py-1.5 px-2.5 text-xs inline-flex items-center gap-1 hover:border-[#031da6] shadow-2xs text-[#475569]"
+                            title="Chỉnh sửa đợt khám"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-[#64748b]" /> Sửa
+                          </button>
+                        )}
+                        <JoinAction b={b} />
+                      </div>
                     </td>
                   </tr>
                 );
