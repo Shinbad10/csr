@@ -17,6 +17,25 @@ export const ageOf = (p: { ngaySinh?: Date | string | null; namSinh?: number | n
 export const tomorrowISO = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
 export const fmtDate = (iso?: Date | string | null) => (iso ? new Date(iso).toLocaleDateString("vi-VN") : "—");
 
+/** Tách chuỗi danh sách bác sĩ thành mảng các tên bác sĩ */
+export function parseDoctorList(raw?: string | null): string[] {
+  if (!raw) return [];
+  const clean = raw.trim();
+  if (!clean) return [];
+  if (clean.startsWith("[") && clean.endsWith("]")) {
+    try {
+      const arr = JSON.parse(clean);
+      if (Array.isArray(arr)) return arr.map((s) => String(s).trim()).filter(Boolean);
+    } catch {}
+  }
+  return clean.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+/** Ghép mảng các tên bác sĩ thành chuỗi phân tách bằng dấu phẩy */
+export function formatDoctorList(list: string[]): string {
+  return list.filter(Boolean).join(", ");
+}
+
 // ── Trạng thái đợt khám theo ngày khám ────────────────────────────────────
 // So sánh theo ngày ở múi giờ máy (khớp với fmtDate), không dùng UTC.
 export type BuoiKhamPhase = "SapDienRa" | "DangDienRa" | "DaKetThuc";

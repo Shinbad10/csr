@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, UserCheck, Check, RefreshCw, Loader2, UserPlus, ShieldCheck, Clock } from "lucide-react";
 import { usePortalPosition } from "./fields";
+import { parseDoctorList, formatDoctorList } from "@/lib/csr";
 
 export interface DoctorItem {
   maNV?: string;
@@ -300,24 +301,7 @@ export function DoctorAutocomplete({
   );
 }
 
-/** Tách chuỗi danh sách bác sĩ thành mảng các tên bác sĩ */
-export function parseDoctorList(raw?: string | null): string[] {
-  if (!raw) return [];
-  const clean = raw.trim();
-  if (!clean) return [];
-  if (clean.startsWith("[") && clean.endsWith("]")) {
-    try {
-      const arr = JSON.parse(clean);
-      if (Array.isArray(arr)) return arr.map((s) => String(s).trim()).filter(Boolean);
-    } catch {}
-  }
-  return clean.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
-}
-
-/** Ghép mảng các tên bác sĩ thành chuỗi phân tách bằng dấu phẩy */
-export function formatDoctorList(list: string[]): string {
-  return list.filter(Boolean).join(", ");
-}
+export { parseDoctorList, formatDoctorList } from "@/lib/csr";
 
 /** Component chọn nhiều bác sĩ cho đoàn khám (Multi-doctor Tags) */
 export function DoctorMultiSelect({

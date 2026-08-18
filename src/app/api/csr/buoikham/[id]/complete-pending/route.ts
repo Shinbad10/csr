@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { broadcastEvent } from "@/lib/events";
-import { parseDoctorList } from "@/components/csr/DoctorAutocomplete";
+import { parseDoctorList } from "@/lib/csr";
 import { triggerSync } from "@/lib/syncWorker";
 
 export async function POST(
