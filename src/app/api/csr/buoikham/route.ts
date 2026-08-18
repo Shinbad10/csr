@@ -12,39 +12,87 @@ export async function GET(request: Request) {
 
   const coSoId = new URL(request.url).searchParams.get("coSoId") || (await getWorkingCoSoId(session));
   try {
-    const data = await getPrisma().buoiKham.findMany({
-      where: coSoId ? { coSoId } : undefined,
-      include: { 
-        coSo: true, 
-        _count: { select: { hoSo: true } },
-        hoSo: { select: { nhom: true, trangThai: true, ngayMoThucTe: true, bacSiChiDinh: true } }
-      },
-      orderBy: { ngayKham: "desc" },
-    });
-    const result = data.map(item => {
-      let nhomA = 0;
-      let nhomB = 0;
-      let daMo = 0;
-      let chuaMo = 0;
-      for (const hs of item.hoSo) {
-        const isA = hs.nhom === "A" || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(hs.trangThai);
-        const isB = hs.nhom === "B" || hs.trangThai === "NhomB";
-        const isMo = hs.ngayMoThucTe != null; // Chỉ tính "đã mổ" khi có ngày mổ thực tế (không chỉ vì có mã HIS)
-        
-        if (isA) nhomA++;
-        else if (isB) nhomB++;
-        
-        if (isMo) {
-          daMo++;
-        } else if (isA) {
-          chuaMo++;
-        }
+    const prisma = getPrisma();
+    const whereCoSo = coSoId ? { coSoId } : undefined;
+
+    // Tối ưu tốc độ nạp: Dùng aggregation ở cấp DB thay vì tải toàn bộ hàng ngàn dòng hồ sơ về bộ nhớ Node.js
+    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback] = await Promise.all([
+      prisma.buoiKham.findMany({
+        where: whereCoSo,
+        include: {
+          coSo: true,
+          _count: { select: { hoSo: true } },
+        },
+        orderBy: [{ createdAt: "desc" }, { ngayKham: "desc" }],
+      }),
+      prisma.hoSoBenhNhan.groupBy({
+        by: ["buoiKhamId", "nhom", "trangThai"],
+        _count: { _all: true },
+        where: whereCoSo,
+      }),
+      prisma.hoSoBenhNhan.groupBy({
+        by: ["buoiKhamId"],
+        _count: { _all: true },
+        where: {
+          ...(coSoId ? { coSoId } : {}),
+          ngayMoThucTe: { not: null },
+        },
+      }),
+      prisma.hoSoBenhNhan.findMany({
+        where: {
+          ...(coSoId ? { coSoId } : {}),
+          bacSiChiDinh: { not: null },
+          buoiKham: { bacSiKham: null },
+        },
+        select: { buoiKhamId: true, bacSiChiDinh: true },
+        distinct: ["buoiKhamId"],
+      }),
+    ]);
+
+    const daMoMap = new Map<string, number>();
+    for (const g of daMoGroups) {
+      if (g.buoiKhamId) daMoMap.set(g.buoiKhamId, g._count._all);
+    }
+
+    const docMap = new Map<string, string>();
+    for (const d of doctorsFallback) {
+      if (d.buoiKhamId && d.bacSiChiDinh && !docMap.has(d.buoiKhamId)) {
+        docMap.set(d.buoiKhamId, d.bacSiChiDinh);
       }
-      const { hoSo, ...rest } = item;
-      // Đợt khám cũ chưa có bác sĩ → suy từ bệnh nhân đầu tiên đã ghi nhận.
-      const bacSiKham = rest.bacSiKham || hoSo.find((h) => h.bacSiChiDinh)?.bacSiChiDinh || null;
-      return { ...rest, bacSiKham, stats: { nhomA, nhomB, daMo, chuaMo } };
+    }
+
+    const statsMap = new Map<string, { nhomA: number; nhomB: number }>();
+    for (const g of hoSoGroups) {
+      if (!g.buoiKhamId) continue;
+      let curr = statsMap.get(g.buoiKhamId);
+      if (!curr) {
+        curr = { nhomA: 0, nhomB: 0 };
+        statsMap.set(g.buoiKhamId, curr);
+      }
+      const cnt = g._count._all;
+      const isA = g.nhom === "A" || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(g.trangThai);
+      const isB = g.nhom === "B" || g.trangThai === "NhomB";
+      if (isA) curr.nhomA += cnt;
+      else if (isB) curr.nhomB += cnt;
+    }
+
+    const result = buoiKhams.map((bk) => {
+      const st = statsMap.get(bk.id) || { nhomA: 0, nhomB: 0 };
+      const daMo = daMoMap.get(bk.id) || 0;
+      const chuaMo = Math.max(0, st.nhomA - daMo);
+      const bacSiKham = bk.bacSiKham || docMap.get(bk.id) || null;
+      return {
+        ...bk,
+        bacSiKham,
+        stats: {
+          nhomA: st.nhomA,
+          nhomB: st.nhomB,
+          daMo,
+          chuaMo,
+        },
+      };
     });
+
     return NextResponse.json(result);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
@@ -63,10 +111,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc (cơ sở, ngày, xã, địa điểm)" }, { status: 400 });
 
     const dateStr = yymmdd(new Date(ngayKham)); // YYMMDD theo giờ địa phương
-    const count = await getPrisma().buoiKham.count({
-      where: { id: { startsWith: `ĐK-${dateStr}` } },
+    const prefix = `ĐK-${dateStr}-`;
+    const lastBk = await getPrisma().buoiKham.findFirst({
+      where: { id: { startsWith: prefix } },
+      orderBy: { id: "desc" },
+      select: { id: true },
     });
-    const id = `ĐK-${dateStr}-${String(count + 1).padStart(2, "0")}`;
+    const maxBkSeq = lastBk?.id ? parseInt(lastBk.id.slice(prefix.length), 10) || 0 : 0;
+    const id = `${prefix}${String(maxBkSeq + 1).padStart(2, "0")}`;
 
 
     const trimmedBacSi = bacSiKham?.trim() || null;

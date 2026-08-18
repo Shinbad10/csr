@@ -8,7 +8,7 @@ import Modal from "@/components/layout/Modal";
 import {
   Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X,
   Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet, UserCheck,
-  RotateCcw, ChevronDown, Eye
+  RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical
 } from "lucide-react";
 import { can } from "@/lib/permissions";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
@@ -133,7 +133,15 @@ function JoinAction({ b, block }: { b: BuoiKham; block?: boolean }) {
   const p = phaseOf(b.ngayKham);
   const size = block ? "py-2 px-3 text-[13px] flex-1 justify-center" : "h-7.5 px-3 text-[11.5px] font-bold";
   if (p.key === "DaKetThuc") {
-    return null; // Đã kết thúc thì không hiện nút thao tác
+    return (
+      <Link
+        href={`/kham/${b.id}`}
+        className={`btn ${size} inline-flex items-center gap-1.5 border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#334155] font-semibold cursor-pointer shadow-2xs`}
+      >
+        <Eye className="w-3.5 h-3.5 text-[#031da6]" />
+        <span>Xem hồ sơ</span>
+      </Link>
+    );
   }
   if (p.key === "SapDienRa") {
     return (
@@ -150,6 +158,115 @@ function JoinAction({ b, block }: { b: BuoiKham; block?: boolean }) {
       <Stethoscope className="w-3.5 h-3.5 text-[#02b8a9]" />
       <span>Tham gia khám</span>
     </Link>
+  );
+}
+
+/** Cụm thao tác đợt khám tinh gọn, chuẩn UI hiện đại */
+function BuoiKhamRowActions({
+  b,
+  canManage,
+  exportingId,
+  onExport,
+  onEdit,
+  onComplete,
+}: {
+  b: BuoiKham;
+  canManage: boolean;
+  exportingId: string | null;
+  onExport: (b: BuoiKham) => void;
+  onEdit: (b: BuoiKham) => void;
+  onComplete: (b: BuoiKham) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isEnded = phaseOf(b.ngayKham).key === "DaKetThuc";
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("mousedown", h);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("mousedown", h);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [menuOpen]);
+
+  return (
+    <div className="flex items-center justify-end gap-1.5" ref={ref}>
+      {/* Menu thao tác tùy chọn (Xuất Excel, Sửa, Kết thúc đợt) */}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          className={`h-7.5 w-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+            menuOpen
+              ? "bg-[#031da6] text-white border-[#031da6] shadow-xs"
+              : "bg-white border-[#cbd5e1] text-[#475569] hover:bg-[#f1f5f9] hover:border-[#94a3b8] shadow-2xs"
+          }`}
+          title="Tùy chọn thao tác"
+        >
+          {exportingId === b.id ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02b8a9]" />
+          ) : (
+            <MoreVertical className="w-4 h-4" />
+          )}
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-full mt-1 z-50 min-w-[195px] bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 animate-dropdown text-[#0f172a]">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onExport(b);
+              }}
+              disabled={exportingId === b.id}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#018a7f] hover:bg-[#e6faf7] transition-colors text-left cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-[#02b8a9] shrink-0" />
+              <span>Xuất file Excel</span>
+            </button>
+
+            {canManage && !isEnded && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onComplete(b);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#b45309] hover:bg-[#fffbeb] transition-colors text-left cursor-pointer"
+              >
+                <CheckCheck className="w-4 h-4 text-[#d97706] shrink-0" />
+                <span>Kết thúc đợt khám</span>
+              </button>
+            )}
+
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEdit(b);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#334155] hover:bg-[#f1f5f9] transition-colors text-left cursor-pointer"
+              >
+                <Pencil className="w-4 h-4 text-[#64748b] shrink-0" />
+                <span>Chỉnh sửa đợt khám</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Nút hành động chính (Tham gia khám / Xem hồ sơ / Chưa tới ngày) */}
+      <JoinAction b={b} />
+    </div>
   );
 }
 
@@ -239,6 +356,37 @@ export default function BuoiKhamPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [editErr, setEditErr] = useState("");
   const [exportingId, setExportingId] = useState<string | null>(null);
+  const [confirmCompleteModal, setConfirmCompleteModal] = useState<BuoiKham | null>(null);
+  const [completing, setCompleting] = useState(false);
+
+  const handleCompleteBuoiKham = async () => {
+    if (!confirmCompleteModal) return;
+    setCompleting(true);
+    try {
+      const res = await fetch(`/api/csr/buoikham/${confirmCompleteModal.id}/complete-pending`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Không thể kết thúc đợt khám");
+      }
+      addToast({
+        type: "success",
+        title: "Kết thúc đợt khám thành công",
+        message: data.message || `Đã chuyển các ca chờ sang trạng thái đã khám.`,
+      });
+      setConfirmCompleteModal(null);
+      await load();
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Lỗi",
+        message: err instanceof Error ? err.message : "Mất kết nối máy chủ",
+      });
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   const handleExportBuoiKham = async (b: BuoiKham) => {
     if (exportingId) return;
@@ -755,34 +903,14 @@ export default function BuoiKhamPage() {
                       <MoProgress done={b.stats?.daMo ?? 0} waiting={b.stats?.chuaMo ?? 0} />
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                      <button
-                        type="button"
-                        onClick={() => handleExportBuoiKham(b)}
-                        disabled={exportingId === b.id}
-                        className="btn btn-secondary h-7.5 px-2 text-[11px] font-semibold inline-flex items-center gap-1 bg-white hover:bg-teal-50 text-[#018a7f] border border-[#cbd5e1] shadow-2xs"
-                        title="Xuất danh sách khám mắt theo mẫu Excel"
-                      >
-                        {exportingId === b.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin text-[#02b8a9]" />
-                        ) : (
-                          <FileSpreadsheet className="w-3 h-3 text-[#02b8a9]" />
-                        )}
-                        <span>Excel</span>
-                      </button>
-                      {canManage && (
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(b)}
-                          className="btn btn-secondary h-7.5 px-2 text-[11px] font-semibold inline-flex items-center gap-1 bg-white hover:bg-slate-100"
-                          title="Chỉnh sửa"
-                        >
-                          <Pencil className="w-3 h-3 text-[#64748b]" />
-                          <span>Sửa</span>
-                        </button>
-                      )}
-                      <JoinAction b={b} />
-                    </div>
+                    <BuoiKhamRowActions
+                      b={b}
+                      canManage={canManage}
+                      exportingId={exportingId}
+                      onExport={handleExportBuoiKham}
+                      onEdit={openEditModal}
+                      onComplete={setConfirmCompleteModal}
+                    />
                   </div>
                 </div>
               );
@@ -913,34 +1041,16 @@ export default function BuoiKhamPage() {
                       </span>
                     </td>
 
-                    {/* Thao tác */}
                     <td className="py-3.5 px-3.5 pr-4 align-middle whitespace-nowrap text-right">
-                      <div data-tour="bk-join" className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleExportBuoiKham(b)}
-                          disabled={exportingId === b.id}
-                          className="btn btn-outline py-1.5 px-2.5 text-xs inline-flex items-center gap-1 hover:border-[#02b8a9] hover:text-[#018a7f] hover:bg-[#e6faf7] shadow-2xs text-[#475569] transition-all cursor-pointer"
-                          title="Xuất file Excel danh sách khám mắt theo mẫu"
-                        >
-                          {exportingId === b.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02b8a9]" />
-                          ) : (
-                            <FileSpreadsheet className="w-3.5 h-3.5 text-[#02b8a9]" />
-                          )}
-                          <span>Xuất Excel</span>
-                        </button>
-                        {canManage && !isEnded && (
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(b)}
-                            className="btn btn-outline py-1.5 px-2.5 text-xs inline-flex items-center gap-1 hover:border-[#031da6] shadow-2xs text-[#475569]"
-                            title="Chỉnh sửa đợt khám"
-                          >
-                            <Pencil className="w-3.5 h-3.5 text-[#64748b]" /> Sửa
-                          </button>
-                        )}
-                        <JoinAction b={b} />
+                      <div data-tour="bk-join">
+                        <BuoiKhamRowActions
+                          b={b}
+                          canManage={canManage}
+                          exportingId={exportingId}
+                          onExport={handleExportBuoiKham}
+                          onEdit={openEditModal}
+                          onComplete={setConfirmCompleteModal}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -1079,6 +1189,51 @@ export default function BuoiKhamPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Modal Xác nhận Kết thúc đợt khám */}
+      {confirmCompleteModal && (
+        <Modal
+          open={true}
+          onClose={() => setConfirmCompleteModal(null)}
+          title="Xác nhận kết thúc đợt khám"
+          icon={CheckCheck}
+          maxWidth="max-w-[480px]"
+          footer={
+            <div className="flex items-center justify-end gap-2 w-full">
+              <button
+                type="button"
+                onClick={() => setConfirmCompleteModal(null)}
+                disabled={completing}
+                className="btn btn-secondary px-4 py-2 text-[13px] font-bold"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleCompleteBuoiKham}
+                disabled={completing}
+                className="btn btn-primary px-4 py-2 text-[13px] font-bold bg-amber-600 hover:bg-amber-700 text-white cursor-pointer"
+              >
+                {completing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+                Xác nhận kết thúc đợt
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-3.5 text-[13.5px] text-[#334155] p-1">
+            <p>
+              Bạn có chắc chắn muốn kết thúc đợt khám <strong className="text-[#0f172a]">{fmtBuoiKhamName(confirmCompleteModal)}</strong> (<span className="font-mono text-[#031da6] font-bold">{fmtBuoiKhamCode(confirmCompleteModal.id)}</span>)?
+            </p>
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                Lưu ý hành động này:
+              </div>
+              <div>Tất cả bệnh nhân đang ở trạng thái <strong>Tiếp nhận (chờ khám)</strong> trong đợt này sẽ được tự động chuyển sang <strong>Đã khám</strong> với kết quả <strong>Bình thường (Thị lực 10/10, Chưa phát hiện bất thường, Theo dõi)</strong>.</div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

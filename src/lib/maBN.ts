@@ -13,3 +13,18 @@ export function genMaBN(coSoId: string, ngayKham: Date, stt: number): string {
   const dd = String(ngayKham.getDate()).padStart(2, "0");
   return `${coSoId.toUpperCase()}-${mm}${dd}-${String(stt).padStart(3, "0")}`;
 }
+
+/** Lấy số thứ tự mã BN tiếp theo trên toàn cơ sở cho ngày khám đó,
+ *  tránh trùng khoá maBN khi có nhiều đợt khám cùng một ngày. */
+export async function getNextMaSeq(prisma: any, coSoId: string, ngayKham: Date): Promise<number> {
+  const maPrefix = `${genMaBN(coSoId, ngayKham, 0).slice(0, -3)}`;
+  const lastHs = await prisma.hoSoBenhNhan.findFirst({
+    where: { maBN: { startsWith: maPrefix } },
+    orderBy: { maBN: "desc" },
+    select: { maBN: true },
+  });
+  if (!lastHs || !lastHs.maBN) return 1;
+  const n = parseInt(lastHs.maBN.slice(maPrefix.length), 10);
+  return Number.isFinite(n) && n > 0 ? n + 1 : 1;
+}
+

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { broadcastEvent } from "@/lib/events";
 import { parseDoctorList } from "@/components/csr/DoctorAutocomplete";
+import { triggerSync } from "@/lib/syncWorker";
 
 export async function POST(
   request: Request,
@@ -66,8 +67,23 @@ export async function POST(
       },
     });
 
+    // Đẩy hàng đợi đồng bộ Google Sheet
+    if (pendingList.length > 0) {
+      await getPrisma().syncQueue.createMany({
+        data: pendingList.map((h) => ({ hoSoId: h.id })),
+      });
+      triggerSync();
+    }
+
     broadcastEvent({
       type: "buoikham_change",
+      action: "update",
+      coSoId: buoiKham.coSoId,
+      buoiKhamId: id,
+    });
+
+    broadcastEvent({
+      type: "hoso_change",
       action: "update",
       coSoId: buoiKham.coSoId,
       buoiKhamId: id,

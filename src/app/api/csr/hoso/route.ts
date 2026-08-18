@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
-import { genMaBN } from "@/lib/maBN";
+import { genMaBN, getNextMaSeq } from "@/lib/maBN";
 import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
 import { bhytLevel } from "@/lib/csr";
@@ -119,25 +119,47 @@ export async function POST(request: Request) {
       if (dup) return NextResponse.json({ error: `Bệnh nhân đã có trong buổi khám (STT ${dup.stt}, ${dup.maBN})`, isDuplicate: true }, { status: 409 });
     }
 
-    // BR-02 STT + BR-01 mã BN (transaction)
+    // BR-02 STT hiển thị trong đợt khám
     const last = await prisma.hoSoBenhNhan.findFirst({ where: { buoiKhamId: b.buoiKhamId }, orderBy: { stt: "desc" } });
     const stt = (last?.stt ?? 0) + 1;
-    const maBN = genMaBN(buoiKham.coSo.id, buoiKham.ngayKham, stt);
 
-    const data = await prisma.hoSoBenhNhan.create({
-      data: {
-        maBN, stt, buoiKhamId: b.buoiKhamId, coSoId: buoiKham.coSoId,
-        hoTen: b.hoTen.trim().toUpperCase(), gioiTinh: b.gioiTinh, ngaySinh, namSinh,
-        cccd: b.cccd || null, diaChi: b.diaChi || null, sdt: b.sdt || null,
-        sdtNguoiNha: b.sdtNguoiNha || null, bhyt: b.bhyt || null,
-        mucHuongBHYT, khuPho: b.khuPho || null, xaPhuong: b.xaPhuong || null,
-        bacSiChiDinh: buoiKham.bacSiKham || null,
-        trangThai: "TiepNhan", createdBy: session.user.id,
-      },
-      include: { buoiKham: true, coSo: true, tuVanVien: true },
-    });
+    // BR-01 mã BN (transaction / retry protection):
+    // Mã BN = {CƠ SỞ}-{MMDD}-{số}. Nếu có 2 đợt khám cùng ngày, maSeq phải tính
+    // theo tiền tố ngày của cơ sở để tránh trùng khoá maBN.
+    let maSeq = await getNextMaSeq(prisma, buoiKham.coSoId, buoiKham.ngayKham);
 
-    await audit(session.user.id, "HoSoBenhNhan", data.id, "them", { maBN, hoTen: data.hoTen });
+    let data;
+    let attempts = 0;
+    while (attempts < 5) {
+      const maBN = genMaBN(buoiKham.coSo.id, buoiKham.ngayKham, maSeq);
+      try {
+        data = await prisma.hoSoBenhNhan.create({
+          data: {
+            maBN, stt, buoiKhamId: b.buoiKhamId, coSoId: buoiKham.coSoId,
+            hoTen: b.hoTen.trim().toUpperCase(), gioiTinh: b.gioiTinh, ngaySinh, namSinh,
+            cccd: b.cccd || null, diaChi: b.diaChi || null, sdt: b.sdt || null,
+            sdtNguoiNha: b.sdtNguoiNha || null, bhyt: b.bhyt || null,
+            mucHuongBHYT, khuPho: b.khuPho || null, xaPhuong: b.xaPhuong || null,
+            bacSiChiDinh: buoiKham.bacSiKham || null,
+            trangThai: "TiepNhan", createdBy: session.user.id,
+          },
+          include: { buoiKham: true, coSo: true, tuVanVien: true },
+        });
+        break;
+      } catch (e: any) {
+        if (e?.code === "P2002" || String(e?.message).includes("maBN") || String(e?.message).includes("Unique constraint")) {
+          maSeq++;
+          attempts++;
+          if (attempts >= 5) throw e;
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    if (!data) throw new Error("Không thể tạo mã bệnh nhân duy nhất");
+
+    await audit(session.user.id, "HoSoBenhNhan", data.id, "them", { maBN: data.maBN, hoTen: data.hoTen });
     await prisma.syncQueue.create({ data: { hoSoId: data.id } }); // BR-15
     triggerSync(); // đẩy Sheet ngay, không chặn response
 

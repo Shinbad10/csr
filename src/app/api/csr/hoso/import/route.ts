@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
-import { genMaBN, yymmdd } from "@/lib/maBN";
+import { genMaBN, getNextMaSeq, yymmdd } from "@/lib/maBN";
 import type { ImportRow } from "@/lib/importExcel";
 import { triggerSync } from "@/lib/syncWorker";
 import { broadcastEvent } from "@/lib/events";
@@ -66,10 +66,17 @@ export async function POST(request: Request) {
         ngayKham = new Date(`${blk.ngayKham}T00:00:00`);
         // Mã đợt khám giữ đúng quy ước ĐK-YYMMDD-NN như luồng tạo thủ công
         const dateStr = yymmdd(ngayKham);
-        const count = await prisma.buoiKham.count({ where: { id: { startsWith: `ĐK-${dateStr}` } } });
+        const bkPrefix = `ĐK-${dateStr}-`;
+        const lastBk = await prisma.buoiKham.findFirst({
+          where: { id: { startsWith: bkPrefix } },
+          orderBy: { id: "desc" },
+          select: { id: true },
+        });
+        const maxBkSeq = lastBk?.id ? parseInt(lastBk.id.slice(bkPrefix.length), 10) || 0 : 0;
+        const bkId = `${bkPrefix}${String(maxBkSeq + 1).padStart(2, "0")}`;
         const bk = await prisma.buoiKham.create({
           data: {
-            id: `ĐK-${dateStr}-${String(count + 1).padStart(2, "0")}`,
+            id: bkId,
             coSoId,
             ngayKham,
             xa: blk.xa.trim(),
@@ -88,15 +95,7 @@ export async function POST(request: Request) {
       // Mã BN chỉ mã hoá {CƠ SỞ}-{MMDD}-{số}. Hai đợt khám CÙNG NGÀY mà cùng bắt đầu
       // từ 001 sẽ đụng khoá duy nhất, nên số thứ tự trong mã phải tính theo TIỀN TỐ
       // ngày trên toàn cơ sở, tách khỏi STT hiển thị của từng đợt.
-      const maPrefix = `${genMaBN(coSoId, ngayKham, 0).slice(0, -3)}`;
-      const usedMa = await prisma.hoSoBenhNhan.findMany({
-        where: { maBN: { startsWith: maPrefix } },
-        select: { maBN: true },
-      });
-      let maSeq = usedMa.reduce((mx, e) => {
-        const n = parseInt(e.maBN.slice(maPrefix.length), 10);
-        return Number.isFinite(n) && n > mx ? n : mx;
-      }, 0) + 1;
+      let maSeq = await getNextMaSeq(prisma, coSoId, ngayKham);
 
       const data = [];
       for (const r of rows) {
