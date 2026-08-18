@@ -26,6 +26,76 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
+// Chỉ sửa thông tin hành chính bệnh nhân (modal "Sửa thông tin bệnh nhân").
+// Tách riêng khỏi PUT để KHÔNG chạy máy trạng thái BR-08 / validate phiếu sàng lọc —
+// đổi số điện thoại hay mã thẻ BHYT thì không được phép làm nhảy trạng thái hồ sơ.
+// Trường tùy chọn: chuỗi rỗng → null. Trường bắt buộc (hoTen, gioiTinh) không cho phép xoá trắng.
+const TRUONG_TUY_CHON = ["cccd", "bhyt", "sdt", "sdtNguoiNha", "diaChi", "khuPho", "xaPhuong"] as const;
+const TRUONG_BAT_BUOC = ["hoTen", "gioiTinh"] as const;
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAny(session.user.role, ["hoso.create", "hoso.clinical", "hoso.treatment", "hoso.followup"]))
+    return NextResponse.json({ error: "Bạn không có quyền sửa thông tin bệnh nhân" }, { status: 403 });
+
+  const { id } = await params;
+  const prisma = getPrisma();
+
+  try {
+    const body = await request.json();
+    const update: Record<string, unknown> = { updatedBy: session.user.id };
+
+    for (const f of TRUONG_TUY_CHON) {
+      if (body[f] === undefined) continue;
+      const v = body[f];
+      update[f] = typeof v === "string" ? v.trim() || null : v ?? null;
+    }
+    for (const f of TRUONG_BAT_BUOC) {
+      if (body[f] === undefined) continue;
+      const v = String(body[f] ?? "").trim();
+      if (!v) return NextResponse.json({ error: `Trường ${f} không được để trống` }, { status: 400 });
+      update[f] = f === "hoTen" ? v.toUpperCase() : v;
+    }
+
+    if (body.ngaySinh !== undefined) {
+      const d = body.ngaySinh ? new Date(body.ngaySinh) : null;
+      if (d && Number.isNaN(d.getTime())) return NextResponse.json({ error: "Ngày sinh không hợp lệ" }, { status: 400 });
+      update.ngaySinh = d;
+      update.namSinh = d ? d.getFullYear() : null;
+    }
+    if (body.mucHuongBHYT !== undefined) {
+      const n = parseInt(String(body.mucHuongBHYT), 10);
+      update.mucHuongBHYT = Number.isFinite(n) ? n : null;
+    }
+
+    const data = await prisma.hoSoBenhNhan.update({
+      where: { id },
+      data: update,
+      include: { buoiKham: true, coSo: true, tuVanVien: true },
+    });
+
+    await Promise.all([
+      audit(session.user.id, "HoSoBenhNhan", id, "sua", body),
+      prisma.syncQueue.create({ data: { hoSoId: id } }), // BR-15
+    ]);
+    triggerSync();
+
+    broadcastEvent({
+      type: "hoso_change",
+      action: "update",
+      coSoId: data.coSoId,
+      buoiKhamId: data.buoiKhamId,
+      hoSoId: data.id,
+      data,
+    });
+
+    return NextResponse.json(data);
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi cập nhật hồ sơ" }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,11 +103,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const prisma = getPrisma();
 
   try {
-    const current = await prisma.hoSoBenhNhan.findUnique({ where: { id } });
+    // Nạp hồ sơ kèm luôn bacSiKham của buổi khám + cauHinhTruong của cơ sở trong MỘT truy vấn.
+    // Trước đây là 3 lần round-trip riêng lẻ tới SQL Server — trên DB cloud mỗi lần tốn 1–3s.
+    const current = await prisma.hoSoBenhNhan.findUnique({
+      where: { id },
+      include: {
+        buoiKham: { select: { bacSiKham: true } },
+        coSo: { select: { cauHinhTruong: true } },
+      },
+    });
     if (!current) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
 
     const body = await request.json();
     const update: Record<string, unknown> = { ...body, updatedBy: session.user.id };
+    if (body.hoTen) update.hoTen = String(body.hoTen).trim().toUpperCase();
     delete update.daNhacLich; // cờ kích hoạt, không phải cột trong DB
 
     if (body.chanDoan !== undefined && typeof body.chanDoan !== "string") {
@@ -57,9 +136,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // "Hướng xử trí" đồng bộ sang khuyenNghi để giữ nguyên luồng Tư vấn / Theo dõi / Báo cáo
     if (body.huongXuTri !== undefined) update.khuyenNghi = huongXuTriToKhuyenNghi(body.huongXuTri);
 
-    if (update.bacSiChiDinh === undefined && !current.bacSiChiDinh) {
-      const bk = await prisma.buoiKham.findUnique({ where: { id: current.buoiKhamId }, select: { bacSiKham: true } });
-      if (bk?.bacSiKham) update.bacSiChiDinh = bk.bacSiKham;
+    if (update.bacSiChiDinh === undefined && !current.bacSiChiDinh && current.buoiKham?.bacSiKham) {
+      update.bacSiChiDinh = current.buoiKham.bacSiKham;
     }
 
     // BR-07
@@ -69,8 +147,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Vui lòng nhập Loại bệnh sử khác" }, { status: 400 });
 
     // Validate phiếu sàng lọc — chỉ áp dụng cho trường đang BẬT ở cơ sở này
-    const coSo = await prisma.coSo.findUnique({ where: { id: current.coSoId }, select: { cauHinhTruong: true } });
-    const cfg = parseFieldConfig(coSo?.cauHinhTruong);
+    const cfg = parseFieldConfig(current.coSo?.cauHinhTruong);
     const eff = (k: string): unknown => (body[k] !== undefined ? body[k] : (current as Record<string, unknown>)[k]);
     const loaiBenhLyArr: string[] = (() => {
       const v = eff("loaiBenhLy");
@@ -139,8 +216,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: update,
       include: { buoiKham: true, coSo: true, tuVanVien: true },
     });
-    await audit(session.user.id, "HoSoBenhNhan", id, "sua", body);
-    await prisma.syncQueue.create({ data: { hoSoId: id } }); // BR-15
+    // Chạy song song thay vì nối tiếp — vẫn chờ syncQueue để giữ đảm bảo bền vững của BR-15
+    await Promise.all([
+      audit(session.user.id, "HoSoBenhNhan", id, "sua", body),
+      prisma.syncQueue.create({ data: { hoSoId: id } }),
+    ]);
     triggerSync(); // đẩy Sheet ngay, không chặn response
 
     broadcastEvent({

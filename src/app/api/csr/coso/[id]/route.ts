@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { audit } from "@/lib/audit";
+import { clearBhxhCache } from "@/lib/bhxh";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -40,6 +41,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         hisDbName: hisDbName !== undefined ? (hisDbName?.trim() || null) : undefined,
       },
     });
+    // Cấu hình Cổng BHXH được cache 10 phút trong bộ nhớ — xoá ngay để lần tra cứu kế tiếp dùng tài khoản mới
+    clearBhxhCache(id);
     await audit(session.user.id, "CoSo", id, "sua", { ten, diaChi });
     return NextResponse.json(data);
   } catch (e) {

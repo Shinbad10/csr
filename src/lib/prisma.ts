@@ -7,8 +7,14 @@ import { getDbMode } from "./db-mode";
 
 const g = global as unknown as { cloudPrisma?: CloudClient; localPrisma?: LocalClient };
 
-// Xoá instance cache cũ trong dev mode để nạp Prisma Client mới sinh
-if (process.env.NODE_ENV !== "production") {
+// Giữ nguyên instance qua các lần hot-reload của Next dev.
+// Trước đây module này xoá cache mỗi lần được nạp lại → mỗi lần sửa code là một pool
+// SQL Server mới phải bắt tay TCP + đăng nhập TDS lại từ đầu (rất chậm với DB cloud),
+// còn pool cũ thì rò rỉ kết nối. Chỉ xoá khi thật sự cần nạp Prisma Client vừa generate:
+// đặt PRISMA_RESET_ON_RELOAD=1 trong .env rồi sửa một file bất kỳ.
+if (process.env.NODE_ENV !== "production" && process.env.PRISMA_RESET_ON_RELOAD === "1") {
+  g.cloudPrisma?.$disconnect().catch(() => {});
+  g.localPrisma?.$disconnect().catch(() => {});
   g.cloudPrisma = undefined;
   g.localPrisma = undefined;
 }
@@ -32,6 +38,15 @@ function parseSqlServerUrl(url: string) {
       encrypt: params["encrypt"] === "true",
       trustServerCertificate: params["trustservercertificate"] === "true",
     },
+    // Giữ sẵn kết nối "nóng". Mặc định min=0 + idle 30s khiến pool đóng hết kết nối lúc rảnh,
+    // nên mỗi lần lưu lại phải bắt tay TCP + đăng nhập TDS lại từ đầu (rất tốn với DB đặt xa).
+    pool: {
+      min: 2,
+      max: 10,
+      idleTimeoutMillis: 5 * 60_000,
+    },
+    connectionTimeout: 3_000,
+    requestTimeout: 8_000,
   };
 }
 

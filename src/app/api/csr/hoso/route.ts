@@ -9,6 +9,15 @@ import { triggerSync } from "@/lib/syncWorker";
 import { bhytLevel } from "@/lib/csr";
 import { broadcastEvent } from "@/lib/events";
 
+// Quan hệ kèm theo cho danh sách hồ sơ trả về TRÌNH DUYỆT.
+// Không dùng `coSo: true` / `tuVanVien: true`: nó gửi cả bhxhPass, hisPass, matKhauHash ra client
+// và lặp lại trên từng dòng (danh sách ~160 kB mỗi lần nạp).
+const RELATIONS_DANH_SACH = {
+  buoiKham: true,
+  coSo: { select: { id: true, ten: true, diaChi: true, cauHinhTruong: true } },
+  tuVanVien: { select: { maNV: true, hoTen: true } },
+} as const;
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -42,7 +51,7 @@ export async function GET(request: Request) {
         prisma.hoSoBenhNhan.count({ where }),
         prisma.hoSoBenhNhan.findMany({
           where,
-          include: { buoiKham: true, coSo: true, tuVanVien: true },
+          include: RELATIONS_DANH_SACH,
           orderBy: [{ stt: "asc" }, { createdAt: "desc" }],
           skip: (page - 1) * pageSize,
           take: pageSize,
@@ -59,7 +68,7 @@ export async function GET(request: Request) {
 
     const data = await getPrisma().hoSoBenhNhan.findMany({
       where,
-      include: { buoiKham: true, coSo: true, tuVanVien: true },
+      include: RELATIONS_DANH_SACH,
       orderBy: [{ stt: "asc" }, { createdAt: "desc" }],
     });
     return NextResponse.json(data);
@@ -118,7 +127,7 @@ export async function POST(request: Request) {
     const data = await prisma.hoSoBenhNhan.create({
       data: {
         maBN, stt, buoiKhamId: b.buoiKhamId, coSoId: buoiKham.coSoId,
-        hoTen: b.hoTen.trim(), gioiTinh: b.gioiTinh, ngaySinh, namSinh,
+        hoTen: b.hoTen.trim().toUpperCase(), gioiTinh: b.gioiTinh, ngaySinh, namSinh,
         cccd: b.cccd || null, diaChi: b.diaChi || null, sdt: b.sdt || null,
         sdtNguoiNha: b.sdtNguoiNha || null, bhyt: b.bhyt || null,
         mucHuongBHYT, khuPho: b.khuPho || null, xaPhuong: b.xaPhuong || null,

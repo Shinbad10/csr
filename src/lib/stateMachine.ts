@@ -36,10 +36,14 @@ export function inferNextState(current: string, p: Patch): string {
   const kn = fold(p.khuyenNghi);            // "phau thuat" | "theo doi" | ""
   const ttdt = fold(p.trangThaiDieuTri);    // "da mo" | "huy" | "khong den"
 
+  // Lựa chọn phân nhóm trực tiếp từ ý kiến / nguyện vọng điều trị của BN
+  if (p.nhom === "A") return "NhomA";
+  if (p.nhom === "B") return "NhomB";
+  if (p.nhom === "TheoDoi") return "TheoDoi";
+
   // Lâm sàng
   if (current === "TiepNhan" || current === "DaKham") {
     if (kn === "phau thuat") {
-      if (p.nhom === "B") return "NhomB";          // BN chọn suy nghĩ thêm → không ép chốt mổ
       if (p.ngayDieuTri) return "NhomA";           // tư vấn cùng lúc → chốt mổ
       if (p.soTienBao != null) return "NhomB";
       return "CoChiDinhMo";
@@ -51,8 +55,7 @@ export function inferNextState(current: string, p: Patch): string {
   }
 
   // Tư vấn & phân nhóm
-  if (current === "CoChiDinhMo" || current === "NhomB") {
-    if (p.nhom === "B") return "NhomB";           // lựa chọn nhóm của BN được ưu tiên
+  if (current === "CoChiDinhMo" || current === "NhomB" || current === "NhomA" || current === "TheoDoi") {
     if (p.ngayDieuTri) return "NhomA";            // BR-04
     if (p.soTienBao != null) return "NhomB";
   }

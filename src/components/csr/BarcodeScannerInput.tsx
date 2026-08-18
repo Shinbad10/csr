@@ -97,24 +97,46 @@ export function BarcodeScannerInput({
       };
     }
 
-    // 2. Nếu là mã thẻ BHYT (đúng 15 ký tự gồm 2 chữ cái + 13 số, VD: DN4838321436964)
-    if (/^[A-Za-z]{2}\d{13}$/.test(str)) {
+    // 2. Nếu là mã thẻ BHYT có dấu pipe | (VD: DN4838321436964|Nguyễn Văn A|06/03/2000...)
+    if (p.length >= 2 && (/^[A-Za-z]{2}\d/.test(p[0]) || str.startsWith("$") || p[0].length === 15)) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         triggerApply(str);
-      }, 350);
+      }, 200);
       return () => {
         if (timerRef.current) clearTimeout(timerRef.current);
       };
     }
 
-    // 3. Trường hợp CCCD 6 trường (chưa có hoặc không có trường ngày cấp thứ 7, hoặc đang trong quá trình gõ địa chỉ)
-    // Buộc phải chờ ít nhất 1500ms (1.5 giây) không có ký tự mới để tránh NGẮT NGANG khi máy quét/Unikey đang gõ địa chỉ Tiếng Việt dài
+    // 3. Nếu là mã thẻ BHYT đơn lẻ (đúng 15 ký tự gồm 2 chữ cái + 13 số, VD: DN4838321436964)
+    if (/^[A-Za-z]{2}\d{13}$/.test(str)) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        triggerApply(str);
+      }, 300);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
+    }
+
+    // 4. Nếu là số CCCD đơn lẻ (12 chữ số)
+    if (/^\d{12}$/.test(str)) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        triggerApply(str);
+      }, 300);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
+    }
+
+    // 5. Trường hợp CCCD 6 trường (chưa có hoặc không có trường ngày cấp thứ 7, hoặc đang trong quá trình gõ địa chỉ)
+    // Buộc phải chờ ít nhất 1200ms không có ký tự mới để tránh ngắt ngang khi máy quét/Unikey đang gõ địa chỉ Tiếng Việt
     if (p.length >= 6 && /^\d{12}$/.test(p[0])) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         triggerApply(str);
-      }, 1500);
+      }, 1200);
       return () => {
         if (timerRef.current) clearTimeout(timerRef.current);
       };
@@ -279,6 +301,11 @@ export function BarcodeScannerInput({
               onKeyDown={handleKeyDown}
               onKeyUp={handleKeyUp}
               onBlur={handleBlur}
+              lang="en"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="off"
               style={{ outline: "none", boxShadow: "none", border: "none" }}
               placeholder="Nhập hoặc quét mã vạch..."
               className={`bg-transparent border-0 outline-none !outline-none focus:!outline-none focus:ring-0 focus:border-transparent focus-visible:!outline-none focus-visible:ring-0 text-[13px] font-mono font-bold w-full placeholder:text-[var(--mute)] placeholder:font-sans placeholder:font-normal min-w-0 ${localScan ? "text-transparent caret-[var(--teal-deep)]" : "text-[var(--ink)] caret-[var(--teal-deep)]"}`}
@@ -329,7 +356,7 @@ export function BarcodeScannerInput({
   }
 
   return (
-    <div className="px-4 py-2.5 bg-gradient-to-r from-[var(--teal-soft)]/60 via-[var(--teal-soft)]/30 to-[var(--surface-bg)] rounded-xl border border-[var(--teal)]/30 flex items-center justify-between gap-3 flex-wrap shadow-xs transition-all">
+    <div className="px-4 py-2.5 bg-gradient-to-r from-[var(--teal-soft)]/60 via-[var(--teal-soft)]/30 to-[var(--surface-bg)] rounded-xl border border-[var(--teal)]/30 flex items-center justify-between gap-3 flex-wrap shadow-xs transition-all w-full max-w-full overflow-hidden min-w-0">
       <div className="flex items-center gap-2.5 shrink-0">
         <div className="w-7 h-7 rounded-lg bg-[var(--teal)] text-white flex items-center justify-center shadow-2xs">
           <Scan className="w-4 h-4 animate-pulse" />
@@ -350,6 +377,11 @@ export function BarcodeScannerInput({
             onKeyDown={handleKeyDown}
             onKeyUp={handleKeyUp}
             onBlur={handleBlur}
+            lang="en"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete="off"
             autoFocus={autoFocus}
             style={{ outline: "none", boxShadow: "none", border: "none" }}
             placeholder="Nhập hoặc quét mã vạch..."
@@ -401,14 +433,17 @@ export function BarcodeScannerInput({
 
       {/* Trạng thái tra cứu BHYT (nếu có) */}
       {lookupStatus === "loading" && (
-        <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--navy)] animate-fade-in w-full sm:w-auto">
-          <Loader2 className="w-4 h-4 animate-spin shrink-0 text-[var(--teal-deep)]" /> <span className="truncate">{lookupMsg || "Đang tra cứu BHYT..."}</span>
+        <div className="flex items-center gap-2 text-[12.5px] font-semibold text-[var(--navy)] animate-fade-in w-full min-w-0">
+          <Loader2 className="w-4 h-4 animate-spin shrink-0 text-[var(--teal-deep)]" />
+          <span className="truncate flex-1 min-w-0">{lookupMsg || "Đang tra cứu BHYT..."}</span>
         </div>
       )}
       {lookupStatus === "fail" && (
-        <div className="flex items-center gap-2 text-[12.5px] font-semibold text-amber-800 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 animate-fade-in w-full sm:w-auto">
-          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-          <span className="truncate">{lookupMsg || "Chưa kết nối cổng BHXH"}</span>
+        <div className="flex items-center justify-between gap-2 text-[12px] font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 animate-fade-in w-full min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <span className="truncate flex-1 min-w-0">{lookupMsg || "Chưa kết nối cổng BHXH"}</span>
+          </div>
           {onRetryLookup && (
             <button
               type="button"
@@ -421,9 +456,16 @@ export function BarcodeScannerInput({
         </div>
       )}
       {lookupStatus === "ok" && (
-        <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--teal-deep)] animate-fade-in w-full sm:w-auto">
-          <Check className="w-4 h-4 shrink-0 stroke-[3]" /> <span className="truncate">{lookupMsg}</span>
-          {theBhytMa && <span className="font-mono bg-[var(--teal)] text-white px-2 py-0.5 rounded-md text-[11px] shrink-0 font-bold">{theBhytMa}</span>}
+        <div className="flex items-center justify-between gap-2 text-[12.5px] font-semibold text-[var(--teal-deep)] bg-[var(--teal-soft)]/50 px-3 py-1.5 rounded-lg border border-[var(--teal)]/30 animate-fade-in w-full min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Check className="w-4 h-4 shrink-0 stroke-[3]" />
+            <span className="truncate flex-1 min-w-0 font-medium">Thẻ BHYT hợp lệ và còn giá trị sử dụng</span>
+          </div>
+          {theBhytMa && (
+            <span className="font-mono bg-[var(--teal-deep)] text-white px-2.5 py-0.5 rounded-md text-[11.5px] shrink-0 font-bold tracking-wider">
+              {theBhytMa}
+            </span>
+          )}
         </div>
       )}
     </div>

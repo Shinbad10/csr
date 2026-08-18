@@ -716,7 +716,7 @@ export default function TheoDoiPage() {
                     <div className="flex items-start sm:items-center gap-1.5 flex-1 min-w-[280px]">
                       <span className="text-[var(--mute)] font-semibold shrink-0">Địa chỉ:</span>
                       <span className="font-medium text-[var(--ink)] leading-relaxed break-words">
-                        {[sel.diaChi, sel.buoiKham?.xa].filter(Boolean).join(", ") || "—"}
+                        {sel.diaChi || "—"}
                       </span>
                     </div>
                   </div>

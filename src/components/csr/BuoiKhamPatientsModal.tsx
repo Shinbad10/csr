@@ -361,7 +361,11 @@ export default function BuoiKhamPatientsModal({
 
                       {/* Họ tên + Tuổi + Giới tính */}
                       <td className="py-3.5 px-4 align-middle">
-                        <div className="font-bold text-[#0f172a] text-[14px]">
+                        <div className={`font-bold text-[14px] ${
+                          (p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0)
+                            ? "text-emerald-700 font-extrabold"
+                            : "text-[#0f172a]"
+                        }`}>
                           {p.hoTen}
                         </div>
                         <div className="text-[11.5px] text-[#64748b] flex items-center gap-2 mt-1">
@@ -382,8 +386,8 @@ export default function BuoiKhamPatientsModal({
                             <span className="text-[#94a3b8] italic text-xs">Chưa có SĐT</span>
                           )}
                         </div>
-                        <div className="text-[12px] text-[#64748b] mt-1 line-clamp-2 max-w-[280px]" title={[p.diaChi, p.khuPho, p.xaPhuong].filter(Boolean).join(", ")}>
-                          {[p.diaChi, p.xaPhuong].filter(Boolean).join(", ") || "—"}
+                        <div className="text-[12px] text-[#64748b] mt-1 line-clamp-2 max-w-[280px]" title={p.diaChi || ""}>
+                          {p.diaChi || "—"}
                         </div>
                       </td>
 

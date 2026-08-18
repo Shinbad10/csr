@@ -301,7 +301,13 @@ export default function TuVanSessionPage() {
                         {/* Thông tin chính */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1.5">
-                            <h4 className={`text-[12.5px] font-bold truncate leading-tight ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
+                            <h4 className={`text-[12.5px] font-bold truncate leading-tight ${
+                              (p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0)
+                                ? "text-emerald-700 font-extrabold"
+                                : active
+                                  ? "text-[var(--navy)]"
+                                  : "text-[var(--ink)]"
+                            }`}>
                               {p.hoTen}
                             </h4>
 

@@ -392,8 +392,8 @@ export function hoSoToKhamSucKhoeCells(h: HoSoExport): (string | number)[] {
     ? fmtDate(h.ngaySinh)
     : (h.namSinh ? `01/01/${h.namSinh}` : "");
 
-  // Chỗ ở hiện tại
-  const choO = [h.diaChi, h.khuPho, h.xaPhuong || h.buoiKham?.xa].filter(Boolean).join(", ") || h.diaChi || "";
+  // Chỗ ở hiện tại: Chỉ lấy thông tin địa chỉ thực tế của bệnh nhân
+  const choO = h.diaChi || [h.khuPho, h.xaPhuong].filter(Boolean).join(", ") || "";
 
   // Bác sĩ khám
   const bacSi = h.bacSiChiDinh || h.buoiKham?.bacSiKham || "";

@@ -16,6 +16,7 @@ export interface ModalProps {
   noPadding?: boolean;
   headerStyle?: string;
   className?: string;
+  closeOnOutsideClick?: boolean;
 }
 
 export default function Modal({
@@ -30,6 +31,7 @@ export default function Modal({
   noPadding = false,
   headerStyle,
   className = "",
+  closeOnOutsideClick = true,
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -52,7 +54,7 @@ export default function Modal({
   const content = (
     <div
       className={`fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in ${className}`}
-      onClick={onClose}
+      onClick={closeOnOutsideClick ? onClose : undefined}
     >
       <div
         className={`bg-white rounded-2xl border border-[var(--line-strong)] shadow-[var(--shadow-xl)] w-full ${maxWidth} flex flex-col max-h-[92vh] overflow-hidden animate-scale-up`}
@@ -90,7 +92,7 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className={`flex-1 overflow-y-auto ${noPadding ? "" : "p-5 sm:p-6"} bg-white`}>
+        <div className={`flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full ${noPadding ? "" : "p-5 sm:p-6"} bg-white`}>
           {children}
         </div>
 

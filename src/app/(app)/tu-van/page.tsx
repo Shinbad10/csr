@@ -806,7 +806,7 @@ export default function TuVanSessionPage() {
                     </div>
                     <div className="flex items-center gap-1 truncate">
                       <span className="text-[var(--mute)] font-medium">Địa chỉ:</span>
-                      <span className="truncate text-[var(--ink)] font-medium">{[selected.diaChi, selected.buoiKham?.xa].filter(Boolean).join(", ") || "—"}</span>
+                      <span className="truncate text-[var(--ink)] font-medium">{selected.diaChi || "—"}</span>
                     </div>
                   </div>
                 </div>

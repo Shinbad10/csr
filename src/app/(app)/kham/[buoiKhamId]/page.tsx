@@ -7,20 +7,22 @@ import { useSession, signOut } from "next-auth/react";
 import {
   Loader2, Search, UserPlus, SlidersHorizontal, RefreshCw, Check, Printer,
   LogOut, X, ScanLine, Save, ClipboardList, Pencil, Users, Plus,
-  MapPin, Shield, Camera, AlertTriangle, ArrowUpDown, ChevronRight, ChevronLeft, ChevronDown, CheckCircle2, Clock, Sparkles, UserCheck,
+  MapPin, Shield, ShieldCheck, Camera, AlertTriangle, ArrowUpDown, ChevronRight, ChevronLeft, ChevronDown, CheckCircle2, Clock, Sparkles, UserCheck,
   Copy, ArrowRightLeft, Trash2, Eye, ArrowRight, ArrowLeft, Zap, CheckCheck,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import {
-  CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, statusOf, type HoSo,
+  CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
 } from "@/lib/csr";
 import {
   BENH_SU_OPTIONS, BENH_LY_OPTIONS, LOAI_BENH_LY_OPTIONS, HUONG_XU_TRI, MUC_HUONG_BHYT,
   huongXuTriToKhuyenNghi, parseFieldConfig, isFieldOn, type FieldConfig,
 } from "@/lib/formFields";
-import { type ThongTinTheBHYT } from "@/lib/bhxh";
+import { type ThongTinTheBHYT, parseQRData } from "@/lib/bhxh-types";
+import { readJson, loiTuResponse } from "@/lib/http";
+import { BhytResultCard } from "@/components/csr/BhytResultCard";
 import { Field, Select, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
 import { DoctorAutocomplete, parseDoctorList } from "@/components/csr/DoctorAutocomplete";
 import PageHeader from "@/components/layout/PageHeader";
@@ -65,9 +67,10 @@ function applyBhxhDataToForm(
   setNgaySinh: (v: string) => void,
   setGioiTinh: (v: string) => void,
   setDiaChi: (v: string) => void,
-  setCccd?: (v: string) => void
+  setCccd?: (v: string) => void,
+  setMucHuong?: (v: string) => void
 ) {
-  if (the.hoTen) setHoTen(the.hoTen);
+  if (the.hoTen) setHoTen(the.hoTen.trim().toUpperCase());
   if (the.ngaySinh) {
     const s = the.ngaySinh.trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) setNgaySinh(s);
@@ -87,6 +90,21 @@ function applyBhxhDataToForm(
   if (the.diaChi) setDiaChi(the.diaChi);
   // Chỉ điền khi cổng BHXH thực sự trả CCCD; caller tự quyết định có ghi đè số đang có không
   if (the.cccd && setCccd) setCccd(the.cccd);
+
+  // Tự động điền Mức hưởng BHYT (%) từ kết quả Cổng BHXH hoặc mã thẻ
+  if (setMucHuong) {
+    let mh = "";
+    if (the.mucHuong) {
+      const n = parseInt(String(the.mucHuong), 10);
+      if (Number.isFinite(n)) mh = String(n);
+    }
+    if (!mh && the.maThe) {
+      const level = bhytLevel(the.maThe);
+      const n = parseInt(level, 10);
+      if (Number.isFinite(n)) mh = String(n);
+    }
+    if (mh) setMucHuong(mh);
+  }
 }
 
 // ── Modal tiếp nhận: quét thẻ BHYT / CCCD / VNeID ──────────────────────────
@@ -109,61 +127,98 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
   const [lookup, setLookup] = useState<"idle" | "loading" | "ok" | "fail">("idle");
   const [lookupMsg, setLookupMsg] = useState("");
   const [theBhyt, setTheBhyt] = useState<ThongTinTheBHYT | null>(null);
+  // Huỷ lượt tra cứu cũ khi quét thẻ mới — tránh kết quả về trễ ghi đè lên thẻ vừa quét
+  const lookupAbortRef = useRef<AbortController | null>(null);
 
-  // Tra cứu mã thẻ BHYT qua cổng BHXH theo CCCD + họ tên + ngày sinh.
-  const lookupBhxh = async (ma: string, ten: string, dob: string) => {
+  useEffect(() => () => lookupAbortRef.current?.abort(), []);
+
+  // Tra cứu mã thẻ BHYT qua cổng BHXH theo CCCD + họ tên + ngày sinh (tự động refresh token).
+  const lookupBhxh = async (ma: string, ten: string, dob: string, forceRefresh = false) => {
     if (!ma.trim() || !ten.trim()) { setLookup("fail"); setLookupMsg("Cần CCCD/mã thẻ + họ tên để tra cứu"); return; }
+    lookupAbortRef.current?.abort();
+    const ac = new AbortController();
+    lookupAbortRef.current = ac;
     setLookup("loading"); setLookupMsg("Đang tra cứu BHYT…");
     try {
-      const res = await fetch("/api/bhxh", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cccd: ma.trim(), hoTen: ten.trim(), ngaySinh: dob }) });
-      const r = await res.json();
-      if (r.success && r.maThe) {
+      const res = await fetch("/api/bhxh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ac.signal,
+        body: JSON.stringify({
+          maThe: ma.trim(),
+          cccd: ma.trim(),
+          hoTen: ten.trim(),
+          ngaySinh: dob,
+          coSoId: buoiKham.coSoId,
+          forceRefresh,
+        }),
+      });
+      const r = await readJson(res);
+      if (ac.signal.aborted) return;
+      if (r.the && (r.the.maThe || r.maThe)) {
+        const ma = String(r.the.maThe || r.maThe).toUpperCase();
+        setBhyt(ma);
+        setTheBhyt(r.the);
+        setLookup(r.success ? "ok" : "fail");
+        setLookupMsg(r.notification || r.the.ghiChu || (r.success ? `Tìm thấy thẻ: ${ma}` : `Thẻ hết hạn (${r.the.gtTheDen || "Đã hết hạn"}). Đã tự động điền thông tin thẻ.`));
+        applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v), setMucHuong);
+      } else if (r.success && r.maThe) {
         setBhyt(String(r.maThe).toUpperCase());
-        setTheBhyt(r.the || null);
         setLookup("ok");
-        setLookupMsg(`Tìm thấy thẻ: ${r.maThe}`);
-        // CCCD: chỉ điền khi ô đang trống, không đè số nhân viên tiếp nhận đã nhập tay
-        if (r.the) applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v));
+        setLookupMsg(r.notification || `Tìm thấy mã thẻ: ${r.maThe}`);
       } else {
-        setTheBhyt(null);
+        setTheBhyt(r.the || null);
         setLookup("fail");
-        setLookupMsg(r.error || "Không tìm thấy thẻ BHYT");
+        setLookupMsg(r.error || r.notification || loiTuResponse(res, r, "Không tìm thấy thẻ BHYT"));
       }
-    } catch { setTheBhyt(null); setLookup("fail"); setLookupMsg("Mất kết nối cổng BHXH"); }
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      setTheBhyt(null);
+      setLookup("fail");
+      setLookupMsg("Mất kết nối cổng BHXH");
+    }
   };
 
-  // Decode QR CCCD/BHYT (pipe-delimited): cccd|cmnd|hoTen|ddmmyyyy|gioiTinh|diaChi
+  // Decode QR CCCD/BHYT thông minh chuẩn hóa
   const applyScan = useCallback((rawStr?: string) => {
     const target = (rawStr !== undefined ? rawStr : scan).trim();
     if (!target) return;
-    const p = target.split("|").map((s) => s.trim());
-    if (p.length >= 6) {
-      const cccdV = (p[0] || "").replace(/\D/g, "").slice(0, 12), tenV = p[2] || "";
-      // Ngày sinh trên QR CCCD/VNeID: chuẩn BCA là ddmmyyyy (8 số), nhưng một số đầu đọc trả dd/mm/yyyy hoặc chỉ yyyy
-      const dobRaw = (p[3] || "").replace(/\s/g, "");
-      let dobIso = "";
-      if (/^\d{8}$/.test(dobRaw)) dobIso = `${dobRaw.slice(4)}-${dobRaw.slice(2, 4)}-${dobRaw.slice(0, 2)}`;
-      else if (/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.test(dobRaw)) {
-        const [, d, m, y] = dobRaw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)!;
-        dobIso = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-      } else if (/^\d{4}$/.test(dobRaw)) dobIso = `${dobRaw}-01-01`;
-      setCccd(cccdV); setHoTen(tenV); if (dobIso) setNgaySinh(dobIso);
-      // Giới tính trên thẻ: "Nam" / "Nữ"; chỉ khi khớp "Nữ" mới là Nữ, còn lại mặc định Nam
-      setGioiTinh(/n[ữu]/i.test(p[4] || "") ? "Nữ" : "Nam");
-      setDiaChi(p[5] || ""); setScan("");
-      if (cccdV && tenV) lookupBhxh(cccdV, tenV, dobIso); // Tự động tra cứu BHYT luôn ngay sau khi quét CCCD
-    } else if (/^[A-Za-z]{2}\d/.test(target)) {
-      const maV = target.toUpperCase();
-      setBhyt(maV); setScan("");
-      if (hoTen || cccd) lookupBhxh(maV, hoTen || cccd, ngaySinh);
-    } else if (/^\d{9,12}$/.test(target)) {
-      const cccdV = target.replace(/\D/g, "").slice(0, 12);
-      setCccd(cccdV); setScan("");
-      if (hoTen) lookupBhxh(cccdV, hoTen, ngaySinh);
-    } else {
-      // Chuỗi quét rác hoặc địa chỉ bị ngắt dở -> bỏ qua, tuyệt đối không ghi đè vào Số CCCD
+    const parsed = parseQRData(target);
+
+    if (parsed.type === "CCCD") {
+      if (parsed.cccd) setCccd(parsed.cccd);
+      if (parsed.hoTen) setHoTen(parsed.hoTen.trim().toUpperCase());
+      if (parsed.ngaySinhIso) setNgaySinh(parsed.ngaySinhIso);
+      if (parsed.gioiTinh) setGioiTinh(parsed.gioiTinh);
+      if (parsed.diaChi) setDiaChi(parsed.diaChi);
       setScan("");
-      return;
+      if (parsed.cccd && parsed.hoTen) {
+        lookupBhxh(parsed.cccd, parsed.hoTen, parsed.ngaySinhIso || "");
+      }
+    } else if (parsed.type === "BHYT") {
+      if (parsed.maThe) setBhyt(parsed.maThe.toUpperCase());
+      if (parsed.hoTen) setHoTen(parsed.hoTen.trim().toUpperCase());
+      if (parsed.ngaySinhIso) setNgaySinh(parsed.ngaySinhIso);
+      if (parsed.gioiTinh) setGioiTinh(parsed.gioiTinh);
+      if (parsed.diaChi) setDiaChi(parsed.diaChi);
+      setScan("");
+      if (parsed.maThe && parsed.hoTen) {
+        lookupBhxh(parsed.maThe, parsed.hoTen, parsed.ngaySinhIso || "");
+      }
+    } else if (parsed.type === "CARD_ONLY") {
+      if (parsed.maThe) {
+        setBhyt(parsed.maThe.toUpperCase());
+        setScan("");
+        if (hoTen || cccd) lookupBhxh(parsed.maThe, hoTen || cccd, ngaySinh);
+      }
+    } else if (parsed.type === "CCCD_ONLY") {
+      if (parsed.cccd) {
+        setCccd(parsed.cccd);
+        setScan("");
+        if (hoTen) lookupBhxh(parsed.cccd, hoTen, ngaySinh);
+      }
+    } else {
+      setScan("");
     }
   }, [scan, hoTen, cccd, ngaySinh]);
 
@@ -173,7 +228,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
   };
   const handleHoTenChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
-    setHoTen(val);
+    setHoTen(val.toUpperCase());
   };
   const handleBhytChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
@@ -231,13 +286,13 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           boQuaTrung: forceCreate,
         }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) {
         if (res.status === 409 || data.isDuplicate || (data.error && data.error.includes("Bệnh nhân đã có trong buổi khám"))) {
           setDupWarning(data.error || "Bệnh nhân này đã có trong danh sách buổi khám hôm nay.");
           return;
         }
-        setErr(data.error || "Không thể lưu hồ sơ");
+        setErr(loiTuResponse(res, data, "Không thể lưu hồ sơ"));
         return;
       }
       onCreated(data);
@@ -249,6 +304,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
     <Modal
       open={true}
       onClose={onClose}
+      closeOnOutsideClick={false}
       title={buoiKham.coSo?.ten || "Tiếp nhận bệnh nhân mới"}
       subtitle={<span className="font-mono flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--teal-deep)] inline" /> {fmtBuoiKhamName(buoiKham)}</span>}
       icon={UserPlus}
@@ -262,7 +318,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           onOpenCamera={() => setCameraOpen(true)}
           lookupStatus={lookup}
           lookupMsg={lookupMsg}
-          onRetryLookup={() => lookupBhxh(cccd || bhyt, hoTen, ngaySinh)}
+          onRetryLookup={() => lookupBhxh(cccd || bhyt, hoTen, ngaySinh, true)}
           theBhytMa={theBhyt?.maThe}
           autoFocus={true}
           onClear={handleResetForm}
@@ -305,7 +361,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
                 </div>
                 <button
                   type="button"
-                  onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+                  onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
                   disabled={(!bhyt.trim() && !cccd.trim()) || lookup === "loading"}
                   className="btn btn-secondary px-3.5 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-white hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
                   title="Bấm để tra cứu thông tin thẻ BHYT trên cổng BHXH"
@@ -389,7 +445,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
               </div>
               <button
                 type="button"
-                onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+                onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
                 className="px-3 py-1.5 text-xs font-bold bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-100 shrink-0 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Thử lại
@@ -398,18 +454,8 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           )}
 
           {theBhyt && (
-            <div className="sm:col-span-12 p-3.5 rounded-xl bg-gradient-to-br from-[var(--navy-50)] to-[var(--surface-bg)] border border-[var(--navy)]/20 text-[13px] text-[var(--navy-deep)] space-y-2 shadow-xs animate-fade-in">
-              <div className="flex items-center justify-between pb-1.5 border-b border-[var(--navy)]/10 font-bold text-[13.5px]">
-                <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-[var(--teal-deep)]" /> Dữ liệu BHYT / BHXH hợp lệ</span>
-                <span className="font-mono text-[11.5px] bg-[var(--navy)] text-white px-2 py-0.5 rounded-md">OK</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[12.5px]">
-                <div><span className="text-[var(--mute)] font-medium">Họ tên trên thẻ:</span> <strong className="uppercase">{theBhyt.hoTen || "?"}</strong></div>
-                <div><span className="text-[var(--mute)] font-medium">Ngày sinh:</span> <strong className="font-mono">{theBhyt.ngaySinh || "?"}</strong></div>
-                <div><span className="text-[var(--mute)] font-medium">Hạn sử dụng:</span> <strong className="font-mono">{theBhyt.tuNgay || "?"} → {theBhyt.denNgay || "?"}</strong></div>
-                <div><span className="text-[var(--mute)] font-medium">Nơi ĐKBĐ:</span> <strong>{theBhyt.tenDKBD || "Chưa rõ"} ({theBhyt.maDKBD || ""})</strong></div>
-                {theBhyt.namNamLienTuc && <div className="sm:col-span-2 text-[12px] text-[var(--teal-deep)] font-semibold">✨ 5 năm liên tục từ: <span className="font-mono">{theBhyt.namNamLienTuc}</span></div>}
-              </div>
+            <div className="sm:col-span-12">
+              <BhytResultCard the={theBhyt} notification={lookupMsg} />
             </div>
           )}
         </div>
@@ -512,7 +558,7 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 // Sửa thông tin tiếp nhận của bệnh nhân (mở từ nút bút chì)
-function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg: FieldConfig; onClose: () => void; onSaved: () => void }) {
+function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: HoSo; cfg: FieldConfig; coSoId?: string; onClose: () => void; onSaved: () => void }) {
   const [hoTen, setHoTen] = useState(patient.hoTen);
   const [gioiTinh, setGioiTinh] = useState(patient.gioiTinh || "Nam");
   const [ngaySinh, setNgaySinh] = useState(patient.ngaySinh ? new Date(patient.ngaySinh).toISOString().slice(0, 10) : "");
@@ -530,84 +576,100 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
   const [lookup, setLookup] = useState<"idle" | "loading" | "ok" | "fail">("idle");
   const [lookupMsg, setLookupMsg] = useState("");
   const [theBhyt, setTheBhyt] = useState<ThongTinTheBHYT | null>(null);
-  const [hisStatus, setHisStatus] = useState<"idle" | "loading" | "ok" | "fail">("idle");
-  const [hisMsg, setHisMsg] = useState("");
-  const [hisData, setHisData] = useState<any>(null);
+  // Huỷ lượt tra cứu cũ khi quét thẻ mới — tránh kết quả về trễ ghi đè lên thẻ vừa quét
+  const lookupAbortRef = useRef<AbortController | null>(null);
 
-  const checkHIS = async () => {
-    setHisStatus("loading"); setHisMsg("Đang đối chiếu HIS bệnh viện...");
-    try {
-      const res = await fetch("/api/his/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hoSoId: patient.id }),
-      });
-      const r = await res.json();
-      if (r.success && r.data) {
-        setHisStatus("ok");
-        setHisData(r.data);
-        setHisMsg(r.data.chiTiet || `Mã HIS: ${r.data.maHIS}`);
-        onSaved();
-      } else {
-        setHisStatus("fail");
-        setHisMsg(r.message || r.error || "Không tìm thấy trên HIS");
-      }
-    } catch {
-      setHisStatus("fail");
-      setHisMsg("Lỗi kết nối máy chủ HIS");
-    }
-  };
+  useEffect(() => () => lookupAbortRef.current?.abort(), []);
+  useEffect(() => {
+    const m = mucHuongFromThe(bhyt);
+    if (m) setMucHuong(m);
+  }, [bhyt]);
 
-  const lookupBhxh = async (ma: string, ten: string, dob: string) => {
+  const lookupBhxh = async (ma: string, ten: string, dob: string, forceRefresh = false) => {
     if (!ma.trim() || !ten.trim()) { setLookup("fail"); setLookupMsg("Cần CCCD/mã thẻ + họ tên để tra cứu"); return; }
+    lookupAbortRef.current?.abort();
+    const ac = new AbortController();
+    lookupAbortRef.current = ac;
     setLookup("loading"); setLookupMsg("Đang tra cứu BHYT…");
     try {
-      const res = await fetch("/api/bhxh", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cccd: ma.trim(), hoTen: ten.trim(), ngaySinh: dob }) });
-      const r = await res.json();
-      if (r.success && r.maThe) {
+      const res = await fetch("/api/bhxh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ac.signal,
+        body: JSON.stringify({
+          maThe: ma.trim(),
+          cccd: ma.trim(),
+          hoTen: ten.trim(),
+          ngaySinh: dob,
+          coSoId: coSoId || undefined,
+          forceRefresh,
+        }),
+      });
+      const r = await readJson(res);
+      if (ac.signal.aborted) return;
+      if (r.the && (r.the.maThe || r.maThe)) {
+        const ma = String(r.the.maThe || r.maThe).toUpperCase();
+        setBhyt(ma);
+        setTheBhyt(r.the);
+        setLookup(r.success ? "ok" : "fail");
+        setLookupMsg(r.notification || r.the.ghiChu || (r.success ? `Tìm thấy thẻ: ${ma}` : `Thẻ hết hạn (${r.the.gtTheDen || "Đã hết hạn"}). Đã tự động điền thông tin thẻ.`));
+        applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v), setMucHuong);
+      } else if (r.success && r.maThe) {
         setBhyt(String(r.maThe).toUpperCase());
-        setTheBhyt(r.the || null);
         setLookup("ok");
-        setLookupMsg(`Tìm thấy thẻ: ${r.maThe}`);
-        // CCCD: chỉ điền khi ô đang trống, không đè số nhân viên tiếp nhận đã nhập tay
-        if (r.the) applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v));
+        setLookupMsg(r.notification || `Tìm thấy mã thẻ: ${r.maThe}`);
       } else {
-        setTheBhyt(null);
+        setTheBhyt(r.the || null);
         setLookup("fail");
-        setLookupMsg(r.error || "Không tìm thấy thẻ BHYT");
+        setLookupMsg(r.error || r.notification || loiTuResponse(res, r, "Không tìm thấy thẻ BHYT"));
       }
-    } catch { setTheBhyt(null); setLookup("fail"); setLookupMsg("Mất kết nối cổng BHXH"); }
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      setTheBhyt(null);
+      setLookup("fail");
+      setLookupMsg("Mất kết nối cổng BHXH");
+    }
   };
 
   const applyScan = useCallback((rawStr?: string) => {
     const target = (rawStr !== undefined ? rawStr : scan).trim();
     if (!target) return;
-    const p = target.split("|").map((s) => s.trim());
-    if (p.length >= 6) {
-      const cccdV = (p[0] || "").replace(/\D/g, "").slice(0, 12), tenV = p[2] || "";
-      const dobRaw = (p[3] || "").replace(/\s/g, "");
-      let dobIso = "";
-      if (/^\d{8}$/.test(dobRaw)) dobIso = `${dobRaw.slice(4)}-${dobRaw.slice(2, 4)}-${dobRaw.slice(0, 2)}`;
-      else if (/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.test(dobRaw)) {
-        const [, d, m, y] = dobRaw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)!;
-        dobIso = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
-      } else if (/^\d{4}$/.test(dobRaw)) dobIso = `${dobRaw}-01-01`;
-      setCccd(cccdV); setHoTen(tenV); if (dobIso) setNgaySinh(dobIso);
-      setGioiTinh(/n[ữu]/i.test(p[4] || "") ? "Nữ" : "Nam");
-      setDiaChi(p[5] || ""); setScan("");
-      if (cccdV && tenV) lookupBhxh(cccdV, tenV, dobIso);
-    } else if (/^[A-Za-z]{2}\d/.test(target)) {
-      const maV = target.toUpperCase();
-      setBhyt(maV); setScan("");
-      if (hoTen || cccd) lookupBhxh(maV, hoTen || cccd, ngaySinh);
-    } else if (/^\d{9,12}$/.test(target)) {
-      const cccdV = target.replace(/\D/g, "").slice(0, 12);
-      setCccd(cccdV); setScan("");
-      if (hoTen) lookupBhxh(cccdV, hoTen, ngaySinh);
-    } else {
-      // Chuỗi quét rác hoặc địa chỉ bị ngắt dở -> bỏ qua, tuyệt đối không ghi đè vào Số CCCD
+    const parsed = parseQRData(target);
+
+    if (parsed.type === "CCCD") {
+      if (parsed.cccd) setCccd(parsed.cccd);
+      if (parsed.hoTen) setHoTen(parsed.hoTen.trim().toUpperCase());
+      if (parsed.ngaySinhIso) setNgaySinh(parsed.ngaySinhIso);
+      if (parsed.gioiTinh) setGioiTinh(parsed.gioiTinh);
+      if (parsed.diaChi) setDiaChi(parsed.diaChi);
       setScan("");
-      return;
+      if (parsed.cccd && parsed.hoTen) {
+        lookupBhxh(parsed.cccd, parsed.hoTen, parsed.ngaySinhIso || "");
+      }
+    } else if (parsed.type === "BHYT") {
+      if (parsed.maThe) setBhyt(parsed.maThe.toUpperCase());
+      if (parsed.hoTen) setHoTen(parsed.hoTen.trim().toUpperCase());
+      if (parsed.ngaySinhIso) setNgaySinh(parsed.ngaySinhIso);
+      if (parsed.gioiTinh) setGioiTinh(parsed.gioiTinh);
+      if (parsed.diaChi) setDiaChi(parsed.diaChi);
+      setScan("");
+      if (parsed.maThe && parsed.hoTen) {
+        lookupBhxh(parsed.maThe, parsed.hoTen, parsed.ngaySinhIso || "");
+      }
+    } else if (parsed.type === "CARD_ONLY") {
+      if (parsed.maThe) {
+        setBhyt(parsed.maThe.toUpperCase());
+        setScan("");
+        if (hoTen || cccd) lookupBhxh(parsed.maThe, hoTen || cccd, ngaySinh);
+      }
+    } else if (parsed.type === "CCCD_ONLY") {
+      if (parsed.cccd) {
+        setCccd(parsed.cccd);
+        setScan("");
+        if (hoTen) lookupBhxh(parsed.cccd, hoTen, ngaySinh);
+      }
+    } else {
+      setScan("");
     }
   }, [scan, hoTen, cccd, ngaySinh]);
 
@@ -617,44 +679,62 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
   };
   const handleHoTenChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
-    setHoTen(val);
+    setHoTen(val.toUpperCase());
   };
   const handleBhytChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
-    setBhyt(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15));
-    setLookup("idle"); setTheBhyt(null);
+    const clean = val.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 15);
+    setBhyt(clean);
+  };
+  const handleDiaChiChange = (val: string) => {
+    if (val.includes("|")) { applyScan(val); return; }
+    setDiaChi(val);
   };
   const handleSdtChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
-    setSdt(val.replace(/[^0-9\s.+]/g, "").slice(0, 15));
+    setSdt(val.replace(/\D/g, "").slice(0, 10));
   };
 
-  // Mức hưởng suy tự động từ mã thẻ mỗi khi thẻ đổi
-  useEffect(() => { const m = mucHuongFromThe(bhyt); if (m) setMucHuong(m); }, [bhyt]);
-
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setErr(""); setSaving(true);
+    e.preventDefault();
+    if (!hoTen.trim()) { setErr("Họ tên không được để trống"); return; }
+    if (cccd && !/^\d{9,12}$/.test(cccd)) { setErr("Số CCCD phải gồm 9 hoặc 12 chữ số"); return; }
+    if (bhyt && bhyt.length < 10) { setErr("Mã BHYT không hợp lệ (ít nhất 10 ký tự)"); return; }
+    setSaving(true);
+    setErr("");
     try {
       const res = await fetch(`/api/csr/hoso/${patient.id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hoTen, gioiTinh, ngaySinh: ngaySinh || null, cccd, bhyt, sdt, diaChi,
-          mucHuongBHYT: mucHuong || null,
-          ...(isFieldOn(cfg, "khuPho") ? { khuPho } : {}),
-          ...(isFieldOn(cfg, "xaPhuong") ? { xaPhuong } : {}),
+          hoTen: hoTen.trim(),
+          gioiTinh,
+          ngaySinh: ngaySinh || null,
+          cccd: cccd.trim() || null,
+          bhyt: bhyt.trim() || null,
+          sdt: sdt.trim() || null,
+          diaChi: diaChi.trim() || null,
+          khuPho: khuPho.trim() || null,
+          xaPhuong: xaPhuong.trim() || null,
+          mucHuongBHYT: mucHuong ? Number(mucHuong) : null,
         }),
       });
-      const d = await res.json();
-      if (!res.ok) { setErr(d.error || "Không thể lưu"); return; }
+      const data = await readJson(res);
+      if (!res.ok) throw new Error(loiTuResponse(res, data, "Không thể cập nhật hồ sơ"));
       onSaved();
-    } catch { setErr("Mất kết nối máy chủ"); }
-    finally { setSaving(false); }
+      onClose();
+    } catch (e: any) {
+      setErr(e?.message || "Mất kết nối máy chủ, chưa lưu được thông tin");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <Modal
       open={true}
       onClose={onClose}
+      closeOnOutsideClick={false}
       title="Sửa thông tin bệnh nhân"
       icon={Pencil}
       maxWidth="max-w-[650px]"
@@ -694,7 +774,7 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
             </div>
             <button
               type="button"
-              onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+              onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
               disabled={(!bhyt.trim() && !cccd.trim()) || lookup === "loading"}
               className="btn btn-secondary px-4 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-white hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               title="Bấm để tra cứu thông tin thẻ BHYT trên cổng BHXH"
@@ -713,36 +793,27 @@ function EditInfoModal({ patient, cfg, onClose, onSaved }: { patient: HoSo; cfg:
               </div>
               <button
                 type="button"
-                onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh)}
+                onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
                 className="px-2.5 py-1 text-xs font-bold bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-100 shrink-0 flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Thử lại
               </button>
             </div>
           )}
-          {lookup === "ok" && (
-            <div className="mt-2 text-[12.5px] font-semibold text-[var(--teal-deep)] flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Check className="w-4 h-4 stroke-[3]" /> {lookupMsg}
+          {lookup === "ok" && !theBhyt && (
+            <div className="mt-2 text-[12.5px] font-semibold text-[var(--teal-deep)] flex items-center justify-between gap-2 min-w-0">
+              <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                <Check className="w-4 h-4 stroke-[3] shrink-0" />
+                <span className="truncate flex-1 min-w-0">Thẻ BHYT hợp lệ</span>
               </span>
-              <span className="font-mono bg-[var(--teal)] text-white px-3 py-0.5 rounded-full text-[12px] font-bold shadow-sm">
-                Mức hưởng: {theBhyt?.mucHuong || bhytLevel(bhyt)}
+              <span className="font-mono bg-[var(--teal)] text-white px-3 py-0.5 rounded-full text-[12px] font-bold shadow-sm shrink-0">
+                Mức hưởng: {bhytLevel(bhyt)}
               </span>
             </div>
           )}
           {theBhyt && (
-            <div className="p-3.5 rounded-xl bg-[var(--navy-50)]/80 border border-[var(--navy)]/20 text-[13px] text-[var(--navy-deep)] space-y-2 shadow-sm font-sans">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12.5px]">
-                <div><span className="text-[var(--mute)] font-medium">Hạn sử dụng:</span> <strong className="font-mono">{theBhyt.tuNgay || "?"} → {theBhyt.denNgay || "?"}</strong></div>
-                <div><span className="text-[var(--mute)] font-medium">Nơi ĐKBĐ:</span> <strong>{theBhyt.tenDKBD || "Chưa rõ"} ({theBhyt.maDKBD || ""})</strong></div>
-              </div>
-              {((theBhyt.hoTen && hoTen && theBhyt.hoTen.toLowerCase() !== hoTen.trim().toLowerCase()) ||
-                (theBhyt.ngaySinh && ngaySinh && theBhyt.ngaySinh !== ngaySinh.split("-").reverse().join("/"))) && (
-                  <div className="p-2.5 rounded-lg bg-[var(--amber-soft)] border border-[var(--amber)]/40 text-[12px] font-semibold text-[var(--amber-deep)] flex items-start gap-2 mt-1">
-                    <span>⚠️</span>
-                    <span><strong>Lưu ý đối chiếu:</strong> Thông tin trên thẻ BHYT ({theBhyt.hoTen} · {theBhyt.ngaySinh}) có sai lệch so với dữ liệu nhập bên trên!</span>
-                  </div>
-                )}
+            <div className="mt-2.5">
+              <BhytResultCard the={theBhyt} notification={lookupMsg} />
             </div>
           )}
           {lookup === "loading" && (
@@ -817,6 +888,9 @@ export default function ExamPage() {
   // Cấu hình bật/tắt trường phiếu khám của cơ sở
   const [cfg, setCfg] = useState<FieldConfig>({});
 
+  // Lời gọi nạp danh sách bệnh nhân đang bay — dùng để gộp các lần trùng nhau
+  const inflightListRef = useRef<{ url: string; p: Promise<HoSo[] | null> } | null>(null);
+
   // Tên người đăng nhập — điền sẵn "Nhân viên tư vấn" cho hồ sơ chưa có
   const sessionName = useRef("");
   useEffect(() => { sessionName.current = session?.user?.name || ""; }, [session]);
@@ -879,8 +953,31 @@ export default function ExamPage() {
 
   const fetchPatients = useCallback(async (keepSel?: string, forceForm = false) => {
     const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
-    const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(targetId)}&search=${encodeURIComponent(search)}`);
-    const data: HoSo[] = res.ok ? await res.json() : [];
+    const url = `/api/csr/hoso?buoiKhamId=${encodeURIComponent(targetId)}&search=${encodeURIComponent(search)}`;
+
+    // Sau khi lưu, danh sách bị nạp lại 2 lần: một lần từ onSaved và một lần từ sự kiện SSE hoso_change.
+    // Gộp các lời gọi trùng URL đang bay lại làm một để khỏi tốn thêm một vòng ~1.5s.
+    let entry = inflightListRef.current;
+    if (!entry || entry.url !== url) {
+      const req = (async (): Promise<HoSo[] | null> => {
+        try {
+          const res = await fetch(url);
+          return res.ok ? await readJson<HoSo[]>(res) : null;
+        } catch {
+          return null; // lỗi mạng: giữ nguyên danh sách đang hiển thị, không xoá trắng
+        }
+      })();
+      entry = { url, p: req };
+      inflightListRef.current = entry;
+      const done = entry;
+      void req.then(() => {
+        if (inflightListRef.current === done) inflightListRef.current = null;
+      });
+    }
+
+    const fetched = await entry.p;
+    if (!fetched) return [];
+    const data: HoSo[] = fetched;
     setPatients(data);
 
     // Tự động chọn bệnh nhân:
@@ -1018,7 +1115,7 @@ export default function ExamPage() {
     if (f.nhom === "A" && !f.sdt.trim()) { addToast({ type: "error", message: "Vui lòng nhập số điện thoại khi chọn Đồng ý điều trị." }); return; }
 
     // Chỉ gửi các trường đang BẬT để không ghi đè dữ liệu của trường đã tắt
-    const payload: Record<string, unknown> = { sdt: f.sdt || undefined, nhom: f.nhom || undefined };
+    const payload: Record<string, unknown> = { sdt: f.sdt || undefined, nhom: f.nhom || null };
     if (on("thiLuc")) { payload.thiLucMP = f.thiLucMP; payload.thiLucMT = f.thiLucMT; }
     if (on("chanDoan")) {
       const unified: string[] = [];
@@ -1062,11 +1159,14 @@ export default function ExamPage() {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) { addToast({ type: "error", message: data.error || "Không thể lưu" }); return; }
+      const data = await readJson(res);
+      if (!res.ok) { addToast({ type: "error", message: loiTuResponse(res, data, "Không thể lưu") }); return; }
       addToast({ type: "success", message: `Đã lưu kết quả khám: ${selected.hoTen}` });
       setBaseline(JSON.stringify(f));
-      await fetchPatients(selected.id, false);
+      // PUT đã trả về hồ sơ mới nhất → cập nhật ngay tại chỗ. Nạp lại cả danh sách chạy ngầm,
+      // không bắt người dùng nhìn nút "Đang lưu…" thêm ~1.5s nữa.
+      if (data?.id) setPatients((prev) => prev.map((p) => (p.id === data.id ? { ...p, ...data } : p)));
+      void fetchPatients(selected.id, false);
     } catch { addToast({ type: "error", message: "Mất kết nối máy chủ" }); }
     finally { setSaving(false); }
   }, [selected, f, cfg, buoiKham, addToast, fetchPatients]);
@@ -1119,9 +1219,10 @@ export default function ExamPage() {
         message: `⚡ Đã lưu khám bình thường: ${selected.hoTen}`,
       });
       setIsEditing(false);
-      await fetchPatients(selected.id, true);
-
-      const nextWait = patients.find((p) => p.trangThai === "TiepNhan" && p.id !== selected.id);
+      // Dùng danh sách VỪA nạp: biến `patients` trong closure vẫn là bản cũ nên trước đây
+      // ca vừa chốt vẫn bị coi là "TiepNhan" khi tìm ca kế tiếp.
+      const list = await fetchPatients(selected.id, true);
+      const nextWait = list.find((p) => p.trangThai === "TiepNhan" && p.id !== selected.id);
       if (nextWait) {
         pick(nextWait);
       }
@@ -1228,6 +1329,103 @@ export default function ExamPage() {
     if (readOnly) return;
     setF((s) => ({ ...s, chanDoanMP: [], chanDoanKhacMP: "", chanDoanMT: [], chanDoanKhacMT: "" }));
   };
+
+  // ── Tra cứu BHYT tự động hàng loạt cho các ca chưa có thông tin BHYT ────
+  const missingBhytPatients = useMemo(() => {
+    return patients.filter((p) => {
+      const hasValidBhyt = Boolean((p.bhyt && isCardNumber(p.bhyt)) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
+      const hasSearchableInfo = Boolean((p.bhyt && p.bhyt.trim()) || (p.cccd && p.cccd.trim()) || (p.hoTen && p.hoTen.trim()));
+      return !hasValidBhyt && hasSearchableInfo;
+    });
+  }, [patients]);
+
+  const [batchBhytProgress, setBatchBhytProgress] = useState<{
+    running: boolean;
+    total: number;
+    current: number;
+    foundCount: number;
+    currentName: string;
+  } | null>(null);
+  const batchCancelRef = useRef<boolean>(false);
+
+  const startBatchBhytCheck = useCallback(async () => {
+    if (missingBhytPatients.length === 0) {
+      addToast({ type: "info", message: "Tất cả bệnh nhân trong đợt khám đã có thông tin BHYT!" });
+      return;
+    }
+
+    batchCancelRef.current = false;
+    const total = missingBhytPatients.length;
+    setBatchBhytProgress({ running: true, total, current: 0, foundCount: 0, currentName: missingBhytPatients[0]?.hoTen || "" });
+
+    let found = 0;
+    for (let i = 0; i < total; i++) {
+      if (batchCancelRef.current) break;
+      const p = missingBhytPatients[i];
+      setBatchBhytProgress({ running: true, total, current: i + 1, foundCount: found, currentName: p.hoTen });
+
+      let dob = "";
+      if (p.ngaySinh) dob = new Date(p.ngaySinh).toISOString().slice(0, 10);
+      else if (p.namSinh) dob = `${p.namSinh}-01-01`;
+
+      const searchKey = (p.bhyt || p.cccd || "").trim();
+      if (!searchKey && !p.hoTen) continue;
+
+      try {
+        const res = await fetch("/api/bhxh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            maThe: searchKey,
+            cccd: (p.cccd || p.bhyt || "").trim(),
+            hoTen: p.hoTen.trim(),
+            ngaySinh: dob,
+            coSoId: buoiKham?.coSoId,
+          }),
+        });
+        const r = await readJson(res);
+        if (r.success && (r.the?.maThe || r.maThe)) {
+          const maThe = String(r.the?.maThe || r.maThe).toUpperCase();
+          const mhRaw = r.the?.mucHuong ? parseInt(String(r.the.mucHuong), 10) : parseInt(bhytLevel(maThe), 10);
+          const mucHuongBHYT = Number.isFinite(mhRaw) ? mhRaw : null;
+          const diaChi = r.the?.diaChi || undefined;
+          const cccd = r.the?.cccd || undefined;
+
+          // Lưu thông tin BHYT vừa tìm thấy vào DB
+          const patchRes = await fetch(`/api/csr/hoso/${p.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bhyt: maThe,
+              mucHuongBHYT,
+              diaChi,
+              cccd,
+            }),
+          });
+          const updated = await readJson(patchRes);
+
+          if (patchRes.ok && updated?.id) {
+            found++;
+            setPatients((prev) => prev.map((item) => (item.id === p.id ? { ...item, ...updated } : item)));
+          }
+        }
+      } catch (e) {
+        console.error("[batch-bhyt] Lỗi tra cứu cho ca:", p.hoTen, e);
+      }
+    }
+
+    const isCancelled = batchCancelRef.current;
+    setBatchBhytProgress((prev) => (prev ? { ...prev, running: false } : null));
+
+    if (isCancelled) {
+      addToast({ type: "info", message: `Đã dừng tra cứu. Đã tìm thấy BHYT mới cho ${found}/${total} bệnh nhân.` });
+    } else {
+      addToast({
+        type: found > 0 ? "success" : "info",
+        message: `Hoàn tất tra cứu: Tìm thấy thông tin BHYT mới cho ${found}/${total} bệnh nhân!`,
+      });
+    }
+  }, [missingBhytPatients, buoiKham, addToast]);
 
   const SORT_OPTS = [
     { key: "queue", label: "Ưu tiên ca chờ khám", desc: "Ca chưa khám lên đầu (xếp theo STT)" },
@@ -1480,19 +1678,21 @@ export default function ExamPage() {
             </div>
           </div>
 
-          {/* Thanh công cụ phụ: Sắp xếp + Nút Khám ca kế tiếp */}
-          <div className="px-3 py-1 flex items-center justify-between text-[11px] text-[var(--mute)] border-b border-[var(--line-soft)]">
-            {/* Dropdown Sắp xếp */}
-            <div className="relative">
+          {/* Thanh công cụ phụ: Sắp xếp + Các thao tác nhanh */}
+          <div className="px-2 py-1.5 flex items-center justify-between gap-1 border-b border-[var(--line-soft)] bg-slate-50/50 min-w-0">
+            {/* Dropdown Sắp xếp gọn gàng */}
+            <div className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setSortMenuOpen((v) => !v)}
-                className="flex items-center gap-1 text-[var(--ink-soft)] hover:text-[var(--navy)] cursor-pointer py-0.5 rounded transition-colors font-medium"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-[var(--navy)] bg-white border border-slate-200 px-1.5 py-1 rounded-md shadow-2xs hover:bg-slate-50 cursor-pointer transition-all whitespace-nowrap"
                 title="Thay đổi cách sắp xếp danh sách"
               >
-                <ArrowUpDown className="w-3 h-3 text-[var(--teal-deep)]" />
-                <span className="truncate max-w-[130px]">{SORT_OPTS.find((s) => s.key === sortBy)?.label || "Sắp xếp"}</span>
-                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                <ArrowUpDown className="w-3 h-3 text-[var(--teal-deep)] shrink-0" />
+                <span className="truncate max-w-[85px] sm:max-w-[100px]">
+                  {sortBy === "queue" ? "Ưu tiên ca chờ" : sortBy === "stt_asc" ? "STT 1→N" : sortBy === "stt_desc" ? "STT N→1" : "Mới nhất"}
+                </span>
+                <ChevronDown className="w-2.5 h-2.5 opacity-50 shrink-0" />
               </button>
 
               {sortMenuOpen && (
@@ -1507,8 +1707,9 @@ export default function ExamPage() {
                           setSortBy(opt.key);
                           setSortMenuOpen(false);
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded text-[11.5px] flex items-center justify-between cursor-pointer ${sortBy === opt.key ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"
-                          }`}
+                        className={`w-full text-left px-2.5 py-1.5 rounded text-[11.5px] flex items-center justify-between cursor-pointer ${
+                          sortBy === opt.key ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"
+                        }`}
                       >
                         <span>{opt.label}</span>
                         {sortBy === opt.key && <Check className="w-3.5 h-3.5 text-[var(--navy)]" />}
@@ -1519,37 +1720,34 @@ export default function ExamPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5">
+            {/* Các nút thao tác nhanh trên 1 dòng đơn duy nhất */}
+            <div className="flex items-center gap-1 shrink-0 overflow-x-auto no-scrollbar whitespace-nowrap">
+              {missingBhytPatients.length > 0 && (
+                <button
+                  type="button"
+                  onClick={startBatchBhytCheck}
+                  disabled={batchBhytProgress?.running}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 transition-all cursor-pointer shrink-0 active:scale-95 disabled:opacity-50 whitespace-nowrap shadow-2xs"
+                  title={`Tự động kiểm tra nhanh BHYT cho ${missingBhytPatients.length} ca`}
+                >
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span>Tra BH</span>
+                  <span className="font-mono text-[9.5px] font-extrabold bg-emerald-200/70 text-emerald-900 px-1 rounded-full">{missingBhytPatients.length}</span>
+                </button>
+              )}
+
               {counts.waiting > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowCompletePending(true)}
-                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 transition-all cursor-pointer shadow-2xs active:scale-95"
-                  title={`Tự động kết luận Bình thường cho ${counts.waiting} ca đang chờ khám để hoàn tất đợt khám`}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap shadow-2xs"
+                  title={`Tự động kết luận Bình thường cho ${counts.waiting} ca chờ`}
                 >
-                  <Zap className="w-2.5 h-2.5 text-amber-600 fill-amber-600" />
-                  <span>Chốt {counts.waiting} ca</span>
+                  <Zap className="w-3 h-3 text-amber-600 fill-amber-600 shrink-0" />
+                  <span>Chốt</span>
+                  <span className="font-mono text-[9.5px] font-extrabold bg-amber-200/70 text-amber-900 px-1 rounded-full">{counts.waiting}</span>
                 </button>
               )}
-
-              {/* Nút Gọi ca tiếp theo */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (nextWaitingPatient) {
-                    pick(nextWaitingPatient);
-                  } else {
-                    addToast({ type: "info", message: "Không còn bệnh nhân nào đang chờ khám!" });
-                  }
-                }}
-                disabled={!nextWaitingPatient}
-                className={`flex items-center gap-0.5 font-bold transition-all cursor-pointer ${nextWaitingPatient ? "text-[var(--teal-deep)] hover:underline active:scale-95" : "text-[var(--mute-soft)] cursor-not-allowed"
-                  }`}
-                title={nextWaitingPatient ? `Gọi ca tiếp: ${nextWaitingPatient.hoTen} (STT ${String(nextWaitingPatient.stt).padStart(2, "0")})` : "Đã hết ca chờ"}
-              >
-                <span>Ca tiếp</span>
-                <ChevronRight className="w-3 h-3" />
-              </button>
             </div>
           </div>
 
@@ -1573,6 +1771,8 @@ export default function ExamPage() {
                 const st = statusOf(p.trangThai);
                 const sttPadded = String(p.stt ?? 0).padStart(2, "0");
                 const diags = parseDiag(p.chanDoan);
+
+                const hasBhyt = Boolean((p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
 
                 // Badge màu cho STT
                 let sttBadgeCls = "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/15";
@@ -1618,7 +1818,13 @@ export default function ExamPage() {
                       {/* Thông tin chính */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">
-                          <h4 className={`text-[12.5px] font-bold truncate leading-tight ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
+                          <h4 className={`text-[12.5px] font-bold truncate leading-tight ${
+                            hasBhyt
+                              ? "text-emerald-700 font-extrabold"
+                              : active
+                                ? "text-[var(--navy)]"
+                                : "text-[var(--ink)]"
+                          }`}>
                             {p.hoTen}
                           </h4>
                           <StatusBadge label={st.label} cls={st.cls} sm />
@@ -1626,7 +1832,15 @@ export default function ExamPage() {
 
                         <div className="flex items-center gap-1.5 text-[11px] text-[var(--mute)] mt-0.5 truncate">
                           <span>{p.gioiTinh} · {ageOf(p)}t</span>
-                          {p.mucHuongBHYT ? <span>· BH {p.mucHuongBHYT}%</span> : p.bhyt ? <span>· {bhytLevel(p.bhyt)}</span> : null}
+                          {p.mucHuongBHYT ? (
+                            <span className="text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/70">
+                              · BH {p.mucHuongBHYT}%
+                            </span>
+                          ) : p.bhyt ? (
+                            <span className="text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/70">
+                              · {bhytLevel(p.bhyt)}
+                            </span>
+                          ) : null}
                           {diagSummary && <span className="text-[var(--teal-deep)] font-semibold truncate">· {diagSummary}</span>}
                         </div>
                       </div>
@@ -1644,7 +1858,13 @@ export default function ExamPage() {
             <div className="px-4 pt-4 pb-3">
               <h2 className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--navy)] mb-2">Thực hiện</h2>
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-serif text-[19px] font-bold text-[var(--ink)] leading-tight uppercase">{selected.hoTen}</h3>
+                <h3 className={`font-serif text-[19px] font-bold leading-tight uppercase ${
+                  (selected.bhyt && selected.bhyt.trim().length > 0) || (selected.mucHuongBHYT != null && selected.mucHuongBHYT > 0)
+                    ? "text-emerald-700 font-black"
+                    : "text-[var(--ink)]"
+                }`}>
+                  {selected.hoTen}
+                </h3>
                 <button onClick={() => setShowEdit(true)} title="Sửa thông tin bệnh nhân" className="p-1 rounded text-[var(--navy)] hover:bg-[var(--navy-50)] active:scale-90 transition-transform shrink-0"><Pencil className="w-4 h-4" /></button>
               </div>
               <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
@@ -2323,7 +2543,81 @@ export default function ExamPage() {
       </div>
 
       {showReg && buoiKham && <RegisterModal buoiKham={buoiKham} cfg={cfg} onClose={() => setShowReg(false)} onCreated={(p) => { setShowReg(false); fetchPatients(p.id, true); }} />}
-      {showEdit && selected && <EditInfoModal patient={selected} cfg={cfg} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); fetchPatients(selected.id, true); }} />}
+      {showEdit && selected && <EditInfoModal patient={selected} cfg={cfg} coSoId={buoiKham?.coSoId} onClose={() => setShowEdit(false)} onSaved={() => { setShowEdit(false); fetchPatients(selected.id, true); }} />}
+
+      {/* Modal tiến trình tra cứu BHYT hàng loạt */}
+      {batchBhytProgress && (
+        <Modal
+          open={true}
+          onClose={() => {
+            batchCancelRef.current = true;
+            setBatchBhytProgress(null);
+          }}
+          closeOnOutsideClick={false}
+          title="Tra cứu BHYT tự động hàng loạt"
+          icon={ShieldCheck}
+          maxWidth="max-w-[500px]"
+        >
+          <div className="space-y-4 p-1">
+            <div className="flex items-center justify-between text-[13px] font-semibold">
+              <span className="text-slate-700 flex items-center gap-2">
+                {batchBhytProgress.running && <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />}
+                {batchBhytProgress.running ? "Đang truy xuất Cổng tiếp nhận BHXH..." : "Đã hoàn tất tra cứu!"}
+              </span>
+              <span className="font-mono text-emerald-700 font-bold text-[13px]">
+                {batchBhytProgress.current} / {batchBhytProgress.total} ca
+              </span>
+            </div>
+
+            {/* Thanh tiến trình */}
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300 rounded-full"
+                style={{
+                  width: `${batchBhytProgress.total > 0 ? (batchBhytProgress.current / batchBhytProgress.total) * 100 : 0}%`,
+                }}
+              />
+            </div>
+
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-xl space-y-2 text-[12.5px]">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 font-medium">Bệnh nhân đang tra cứu:</span>
+                <span className="font-bold text-slate-900 truncate max-w-[240px]">
+                  {batchBhytProgress.currentName || "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1.5 border-t border-emerald-200/60">
+                <span className="text-slate-600 font-medium">Thẻ BHYT mới tìm thấy:</span>
+                <span className="font-mono font-black text-emerald-700 text-[14px]">
+                  {batchBhytProgress.foundCount} thẻ
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              {batchBhytProgress.running ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    batchCancelRef.current = true;
+                  }}
+                  className="px-4 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95"
+                >
+                  Dừng tra cứu
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setBatchBhytProgress(null)}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all cursor-pointer shadow-xs active:scale-95"
+                >
+                  Đóng
+                </button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Modal xác nhận chốt nhanh các ca còn chờ để kết thúc đợt khám */}
       {showCompletePending && (
