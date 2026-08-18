@@ -76,20 +76,20 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
             type="button"
             suppressHydrationWarning
             onClick={() => setOpen((v) => !v)}
-            className={`w-full flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-xl border text-[12.5px] font-bold transition-all cursor-pointer select-none ${
+            className={`w-full flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg border text-[12px] font-bold transition-all cursor-pointer select-none ${
               open
                 ? "bg-white/20 border-white/35 text-white shadow-inner"
                 : "bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/25"
             }`}
             title={facilityName}
           >
-            <div className="flex items-center gap-2 min-w-0 flex-1 text-left" suppressHydrationWarning>
-              <div className="w-6 h-6 rounded-lg bg-[var(--teal)]/20 text-[var(--teal)] flex items-center justify-center shrink-0">
-                <Building2 className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 text-left" suppressHydrationWarning>
+              <div className="w-5.5 h-5.5 rounded-md bg-[var(--teal)]/20 text-[var(--teal)] flex items-center justify-center shrink-0">
+                <Building2 className="w-3 h-3" />
               </div>
               <span className="truncate text-white font-bold" suppressHydrationWarning>{facilityName}</span>
             </div>
-            <div className="w-5 h-5 rounded-full bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+            <div className="w-4.5 h-4.5 rounded-full bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
               <ChevronDown className={`w-3 h-3 text-white/80 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`} />
             </div>
           </button>

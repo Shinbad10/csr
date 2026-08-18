@@ -12,7 +12,6 @@ import { useRealtime } from "@/lib/useRealtime";
 
 export default function Topbar() {
   const { data: session, status } = useSession();
-  const { isConnected } = useRealtime();
   const [open, setOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -30,60 +29,36 @@ export default function Topbar() {
   }, [open]);
 
   return (
-    <header className="h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] shrink-0 bg-gradient-to-r from-[#010833] via-[#031da6] to-[#020f5c] text-white shadow-md border-b border-white/10 flex items-center gap-2 sm:gap-4 px-3 sm:px-6 min-w-0 z-40 relative">
+    <header className="h-[calc(3.25rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] shrink-0 bg-gradient-to-r from-[#010833] via-[#031da6] to-[#020f5c] text-white shadow-sm border-b border-white/10 flex items-center gap-2 sm:gap-3.5 px-3 sm:px-5 min-w-0 z-40 relative">
       {/* Menu chức năng (dropdown theo nhóm) + drawer mobile */}
       <div className="order-1 lg:order-3">
         <TopbarNav />
       </div>
 
       {/* Thương hiệu */}
-      <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0 group order-2 lg:order-1 select-none">
-        <div className="relative">
+      <Link href="/" className="flex items-center gap-2 sm:gap-2.5 shrink-0 group order-2 lg:order-1 select-none">
+        <div className="relative flex items-center">
           <div className="absolute inset-0 bg-[var(--teal)]/40 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="VISI" className="relative w-8 h-8 sm:w-9 sm:h-9 object-contain drop-shadow" />
+          <img src="/logo.png" alt="VISI" className="relative w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow" />
         </div>
-        <div className="leading-tight">
-          <div className="font-serif font-black text-[16px] sm:text-[17px] tracking-[-0.02em] text-white whitespace-nowrap group-hover:text-[var(--teal)] transition-colors flex items-center">
+        <div className="leading-none">
+          <div className="font-serif font-black text-[15px] sm:text-[16px] tracking-[-0.02em] text-white whitespace-nowrap group-hover:text-[var(--teal)] transition-colors flex items-center">
             <span>VISI</span>
-            <span className="text-[var(--teal)] ml-1">CSR</span>
+            <span className="text-[var(--teal)] ml-0.5">CSR</span>
           </div>
-          <div className="font-mono font-bold text-[9px] uppercase tracking-[0.2em] text-white/75 whitespace-nowrap hidden sm:block">
+          <div className="font-mono font-bold text-[8.5px] uppercase tracking-[0.18em] text-white/75 whitespace-nowrap hidden sm:block mt-0.5">
             Khám cộng đồng
           </div>
         </div>
       </Link>
 
-      <div className="w-px h-7 bg-white/15 shrink-0 hidden lg:block order-2 mx-1" />
-
-      {/* Realtime Live Indicator */}
-      <div className="order-4 hidden sm:flex items-center">
-        {isConnected ? (
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[11px] font-semibold text-emerald-300 select-none shadow-xs"
-            title="Hệ thống đang kết nối thời gian thực (SSE). Dữ liệu được cập nhật tức thì."
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-            </span>
-            <span className="font-mono font-bold text-[10px] tracking-wider">LIVE</span>
-          </div>
-        ) : (
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-[11px] font-semibold text-amber-300 select-none"
-            title="Đang kết nối lại thời gian thực..."
-          >
-            <Radio className="w-3 h-3 animate-pulse text-amber-400" />
-            <span className="font-mono text-[10px]">Đang nối...</span>
-          </div>
-        )}
-      </div>
+      <div className="w-px h-6 bg-white/15 shrink-0 hidden lg:block order-2 mx-0.5" />
 
       <div className="flex-1 order-4" />
 
       {/* Facility Switcher */}
-      <div className="hidden md:block md:w-[280px] max-w-[280px] order-5">
+      <div className="hidden md:block md:w-[260px] max-w-[260px] order-5">
         <FacilitySwitcher />
       </div>
 
@@ -92,29 +67,29 @@ export default function Topbar() {
         <button
           suppressHydrationWarning
           onClick={() => setOpen((o) => !o)}
-          className={`flex items-center gap-2.5 rounded-xl pl-2 pr-2.5 py-1.5 transition-all border cursor-pointer ${
+          className={`flex items-center gap-2 rounded-lg pl-1.5 pr-2 py-1 transition-all border cursor-pointer ${
             open
               ? "bg-white/20 border-white/30 text-white shadow-inner"
               : "bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/25"
           }`}
         >
-          <div suppressHydrationWarning className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--teal)] to-[var(--teal-deep)] text-[var(--navy-ink)] font-mono font-black flex items-center justify-center text-[13px] shadow-sm ring-1 ring-white/30">
+          <div suppressHydrationWarning className="w-7 h-7 rounded-md bg-gradient-to-br from-[var(--teal)] to-[var(--teal-deep)] text-[var(--navy-ink)] font-mono font-black flex items-center justify-center text-[12px] shadow-xs ring-1 ring-white/30">
             {initial}
           </div>
           <div className="text-left leading-tight hidden sm:block" suppressHydrationWarning>
             {isLoading ? (
               <div className="animate-pulse space-y-1">
-                <div className="h-3.5 bg-white/20 rounded w-20"></div>
-                <div className="h-2.5 bg-white/15 rounded w-14"></div>
+                <div className="h-3 bg-white/20 rounded w-16"></div>
+                <div className="h-2 bg-white/15 rounded w-12"></div>
               </div>
             ) : (
               <>
-                <div className="text-[12.5px] font-bold text-white max-w-[150px] truncate" suppressHydrationWarning>{name}</div>
-                <div className="text-[10px] font-medium text-[var(--teal)] opacity-90">{roleLabel(session?.user?.role)}</div>
+                <div className="text-[12px] font-bold text-white max-w-[140px] truncate" suppressHydrationWarning>{name}</div>
+                <div className="text-[9.5px] font-medium text-[var(--teal)] opacity-90">{roleLabel(session?.user?.role)}</div>
               </>
             )}
           </div>
-          <ChevronDown className={`w-3.5 h-3.5 text-white/70 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`} />
+          <ChevronDown className={`w-3 h-3 text-white/70 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`} />
         </button>
 
         {open && (

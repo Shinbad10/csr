@@ -32,13 +32,13 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
     return (
       <Link
         href={it.href}
-        className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg text-[13px] font-bold whitespace-nowrap transition-all select-none ${
+        className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12.5px] font-bold whitespace-nowrap transition-all select-none ${
           active
             ? "bg-[var(--teal)] text-[var(--navy-ink)] shadow-sm font-extrabold"
             : "text-white/80 hover:text-white hover:bg-white/10 font-semibold"
         }`}
       >
-        <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[var(--navy-ink)]" : "text-white/70"}`} />
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-[var(--navy-ink)]" : "text-white/70"}`} />
         {it.label}
       </Link>
     );
@@ -48,7 +48,7 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[13px] font-bold whitespace-nowrap transition-all cursor-pointer select-none ${
+        className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12.5px] font-bold whitespace-nowrap transition-all cursor-pointer select-none ${
           groupActive
             ? "bg-white/15 text-[var(--teal)] border border-white/20 shadow-xs"
             : open
