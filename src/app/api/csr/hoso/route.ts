@@ -16,6 +16,10 @@ const RELATIONS_DANH_SACH = {
   buoiKham: true,
   coSo: { select: { id: true, ten: true, diaChi: true, cauHinhTruong: true } },
   tuVanVien: { select: { maNV: true, hoTen: true } },
+  nhatKy: {
+    select: { id: true, ngay: true, noiDung: true, nguoiGoi: { select: { hoTen: true } } },
+    orderBy: { ngay: "desc" as const },
+  },
 } as const;
 
 export async function GET(request: Request) {

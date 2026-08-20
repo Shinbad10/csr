@@ -566,6 +566,7 @@ export interface HoSo {
   trangThai: string;
   tuVanVien?: { maNV: string; hoTen: string } | null;
   buoiKham?: { xa: string; diaDiem: string; ngayKham: string } | null;
+  nhatKy?: { id: string; ngay: string; noiDung: string; nguoiGoi?: { hoTen: string } | null }[];
   createdAt?: string | null;
   updatedAt?: string | null; updatedBy?: string | null;
 }

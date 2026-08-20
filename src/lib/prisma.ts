@@ -3,7 +3,7 @@ import { PrismaClient as CloudClient } from "@prisma/client";
 import { PrismaClient as LocalClient } from "../../prisma-local/client";
 import { PrismaMssql } from "@prisma/adapter-mssql";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { getDbMode } from "./db-mode";
+import { getDbMode, setDbMode } from "./db-mode";
 
 const g = global as unknown as { cloudPrisma?: CloudClient; localPrisma?: LocalClient };
 
@@ -66,7 +66,54 @@ export function getLocalPrisma(): LocalClient {
   return prisma;
 }
 
+let isFallbackToLocal = false;
+
 // Dùng ở mọi route handler. Hai schema giống nhau nên cast an toàn.
+// Nếu SQL Server không kết nối được (ETIMEOUT), tự động chuyển sang local SQLite (local.db)
 export function getPrisma(): CloudClient {
-  return getDbMode() === "offline" ? (getLocalPrisma() as unknown as CloudClient) : getCloudPrisma();
+  if (getDbMode() === "offline" || isFallbackToLocal) {
+    return getLocalPrisma() as unknown as CloudClient;
+  }
+  const cloud = getCloudPrisma();
+  return new Proxy(cloud, {
+    get(target, prop, receiver) {
+      const original = Reflect.get(target, prop, receiver);
+      if (typeof original === "object" && original !== null) {
+        return new Proxy(original, {
+          get(modelTarget, modelProp, modelReceiver) {
+            const modelMethod = Reflect.get(modelTarget, modelProp, modelReceiver);
+            if (typeof modelMethod === "function") {
+              return async (...args: any[]) => {
+                try {
+                  return await modelMethod.apply(modelTarget, args);
+                } catch (err: any) {
+                  const errMsg = String(err?.message || err);
+                  const isConnError =
+                    err?.code === "ETIMEOUT" ||
+                    err?.code === "ECONNREFUSED" ||
+                    errMsg.includes("Failed to connect") ||
+                    errMsg.includes("ETIMEOUT");
+                  if (isConnError && !isFallbackToLocal) {
+                    console.warn(
+                      "[Prisma] SQL Server không kết nối được (ETIMEOUT). Tự động chuyển sang SQLite (local.db)..."
+                    );
+                    isFallbackToLocal = true;
+                    setDbMode("offline");
+                    const local = getLocalPrisma() as any;
+                    const localModel = local[prop];
+                    if (localModel && typeof localModel[modelProp] === "function") {
+                      return await localModel[modelProp].apply(localModel, args);
+                    }
+                  }
+                  throw err;
+                }
+              };
+            }
+            return modelMethod;
+          },
+        });
+      }
+      return original;
+    },
+  });
 }

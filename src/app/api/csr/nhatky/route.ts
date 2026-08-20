@@ -2,16 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { can } from "@/lib/permissions";
+import { canAny } from "@/lib/permissions";
 import { triggerSync } from "@/lib/syncWorker";
 import { broadcastEvent } from "@/lib/events";
 
-// UC-04: thêm dòng nhật ký theo dõi cho hồ sơ nhóm B.
+// UC-04: thêm dòng nhật ký theo dõi / gọi điện tư vấn cho hồ sơ.
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!can(session.user.role, "hoso.followup"))
-    return NextResponse.json({ error: "Bạn không có quyền theo dõi" }, { status: 403 });
+  if (!canAny(session.user.role, ["hoso.clinical", "hoso.followup"]))
+    return NextResponse.json({ error: "Bạn không có quyền ghi nhật ký tư vấn" }, { status: 403 });
 
   try {
     const { hoSoId, noiDung, followUpStatus } = await request.json();
