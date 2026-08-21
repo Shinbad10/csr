@@ -172,6 +172,17 @@ function isBenhLyPatient(p: HoSo): boolean {
   return false;
 }
 
+/** Thứ tự ưu tiên sắp xếp theo loại tư vấn (Chưa gọi -> Suy nghĩ chưa gọi -> Đồng ý -> Suy nghĩ -> Theo dõi -> Đã tư vấn khác) */
+function getPatientCategoryPriority(p: HoSo): number {
+  const hasCall = !!(p.nhatKy && p.nhatKy.length > 0);
+  if (!isTuVanDone(p) && !hasCall) return 1; // Chưa gọi & chưa tư vấn (Ưu tiên số 1)
+  if (!hasCall && (p.nhom === "B" || p.xacNhanDieuTri === false)) return 2; // Suy nghĩ nhưng chưa gọi
+  if (p.nhom === "A" || p.xacNhanDieuTri === true) return 3; // Đồng ý (A)
+  if (p.nhom === "B" || p.xacNhanDieuTri === false) return 4; // Suy nghĩ (B)
+  if (p.nhom === "TheoDoi") return 5; // Theo dõi
+  return 6; // Đã tư vấn khác
+}
+
 export default function TuVanSessionPage() {
   const { addToast } = useToast();
   const confirm = useConfirm();
@@ -182,6 +193,7 @@ export default function TuVanSessionPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"loai" | "stt">("loai");
 
   const [f, setF] = useState(EMPTY);
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
@@ -213,7 +225,7 @@ export default function TuVanSessionPage() {
   const [savingCallNote, setSavingCallNote] = useState(false);
 
   const visible = useMemo(() => {
-    return patients.filter((p) => {
+    const filtered = patients.filter((p) => {
       const done = isTuVanDone(p);
       if (filter === "chuatuvan" && done) return false;
       if (filter === "datuvan" && !done) return false;
@@ -221,7 +233,16 @@ export default function TuVanSessionPage() {
       if (filter === "nhomB" && p.nhom !== "B") return false;
       return true;
     });
-  }, [patients, filter]);
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "loai") {
+        const prioA = getPatientCategoryPriority(a);
+        const prioB = getPatientCategoryPriority(b);
+        if (prioA !== prioB) return prioA - prioB;
+      }
+      return (a.stt ?? 0) - (b.stt ?? 0);
+    });
+  }, [patients, filter, sortBy]);
 
   // Bộ đếm nhanh trạng thái tư vấn
   const counts = useMemo(() => {
@@ -598,8 +619,9 @@ export default function TuVanSessionPage() {
             </div>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="px-3 pb-2.5">
+          {/* Sort & Filter Bar */}
+          <div className="px-3 pb-2.5 space-y-1.5">
+            {/* Filter Tabs */}
             <div className="flex p-0.5 rounded-lg bg-[var(--surface-soft)] border border-[var(--line-soft)] text-[11px] gap-0.5 overflow-x-auto scrollbar-none">
               {FILTERS.map((ft) => {
                 const active = filter === ft.key;
@@ -629,6 +651,35 @@ export default function TuVanSessionPage() {
                 );
               })}
             </div>
+
+            {/* Sắp xếp Toggle */}
+            <div className="flex items-center justify-between text-[11px] text-[var(--mute)] px-0.5 pt-0.5">
+              <span className="font-semibold text-[11px] text-[var(--ink-soft)]">Sắp xếp:</span>
+              <div className="flex items-center gap-0.5 bg-[var(--surface-soft)] p-0.5 rounded-md border border-[var(--line-soft)]">
+                <button
+                  type="button"
+                  onClick={() => setSortBy("loai")}
+                  className={`px-2 py-0.5 rounded text-[10.5px] font-semibold transition-all cursor-pointer ${
+                    sortBy === "loai"
+                      ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                      : "text-[var(--mute)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  Theo loại
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy("stt")}
+                  className={`px-2 py-0.5 rounded text-[10.5px] font-semibold transition-all cursor-pointer ${
+                    sortBy === "stt"
+                      ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                      : "text-[var(--mute)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  Theo STT
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Patients List with Zebra Striping */}
@@ -653,9 +704,27 @@ export default function TuVanSessionPage() {
                   age > 0 ? `${age}t` : null,
                   p.bhyt ? `BH ${bhytLevel(p.bhyt)}` : null,
                 ].filter(Boolean).join(" · ");
-                const hasTv = isTuVanDone(p);
+                
+                const hasCallLog = !!(p.nhatKy && p.nhatKy.length > 0);
+                const latestCallLog = hasCallLog ? p.nhatKy![0] : null;
 
-                // STT badge color
+                // Thẻ tên có màu sắc phân biệt ĐÃ GỌI vs CHƯA GỌI
+                let cardBgCls = "";
+                if (active) {
+                  cardBgCls = hasCallLog
+                    ? "border-teal-600 bg-teal-50/80 shadow-xs border-l-[4px] border-l-teal-600"
+                    : "border-[var(--navy)] bg-white shadow-xs border-l-[4px] border-l-[var(--navy)]";
+                } else if (hasCallLog) {
+                  // Đã gọi: Nền xanh teal nhạt mỏng + viền mỏng xanh cho CSKH dễ nhận biết
+                  cardBgCls = "bg-teal-50/45 border-teal-200/90 hover:border-teal-400 hover:bg-teal-50/80";
+                } else {
+                  // Chưa gọi: Nền trắng tiêu chuẩn
+                  cardBgCls = idx % 2 === 0
+                    ? "bg-white border-[var(--line)] hover:border-rose-300 hover:bg-slate-50"
+                    : "bg-slate-50/80 border-[var(--line-soft)] hover:border-rose-300 hover:bg-white";
+                }
+
+                // STT badge color (luôn giữ STT)
                 let sttBadgeCls = "bg-slate-100 text-slate-700 border-slate-200";
                 if (p.nhom === "A" || p.xacNhanDieuTri === true) {
                   sttBadgeCls = "bg-emerald-50 text-emerald-800 border-emerald-300";
@@ -663,8 +732,10 @@ export default function TuVanSessionPage() {
                   sttBadgeCls = "bg-amber-50 text-amber-800 border-amber-300";
                 } else if (p.nhom === "TheoDoi") {
                   sttBadgeCls = "bg-sky-50 text-sky-800 border-sky-300";
-                } else if (hasTv) {
+                } else if (hasCallLog) {
                   sttBadgeCls = "bg-teal-50 text-teal-800 border-teal-300";
+                } else {
+                  sttBadgeCls = "bg-rose-50 text-rose-700 border-rose-300";
                 }
 
                 return (
@@ -675,16 +746,10 @@ export default function TuVanSessionPage() {
                       pick(p);
                       if (window.innerWidth < 1280) setShowList(false);
                     }}
-                    className={`w-full text-left rounded-lg border px-2.5 py-2 transition-all duration-150 relative cursor-pointer ${
-                      active
-                        ? "border-[var(--navy)] bg-white shadow-xs border-l-[3.5px] border-l-[var(--navy)]"
-                        : idx % 2 === 0
-                        ? "bg-white border-[var(--line)] hover:border-[var(--navy-200)] hover:bg-slate-50"
-                        : "bg-slate-50/80 border-[var(--line-soft)] hover:border-[var(--navy-200)] hover:bg-white"
-                    }`}
+                    className={`w-full text-left rounded-lg border px-2.5 py-2 transition-all duration-150 relative cursor-pointer ${cardBgCls}`}
                   >
                     <div className="flex items-center gap-2">
-                      {/* STT Box gọn gàng */}
+                      {/* Box STT luôn giữ hiển thị số thứ tự */}
                       <div
                         className={`w-8 h-8 rounded-lg font-mono flex flex-col items-center justify-center shrink-0 border ${sttBadgeCls} shadow-2xs`}
                       >
@@ -699,28 +764,32 @@ export default function TuVanSessionPage() {
                             {p.hoTen}
                           </h4>
 
-                          {/* Status Badge */}
-                          {p.nhom === "A" || p.xacNhanDieuTri === true ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300 shrink-0">
-                              Đồng ý
-                            </span>
-                          ) : p.nhom === "B" || p.xacNhanDieuTri === false ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 shrink-0">
-                              Suy nghĩ
-                            </span>
-                          ) : p.nhom === "TheoDoi" ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300 shrink-0">
-                              Theo dõi
-                            </span>
-                          ) : hasTv ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-300 shrink-0">
-                              Đã tư vấn
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-extrabold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 shrink-0">
-                              Chưa tư vấn
-                            </span>
-                          )}
+                          {/* Status Badge: Đã gọi / Chưa gọi & Quyết định */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            {p.nhom === "A" || p.xacNhanDieuTri === true ? (
+                              <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                Đồng ý
+                              </span>
+                            ) : p.nhom === "B" || p.xacNhanDieuTri === false ? (
+                              <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">
+                                Suy nghĩ
+                              </span>
+                            ) : p.nhom === "TheoDoi" ? (
+                              <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300">
+                                Theo dõi
+                              </span>
+                            ) : null}
+
+                            {hasCallLog ? (
+                              <span className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded bg-teal-100/90 text-teal-800 border border-teal-300">
+                                Đã gọi
+                              </span>
+                            ) : (
+                              <span className="text-[9.5px] font-extrabold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300">
+                                Chưa gọi
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Dòng tóm tắt: Nhân khẩu + Chẩn đoán bệnh lý */}
@@ -733,18 +802,27 @@ export default function TuVanSessionPage() {
                           )}
                         </div>
 
-                        {/* Thẻ Note / Nhật ký cuộc gọi trực tiếp trên Thẻ tên */}
-                        {p.nhatKy && p.nhatKy.length > 0 ? (
+                        {/* Thẻ Note / Nhật ký cuộc gọi gần nhất */}
+                        {hasCallLog && latestCallLog?.noiDung ? (
                           <div className="text-[10.5px] font-medium text-[var(--teal-deep)] flex items-center gap-1 mt-1 bg-teal-50/80 px-1.5 py-0.5 rounded border border-teal-200/80 truncate">
                             <PhoneCall className="w-3 h-3 text-[var(--teal)] shrink-0" />
-                            <span className="truncate">Đã gọi {p.nhatKy.length} lần {p.nhatKy[0]?.ngay ? `(${fmtDate(p.nhatKy[0].ngay)})` : ""}</span>
+                            <span className="font-semibold text-[var(--navy)] shrink-0 font-sans not-italic">Note:</span>
+                            <span className="truncate" title={latestCallLog.noiDung}>{latestCallLog.noiDung}</span>
+                            {latestCallLog.ngay && (
+                              <span className="text-[9.5px] text-[var(--mute)] shrink-0 font-mono ml-auto">({fmtDate(latestCallLog.ngay)})</span>
+                            )}
                           </div>
                         ) : p.ghiChuTuVan ? (
                           <div className="text-[10.5px] text-[var(--ink-soft)] italic flex items-center gap-1 mt-1 truncate">
                             <span className="font-semibold text-[var(--navy)] shrink-0 font-sans not-italic">Note:</span>
-                            <span className="truncate">{p.ghiChuTuVan}</span>
+                            <span className="truncate" title={p.ghiChuTuVan}>{p.ghiChuTuVan}</span>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="text-[10.5px] text-rose-600/90 italic flex items-center gap-1 mt-1 truncate">
+                            <span className="font-semibold text-rose-700 shrink-0 font-sans not-italic">Note:</span>
+                            <span className="truncate font-sans not-italic font-medium">Chưa gọi điện</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -1035,88 +1113,102 @@ export default function TuVanSessionPage() {
                       </span>
                     </div>
 
-                    {/* Form nhập nhật ký gọi mới */}
-                    <div className="space-y-2.5 bg-[var(--surface-bg)] p-3.5 rounded-xl border border-[var(--line-soft)]">
-                      <label className="text-[12px] font-bold text-[var(--ink-soft)] uppercase tracking-wide flex items-center gap-1.5">
-                        <Pencil className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
-                        Ghi nhật ký cuộc gọi mới
-                      </label>
+                    {/* Grid ngang 2 cột cho Lịch sử & Ghi cuộc gọi */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+                      {/* Cột 1: Form nhập nhật ký gọi mới */}
+                      <div className="space-y-2.5 bg-[var(--surface-bg)] p-3.5 rounded-xl border border-[var(--line-soft)] flex flex-col justify-between">
+                        <div className="space-y-2.5">
+                          <label className="text-[12px] font-bold text-[var(--ink-soft)] uppercase tracking-wide flex items-center gap-1.5">
+                            <Pencil className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
+                            Ghi nhật ký cuộc gọi mới
+                          </label>
 
-                      {/* Mẫu gợi ý nhanh */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] text-[var(--mute)] font-medium">Gợi ý nhanh:</span>
-                        {[
-                          "Đã gọi - Hẹn gọi lại",
-                          "Đã gọi - Đồng ý mổ",
-                          "Đã gọi - Cần suy nghĩ thêm",
-                          "Thuê bao / Không nghe máy",
-                          "Đã tư vấn qua người nhà",
-                        ].map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => setCallNote((prev) => (prev ? `${prev} · ${tag}` : tag))}
-                            className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white border border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--navy)] hover:text-[var(--navy)] hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
-                          >
-                            + {tag}
-                          </button>
-                        ))}
-                      </div>
+                          {/* Mẫu gợi ý nhanh */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] text-[var(--mute)] font-medium">Gợi ý nhanh:</span>
+                            {[
+                              "Đã gọi - Hẹn gọi lại",
+                              "Đã gọi - Đồng ý mổ",
+                              "Đã gọi - Cần suy nghĩ thêm",
+                              "Thuê bao / Không nghe máy",
+                              "Đã tư vấn qua người nhà",
+                            ].map((tag) => (
+                              <button
+                                key={tag}
+                                type="button"
+                                onClick={() => setCallNote((prev) => (prev ? `${prev} · ${tag}` : tag))}
+                                className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white border border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--navy)] hover:text-[var(--navy)] hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                              >
+                                + {tag}
+                              </button>
+                            ))}
+                          </div>
 
-                      <div className="flex gap-2 items-start">
-                        <textarea
-                          value={callNote}
-                          onChange={(e) => setCallNote(e.target.value)}
-                          placeholder="Nhập nội dung cuộc gọi tư vấn, thông tin trao đổi với bệnh nhân hoặc người nhà..."
-                          rows={2}
-                          className="input-field flex-1 resize-none py-2 text-[13px] bg-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => saveCallLog()}
-                          disabled={savingCallNote || !callNote.trim()}
-                          className="btn btn-primary px-4 py-2 text-[12.5px] font-bold h-[62px] shrink-0 flex flex-col items-center justify-center gap-1 cursor-pointer disabled:opacity-40 shadow-xs"
-                        >
-                          {savingCallNote ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Send className="w-4 h-4 text-[var(--teal)]" />
-                          )}
-                          <span>Gửi ghi chú</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Danh sách nhật ký cuộc gọi đã lưu */}
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]">
-                        Lịch sử cuộc gọi ({selected.nhatKy?.length || 0})
-                      </span>
-                      {selected.nhatKy && selected.nhatKy.length > 0 ? (
-                        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-                          {selected.nhatKy.map((log) => (
-                            <div
-                              key={log.id}
-                              className="p-3 rounded-lg border border-[var(--line-soft)] bg-white text-[12.5px] space-y-1 hover:border-[var(--navy-100)] transition-colors shadow-2xs"
+                          <div className="flex gap-2 items-start">
+                            <textarea
+                              value={callNote}
+                              onChange={(e) => setCallNote(e.target.value)}
+                              placeholder="Nhập nội dung cuộc gọi tư vấn, thông tin trao đổi với bệnh nhân hoặc người nhà..."
+                              rows={3}
+                              className="input-field flex-1 resize-none py-2 text-[13px] bg-white min-h-[76px]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveCallLog()}
+                              disabled={savingCallNote || !callNote.trim()}
+                              className="btn btn-primary px-4 py-2 text-[12.5px] font-bold h-[76px] shrink-0 flex flex-col items-center justify-center gap-1 cursor-pointer disabled:opacity-40 shadow-xs"
                             >
-                              <div className="flex items-center justify-between text-[11px] text-[var(--mute)]">
-                                <span className="font-semibold text-[var(--navy)] flex items-center gap-1">
-                                  <PhoneCall className="w-3 h-3 text-[var(--teal-deep)]" />
-                                  {log.nguoiGoi?.hoTen || "Tư vấn viên"}
-                                </span>
-                                <span className="font-mono">{fmtDate(log.ngay)} {fmtTime(log.ngay)}</span>
+                              {savingCallNote ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Send className="w-4 h-4 text-[var(--teal)]" />
+                              )}
+                              <span>Gửi ghi chú</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Cột 2: Danh sách nhật ký cuộc gọi đã lưu */}
+                      <div className="space-y-2 bg-[var(--surface-bg)] p-3.5 rounded-xl border border-[var(--line-soft)] flex flex-col h-full min-h-[180px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]">
+                            Lịch sử cuộc gọi ({selected.nhatKy?.length || 0})
+                          </span>
+                          {selected.nhatKy && selected.nhatKy.length > 0 && (
+                            <span className="text-[10.5px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
+                              Đã gọi {selected.nhatKy.length} lần
+                            </span>
+                          )}
+                        </div>
+
+                        {selected.nhatKy && selected.nhatKy.length > 0 ? (
+                          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 flex-1">
+                            {selected.nhatKy.map((log) => (
+                              <div
+                                key={log.id}
+                                className="p-2.5 rounded-lg border border-[var(--line-soft)] bg-white text-[12.5px] space-y-1 hover:border-[var(--navy-100)] transition-colors shadow-2xs"
+                              >
+                                <div className="flex items-center justify-between text-[11px] text-[var(--mute)]">
+                                  <span className="font-semibold text-[var(--navy)] flex items-center gap-1">
+                                    <PhoneCall className="w-3 h-3 text-[var(--teal-deep)]" />
+                                    {log.nguoiGoi?.hoTen || "Tư vấn viên"}
+                                  </span>
+                                  <span className="font-mono">{fmtDate(log.ngay)} {fmtTime(log.ngay)}</span>
+                                </div>
+                                <p className="text-[12.5px] text-[var(--ink)] font-medium leading-relaxed whitespace-pre-wrap">
+                                  {log.noiDung}
+                                </p>
                               </div>
-                              <p className="text-[13px] text-[var(--ink)] font-medium leading-relaxed whitespace-pre-wrap">
-                                {log.noiDung}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 border border-dashed border-[var(--line)] rounded-xl bg-slate-50 text-[12px] text-[var(--mute)]">
-                          Chưa có lịch sử cuộc gọi nào. Hãy thêm nhật ký cuộc gọi đầu tiên ở trên.
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-[var(--line)] rounded-xl bg-white text-[12px] text-[var(--mute)] gap-1">
+                            <Phone className="w-5 h-5 text-[var(--mute-soft)]" />
+                            <span>Chưa có lịch sử cuộc gọi nào. Hãy thêm nhật ký cuộc gọi đầu tiên ở bên trái.</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
