@@ -205,7 +205,7 @@ export default function BuoiKhamPatientsModal({
         </div>
       }
       icon={Users}
-      maxWidth="max-w-[96vw] 2xl:max-w-[1680px]"
+      maxWidth="w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh]"
       noPadding
       bodyClassName="flex-1 min-h-0 flex flex-col overflow-hidden"
     >

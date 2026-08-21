@@ -19,6 +19,7 @@ import { SkeletonTable } from "@/components/layout/Skeleton";
 import ImportExcelModal from "@/components/csr/ImportExcelModal";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CoSo { id: string; ten: string }
 interface BuoiKham {
@@ -97,33 +98,41 @@ function VISISelect<T extends string>({
         />
       </button>
 
-      {open && (
-        <div className="absolute left-0 sm:left-auto top-full mt-1.5 z-50 min-w-[190px] max-w-[260px] bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 animate-dropdown text-[#0f172a]">
-          <div className="max-h-[220px] overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
-            {options.map((opt) => {
-              const active = opt.value === value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-[12px] font-semibold transition-all text-left cursor-pointer ${
-                    active
-                      ? "bg-[#031da6] text-white shadow-2xs font-bold"
-                      : "text-[#1e293b] hover:bg-[#f1f5f9] hover:text-[#031da6]"
-                  }`}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {active && <Check className="w-3.5 h-3.5 text-[#02b8a9] shrink-0" strokeWidth={3} />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 4 }}
+            transition={{ type: "spring", stiffness: 450, damping: 28 }}
+            className="absolute left-0 sm:left-auto top-full mt-1.5 z-50 min-w-[190px] max-w-[260px] bg-white dark:bg-slate-900 border border-[var(--line-strong)] rounded-xl shadow-xl p-1 text-[var(--ink)] dark:text-slate-200"
+          >
+            <div className="max-h-[220px] overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
+              {options.map((opt) => {
+                const active = opt.value === value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-[12px] font-semibold transition-colors text-left cursor-pointer ${
+                      active
+                        ? "bg-[var(--navy)] text-white shadow-2xs font-bold"
+                        : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    <span className="truncate">{opt.label}</span>
+                    {active && <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" strokeWidth={3} />}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

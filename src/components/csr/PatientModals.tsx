@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { fmtDate, parseDiag, statusOf, bhytLevel, ageOf } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Modal Xem Thông Tin Chi Tiết Hồ Sơ - Chuẩn Company UI
 export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose: () => void }) {
@@ -66,8 +67,22 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
   const target = root || document.body;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in">
-      <div className="bg-[var(--surface)] rounded-2xl shadow-[var(--shadow-xl)] w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-[var(--line-strong)] animate-scale-up" onClick={(e) => e.stopPropagation()}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-3 sm:p-6 pointer-events-auto"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 6 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 6 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header - Editorial Navy Gradient & Teal Glow */}
         <div 
           className="py-3 px-5 text-white flex items-center justify-between border-b border-[var(--line)] relative overflow-hidden shrink-0"
@@ -272,12 +287,12 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
 
         {/* Footer */}
         <div className="bg-[var(--surface)] p-[16px] px-[24px] border-t border-[var(--line)] flex justify-end">
-          <button onClick={onClose} className="btn-secondary px-[24px] py-[8px] text-[13px] font-semibold rounded-[var(--r-md)]">
+          <button onClick={onClose} className="btn-secondary px-[24px] py-[8px] text-[13px] font-semibold rounded-[var(--r-md)] cursor-pointer">
             Đóng
           </button>
         </div>
-      </div>
-    </div>,
+      </motion.div>
+    </motion.div>,
     target
   );
 }
@@ -351,8 +366,22 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
   const target = root || document.body;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in">
-      <div className="bg-[var(--surface)] rounded-2xl shadow-[var(--shadow-xl)] w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden border border-[var(--line-strong)] animate-scale-up" onClick={(e) => e.stopPropagation()}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-3 sm:p-6 pointer-events-auto"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 6 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 6 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header - Editorial Navy Gradient & Teal Glow */}
         <div 
           className="py-3 px-5 text-white flex items-center justify-between border-b border-[var(--line)] relative overflow-hidden shrink-0"
@@ -527,12 +556,12 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
               Lịch sử lưu trữ toàn bộ thao tác, hiển thị <strong className="text-[var(--ink)] font-semibold">mã nhân viên</strong> và <strong className="text-[var(--ink)] font-semibold">chức vụ thực tế</strong> của người chỉnh sửa.
             </span>
           </div>
-          <button onClick={onClose} className="btn-secondary px-[20px] py-[8px] text-[12.5px] font-semibold rounded-[var(--r-md)] shadow-[var(--shadow-xs)]">
+          <button onClick={onClose} className="btn-secondary px-[20px] py-[8px] text-[12.5px] font-semibold rounded-[var(--r-md)] shadow-xs cursor-pointer">
             Đóng
           </button>
         </div>
-      </div>
-    </div>,
+      </motion.div>
+    </motion.div>,
     target
   );
 }

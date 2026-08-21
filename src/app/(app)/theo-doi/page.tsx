@@ -28,6 +28,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { useSession } from "next-auth/react";
 import { isCorporate } from "@/lib/permissions";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   parseDiag,
   ageOf,
@@ -789,7 +790,7 @@ export default function TheoDoiPage() {
           >
           {/* Segmented Control Tabs */}
           <div data-tour="td-tabs" className="p-2.5 border-b border-[var(--line)] bg-[var(--surface-bg)]">
-            <div className="flex gap-1 p-1 rounded-lg bg-[var(--surface-hover)] border border-[var(--line)]">
+            <div className="flex gap-1 p-1 rounded-xl bg-[var(--surface-hover)] border border-[var(--line)] relative">
               {[
                 { k: "A" as const, icon: CalendarClock, label: "Nhóm A (Mổ)", n: stats.soA },
                 { k: "B" as const, icon: PhoneCall, label: "Nhóm B (K/N)", n: stats.soB },
@@ -798,20 +799,28 @@ export default function TheoDoiPage() {
                 return (
                   <button
                     key={k}
+                    type="button"
                     onClick={() => {
                       setTab(k);
                       setSel(null);
                     }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] font-bold transition-all cursor-pointer ${
+                    className={`relative flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer z-10 ${
                       on
-                        ? "bg-[var(--navy)] text-white shadow-xs"
-                        : "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)]"
+                        ? "text-white"
+                        : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 ${on ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+                    {on && (
+                      <motion.div
+                        layoutId="theo-doi-tab-pill"
+                        transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                        className="absolute inset-0 bg-[var(--navy)] rounded-lg shadow-sm -z-10"
+                      />
+                    )}
+                    <Icon className={`w-3.5 h-3.5 transition-colors ${on ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
                     <span className="truncate">{label}</span>
                     <span
-                      className={`font-mono text-[10.5px] font-bold px-1.5 rounded-full ${
+                      className={`font-mono text-[10.5px] font-bold px-1.5 rounded-full transition-colors ${
                         on ? "bg-white/20 text-white" : "bg-[var(--surface-bg)] text-[var(--mute)] border border-[var(--line)]"
                       }`}
                     >
@@ -837,26 +846,19 @@ export default function TheoDoiPage() {
           </div>
 
           {/* Sub-Filter Toolbar (Nhóm A & Nhóm B) */}
-          <div className="p-2 border-b border-slate-200/80 bg-slate-50/70">
-            <div className="flex flex-wrap items-center gap-1 text-[11px] font-bold">
+          <div className="p-2 border-b border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-slate-900/60">
+            <div className="flex flex-wrap items-center gap-1 text-[11px]">
               {(tab === "A"
                 ? [
                     { k: "all" as const, label: "Tất cả", n: rows.length },
                     {
                       k: "daMo" as const,
-                      label: "✓ Đã mổ",
+                      label: "Đã mổ",
                       n: rows.filter((p) => p.trangThaiDieuTri === "Đã mổ" || (!!p.ngayMoThucTe && p.trangThaiDieuTri !== "Đã mổ trước đây" && p.trangThaiDieuTri !== "Đã đến trước đây")).length,
-                      cls: "text-emerald-800 bg-emerald-50 border-emerald-300 hover:bg-emerald-100",
-                    },
-                    {
-                      k: "daMoTruoc" as const,
-                      label: "🟣 Đến/Mổ trước",
-                      n: rows.filter((p) => p.trangThaiDieuTri === "Đã mổ trước đây" || p.trangThaiDieuTri === "Đã đến trước đây").length,
-                      cls: "text-purple-800 bg-purple-50 border-purple-300 hover:bg-purple-100",
                     },
                     {
                       k: "choMo" as const,
-                      label: "⏳ Chờ mổ",
+                      label: "Chờ mổ",
                       n: rows.filter(
                         (p) =>
                           p.trangThaiDieuTri !== "Đã mổ" &&
@@ -867,52 +869,49 @@ export default function TheoDoiPage() {
                           !p.ngayMoThucTe &&
                           !isOverdue28Days(p)
                       ).length,
-                      cls: "text-amber-900 bg-amber-50 border-amber-300 hover:bg-amber-100",
                     },
                     {
                       k: "daDen" as const,
-                      label: "🏥 Đã đến",
+                      label: "Đã đến",
                       n: rows.filter((p) => p.daDon).length,
-                      cls: "text-sky-900 bg-sky-50 border-sky-300 hover:bg-sky-100",
+                    },
+                    {
+                      k: "daMoTruoc" as const,
+                      label: "Đến/Mổ trước",
+                      n: rows.filter((p) => p.trangThaiDieuTri === "Đã mổ trước đây" || p.trangThaiDieuTri === "Đã đến trước đây").length,
                     },
                     {
                       k: "quaHan" as const,
-                      label: "⚠️ Quá 28d",
+                      label: "Quá 28 ngày",
                       n: rows.filter(isOverdue28Days).length,
-                      cls: "text-rose-900 bg-rose-50 border-rose-300 hover:bg-rose-100",
                     },
                     {
                       k: "huy" as const,
-                      label: "❌ Hủy/Vắng",
+                      label: "Hủy / Vắng",
                       n: rows.filter((p) => p.trangThaiDieuTri === "Hủy" || p.trangThaiDieuTri === "Không đến").length,
-                      cls: "text-rose-800 bg-rose-50 border-rose-200 hover:bg-rose-100",
                     },
                   ]
                 : [
                     { k: "all" as const, label: "Tất cả", n: rows.length },
                     {
                       k: "followUp" as const,
-                      label: "📞 Follow-up",
+                      label: "Follow-up",
                       n: rows.filter((p) => (!p.followUpStatus || p.followUpStatus === "Đang follow-up") && !isOverdue28Days(p)).length,
-                      cls: "text-indigo-900 bg-indigo-50 border-indigo-300 hover:bg-indigo-100",
                     },
                     {
                       k: "quaHan" as const,
-                      label: "⚠️ Quá 28d",
+                      label: "Quá 28 ngày",
                       n: rows.filter(isOverdue28Days).length,
-                      cls: "text-rose-900 bg-rose-50 border-rose-300 hover:bg-rose-100",
                     },
                     {
                       k: "daChot" as const,
-                      label: "✓ Đã chốt",
+                      label: "Đã chốt",
                       n: rows.filter((p) => p.followUpStatus === "Đã chốt").length,
-                      cls: "text-emerald-900 bg-emerald-50 border-emerald-300 hover:bg-emerald-100",
                     },
                     {
                       k: "ngung" as const,
-                      label: "🛑 Ngưng",
+                      label: "Ngưng",
                       n: rows.filter((p) => p.followUpStatus === "Ngưng").length,
-                      cls: "text-slate-800 bg-slate-100 border-slate-300 hover:bg-slate-200",
                     },
                   ]
               ).map((sf) => {
@@ -922,14 +921,20 @@ export default function TheoDoiPage() {
                     key={sf.k}
                     type="button"
                     onClick={() => setSubFilter(sf.k)}
-                    className={`px-2 py-0.5 rounded-md border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs shrink-0 ${
+                    className={`h-6.5 px-2 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 shrink-0 border select-none ${
                       on
-                        ? "bg-[var(--navy)] text-white border-[var(--navy)] font-extrabold shadow-xs"
-                        : sf.cls || "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-2xs font-bold"
+                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900"
                     }`}
                   >
                     <span>{sf.label}</span>
-                    <span className={`font-mono text-[10px] font-extrabold px-1 rounded-full ${on ? "bg-white/25 text-white" : "bg-black/5 text-slate-700"}`}>
+                    <span
+                      className={`font-mono text-[9.5px] font-bold px-1 py-0.2 rounded-full ${
+                        on
+                          ? "bg-white/20 dark:bg-black/15 text-white dark:text-slate-900"
+                          : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                      }`}
+                    >
                       {sf.n}
                     </span>
                   </button>
@@ -1670,6 +1675,7 @@ export default function TheoDoiPage() {
         title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
         subtitle="Lấy danh sách bệnh nhân để theo dõi & chăm sóc"
         icon={CalendarDays}
+        maxWidth="max-w-[620px]"
         noPadding
       >
         {/* Search */}

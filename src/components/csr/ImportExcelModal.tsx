@@ -282,7 +282,7 @@ export default function ImportExcelModal({
       title="Nhập danh sách từ Excel"
       subtitle="Đọc tự động danh sách bệnh nhân từ file Excel các đợt khám trước"
       icon={FileSpreadsheet}
-      maxWidth="max-w-[1040px]"
+      maxWidth="w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh]"
       footer={
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
           <div className="text-[12px] text-[var(--mute)] font-medium min-w-0">

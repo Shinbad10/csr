@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, UserCheck, Check, RefreshCw, Loader2, UserPlus, ShieldCheck, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { usePortalPosition } from "./fields";
 import { parseDoctorList, formatDoctorList } from "@/lib/csr";
 
@@ -190,113 +191,119 @@ export function DoctorAutocomplete({
         )}
       </div>
 
-      {open && !disabled && typeof document !== "undefined" && createPortal(
-        <div
-          ref={popupRef}
-          style={{ ...pos }}
-          className="fixed z-[99999] max-h-60 overflow-y-auto bg-white border border-[#cbd5e1] rounded-lg shadow-xl py-1 text-[12px] animate-fade-in flex flex-col"
-        >
-          {/* Header */}
-          <div className="px-2.5 py-1 text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[#e2e8f0] mb-0.5 shrink-0">
-            <div className="flex items-center gap-1">
-              <UserCheck className="w-3 h-3 text-[var(--teal)]" />
-              <span>Bác sĩ hệ thống ({filtered.length})</span>
+      <AnimatePresence>
+        {open && pos.ready && !disabled && typeof document !== "undefined" && createPortal(
+          <motion.div
+            ref={popupRef}
+            style={{ ...pos }}
+            initial={{ opacity: 0, scale: 0.98, y: 3 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 3 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="fixed z-[99999] max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-1 text-[12px] flex flex-col custom-scrollbar"
+          >
+            {/* Header */}
+            <div className="px-2.5 py-1 text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[#e2e8f0] dark:border-white/5 mb-0.5 shrink-0">
+              <div className="flex items-center gap-1">
+                <UserCheck className="w-3 h-3 text-[var(--teal)]" />
+                <span>Bác sĩ hệ thống ({filtered.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setSyncing(true);
+                  try {
+                    await fetch("/api/csr/bacsi", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "sync" }),
+                    });
+                    await fetchDoctors();
+                  } catch (err) {
+                    console.error("Lỗi đồng bộ HIS:", err);
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+                disabled={syncing}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[9.5px] font-bold"
+                title="Đồng bộ và gắn mã HIS cho các bác sĩ mới"
+              >
+                {syncing ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
+                <span>Đồng bộ HIS</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.stopPropagation();
-                setSyncing(true);
-                try {
-                  await fetch("/api/csr/bacsi", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action: "sync" }),
-                  });
-                  await fetchDoctors();
-                } catch (err) {
-                  console.error("Lỗi đồng bộ HIS:", err);
-                } finally {
-                  setSyncing(false);
-                }
-              }}
-              disabled={syncing}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[9.5px] font-bold"
-              title="Đồng bộ và gắn mã HIS cho các bác sĩ mới"
-            >
-              {syncing ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
-              <span>Đồng bộ HIS</span>
-            </button>
-          </div>
 
-          {/* Option thêm mới nếu chưa có trùng khớp */}
-          {safeSearch.trim().length > 0 && !exactMatch && (
-            <button
-              type="button"
-              onClick={() => handleAddNewDoctor(safeSearch)}
-              className="w-full text-left px-2.5 py-1.5 bg-[#f0fdf4] hover:bg-[#dcfce7] border-b border-[#bbf7d0] text-[#166534] flex items-center justify-between gap-1.5 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <UserPlus className="w-3.5 h-3.5 text-[#16a34a] shrink-0" />
-                <div className="truncate">
-                  <div className="font-semibold text-[11.5px] truncate">
-                    Thêm bác sĩ: <span className="underline font-bold">&ldquo;{safeSearch.trim()}&rdquo;</span>
+            {/* Option thêm mới nếu chưa có trùng khớp */}
+            {safeSearch.trim().length > 0 && !exactMatch && (
+              <button
+                type="button"
+                onClick={() => handleAddNewDoctor(safeSearch)}
+                className="w-full text-left px-2.5 py-1.5 bg-[#f0fdf4] dark:bg-emerald-950/30 hover:bg-[#dcfce7] border-b border-[#bbf7d0] dark:border-emerald-800/30 text-[#166534] dark:text-emerald-300 flex items-center justify-between gap-1.5 transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <UserPlus className="w-3.5 h-3.5 text-[#16a34a] shrink-0" />
+                  <div className="truncate">
+                    <div className="font-semibold text-[11.5px] truncate">
+                      Thêm bác sĩ: <span className="underline font-bold">&ldquo;{safeSearch.trim()}&rdquo;</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.2 bg-[#16a34a] text-white rounded shrink-0">
-                Thêm mới
-              </span>
-            </button>
-          )}
-
-          {/* Danh sách bác sĩ */}
-          <div className="flex-1 overflow-y-auto">
-            {filtered.length === 0 && safeSearch.trim().length === 0 ? (
-              <div className="px-3 py-2 text-[var(--mute)] italic text-center text-[11px]">
-                Chưa có danh sách bác sĩ. Hãy bấm &ldquo;Đồng bộ HIS&rdquo; hoặc nhập tên mới.
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="px-3 py-2 text-[var(--mute)] text-center text-[11px]">
-                Không tìm thấy bác sĩ &ldquo;{safeSearch}&rdquo;. Bấm nút &ldquo;Thêm bác sĩ&rdquo; ở trên để tạo mới.
-              </div>
-            ) : (
-              filtered.map((doc) => {
-                const isSelected = safeVal.trim().toLowerCase() === doc.hoTen.trim().toLowerCase();
-                return (
-                  <button
-                    key={doc.maNV || doc.hoTen}
-                    type="button"
-                    onClick={() => handleSelect(doc.hoTen)}
-                    className={`w-full text-left px-2.5 py-1.5 flex items-center justify-between gap-1.5 transition-colors cursor-pointer text-[11.5px] ${
-                      isSelected
-                        ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] font-bold"
-                        : "hover:bg-[#f8fafc] text-[#0f172a]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="truncate">{doc.hoTen}</span>
-                      {doc.maHIS ? (
-                        <span className="inline-flex items-center gap-0.5 text-[9.5px] font-mono font-bold text-emerald-800 bg-emerald-100/70 px-1 py-0.2 rounded border border-emerald-300/60 shrink-0" title={`Mã HIS: ${doc.maHIS}`}>
-                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
-                          <span>HIS: {doc.maHIS}</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-0.5 text-[9.5px] text-amber-700 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 shrink-0" title="Chưa có mã HIS - Bấm 'Đồng bộ HIS' để tự động ghép mã">
-                          <Clock className="w-2.5 h-2.5 text-amber-500" />
-                          <span>Chờ HIS</span>
-                        </span>
-                      )}
-                    </div>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />}
-                  </button>
-                );
-              })
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.2 bg-[#16a34a] text-white rounded shrink-0">
+                  Thêm mới
+                </span>
+              </button>
             )}
-          </div>
-        </div>,
-        document.body
-      )}
+
+            {/* Danh sách bác sĩ */}
+            <div className="flex-1 overflow-y-auto">
+              {filtered.length === 0 && safeSearch.trim().length === 0 ? (
+                <div className="px-3 py-2 text-[var(--mute)] italic text-center text-[11px]">
+                  Chưa có danh sách bác sĩ. Hãy bấm &ldquo;Đồng bộ HIS&rdquo; hoặc nhập tên mới.
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="px-3 py-2 text-[var(--mute)] text-center text-[11px]">
+                  Không tìm thấy kết quả khớp &ldquo;{safeSearch}&rdquo;
+                </div>
+              ) : (
+                filtered.map((doc) => {
+                  const isSelected = safeVal.trim().toLowerCase() === doc.hoTen.toLowerCase();
+                  return (
+                    <button
+                      key={doc.hoTen + (doc.maNV || "")}
+                      type="button"
+                      onClick={() => handleSelect(doc.hoTen)}
+                      className={`w-full text-left px-2.5 py-1.5 flex items-center justify-between gap-2 transition-colors cursor-pointer text-[12px] ${
+                        isSelected
+                          ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:bg-teal-950/40 dark:text-[var(--teal)] font-bold"
+                          : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">{doc.hoTen}</span>
+                        {doc.maHIS ? (
+                          <span className="inline-flex items-center gap-0.5 text-[9.5px] font-mono font-bold text-emerald-800 bg-emerald-100/70 dark:bg-emerald-950 dark:text-emerald-300 px-1 py-0.2 rounded border border-emerald-300/60 dark:border-emerald-700/50 shrink-0" title={`Mã HIS: ${doc.maHIS}`}>
+                            <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                            <span>HIS: {doc.maHIS}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 text-[9.5px] text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-1 py-0.2 rounded border border-amber-200 dark:border-amber-700/50 shrink-0" title="Chưa có mã HIS - Bấm 'Đồng bộ HIS' để tự động ghép mã">
+                            <Clock className="w-2.5 h-2.5 text-amber-500" />
+                            <span>Chờ HIS</span>
+                          </span>
+                        )}
+                      </div>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>,
+          document.body
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -483,120 +490,123 @@ export function DoctorMultiSelect({
         </div>
       </div>
 
-      {open && !disabled && typeof document !== "undefined" && createPortal(
-        <div
-          ref={popupRef}
-          style={{ ...pos }}
-          className="fixed z-[99999] max-h-72 overflow-y-auto bg-white border border-[#cbd5e1] rounded-xl shadow-2xl py-1.5 text-[13px] animate-fade-in flex flex-col"
-        >
-          {/* Header */}
-          <div className="px-3 py-1.5 text-[11px] font-bold text-[#64748b] uppercase tracking-wider flex items-center justify-between border-b border-[#e2e8f0] mb-1 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-[#02b8a9]" />
-              <span>Đoàn bác sĩ khám ({selectedList.length} đã chọn)</span>
+      <AnimatePresence>
+        {open && pos.ready && !disabled && typeof document !== "undefined" && createPortal(
+          <motion.div
+            ref={popupRef}
+            style={{ ...pos }}
+            initial={{ opacity: 0, scale: 0.98, y: 3 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 3 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="fixed z-[99999] max-h-72 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 text-[13px] flex flex-col custom-scrollbar"
+          >
+            {/* Header */}
+            <div className="px-3 py-1.5 text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[#e2e8f0] dark:border-white/5 mb-1 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-[var(--teal)]" />
+                <span>Đoàn bác sĩ khám ({selectedList.length} đã chọn)</span>
+              </div>
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setSyncing(true);
+                  try {
+                    await fetch("/api/csr/bacsi", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ action: "sync" }),
+                    });
+                    await fetchDoctors();
+                  } catch (err) {
+                    console.error("Lỗi đồng bộ HIS:", err);
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+                disabled={syncing}
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[10px] font-bold"
+                title="Đồng bộ danh sách từ HIS bệnh viện"
+              >
+                {syncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                <span>Đồng bộ HIS</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.stopPropagation();
-                setSyncing(true);
-                try {
-                  await fetch("/api/csr/bacsi", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action: "sync" }),
-                  });
-                  await fetchDoctors();
-                } catch (err) {
-                  console.error("Lỗi đồng bộ HIS:", err);
-                } finally {
-                  setSyncing(false);
-                }
-              }}
-              disabled={syncing}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#e6faf7] text-[#018a7f] hover:bg-[#02b8a9] hover:text-white transition-colors cursor-pointer text-[10px] font-bold"
-              title="Đồng bộ danh sách từ HIS bệnh viện"
-            >
-              {syncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-              <span>Đồng bộ HIS</span>
-            </button>
-          </div>
 
-          {/* Option thêm mới nếu chưa có trong danh mục */}
-          {safeSearch.trim().length > 0 && !exactMatch && (
-            <button
-              type="button"
-              onClick={() => handleAddNewDoctor(safeSearch)}
-              className="w-full text-left px-3 py-2 bg-[#f0fdf4] hover:bg-[#dcfce7] border-b border-[#bbf7d0] text-[#166534] flex items-center justify-between gap-2 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <UserPlus className="w-4 h-4 text-[#16a34a] shrink-0" />
-                <div className="truncate">
-                  <div className="font-semibold text-[13px] truncate">
-                    Thêm vào đoàn: <span className="underline font-bold">&ldquo;{safeSearch.trim()}&rdquo;</span>
-                  </div>
-                  <div className="text-[11px] text-[#15803d]/80">
-                    Mã HIS: để trống — Hệ thống sẽ tự động ghép mã khi đồng bộ HIS
+            {/* Option thêm mới nếu chưa có trong danh mục */}
+            {safeSearch.trim().length > 0 && !exactMatch && (
+              <button
+                type="button"
+                onClick={() => handleAddNewDoctor(safeSearch)}
+                className="w-full text-left px-2.5 py-1.5 bg-[#f0fdf4] dark:bg-emerald-950/30 hover:bg-[#dcfce7] border-b border-[#bbf7d0] dark:border-emerald-800/30 text-[#166534] dark:text-emerald-300 flex items-center justify-between gap-1.5 transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <UserPlus className="w-3.5 h-3.5 text-[#16a34a] shrink-0" />
+                  <div className="truncate">
+                    <div className="font-semibold text-[11.5px] truncate">
+                      Thêm bác sĩ: <span className="underline font-bold">&ldquo;{safeSearch.trim()}&rdquo;</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-[#16a34a] text-white rounded shrink-0">
-                + Thêm
-              </span>
-            </button>
-          )}
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.2 bg-[#16a34a] text-white rounded shrink-0">
+                  Thêm mới
+                </span>
+              </button>
+            )}
 
-          {/* Danh sách gợi ý bác sĩ */}
-          <div className="flex-1 overflow-y-auto">
-            {filtered.length === 0 && safeSearch.trim().length === 0 ? (
-              <div className="px-3.5 py-3 text-[#64748b] italic text-center">
-                Chưa có danh sách bác sĩ. Hãy bấm &ldquo;Đồng bộ HIS&rdquo; hoặc nhập tên mới.
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="px-3.5 py-3 text-[#64748b] text-center text-[12.5px]">
-                Không tìm thấy bác sĩ có sẵn phù hợp với &ldquo;{safeSearch}&rdquo;. Bấm nút &ldquo;Thêm vào đoàn&rdquo; ở trên để tạo mới.
-              </div>
-            ) : (
-              filtered.map((doc) => {
-                const isSelected = selectedList.includes(doc.hoTen);
-                return (
-                  <button
-                    key={doc.maNV || doc.hoTen}
-                    type="button"
-                    onClick={() => toggleDoctor(doc.hoTen)}
-                    className={`w-full text-left px-3.5 py-2 flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                      isSelected
-                        ? "bg-[#eef2ff] text-[#031da6] font-bold"
-                        : "hover:bg-[#f8fafc] text-[#0f172a]"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="truncate">{doc.hoTen}</span>
-                      {doc.maHIS ? (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] font-mono font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0" title={`Mã HIS: ${doc.maHIS}`}>
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                          <span>HIS: {doc.maHIS}</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[10.5px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0" title="Chưa có mã HIS">
-                          <Clock className="w-3 h-3 text-amber-500" />
-                          <span>Chờ đồng bộ HIS</span>
+            {/* Danh sách bác sĩ */}
+            <div className="flex-1 overflow-y-auto">
+              {filtered.length === 0 && safeSearch.trim().length === 0 ? (
+                <div className="px-3 py-2 text-[var(--mute)] italic text-center text-[11px]">
+                  Chưa có danh sách bác sĩ. Hãy bấm &ldquo;Đồng bộ HIS&rdquo; hoặc nhập tên mới.
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="px-3 py-2 text-[var(--mute)] text-center text-[11px]">
+                  Không tìm thấy kết quả khớp &ldquo;{safeSearch}&rdquo;
+                </div>
+              ) : (
+                filtered.map((doc) => {
+                  const isSelected = selectedList.includes(doc.hoTen);
+                  return (
+                    <button
+                      key={doc.maNV || doc.hoTen}
+                      type="button"
+                      onClick={() => toggleDoctor(doc.hoTen)}
+                      className={`w-full text-left px-3.5 py-2 flex items-center justify-between gap-2 transition-colors cursor-pointer text-[12px] ${
+                        isSelected
+                          ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:bg-teal-950/40 dark:text-[var(--teal)] font-bold"
+                          : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="truncate">{doc.hoTen}</span>
+                        {doc.maHIS ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-100/70 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-700/50 shrink-0" title={`Mã HIS: ${doc.maHIS}`}>
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            <span>HIS: {doc.maHIS}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-700/50 shrink-0" title="Chưa có mã HIS">
+                            <Clock className="w-3 h-3 text-amber-500" />
+                            <span>Chờ HIS</span>
+                          </span>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] bg-[var(--teal-soft)] dark:bg-teal-950/60 px-2 py-0.5 rounded">
+                          <Check className="w-3.5 h-3.5" /> Đã chọn
                         </span>
                       )}
-                    </div>
-                    {isSelected && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#031da6] bg-[#c7d2fe]/40 px-2 py-0.5 rounded">
-                        <Check className="w-3.5 h-3.5" /> Đã chọn
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>,
+          document.body
+        )}
+      </AnimatePresence>
     </div>
   );
 }

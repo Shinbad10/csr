@@ -332,10 +332,29 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-4 gap-y-2.5">
-          {/* Row 1: Họ và tên * (6) | Mã thẻ BH (6) */}
+          {/* Row 1: Họ và tên * (6) | CCCD (6) */}
           <div className="sm:col-span-6">
             <Field label="Họ và tên" required>
               <input value={hoTen} onChange={(e) => handleHoTenChange(e.target.value)} required className="input-field font-semibold text-[15px]" placeholder="VD: NGUYỄN VĂN A" />
+            </Field>
+          </div>
+          <div className="sm:col-span-6">
+            <Field label="CCCD">
+              <input value={cccd} onChange={(e) => handleCccdChange(e.target.value)} className="input-field font-mono font-bold tracking-wider text-[14.5px]" placeholder="000000000000" maxLength={12} />
+            </Field>
+          </div>
+
+          {/* Row 2: Giới tính * (6) | Mã thẻ BH (6) */}
+          <div className="sm:col-span-6">
+            <Field label="Giới tính" required>
+              <div className="flex items-center gap-5 h-10 px-1">
+                {["Nam", "Nữ", "Khác"].map((g) => (
+                  <label key={g} className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="radio" name="gioiTinh" checked={gioiTinh === g} onChange={() => setGioiTinh(g)} className="w-4.5 h-4.5 accent-[var(--teal-deep)] cursor-pointer" />
+                    <span className="text-[14px] font-medium text-[var(--ink)]">{g}</span>
+                  </label>
+                ))}
+              </div>
             </Field>
           </div>
           <div className="sm:col-span-6">
@@ -379,25 +398,6 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
                   )}
                 </button>
               </div>
-            </Field>
-          </div>
-
-          {/* Row 2: Giới tính * (6) | CCCD (6) */}
-          <div className="sm:col-span-6">
-            <Field label="Giới tính" required>
-              <div className="flex items-center gap-5 h-10 px-1">
-                {["Nam", "Nữ", "Khác"].map((g) => (
-                  <label key={g} className="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="radio" name="gioiTinh" checked={gioiTinh === g} onChange={() => setGioiTinh(g)} className="w-4.5 h-4.5 accent-[var(--teal-deep)] cursor-pointer" />
-                    <span className="text-[14px] font-medium text-[var(--ink)]">{g}</span>
-                  </label>
-                ))}
-              </div>
-            </Field>
-          </div>
-          <div className="sm:col-span-6">
-            <Field label="CCCD">
-              <input value={cccd} onChange={(e) => handleCccdChange(e.target.value)} className="input-field font-mono font-bold tracking-wider text-[14.5px]" placeholder="000000000000" maxLength={12} />
             </Field>
           </div>
 
@@ -1752,7 +1752,7 @@ export default function ExamPage() {
           </div>
 
           {/* Danh sách thẻ bệnh nhân */}
-          <div data-tour="kh-list" className="flex-1 overflow-y-auto p-2 space-y-1 bg-[var(--surface-bg)]/40">
+          <div data-tour="kh-list" className="flex-1 overflow-y-auto p-1.5 space-y-1 bg-slate-50/50 dark:bg-slate-900/40">
             {searching ? (
               <SkeletonList items={5} />
             ) : patients.length === 0 ? (
@@ -1761,7 +1761,7 @@ export default function ExamPage() {
                 <span>Chưa có bệnh nhân.</span>
               </div>
             ) : visible.length === 0 ? (
-              <div className="text-center text-[var(--mute)] text-[12px] py-10 px-4 bg-white rounded-lg border border-[var(--line-soft)]">
+              <div className="text-center text-[var(--mute)] text-[12px] py-10 px-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-white/10">
                 Không khớp bộ lọc.
               </div>
             ) : (
@@ -1771,17 +1771,16 @@ export default function ExamPage() {
                 const st = statusOf(p.trangThai);
                 const sttPadded = String(p.stt ?? 0).padStart(2, "0");
                 const diags = parseDiag(p.chanDoan);
-
                 const hasBhyt = Boolean((p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
 
                 // Badge màu cho STT
-                let sttBadgeCls = "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/15";
+                let sttBadgeCls = "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
                 if (p.nhom === "A" || p.khuyenNghi === "Phẫu thuật") {
-                  sttBadgeCls = "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]/25";
+                  sttBadgeCls = "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40";
                 } else if (p.nhom === "B") {
-                  sttBadgeCls = "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/25";
+                  sttBadgeCls = "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/40";
                 } else if (!isWaiting) {
-                  sttBadgeCls = "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/15";
+                  sttBadgeCls = "bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800/40";
                 }
 
                 // Tóm tắt kết quả (nếu có)
@@ -1799,49 +1798,50 @@ export default function ExamPage() {
                       pick(p);
                       setShowList(false);
                     }}
-                    className={`w-full text-left rounded-lg border px-2.5 py-1.5 transition-all duration-150 relative cursor-pointer ${active
-                      ? "border-[var(--navy)] bg-white shadow-xs border-l-[3.5px] border-l-[var(--navy)]"
+                    className={`w-full text-left rounded-lg border px-2 py-1.5 transition-all duration-150 relative cursor-pointer select-none ${active
+                      ? "border-[var(--navy)] bg-white dark:bg-slate-800 shadow-xs border-l-[3px] border-l-[var(--navy)]"
                       : isWaiting
-                        ? `${i % 2 === 0 ? "bg-white" : "bg-slate-50"} border-[var(--line)] hover:border-[var(--navy-200)] hover:bg-slate-100/80`
-                        : `${i % 2 === 0 ? "bg-white/80" : "bg-slate-50/90"} border-[var(--line-soft)] hover:bg-white hover:border-[var(--line)] opacity-85 hover:opacity-100`
+                        ? "bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        : "bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 hover:bg-white hover:border-slate-300 opacity-90 hover:opacity-100"
                       }`}
                   >
                     <div className="flex items-center gap-2">
-                      {/* Số thứ tự STT rõ ràng */}
+                      {/* Số thứ tự STT tinh gọn */}
                       <div
-                        className={`w-8 h-8 rounded-lg font-mono flex flex-col items-center justify-center shrink-0 border ${sttBadgeCls} shadow-2xs`}
+                        className={`w-6 h-6 rounded-md font-mono text-[11px] font-bold flex items-center justify-center shrink-0 border ${sttBadgeCls}`}
                       >
-                        <span className="text-[7.5px] font-sans font-bold uppercase tracking-wider opacity-60 leading-none mb-0.5">STT</span>
-                        <span className="text-[12px] font-black leading-none">{sttPadded}</span>
+                        {sttPadded}
                       </div>
 
                       {/* Thông tin chính */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">
-                          <h4 className={`text-[12.5px] font-bold truncate leading-tight ${
-                            hasBhyt
-                              ? "text-emerald-700 font-extrabold"
-                              : active
-                                ? "text-[var(--navy)]"
-                                : "text-[var(--ink)]"
+                          <h4 className={`text-[12px] font-bold truncate leading-snug ${
+                            active
+                              ? "text-[var(--navy)] dark:text-teal-300"
+                              : hasBhyt
+                                ? "text-emerald-700 dark:text-emerald-400 font-bold"
+                                : "text-slate-900 dark:text-slate-100"
                           }`}>
                             {p.hoTen}
                           </h4>
-                          <StatusBadge label={st.label} cls={st.cls} sm />
+                          <span className={`text-[9.5px] font-semibold px-1.5 py-0.2 rounded shrink-0 border ${st.cls}`}>
+                            {st.label}
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--mute)] mt-0.5 truncate">
+                        <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                           <span>{p.gioiTinh} · {ageOf(p)}t</span>
                           {p.mucHuongBHYT ? (
-                            <span className="text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/70">
-                              · BH {p.mucHuongBHYT}%
+                            <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                              BH {p.mucHuongBHYT}%
                             </span>
                           ) : p.bhyt ? (
-                            <span className="text-emerald-700 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/70">
-                              · {bhytLevel(p.bhyt)}
+                            <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                              {bhytLevel(p.bhyt)}
                             </span>
                           ) : null}
-                          {diagSummary && <span className="text-[var(--teal-deep)] font-semibold truncate">· {diagSummary}</span>}
+                          {diagSummary && <span className="text-teal-700 dark:text-teal-300 font-medium truncate">· {diagSummary}</span>}
                         </div>
                       </div>
                     </div>

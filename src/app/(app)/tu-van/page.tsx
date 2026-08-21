@@ -523,6 +523,7 @@ export default function TuVanSessionPage() {
         title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
         subtitle="Lấy danh sách bệnh nhân bệnh lý để tư vấn điều trị"
         icon={CalendarDays}
+        maxWidth="max-w-[620px]"
         noPadding
       >
         {/* Search */}

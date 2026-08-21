@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const labelCls = "block text-[11px] sm:text-[12px] font-bold text-[var(--ink-soft)] mb-1";
 
@@ -14,51 +15,57 @@ export function usePortalPosition(
   dropdownHeight: number = 320,
   minWidth?: number
 ) {
-  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; width?: number; maxHeight?: number }>({ left: 0 });
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; width?: number; maxHeight?: number; ready: boolean }>({ ready: false });
+
+  const update = useCallback(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+    
+    // Chiều rộng hiệu dụng
+    const effectiveWidth = minWidth ? Math.max(rect.width, minWidth) : rect.width;
+    
+    // Canh lề ngang an toàn, tránh tràn mép phải hoặc trái màn hình
+    const margin = 8;
+    let left = rect.left;
+    if (left + effectiveWidth > viewportWidth - margin) {
+      left = Math.max(margin, viewportWidth - effectiveWidth - margin);
+    }
+    if (left < margin) {
+      left = margin;
+    }
+
+    if (openUp) {
+      const availableHeight = Math.max(160, Math.min(dropdownHeight, spaceAbove - 16));
+      setPos({ 
+        bottom: viewportHeight - rect.top + 4, 
+        left, 
+        width: minWidth ? effectiveWidth : rect.width,
+        maxHeight: availableHeight,
+        ready: true
+      });
+    } else {
+      const availableHeight = Math.max(160, Math.min(dropdownHeight, spaceBelow - 16));
+      setPos({ 
+        top: rect.bottom + 4, 
+        left, 
+        width: minWidth ? effectiveWidth : rect.width,
+        maxHeight: availableHeight,
+        ready: true
+      });
+    }
+  }, [dropdownHeight, minWidth, ref]);
 
   useEffect(() => {
-    if (!open || !ref.current) return;
-    const update = () => {
-      if (!ref.current) return;
-      const rect = ref.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
-      
-      const spaceBelow = viewportHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
-      
-      // Chiều rộng hiệu dụng
-      const effectiveWidth = minWidth ? Math.max(rect.width, minWidth) : rect.width;
-      
-      // Canh lề ngang an toàn, tránh tràn mép phải hoặc trái màn hình
-      const margin = 12;
-      let left = rect.left;
-      if (left + effectiveWidth > viewportWidth - margin) {
-        left = Math.max(margin, viewportWidth - effectiveWidth - margin);
-      }
-      if (left < margin) {
-        left = margin;
-      }
-
-      if (openUp) {
-        const availableHeight = Math.max(160, Math.min(dropdownHeight, spaceAbove - 16));
-        setPos({ 
-          bottom: viewportHeight - rect.top + 6, 
-          left, 
-          width: minWidth ? effectiveWidth : rect.width,
-          maxHeight: availableHeight 
-        });
-      } else {
-        const availableHeight = Math.max(160, Math.min(dropdownHeight, spaceBelow - 16));
-        setPos({ 
-          top: rect.bottom + 6, 
-          left, 
-          width: minWidth ? effectiveWidth : rect.width,
-          maxHeight: availableHeight 
-        });
-      }
-    };
+    if (!open) {
+      setPos((p) => (p.ready ? { ready: false } : p));
+      return;
+    }
     update();
     window.addEventListener("scroll", update, true);
     window.addEventListener("resize", update);
@@ -66,7 +73,7 @@ export function usePortalPosition(
       window.removeEventListener("scroll", update, true);
       window.removeEventListener("resize", update);
     };
-  }, [open, ref, dropdownHeight, minWidth]);
+  }, [open, update]);
 
   return pos;
 }
@@ -137,57 +144,69 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
 
   return (
     <div className="relative" ref={ref}>
-      <button type="button" onClick={() => !disabled && setOpen((o) => !o)} disabled={disabled}
-        className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none h-8 text-[12px] px-2.5 ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)]" : ""}`}>
+      <motion.button
+        whileTap={!disabled ? { scale: 0.99 } : undefined}
+        type="button"
+        onClick={() => !disabled && setOpen((o) => !o)}
+        disabled={disabled}
+        className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none h-8 text-[12px] px-2.5 ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)]" : ""}`}
+      >
         <span className={`${value ? `text-[var(--ink)] font-medium ${mono && !labels ? "font-mono" : ""}` : "text-[var(--mute-soft)]"} truncate`}>
           {value ? disp(value) : placeholder}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
-      </button>
-      {open && typeof document !== "undefined" && createPortal(
-        <div 
-          ref={popupRef} 
-          style={{ ...pos }} 
-          className="fixed z-[99999] max-h-[260px] flex flex-col bg-white border border-[var(--line-strong)] rounded-lg shadow-xl p-1 text-[12px] animate-dropdown"
-        >
-          {showSearch && (
-            <div className="p-1 border-b border-[var(--line)] mb-1">
-              <input
-                autoFocus
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm nhanh..."
-                className="w-full px-2 py-1 text-[11.5px] rounded bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-all"
-              />
-            </div>
-          )}
-          <div className="overflow-y-auto flex-1 p-0.5 space-y-0.5">
-            {filtered.length === 0 ? (
-              <div className="px-2.5 py-2 text-center text-xs text-[var(--mute)]">Không tìm thấy kết quả</div>
-            ) : (
-              filtered.map((o) => {
-                const isSelected = value === o;
-                return (
-                  <button 
-                    key={o || "__empty"} 
-                    type="button" 
-                    onClick={() => { onChange(o); setOpen(false); }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded text-[11.5px] sm:text-[12px] flex items-center justify-between gap-1.5 transition-colors cursor-pointer ${
-                      isSelected ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]"} ${mono && o && !labels ? "font-mono" : ""}`}
-                  >
-                    <span className={o ? "truncate" : "text-[var(--mute-soft)]"}>{disp(o)}</span>
-                    {isSelected && o && <Check className="w-3.5 h-3.5 shrink-0 text-[var(--teal-deep)] stroke-[2.5]" />}
-                  </button>
-                );
-              })
+      </motion.button>
+      <AnimatePresence>
+        {open && pos.ready && typeof document !== "undefined" && createPortal(
+          <motion.div 
+            ref={popupRef} 
+            style={{ ...pos }}
+            initial={{ opacity: 0, scale: 0.98, y: 3 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 3 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="fixed z-[99999] max-h-[260px] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-xl p-1 text-[12px]"
+          >
+            {showSearch && (
+              <div className="p-1 border-b border-[var(--line)] mb-1">
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm nhanh..."
+                  className="w-full px-2 py-1 text-[11.5px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-all"
+                />
+              </div>
             )}
-          </div>
-        </div>,
-        document.body
-      )}
+            <div className="overflow-y-auto flex-1 p-0.5 space-y-0.5 custom-scrollbar">
+              {filtered.length === 0 ? (
+                <div className="px-2.5 py-2 text-center text-xs text-[var(--mute)]">Không tìm thấy kết quả</div>
+              ) : (
+                filtered.map((o) => {
+                  const isSelected = value === o;
+                  return (
+                    <button 
+                      key={o || "__empty"} 
+                      type="button" 
+                      onClick={() => { onChange(o); setOpen(false); }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11.5px] sm:text-[12px] flex items-center justify-between gap-1.5 transition-colors cursor-pointer ${
+                        isSelected ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 hover:text-[var(--ink)]"} ${mono && o && !labels ? "font-mono" : ""}`}
+                    >
+                      <span className={o ? "truncate" : "text-[var(--mute-soft)]"}>{disp(o)}</span>
+                      {isSelected && o && <Check className="w-3.5 h-3.5 shrink-0 text-[var(--teal-deep)] stroke-[2.5]" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>,
+          document.body
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
 
 const MONTH_NAMES = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
 
@@ -691,7 +710,7 @@ export function DateField({
         </button>
       </div>
 
-      {open && typeof document !== "undefined" && createPortal(
+      {open && pos.ready && typeof document !== "undefined" && createPortal(
         <div 
           ref={popupRef} 
           style={{ ...safePos, width: 275 }} 
@@ -895,9 +914,17 @@ export function ChoiceRow({ options, value, onChange, render, disabled }: {
       {options.map((o) => {
         const on = value === o;
         return (
-          <button key={o} type="button" onClick={() => !disabled && onChange(on ? "" : o)} disabled={disabled}
-            className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-[12px] font-bold border transition-all cursor-pointer ${
-              on ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] border-[var(--navy)] text-white shadow-2xs" : "bg-white border-[var(--line-strong)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:border-[var(--navy-100)]"}`}>
+          <button
+            key={o}
+            type="button"
+            onClick={() => !disabled && onChange(on ? "" : o)}
+            disabled={disabled}
+            className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-[12px] font-bold border transition-all cursor-pointer select-none active:scale-[0.98] ${
+              on
+                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs"
+                : "bg-white dark:bg-slate-800 border-slate-300 dark:border-white/15 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400"
+            }`}
+          >
             {render ? render(o) : o}
           </button>
         );
@@ -915,10 +942,18 @@ export function PillGroup({ options, selected, onToggle, disabled }: {
       {options.map((o) => {
         const on = selected.includes(o);
         return (
-          <button key={o} type="button" onClick={() => !disabled && onToggle(o)} disabled={disabled}
-            className={`inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-[12px] font-bold border transition-all cursor-pointer ${
-              on ? "bg-[var(--gold-soft)] border-[var(--gold-line)] text-[var(--gold-deep)] shadow-2xs" : "bg-white border-[var(--line-strong)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:border-[var(--gold-line)]"}`}>
-            {o}{on && !disabled && <X className="w-3 h-3 opacity-60 hover:opacity-100" />}
+          <button
+            key={o}
+            type="button"
+            onClick={() => !disabled && onToggle(o)}
+            disabled={disabled}
+            className={`inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[11px] sm:text-[12px] font-bold border transition-all cursor-pointer select-none active:scale-[0.98] ${
+              on
+                ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                : "bg-white dark:bg-slate-800 border-slate-300 dark:border-white/15 text-slate-700 dark:text-slate-200 hover:bg-amber-50/60 hover:border-amber-400"
+            }`}
+          >
+            {o}{on && !disabled && <X className="w-3 h-3 opacity-80 hover:opacity-100" />}
           </button>
         );
       })}
@@ -978,39 +1013,54 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
         </div>
       )}
 
-      {open && !disabled && typeof document !== "undefined" && createPortal(
-        <div ref={popupRef} style={{ ...pos }}
-          className="fixed z-[99999] flex flex-col max-h-[300px] bg-white border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] animate-dropdown">
-          <div className="p-1.5 border-b border-[var(--line-soft)] shrink-0">
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder}
-              className="w-full px-2.5 py-1.5 text-[13px] rounded-[var(--r-sm)] bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-colors" />
-          </div>
-          <div className="overflow-y-auto p-1 space-y-0.5">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-3 text-[12.5px] text-[var(--mute)] text-center italic">Không có mục nào khớp</div>
-            ) : filtered.map((o) => {
-              const on = selected.includes(o);
-              return (
-                <button key={o} type="button" onClick={() => onToggle(o)}
-                  className={`w-full text-left px-2.5 py-2 rounded-[var(--r-sm)] text-[13px] flex items-center gap-2.5 transition-colors cursor-pointer ${
-                    on ? "bg-[var(--navy-50)] text-[var(--navy)] font-semibold" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"}`}>
-                  <span className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 ${
-                    on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "border-[var(--line-heavy)] bg-white"}`}>
-                    {on && <Check className="w-3 h-3 stroke-[3]" />}
-                  </span>
-                  <span className="min-w-0 flex-1">{o}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>,
-        document.body
-      )}
+      <AnimatePresence>
+        {open && pos.ready && !disabled && typeof document !== "undefined" && createPortal(
+          <motion.div
+            ref={popupRef}
+            style={{ ...pos }}
+            initial={{ opacity: 0, scale: 0.95, y: 4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 4 }}
+            transition={{ type: "spring", stiffness: 450, damping: 28 }}
+            className="fixed z-[99999] flex flex-col max-h-[300px] bg-white dark:bg-slate-900 border border-[var(--line-strong)] rounded-xl shadow-2xl"
+          >
+            <div className="p-1.5 border-b border-[var(--line-soft)] shrink-0">
+              <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder}
+                className="w-full px-2.5 py-1.5 text-[13px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-colors" />
+            </div>
+            <div className="overflow-y-auto p-1 space-y-0.5 custom-scrollbar">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-3 text-[12.5px] text-[var(--mute)] text-center italic">Không có mục nào khớp</div>
+              ) : filtered.map((o) => {
+                const on = selected.includes(o);
+                return (
+                  <button key={o} type="button" onClick={() => onToggle(o)}
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-[13px] flex items-center gap-2.5 transition-colors cursor-pointer ${
+                      on ? "bg-[var(--navy-50)] text-[var(--navy)] font-semibold" : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"}`}>
+                    <span className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 ${
+                      on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "border-[var(--line-heavy)] bg-white"}`}>
+                      {on && <Check className="w-3 h-3 stroke-[3]" />}
+                    </span>
+                    <span className="min-w-0 flex-1">{o}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>,
+          document.body
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Badge trạng thái dùng chung
+// Badge trạng thái dùng chung với chỉ báo Glowing Dot
 export function StatusBadge({ label, cls, sm }: { label: string; cls: string; sm?: boolean }) {
-  return <span className={`${sm ? "text-[10.5px] px-2 py-0.5" : "text-[11.5px] px-2.5 py-1"} font-bold rounded-full border ${cls}`}>{label}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${sm ? "text-[10.5px] px-2.5 py-0.5" : "text-[11.5px] px-3 py-1"} font-bold rounded-full border shadow-2xs ${cls}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80 animate-pulse" />
+      {label}
+    </span>
+  );
 }
+

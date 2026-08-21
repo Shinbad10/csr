@@ -163,6 +163,10 @@
 }
 
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   body {
     background-color: var(--bg);
     color: var(--ink);
@@ -181,7 +185,7 @@
   font-weight: 700;
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
   user-select: none;
   white-space: nowrap;
 }
@@ -196,11 +200,10 @@
   &:hover {
     background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-ink) 100%);
     box-shadow: var(--navy-shadow-hover);
-    transform: translateY(-1px);
   }
 
   &:active {
-    transform: translateY(0);
+    opacity: 0.92;
   }
 }
 
@@ -220,6 +223,7 @@
 
   &:active {
     background: var(--surface-hover);
+    opacity: 0.92;
   }
 }
 
@@ -277,24 +281,74 @@
 
 @utility input-field {
   width: 100%;
-  padding: 5px 9px;
+  padding: 6px 11px;
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 12.5px;
+  line-height: 1.4;
   outline: none;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:focus {
     border-color: var(--navy);
-    box-shadow: 0 0 0 2px var(--navy-50);
+    box-shadow: 0 0 0 3px var(--navy-50);
   }
 
   &::placeholder {
     color: var(--mute-soft);
+  }
+}
+
+/* ── Modern Glassmorphism & Micro-interactions ── */
+@utility glass-card {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: var(--r-xl);
+  box-shadow: 0 10px 30px -10px rgba(13, 16, 37, 0.06), 0 1px 3px rgba(13, 16, 37, 0.04);
+}
+
+@utility glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+@utility skeleton-shimmer {
+  background: linear-gradient(90deg, var(--surface-soft) 0%, var(--surface-hover) 50%, var(--surface-soft) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@utility table-row-hover {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  &:hover {
+    background-color: var(--navy-50);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
   }
 }
 
@@ -333,3 +387,4 @@
   width: 0 !important;
   height: 0 !important;
 }
+

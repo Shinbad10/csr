@@ -25,6 +25,7 @@ import { SkeletonTable } from "@/components/layout/Skeleton";
 import { PatientInfoModal, PatientHistoryModal } from "@/components/csr/PatientModals";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TT_OPTS = ["", "TiepNhan", "DaKham", "TheoDoi", "CoChiDinhMo", "NhomA", "NhomB", "DaMoHauPhau", "HuyKhongDen"];
 const TT_LABELS: Record<string, string> = Object.fromEntries(TT_OPTS.filter(Boolean).map((k) => [k, statusOf(k).label]));
@@ -226,35 +227,43 @@ export default function HoSoPage() {
               </div>
 
               {/* Menu thả xuống lựa chọn chế độ đồng bộ */}
-              {syncMenuOpen && (
-                <div className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white shadow-[var(--shadow-xl)] py-1 z-50 text-[12.5px] font-medium animate-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => handleSyncGoogleSheet(false)}
-                    className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--surface-soft)] text-[var(--ink)] flex items-center gap-2.5 cursor-pointer transition-colors"
+              <AnimatePresence>
+                {syncMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                    className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white dark:bg-slate-900 shadow-xl py-1 z-50 text-[12.5px] font-medium"
                   >
-                    <RefreshCw className="w-4 h-4 text-[var(--navy)] shrink-0" />
-                    <div>
-                      <div className="font-bold text-[12.5px]">Đồng bộ hàng đợi</div>
-                      <div className="text-[11px] text-[var(--mute)]">Đẩy các thay đổi mới nhất lên Sheet</div>
-                    </div>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSyncGoogleSheet(false)}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--surface-soft)] dark:hover:bg-slate-800 text-[var(--ink)] dark:text-slate-200 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <RefreshCw className="w-4 h-4 text-[var(--navy)] dark:text-[var(--teal)] shrink-0" />
+                      <div>
+                        <div className="font-bold text-[12.5px]">Đồng bộ hàng đợi</div>
+                        <div className="text-[11px] text-[var(--mute)]">Đẩy các thay đổi mới nhất lên Sheet</div>
+                      </div>
+                    </button>
 
-                  <div className="border-t border-[var(--line)] my-1"></div>
+                    <div className="border-t border-[var(--line)] dark:border-white/5 my-1"></div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSyncGoogleSheet(true)}
-                    className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--rose-soft)] text-[var(--rose)] flex items-center gap-2.5 cursor-pointer transition-colors"
-                  >
-                    <RotateCw className="w-4 h-4 text-[var(--rose)] shrink-0" />
-                    <div>
-                      <div className="font-bold text-[12.5px]">Dựng lại Sheet từ đầu</div>
-                      <div className="text-[11px] text-[var(--rose)]/80">Xóa dữ liệu cũ trên Sheet & đẩy lại 100%</div>
-                    </div>
-                  </button>
-                </div>
-              )}
+                    <button
+                      type="button"
+                      onClick={() => handleSyncGoogleSheet(true)}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--rose-soft)] dark:hover:bg-rose-950/40 text-[var(--rose)] flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <RotateCw className="w-4 h-4 text-[var(--rose)] shrink-0" />
+                      <div>
+                        <div className="font-bold text-[12.5px]">Dựng lại Sheet từ đầu</div>
+                        <div className="text-[11px] text-[var(--rose)]/80">Xóa dữ liệu cũ trên Sheet & đẩy lại 100%</div>
+                      </div>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
