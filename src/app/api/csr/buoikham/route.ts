@@ -26,7 +26,21 @@ export async function GET(request: Request) {
         orderBy: [{ createdAt: "desc" }, { ngayKham: "desc" }],
       }),
       prisma.hoSoBenhNhan.groupBy({
-        by: ["buoiKhamId", "nhom", "trangThai"],
+        by: [
+          "buoiKhamId",
+          "nhom",
+          "trangThai",
+          "xacNhanDieuTri",
+          "chanDoanMP",
+          "chanDoanMT",
+          "chanDoan",
+          "chanDoanKhacMP",
+          "chanDoanKhacMT",
+          "chanDoanKhac",
+          "benhLy",
+          "khuyenNghi",
+          "huongXuTri",
+        ],
         _count: { _all: true },
         where: whereCoSo,
       }),
@@ -64,16 +78,33 @@ export async function GET(request: Request) {
     const statsMap = new Map<string, { nhomA: number; nhomB: number }>();
     for (const g of hoSoGroups) {
       if (!g.buoiKhamId) continue;
+
+      // Kiểm tra chỉ đếm các hồ sơ CÓ BỆNH LÝ
+      const hasPathology =
+        !!g.nhom ||
+        g.xacNhanDieuTri != null ||
+        (g.chanDoanMP && g.chanDoanMP !== "[]" && g.chanDoanMP !== "") ||
+        (g.chanDoanMT && g.chanDoanMT !== "[]" && g.chanDoanMT !== "") ||
+        (g.chanDoan && g.chanDoan !== "[]" && g.chanDoan !== "") ||
+        !!g.chanDoanKhacMP ||
+        !!g.chanDoanKhacMT ||
+        !!g.chanDoanKhac ||
+        (g.benhLy && g.benhLy !== "Chưa phát hiện bất thường" && g.benhLy !== "Bình thường") ||
+        g.khuyenNghi === "Phẫu thuật" ||
+        g.huongXuTri === "Phẫu thuật" ||
+        g.huongXuTri === "Điều trị khác";
+
+      if (!hasPathology) continue; // Ca bình thường không đếm vào A hay B
+
       let curr = statsMap.get(g.buoiKhamId);
       if (!curr) {
         curr = { nhomA: 0, nhomB: 0 };
         statsMap.set(g.buoiKhamId, curr);
       }
       const cnt = g._count._all;
-      const isA = g.nhom === "A" || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(g.trangThai);
-      const isB = g.nhom === "B" || g.trangThai === "NhomB";
+      const isA = g.nhom === "A" || g.xacNhanDieuTri === true || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(g.trangThai);
       if (isA) curr.nhomA += cnt;
-      else if (isB) curr.nhomB += cnt;
+      else curr.nhomB += cnt; // Bệnh nhân có bệnh lý nhưng chưa thuộc Nhóm A thì tính vào Nhóm B
     }
 
     const result = buoiKhams.map((bk) => {

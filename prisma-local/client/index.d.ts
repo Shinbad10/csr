@@ -5455,12 +5455,11 @@ export namespace Prisma {
     diemDon: string | null
     gioDon: string | null
     nhom: string | null
-    ghiChuTuVan: string | null
-    followUpStatus: string | null
     nguoiPhuTrachMa: string | null
     nguoiChotCuoiMa: string | null
     ngayChot: Date | null
     daDon: boolean | null
+    ngayDenBV: Date | null
     ngayMoThucTe: Date | null
     soTienThucThu: number | null
     trangThaiDieuTri: string | null
@@ -5524,12 +5523,11 @@ export namespace Prisma {
     diemDon: string | null
     gioDon: string | null
     nhom: string | null
-    ghiChuTuVan: string | null
-    followUpStatus: string | null
     nguoiPhuTrachMa: string | null
     nguoiChotCuoiMa: string | null
     ngayChot: Date | null
     daDon: boolean | null
+    ngayDenBV: Date | null
     ngayMoThucTe: Date | null
     soTienThucThu: number | null
     trangThaiDieuTri: string | null
@@ -5593,12 +5591,11 @@ export namespace Prisma {
     diemDon: number
     gioDon: number
     nhom: number
-    ghiChuTuVan: number
-    followUpStatus: number
     nguoiPhuTrachMa: number
     nguoiChotCuoiMa: number
     ngayChot: number
     daDon: number
+    ngayDenBV: number
     ngayMoThucTe: number
     soTienThucThu: number
     trangThaiDieuTri: number
@@ -5680,12 +5677,11 @@ export namespace Prisma {
     diemDon?: true
     gioDon?: true
     nhom?: true
-    ghiChuTuVan?: true
-    followUpStatus?: true
     nguoiPhuTrachMa?: true
     nguoiChotCuoiMa?: true
     ngayChot?: true
     daDon?: true
+    ngayDenBV?: true
     ngayMoThucTe?: true
     soTienThucThu?: true
     trangThaiDieuTri?: true
@@ -5749,12 +5745,11 @@ export namespace Prisma {
     diemDon?: true
     gioDon?: true
     nhom?: true
-    ghiChuTuVan?: true
-    followUpStatus?: true
     nguoiPhuTrachMa?: true
     nguoiChotCuoiMa?: true
     ngayChot?: true
     daDon?: true
+    ngayDenBV?: true
     ngayMoThucTe?: true
     soTienThucThu?: true
     trangThaiDieuTri?: true
@@ -5818,12 +5813,11 @@ export namespace Prisma {
     diemDon?: true
     gioDon?: true
     nhom?: true
-    ghiChuTuVan?: true
-    followUpStatus?: true
     nguoiPhuTrachMa?: true
     nguoiChotCuoiMa?: true
     ngayChot?: true
     daDon?: true
+    ngayDenBV?: true
     ngayMoThucTe?: true
     soTienThucThu?: true
     trangThaiDieuTri?: true
@@ -5974,12 +5968,11 @@ export namespace Prisma {
     diemDon: string | null
     gioDon: string | null
     nhom: string | null
-    ghiChuTuVan: string | null
-    followUpStatus: string | null
     nguoiPhuTrachMa: string | null
     nguoiChotCuoiMa: string | null
     ngayChot: Date | null
     daDon: boolean
+    ngayDenBV: Date | null
     ngayMoThucTe: Date | null
     soTienThucThu: number | null
     trangThaiDieuTri: string | null
@@ -6062,12 +6055,11 @@ export namespace Prisma {
     diemDon?: boolean
     gioDon?: boolean
     nhom?: boolean
-    ghiChuTuVan?: boolean
-    followUpStatus?: boolean
     nguoiPhuTrachMa?: boolean
     nguoiChotCuoiMa?: boolean
     ngayChot?: boolean
     daDon?: boolean
+    ngayDenBV?: boolean
     ngayMoThucTe?: boolean
     soTienThucThu?: boolean
     trangThaiDieuTri?: boolean
@@ -6138,12 +6130,11 @@ export namespace Prisma {
     diemDon?: boolean
     gioDon?: boolean
     nhom?: boolean
-    ghiChuTuVan?: boolean
-    followUpStatus?: boolean
     nguoiPhuTrachMa?: boolean
     nguoiChotCuoiMa?: boolean
     ngayChot?: boolean
     daDon?: boolean
+    ngayDenBV?: boolean
     ngayMoThucTe?: boolean
     soTienThucThu?: boolean
     trangThaiDieuTri?: boolean
@@ -6212,12 +6203,11 @@ export namespace Prisma {
     diemDon?: boolean
     gioDon?: boolean
     nhom?: boolean
-    ghiChuTuVan?: boolean
-    followUpStatus?: boolean
     nguoiPhuTrachMa?: boolean
     nguoiChotCuoiMa?: boolean
     ngayChot?: boolean
     daDon?: boolean
+    ngayDenBV?: boolean
     ngayMoThucTe?: boolean
     soTienThucThu?: boolean
     trangThaiDieuTri?: boolean
@@ -6286,12 +6276,11 @@ export namespace Prisma {
     diemDon?: boolean
     gioDon?: boolean
     nhom?: boolean
-    ghiChuTuVan?: boolean
-    followUpStatus?: boolean
     nguoiPhuTrachMa?: boolean
     nguoiChotCuoiMa?: boolean
     ngayChot?: boolean
     daDon?: boolean
+    ngayDenBV?: boolean
     ngayMoThucTe?: boolean
     soTienThucThu?: boolean
     trangThaiDieuTri?: boolean
@@ -6305,7 +6294,7 @@ export namespace Prisma {
     syncStatus?: boolean
   }
 
-  export type HoSoBenhNhanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "maBN" | "maBNHIS" | "stt" | "buoiKhamId" | "coSoId" | "hoTen" | "gioiTinh" | "ngaySinh" | "namSinh" | "cccd" | "diaChi" | "sdt" | "sdtNguoiNha" | "mucHuongBHYT" | "khuPho" | "xaPhuong" | "thiLucMP" | "thiLucMT" | "matKham" | "chanDoanMP" | "chanDoanKhacMP" | "chanDoanMT" | "chanDoanKhacMT" | "chanDoan" | "chanDoanKhac" | "khuyenNghi" | "benhSu" | "loaiBenhSu" | "loaiBenhSuKhac" | "chieuCao" | "canNang" | "benhLy" | "loaiBenhLy" | "loaiBenhLyKhac" | "huongXuTri" | "huongXuTriKhac" | "bacSiChiDinh" | "nhanVienTuVan" | "xacNhanDieuTri" | "lyDoKhongDieuTri" | "diemKham" | "bhyt" | "tuVanVienMa" | "soTienBao" | "ngayDieuTri" | "diemDon" | "gioDon" | "nhom" | "ghiChuTuVan" | "followUpStatus" | "nguoiPhuTrachMa" | "nguoiChotCuoiMa" | "ngayChot" | "daDon" | "ngayMoThucTe" | "soTienThucThu" | "trangThaiDieuTri" | "ngayTaiKham" | "ghiChuMat2" | "trangThai" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "syncStatus", ExtArgs["result"]["hoSoBenhNhan"]>
+  export type HoSoBenhNhanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "maBN" | "maBNHIS" | "stt" | "buoiKhamId" | "coSoId" | "hoTen" | "gioiTinh" | "ngaySinh" | "namSinh" | "cccd" | "diaChi" | "sdt" | "sdtNguoiNha" | "mucHuongBHYT" | "khuPho" | "xaPhuong" | "thiLucMP" | "thiLucMT" | "matKham" | "chanDoanMP" | "chanDoanKhacMP" | "chanDoanMT" | "chanDoanKhacMT" | "chanDoan" | "chanDoanKhac" | "khuyenNghi" | "benhSu" | "loaiBenhSu" | "loaiBenhSuKhac" | "chieuCao" | "canNang" | "benhLy" | "loaiBenhLy" | "loaiBenhLyKhac" | "huongXuTri" | "huongXuTriKhac" | "bacSiChiDinh" | "nhanVienTuVan" | "xacNhanDieuTri" | "lyDoKhongDieuTri" | "diemKham" | "bhyt" | "tuVanVienMa" | "soTienBao" | "ngayDieuTri" | "diemDon" | "gioDon" | "nhom" | "nguoiPhuTrachMa" | "nguoiChotCuoiMa" | "ngayChot" | "daDon" | "ngayDenBV" | "ngayMoThucTe" | "soTienThucThu" | "trangThaiDieuTri" | "ngayTaiKham" | "ghiChuMat2" | "trangThai" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "syncStatus", ExtArgs["result"]["hoSoBenhNhan"]>
   export type HoSoBenhNhanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     buoiKham?: boolean | BuoiKhamDefaultArgs<ExtArgs>
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
@@ -6390,12 +6379,11 @@ export namespace Prisma {
       diemDon: string | null
       gioDon: string | null
       nhom: string | null
-      ghiChuTuVan: string | null
-      followUpStatus: string | null
       nguoiPhuTrachMa: string | null
       nguoiChotCuoiMa: string | null
       ngayChot: Date | null
       daDon: boolean
+      ngayDenBV: Date | null
       ngayMoThucTe: Date | null
       soTienThucThu: number | null
       trangThaiDieuTri: string | null
@@ -6885,12 +6873,11 @@ export namespace Prisma {
     readonly diemDon: FieldRef<"HoSoBenhNhan", 'String'>
     readonly gioDon: FieldRef<"HoSoBenhNhan", 'String'>
     readonly nhom: FieldRef<"HoSoBenhNhan", 'String'>
-    readonly ghiChuTuVan: FieldRef<"HoSoBenhNhan", 'String'>
-    readonly followUpStatus: FieldRef<"HoSoBenhNhan", 'String'>
     readonly nguoiPhuTrachMa: FieldRef<"HoSoBenhNhan", 'String'>
     readonly nguoiChotCuoiMa: FieldRef<"HoSoBenhNhan", 'String'>
     readonly ngayChot: FieldRef<"HoSoBenhNhan", 'DateTime'>
     readonly daDon: FieldRef<"HoSoBenhNhan", 'Boolean'>
+    readonly ngayDenBV: FieldRef<"HoSoBenhNhan", 'DateTime'>
     readonly ngayMoThucTe: FieldRef<"HoSoBenhNhan", 'DateTime'>
     readonly soTienThucThu: FieldRef<"HoSoBenhNhan", 'Float'>
     readonly trangThaiDieuTri: FieldRef<"HoSoBenhNhan", 'String'>
@@ -11682,12 +11669,11 @@ export namespace Prisma {
     diemDon: 'diemDon',
     gioDon: 'gioDon',
     nhom: 'nhom',
-    ghiChuTuVan: 'ghiChuTuVan',
-    followUpStatus: 'followUpStatus',
     nguoiPhuTrachMa: 'nguoiPhuTrachMa',
     nguoiChotCuoiMa: 'nguoiChotCuoiMa',
     ngayChot: 'ngayChot',
     daDon: 'daDon',
+    ngayDenBV: 'ngayDenBV',
     ngayMoThucTe: 'ngayMoThucTe',
     soTienThucThu: 'soTienThucThu',
     trangThaiDieuTri: 'trangThaiDieuTri',
@@ -12147,12 +12133,11 @@ export namespace Prisma {
     diemDon?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     gioDon?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nhom?: StringNullableFilter<"HoSoBenhNhan"> | string | null
-    ghiChuTuVan?: StringNullableFilter<"HoSoBenhNhan"> | string | null
-    followUpStatus?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nguoiPhuTrachMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nguoiChotCuoiMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     ngayChot?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     daDon?: BoolFilter<"HoSoBenhNhan"> | boolean
+    ngayDenBV?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     ngayMoThucTe?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     soTienThucThu?: FloatNullableFilter<"HoSoBenhNhan"> | number | null
     trangThaiDieuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -12222,12 +12207,11 @@ export namespace Prisma {
     diemDon?: SortOrderInput | SortOrder
     gioDon?: SortOrderInput | SortOrder
     nhom?: SortOrderInput | SortOrder
-    ghiChuTuVan?: SortOrderInput | SortOrder
-    followUpStatus?: SortOrderInput | SortOrder
     nguoiPhuTrachMa?: SortOrderInput | SortOrder
     nguoiChotCuoiMa?: SortOrderInput | SortOrder
     ngayChot?: SortOrderInput | SortOrder
     daDon?: SortOrder
+    ngayDenBV?: SortOrderInput | SortOrder
     ngayMoThucTe?: SortOrderInput | SortOrder
     soTienThucThu?: SortOrderInput | SortOrder
     trangThaiDieuTri?: SortOrderInput | SortOrder
@@ -12300,12 +12284,11 @@ export namespace Prisma {
     diemDon?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     gioDon?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nhom?: StringNullableFilter<"HoSoBenhNhan"> | string | null
-    ghiChuTuVan?: StringNullableFilter<"HoSoBenhNhan"> | string | null
-    followUpStatus?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nguoiPhuTrachMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nguoiChotCuoiMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     ngayChot?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     daDon?: BoolFilter<"HoSoBenhNhan"> | boolean
+    ngayDenBV?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     ngayMoThucTe?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     soTienThucThu?: FloatNullableFilter<"HoSoBenhNhan"> | number | null
     trangThaiDieuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -12375,12 +12358,11 @@ export namespace Prisma {
     diemDon?: SortOrderInput | SortOrder
     gioDon?: SortOrderInput | SortOrder
     nhom?: SortOrderInput | SortOrder
-    ghiChuTuVan?: SortOrderInput | SortOrder
-    followUpStatus?: SortOrderInput | SortOrder
     nguoiPhuTrachMa?: SortOrderInput | SortOrder
     nguoiChotCuoiMa?: SortOrderInput | SortOrder
     ngayChot?: SortOrderInput | SortOrder
     daDon?: SortOrder
+    ngayDenBV?: SortOrderInput | SortOrder
     ngayMoThucTe?: SortOrderInput | SortOrder
     soTienThucThu?: SortOrderInput | SortOrder
     trangThaiDieuTri?: SortOrderInput | SortOrder
@@ -12452,12 +12434,11 @@ export namespace Prisma {
     diemDon?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     gioDon?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     nhom?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
-    ghiChuTuVan?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
-    followUpStatus?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     nguoiPhuTrachMa?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     nguoiChotCuoiMa?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     ngayChot?: DateTimeNullableWithAggregatesFilter<"HoSoBenhNhan"> | Date | string | null
     daDon?: BoolWithAggregatesFilter<"HoSoBenhNhan"> | boolean
+    ngayDenBV?: DateTimeNullableWithAggregatesFilter<"HoSoBenhNhan"> | Date | string | null
     ngayMoThucTe?: DateTimeNullableWithAggregatesFilter<"HoSoBenhNhan"> | Date | string | null
     soTienThucThu?: FloatNullableWithAggregatesFilter<"HoSoBenhNhan"> | number | null
     trangThaiDieuTri?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
@@ -13072,10 +13053,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -13145,12 +13125,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -13212,10 +13191,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13285,12 +13263,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13355,12 +13332,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -13421,10 +13397,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13488,12 +13463,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14110,12 +14084,11 @@ export namespace Prisma {
     diemDon?: SortOrder
     gioDon?: SortOrder
     nhom?: SortOrder
-    ghiChuTuVan?: SortOrder
-    followUpStatus?: SortOrder
     nguoiPhuTrachMa?: SortOrder
     nguoiChotCuoiMa?: SortOrder
     ngayChot?: SortOrder
     daDon?: SortOrder
+    ngayDenBV?: SortOrder
     ngayMoThucTe?: SortOrder
     soTienThucThu?: SortOrder
     trangThaiDieuTri?: SortOrder
@@ -14187,12 +14160,11 @@ export namespace Prisma {
     diemDon?: SortOrder
     gioDon?: SortOrder
     nhom?: SortOrder
-    ghiChuTuVan?: SortOrder
-    followUpStatus?: SortOrder
     nguoiPhuTrachMa?: SortOrder
     nguoiChotCuoiMa?: SortOrder
     ngayChot?: SortOrder
     daDon?: SortOrder
+    ngayDenBV?: SortOrder
     ngayMoThucTe?: SortOrder
     soTienThucThu?: SortOrder
     trangThaiDieuTri?: SortOrder
@@ -14256,12 +14228,11 @@ export namespace Prisma {
     diemDon?: SortOrder
     gioDon?: SortOrder
     nhom?: SortOrder
-    ghiChuTuVan?: SortOrder
-    followUpStatus?: SortOrder
     nguoiPhuTrachMa?: SortOrder
     nguoiChotCuoiMa?: SortOrder
     ngayChot?: SortOrder
     daDon?: SortOrder
+    ngayDenBV?: SortOrder
     ngayMoThucTe?: SortOrder
     soTienThucThu?: SortOrder
     trangThaiDieuTri?: SortOrder
@@ -15455,10 +15426,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -15526,12 +15496,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -15686,12 +15655,11 @@ export namespace Prisma {
     diemDon?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     gioDon?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nhom?: StringNullableFilter<"HoSoBenhNhan"> | string | null
-    ghiChuTuVan?: StringNullableFilter<"HoSoBenhNhan"> | string | null
-    followUpStatus?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nguoiPhuTrachMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     nguoiChotCuoiMa?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     ngayChot?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     daDon?: BoolFilter<"HoSoBenhNhan"> | boolean
+    ngayDenBV?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     ngayMoThucTe?: DateTimeNullableFilter<"HoSoBenhNhan"> | Date | string | null
     soTienThucThu?: FloatNullableFilter<"HoSoBenhNhan"> | number | null
     trangThaiDieuTri?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -15834,10 +15802,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -15905,12 +15872,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -15981,10 +15947,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -16053,11 +16018,10 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -16128,10 +16092,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -16200,11 +16163,10 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -16527,10 +16489,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -16598,12 +16559,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -17221,10 +17181,9 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -17293,12 +17252,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -17410,10 +17368,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17482,12 +17439,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17613,12 +17569,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -17757,10 +17712,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17828,12 +17782,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17897,12 +17850,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17977,12 +17929,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -18046,11 +17997,10 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -18114,11 +18064,10 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -18225,10 +18174,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18296,12 +18244,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18365,12 +18312,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18431,10 +18377,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18503,11 +18448,10 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18572,11 +18516,10 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18637,10 +18580,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18709,11 +18651,10 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18778,11 +18719,10 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18869,12 +18809,11 @@ export namespace Prisma {
     diemDon?: string | null
     gioDon?: string | null
     nhom?: string | null
-    ghiChuTuVan?: string | null
-    followUpStatus?: string | null
     nguoiPhuTrachMa?: string | null
     nguoiChotCuoiMa?: string | null
     ngayChot?: Date | string | null
     daDon?: boolean
+    ngayDenBV?: Date | string | null
     ngayMoThucTe?: Date | string | null
     soTienThucThu?: number | null
     trangThaiDieuTri?: string | null
@@ -18935,10 +18874,9 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19006,12 +18944,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19075,12 +19012,11 @@ export namespace Prisma {
     diemDon?: NullableStringFieldUpdateOperationsInput | string | null
     gioDon?: NullableStringFieldUpdateOperationsInput | string | null
     nhom?: NullableStringFieldUpdateOperationsInput | string | null
-    ghiChuTuVan?: NullableStringFieldUpdateOperationsInput | string | null
-    followUpStatus?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiPhuTrachMa?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiChotCuoiMa?: NullableStringFieldUpdateOperationsInput | string | null
     ngayChot?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     daDon?: BoolFieldUpdateOperationsInput | boolean
+    ngayDenBV?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     ngayMoThucTe?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soTienThucThu?: NullableFloatFieldUpdateOperationsInput | number | null
     trangThaiDieuTri?: NullableStringFieldUpdateOperationsInput | string | null

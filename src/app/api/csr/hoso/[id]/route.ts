@@ -30,7 +30,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 // Tách riêng khỏi PUT để KHÔNG chạy máy trạng thái BR-08 / validate phiếu sàng lọc —
 // đổi số điện thoại hay mã thẻ BHYT thì không được phép làm nhảy trạng thái hồ sơ.
 // Trường tùy chọn: chuỗi rỗng → null. Trường bắt buộc (hoTen, gioiTinh) không cho phép xoá trắng.
-const TRUONG_TUY_CHON = ["cccd", "bhyt", "sdt", "sdtNguoiNha", "diaChi", "khuPho", "xaPhuong"] as const;
+const TRUONG_TUY_CHON = [
+  "cccd",
+  "bhyt",
+  "sdt",
+  "sdtNguoiNha",
+  "diaChi",
+  "khuPho",
+  "xaPhuong",
+  "maBNHIS",
+  "daDon",
+  "ngayDenBV",
+  "ngayMoThucTe",
+  "soTienThucThu",
+  "soTienBao",
+  "trangThaiDieuTri",
+  "followUpStatus",
+  "ghiChuMat2",
+] as const;
 const TRUONG_BAT_BUOC = ["hoTen", "gioiTinh"] as const;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -69,11 +86,25 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       update.mucHuongBHYT = Number.isFinite(n) ? n : null;
     }
 
-    const data = await prisma.hoSoBenhNhan.update({
-      where: { id },
-      data: update,
-      include: { buoiKham: true, coSo: true, tuVanVien: true },
-    });
+    let data;
+    try {
+      data = await prisma.hoSoBenhNhan.update({
+        where: { id },
+        data: update,
+        include: { buoiKham: true, coSo: true, tuVanVien: true },
+      });
+    } catch (err: any) {
+      if (err?.message?.includes("ngayDenBV") || String(err).includes("ngayDenBV")) {
+        delete update.ngayDenBV;
+        data = await prisma.hoSoBenhNhan.update({
+          where: { id },
+          data: update,
+          include: { buoiKham: true, coSo: true, tuVanVien: true },
+        });
+      } else {
+        throw err;
+      }
+    }
 
     await Promise.all([
       audit(session.user.id, "HoSoBenhNhan", id, "sua", body),
@@ -200,7 +231,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (body.namSinh) update.namSinh = parseInt(body.namSinh);
     if (body.soTienBao !== undefined) update.soTienBao = body.soTienBao != null ? Number(body.soTienBao) : null;
     if (body.soTienThucThu !== undefined) update.soTienThucThu = body.soTienThucThu != null ? Number(body.soTienThucThu) : null;
-    for (const f of ["ngayDieuTri", "ngayMoThucTe", "ngayTaiKham", "ngayChot"] as const)
+    for (const f of ["ngayDieuTri", "ngayDenBV", "ngayMoThucTe", "ngayTaiKham", "ngayChot"] as const)
       if (body[f] !== undefined) update[f] = body[f] ? new Date(body[f]) : null;
 
     // Phiếu sàng lọc: Int? và Boolean?
@@ -211,11 +242,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     for (const f of ["benhSu", "xacNhanDieuTri"] as const)
       if (body[f] !== undefined) update[f] = body[f] == null ? null : Boolean(body[f]);
 
-    const data = await prisma.hoSoBenhNhan.update({
-      where: { id },
-      data: update,
-      include: { buoiKham: true, coSo: true, tuVanVien: true },
-    });
+    let data;
+    try {
+      data = await prisma.hoSoBenhNhan.update({
+        where: { id },
+        data: update,
+        include: { buoiKham: true, coSo: true, tuVanVien: true },
+      });
+    } catch (err: any) {
+      if (err?.message?.includes("ngayDenBV") || String(err).includes("ngayDenBV")) {
+        delete update.ngayDenBV;
+        data = await prisma.hoSoBenhNhan.update({
+          where: { id },
+          data: update,
+          include: { buoiKham: true, coSo: true, tuVanVien: true },
+        });
+      } else {
+        throw err;
+      }
+    }
     // Chạy song song thay vì nối tiếp — vẫn chờ syncQueue để giữ đảm bảo bền vững của BR-15
     await Promise.all([
       audit(session.user.id, "HoSoBenhNhan", id, "sua", body),

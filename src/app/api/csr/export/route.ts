@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
   const buoiKhamId = sp.get("buoiKhamId") || undefined;
   const trangThai = sp.get("trangThai") || undefined;
-  const format = sp.get("format") || (buoiKhamId ? "khamSucKhoe" : "default");
+  const format = sp.get("format") || "default";
 
   try {
     let buoiKhamInfo: { xa?: string; diaDiem?: string; ngayKham?: Date } | null = null;
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }],
     });
 
-    const isKhamSucKhoe = format === "khamSucKhoe" || Boolean(buoiKhamId);
+    const isKhamSucKhoe = format === "khamSucKhoe";
     const headerRow = isKhamSucKhoe ? [...KHAM_SUC_KHOE_HEADER] : [...HOSO_HEADER];
     const dataRows = rows.map((h) => (isKhamSucKhoe ? hoSoToKhamSucKhoeCells(h) : hoSoToCells(h)));
     const aoa: (string | number)[][] = [headerRow, ...dataRows];
@@ -59,6 +59,7 @@ export async function GET(request: Request) {
         { wch: 18 }, // Mã định danh
         { wch: 26 }, // Họ tên bệnh nhân
         { wch: 10 }, // Năm sinh
+        { wch: 8 },  // Tuổi
         { wch: 10 }, // Giới tính
         { wch: 14 }, // Số điện thoại
         { wch: 10 }, // BHYT
@@ -71,6 +72,11 @@ export async function GET(request: Request) {
         { wch: 22 }, // Nhân viên tư vấn
         { wch: 20 }, // Xác nhận điều trị
         { wch: 20 }, // Ngày điều trị dự kiến
+        { wch: 14 }, // Ngày đến BV
+        { wch: 14 }, // Ngày mổ thực tế
+        { wch: 18 }, // Trạng thái điều trị
+        { wch: 16 }, // Thực thu HIS
+        { wch: 40 }, // Ghi chú
         { wch: 18 }, // Mã BN
       ];
     }

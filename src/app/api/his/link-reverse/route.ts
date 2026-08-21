@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { triggerSync } from "@/lib/syncWorker";
-import { appendHisNote } from "@/lib/his";
+import sql from "mssql";
+import { appendHisNote, getHisConfig, fetchHisRevenue } from "@/lib/his";
 import { broadcastEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
@@ -34,6 +35,31 @@ export async function POST(request: Request) {
         updateData.ngayMoThucTe = new Date(item.ngayMo);
       } else if (!hoSo.ngayMoThucTe) {
         updateData.ngayMoThucTe = new Date();
+      }
+
+      if (item.soTienThucThu != null && Number(item.soTienThucThu) > 0) {
+        updateData.soTienThucThu = Number(item.soTienThucThu);
+      } else {
+        try {
+          const config = await getHisConfig(hoSo.coSoId);
+          const pool = await new sql.ConnectionPool({
+            user: config.user,
+            password: config.pass,
+            server: config.host,
+            port: config.port,
+            database: config.dbName,
+            options: { encrypt: true, trustServerCertificate: true },
+            connectionTimeout: 5000,
+            requestTimeout: 10000,
+          }).connect();
+          const rev = await fetchHisRevenue(pool, item.maHIS);
+          await pool.close();
+          if (rev != null && rev > 0) {
+            updateData.soTienThucThu = rev;
+          }
+        } catch (err) {
+          console.error("Error fetching revenue in link-reverse:", err);
+        }
       }
 
       const chiTiet = item.chiTiet || `Bệnh nhân phẫu thuật HIS (Mã HIS: ${item.maHIS})`;

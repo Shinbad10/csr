@@ -123,14 +123,13 @@ model HoSoBenhNhan {
   diemDon         String?
   gioDon          String?
   nhom            String?
-  ghiChuTuVan     String?
-  followUpStatus  String?
   nguoiPhuTrachMa String?
   nguoiPhuTrach   NguoiDungCSR?  @relation("PhuTrach", fields: [nguoiPhuTrachMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
   nguoiChotCuoiMa String?
   nguoiChotCuoi   NguoiDungCSR?  @relation("ChotCuoi", fields: [nguoiChotCuoiMa], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
   ngayChot        DateTime?
   daDon           Boolean        @default(false)
+  ngayDenBV       DateTime?
   ngayMoThucTe    DateTime?
   soTienThucThu   Float?
   trangThaiDieuTri String?

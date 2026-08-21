@@ -66,7 +66,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
   const target = root || document.body;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in">
       <div className="bg-[var(--surface)] rounded-2xl shadow-[var(--shadow-xl)] w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-[var(--line-strong)] animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header - Editorial Navy Gradient & Teal Glow */}
         <div 
@@ -351,7 +351,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
   const target = root || document.body;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--navy-ink)]/50 backdrop-blur-md p-3 sm:p-6 pointer-events-auto animate-fade-in">
       <div className="bg-[var(--surface)] rounded-2xl shadow-[var(--shadow-xl)] w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden border border-[var(--line-strong)] animate-scale-up" onClick={(e) => e.stopPropagation()}>
         {/* Header - Editorial Navy Gradient & Teal Glow */}
         <div 

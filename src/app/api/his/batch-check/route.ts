@@ -22,6 +22,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Vui lòng chọn buổi khám hoặc danh sách bệnh nhân để đối chiếu" }, { status: 400 });
     }
 
+    // Chỉ đối chiếu những bệnh nhân thuộc Nhóm A (có chỉ định phẫu thuật)
+    whereClause.OR = [
+      { nhom: "A" },
+      { khuyenNghi: "Phẫu thuật" },
+      { trangThai: { in: ["NhomA", "CoChiDinhMo", "DaMoHauPhau", "DaNhacLich", "DaDonVien"] } },
+    ];
+
     const patients = await prisma.hoSoBenhNhan.findMany({
       where: whereClause,
       include: { buoiKham: true },
@@ -29,7 +36,7 @@ export async function POST(request: Request) {
     });
 
     if (patients.length === 0) {
-      return NextResponse.json({ error: "Không có hồ sơ nào trong danh sách được chọn" }, { status: 404 });
+      return NextResponse.json({ error: "Không có hồ sơ bệnh nhân Nhóm A nào trong danh sách được chọn" }, { status: 404 });
     }
 
     const coSoId = patients[0].coSoId;

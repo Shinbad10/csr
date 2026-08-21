@@ -101,10 +101,11 @@ export function bhytLevel(raw?: string | null): string {
 // 18 cột theo mẫu báo cáo phiếu sàng lọc + cột "Mã BN" ở cuối làm KHOÁ upsert cho Sheet.
 // Giữ HEADER và thứ tự cell khớp nhau để hai nơi không bao giờ lệch cột.
 export const HOSO_HEADER = [
-  "Xã", "Điểm xã", "Ngày khám", "Mã định danh", "Họ tên bệnh nhân", "Năm sinh",
+  "Xã", "Điểm xã", "Ngày khám", "Mã định danh", "Họ tên bệnh nhân", "Năm sinh", "Tuổi",
   "Giới tính", "Số điện thoại", "BHYT", "Có bệnh lý",
   "Đục thủy tinh thể", "Mộng", "Khác", "Chi tiết chẩn đoán",
   "Bác sỹ khám", "Nhân viên tư vấn", "Xác nhận điều trị", "Ngày điều trị dự kiến",
+  "Ngày đến BV", "Ngày mổ thực tế", "Trạng thái điều trị", "Thực thu HIS", "Ghi chú",
   "Mã BN", // cột kỹ thuật — khoá upsert Google Sheet, kế toán có thể ẩn
 ] as const;
 
@@ -132,6 +133,13 @@ export interface HoSoExport {
   diemKham?: string | null;
   tuVanVienMa?: string | null; tuVanVien?: { hoTen: string } | null;
   ngayDieuTri: Date | string | null;
+  daDon?: boolean | null;
+  ngayDenBV?: Date | string | null;
+  ngayMoThucTe?: Date | string | null;
+  trangThaiDieuTri?: string | null;
+  soTienThucThu?: number | null;
+  ghiChuMat2?: string | null;
+  ghiChuTuVan?: string | null;
   buoiKham?: { ngayKham: Date | string; xa: string; diaDiem: string; bacSiKham?: string | null } | null;
 }
 
@@ -200,6 +208,23 @@ export function hoSoToCells(h: HoSoExport, forSheet = false): (string | number)[
     : h.xacNhanDieuTri ? "YES"
     : `NO${h.lyDoKhongDieuTri ? ` — ${h.lyDoKhongDieuTri}` : ""}`;
 
+  const age = ageOf(h) || (h.namSinh ? new Date().getFullYear() - h.namSinh : "");
+
+  const actualNgayMo = h.ngayMoThucTe ? fmtDate(toISO(h.ngayMoThucTe)) : "";
+  const actualNgayDen = h.ngayDenBV
+    ? fmtDate(toISO(h.ngayDenBV))
+    : actualNgayMo
+    ? actualNgayMo
+    : h.daDon
+    ? fmtDate(toISO(new Date()))
+    : "";
+
+  const soTienStr = h.soTienThucThu != null && Number(h.soTienThucThu) > 0
+    ? new Intl.NumberFormat("vi-VN").format(Number(h.soTienThucThu)) + " VNĐ"
+    : "";
+
+  const ghiChuStr = [h.ghiChuTuVan, h.ghiChuMat2].filter(Boolean).join(" | ");
+
   return [
     h.buoiKham?.xa ?? "",                              // 1  Xã
     h.diemKham || h.buoiKham?.diaDiem || "",           // 2  Điểm xã
@@ -207,19 +232,25 @@ export function hoSoToCells(h: HoSoExport, forSheet = false): (string | number)[
     h.cccd || "",                                      // 4  Mã định danh
     h.hoTen,                                           // 5  Họ tên bệnh nhân
     h.namSinh || (h.ngaySinh ? new Date(h.ngaySinh).getFullYear() : "") || "", // 6  Năm sinh
-    h.gioiTinh,                                        // 7  Giới tính
-    phone(h.sdt),                                      // 8  Số điện thoại
-    mucHuong ?? "",                                    // 9  BHYT (%)
-    coBenhLy ? "CÓ" : "KHÔNG",                         // 10 Có bệnh lý
-    YN(ducTTT),                                        // 11 Đục thủy tinh thể
-    YN(mong),                                          // 12 Mộng
-    YN(khac),                                          // 13 Khác
-    detail,                                            // 14 Chi tiết chẩn đoán
-    h.bacSiChiDinh || h.buoiKham?.bacSiKham || "",      // 15 Bác sỹ khám
-    h.nhanVienTuVan || staffName(h.tuVanVien, h.tuVanVienMa), // 16 Nhân viên tư vấn
-    xacNhan,                                           // 17 Xác nhận điều trị
-    h.ngayDieuTri ? fmtDate(toISO(h.ngayDieuTri)) : "", // 18 Ngày điều trị dự kiến
-    h.maBN,                                            // 19 Mã BN (khoá)
+    age || "",                                         // 7  Tuổi
+    h.gioiTinh,                                        // 8  Giới tính
+    phone(h.sdt),                                      // 9  Số điện thoại
+    mucHuong ?? "",                                    // 10 BHYT (%)
+    coBenhLy ? "CÓ" : "KHÔNG",                         // 11 Có bệnh lý
+    YN(ducTTT),                                        // 12 Đục thủy tinh thể
+    YN(mong),                                          // 13 Mộng
+    YN(khac),                                          // 14 Khác
+    detail,                                            // 15 Chi tiết chẩn đoán
+    h.bacSiChiDinh || h.buoiKham?.bacSiKham || "",      // 16 Bác sỹ khám
+    h.nhanVienTuVan || staffName(h.tuVanVien, h.tuVanVienMa), // 17 Nhân viên tư vấn
+    xacNhan,                                           // 18 Xác nhận điều trị
+    h.ngayDieuTri ? fmtDate(toISO(h.ngayDieuTri)) : "", // 19 Ngày điều trị dự kiến
+    actualNgayDen,                                     // 20 Ngày đến BV
+    actualNgayMo,                                      // 21 Ngày mổ thực tế
+    h.trangThaiDieuTri || "",                          // 22 Trạng thái điều trị
+    soTienStr,                                         // 23 Thực thu HIS
+    ghiChuStr,                                         // 24 Ghi chú
+    h.maBN,                                            // 25 Mã BN (khoá)
   ];
 }
 
@@ -560,7 +591,7 @@ export interface HoSo {
   xacNhanDieuTri?: boolean | null; lyDoKhongDieuTri?: string | null; diemKham?: string | null;
   bhyt: string | null; soTienBao: number | null; ngayDieuTri: string | null;
   diemDon: string | null; gioDon?: string | null; nhom: string | null; followUpStatus?: string | null;
-  daDon?: boolean; ngayMoThucTe?: string | null; soTienThucThu?: number | null;
+  daDon?: boolean; ngayDenBV?: string | null; ngayMoThucTe?: string | null; soTienThucThu?: number | null;
   trangThaiDieuTri?: string | null; ngayTaiKham?: string | null; ghiChuMat2?: string | null;
   ghiChuTuVan?: string | null;
   trangThai: string;

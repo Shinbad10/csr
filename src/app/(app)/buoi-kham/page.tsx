@@ -275,7 +275,7 @@ function NhomChip({ a, b }: { a: number; b: number }) {
   return (
     <div className="inline-flex rounded-lg overflow-hidden border border-[#cbd5e1] font-mono text-[11px] font-bold shadow-2xs">
       <span className="px-2 py-0.5 bg-[#fef1f4] text-[#e11d48] border-r border-[#e11d48]/20" title="Nhóm A — đã chỉ định mổ">A {a}</span>
-      <span className="px-2 py-0.5 bg-[#fef6eb] text-[#d97706]" title="Nhóm B — theo dõi">B {b}</span>
+      <span className="px-2 py-0.5 bg-[#fef6eb] text-[#d97706]" title="Nhóm B — theo dõi / suy nghĩ / chưa chốt">B {b}</span>
     </div>
   );
 }
@@ -324,7 +324,16 @@ export default function BuoiKhamPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [doctorFilter, setDoctorFilter] = useState<string>("ALL");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("ALL");
-  const [monthFilter, setMonthFilter] = useState<string>("ALL");
+
+  const getCurrentMonthKey = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  };
+
+  const [monthFilter, setMonthFilter] = useState<string>(getCurrentMonthKey);
+  const [exportingPage, setExportingPage] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -438,6 +447,41 @@ export default function BuoiKhamPage() {
     }
   };
 
+  const handleExportPageExcel = async () => {
+    if (exportingPage) return;
+    setExportingPage(true);
+    try {
+      const res = await fetch("/api/csr/export");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể xuất file Excel");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.download = `Danh_Sach_Kham_Mat_VISI_${dateStr}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast({
+        type: "success",
+        title: "Xuất Excel thành công",
+        message: "Đã tải file danh sách bệnh nhân (chuẩn Google Sheet)",
+      });
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Lỗi xuất file",
+        message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel",
+      });
+    } finally {
+      setExportingPage(false);
+    }
+  };
+
   const openCreateModal = () => {
     setNgayKham(getTodayIso());
     setXa("");
@@ -540,6 +584,10 @@ export default function BuoiKhamPage() {
   // Danh sách các tháng có đợt khám
   const monthOptions = useMemo<Option[]>(() => {
     const map = new Map<string, string>();
+    const curKey = getCurrentMonthKey();
+    const now = new Date();
+    map.set(curKey, `Tháng ${now.getMonth() + 1}/${now.getFullYear()}`);
+
     list.forEach((b) => {
       if (b.ngayKham) {
         const d = new Date(b.ngayKham);
@@ -608,81 +656,24 @@ export default function BuoiKhamPage() {
     });
   }, [list, q, statusFilter, doctorFilter, groupFilter, monthFilter]);
 
-  const hasActiveFilters = q || statusFilter !== "ALL" || doctorFilter !== "ALL" || groupFilter !== "ALL" || monthFilter !== "ALL";
+  const hasActiveFilters = q || statusFilter !== "ALL" || doctorFilter !== "ALL" || groupFilter !== "ALL" || monthFilter !== getCurrentMonthKey();
 
   const resetFilters = () => {
     setQ("");
     setStatusFilter("ALL");
     setDoctorFilter("ALL");
     setGroupFilter("ALL");
-    setMonthFilter("ALL");
+    setMonthFilter(getCurrentMonthKey());
   };
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2 sm:gap-3 h-full">
-      {/* Header Trang: Trên Desktop hiện PageHeader, trên Mobile hiện Header compact gọn gàng */}
-      <div className="hidden sm:block">
-        <PageHeader
-          title={<>Đợt khám <span className="italic text-[var(--teal-deep)] ml-1">tầm soát</span></>}
-          description="Quản lý và tổ chức các đợt khám tầm soát tại cộng đồng."
-          guide={[
-            { selector: '[data-tour="bk-create"]', title: "Tổ chức đợt khám mới", desc: "Bấm nút này, nhập ngày khám, xã/phường, địa điểm rồi lưu (cần quyền quản lý)." },
-            { selector: '[data-tour="bk-search"]', title: "Tìm đợt khám", desc: "Gõ vào đây để lọc nhanh theo xã, địa điểm hoặc tên bệnh viện." },
-            { selector: '[data-tour="bk-table"]', title: "Theo dõi tiến độ", desc: "Cột SL BN, Phân nhóm (A/B) và Tiến độ mổ cho biết tình hình từng đợt khám." },
-            { selector: '[data-tour="bk-join"]', title: "Vào khám bệnh nhân", desc: "Chỉ đợt khám diễn ra HÔM NAY mới bấm \"Tham gia khám\" được. Đợt đã kết thúc mở bằng \"Xem hồ sơ\" để bổ sung, đợt chưa tới ngày thì khoá." },
-          ]}
-          guideTip="Các số liệu trong bảng tự cập nhật theo dữ liệu khám thực tế."
-          actions={
-            canManage && (
-              <div className="flex items-center gap-2">
-                <button onClick={() => setImportOpen(true)} title="Nhập danh sách bệnh nhân các đợt khám cũ từ file Excel" className="btn btn-secondary px-3 py-2 font-bold text-[13px]">
-                  <FileSpreadsheet className="w-4 h-4 text-[var(--teal-deep)]" /> Nhập Excel
-                </button>
-                <button data-tour="bk-create" onClick={openCreateModal} className="btn btn-primary px-4 py-2 font-bold text-[13px] cursor-pointer">
-                  <Plus className="w-4 h-4" /> Tổ chức đợt khám
-                </button>
-              </div>
-            )
-          }
-        />
-      </div>
-
-      {/* Header Compact trên Mobile */}
-      <div className="sm:hidden flex items-center justify-between gap-2 px-1 py-1">
-        <div className="min-w-0">
-          <h1 className="font-serif text-[17px] font-bold text-[var(--navy)] leading-tight">
-            Đợt khám <span className="italic text-[var(--teal-deep)] font-normal">tầm soát</span>
-          </h1>
-          <p className="text-[11px] text-[var(--mute)] truncate">Quản lý và tổ chức đợt khám</p>
-        </div>
-        {canManage && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => setImportOpen(true)}
-              className="btn btn-secondary h-8 px-2 text-[11px] font-bold inline-flex items-center gap-1"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
-              <span>Excel</span>
-            </button>
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className="btn btn-primary h-8 px-2.5 text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Tạo đợt</span>
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Main Container: Filter Toolbar + Table với Fixed Height */}
       <div className="flex-1 flex flex-col min-h-0 card p-0 overflow-hidden shadow-xs border-[#cbd5e1]">
         {/* Toolbar Lọc: Tinh giản, thông minh, không rối */}
         <div className="shrink-0 p-2.5 sm:px-3.5 sm:py-2.5 border-b border-[#cbd5e1] bg-[#f8fafc] space-y-2">
-          {/* Hàng 1: Ô tìm kiếm & số lượng */}
-          <div className="flex items-center justify-between gap-2">
+          {/* Hàng 1: Ô tìm kiếm & Các nút thao tác */}
+          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
             <div data-tour="bk-search" className="relative flex-1 max-w-full sm:max-w-[280px]">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#64748b]" />
               <input
@@ -702,20 +693,57 @@ export default function BuoiKhamPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-[11.5px] shrink-0">
+            {/* Các nút hành động: Nhập Excel, Xuất Excel (Google Sheet), Tổ chức đợt khám */}
+            <div className="flex items-center gap-2 shrink-0 ml-auto flex-wrap">
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#e11d48] hover:underline cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#e11d48] hover:underline cursor-pointer mr-1"
                   title="Xóa tất cả bộ lọc"
                 >
                   <RotateCcw className="w-3 h-3" /> Đặt lại
                 </button>
               )}
-              <div className="text-[#64748b] font-medium hidden sm:block">
-                <span className="font-mono font-bold text-[#031da6]">{filtered.length}</span> đợt
-              </div>
+
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setImportOpen(true)}
+                  title="Nhập danh sách bệnh nhân các đợt khám cũ từ file Excel"
+                  className="btn btn-secondary h-8 px-2.5 font-bold text-[12px] flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#02b8a9]" />
+                  <span>Nhập Excel</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleExportPageExcel}
+                disabled={exportingPage}
+                title="Xuất file Excel toàn bộ danh sách bệnh nhân chuẩn Google Sheet"
+                className="btn bg-[#018a7f] hover:bg-[#016e65] text-white h-8 px-2.5 font-bold text-[12px] flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                {exportingPage ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                ) : (
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#e6faf7]" />
+                )}
+                <span>Xuất Excel (Sheet)</span>
+              </button>
+
+              {canManage && (
+                <button
+                  data-tour="bk-create"
+                  type="button"
+                  onClick={openCreateModal}
+                  className="btn btn-primary h-8 px-3 font-bold text-[12px] flex items-center gap-1.5 cursor-pointer shadow-2xs bg-[#031da6] hover:bg-[#020f5c] text-white"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tổ chức đợt khám</span>
+                </button>
+              )}
             </div>
           </div>
 

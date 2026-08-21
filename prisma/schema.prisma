@@ -140,6 +140,7 @@ model HoSoBenhNhan {
 
   // Điều trị (CSKH tại bệnh viện)
   daDon            Boolean   @default(false)
+  ngayDenBV        DateTime?
   ngayMoThucTe     DateTime?
   soTienThucThu    Float?
   trangThaiDieuTri String?   // Đã mổ | Hủy | Không đến

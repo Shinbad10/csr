@@ -12,7 +12,7 @@ const g = global as unknown as { cloudPrisma?: CloudClient; localPrisma?: LocalC
 // SQL Server mới phải bắt tay TCP + đăng nhập TDS lại từ đầu (rất chậm với DB cloud),
 // còn pool cũ thì rò rỉ kết nối. Chỉ xoá khi thật sự cần nạp Prisma Client vừa generate:
 // đặt PRISMA_RESET_ON_RELOAD=1 trong .env rồi sửa một file bất kỳ.
-if (process.env.NODE_ENV !== "production" && process.env.PRISMA_RESET_ON_RELOAD === "1") {
+if (process.env.NODE_ENV !== "production") {
   g.cloudPrisma?.$disconnect().catch(() => {});
   g.localPrisma?.$disconnect().catch(() => {});
   g.cloudPrisma = undefined;

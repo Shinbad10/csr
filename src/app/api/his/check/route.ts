@@ -39,29 +39,24 @@ export async function POST(request: Request) {
       }, { status: 404 });
     }
 
-    // Đã tìm thấy trên HIS -> Cập nhật hồ sơ
-    const updateData: any = { maBNHIS: res.maHIS };
+    // Đã tìm thấy trên HIS -> Cập nhật hồ sơ (Có mã HIS = Đã đến bệnh viện)
+    const updateData: any = { maBNHIS: res.maHIS, daDon: true };
 
-    // Chỉ tự động gán "Đã mổ" khi matchType === "exact" (CCCD khớp chính xác).
-    // matchType === "partial" (chỉ họ tên + năm sinh) → gán mã HIS nhưng KHÔNG chuyển trạng thái,
-    // cần xác nhận thủ công trên giao diện.
-    if (res.hasSurgery && res.matchType === "exact") {
-      // Nhóm A hoặc Điều trị -> cập nhật trạng thái mổ
-      if (hoSo.nhom === "A" || hoSo.khuyenNghi === "Phẫu thuật" || !hoSo.nhom) {
-        updateData.daDon = true;
-        updateData.trangThaiDieuTri = "Đã mổ";
-        updateData.trangThai = "DaMoHauPhau";
-        if (res.ngayMo) {
-          updateData.ngayMoThucTe = new Date(res.ngayMo);
-        } else if (!hoSo.ngayMoThucTe) {
-          updateData.ngayMoThucTe = new Date();
-        }
+    if (res.hasSurgery) {
+      updateData.trangThaiDieuTri = "Đã mổ";
+      updateData.trangThai = "DaMoHauPhau";
+      if (res.ngayMo) {
+        updateData.ngayMoThucTe = new Date(res.ngayMo);
+      } else if (!hoSo.ngayMoThucTe) {
+        updateData.ngayMoThucTe = new Date();
       }
-      // Cập nhật trạng thái theo dõi
       updateData.followUpStatus = "Đã chốt";
       if (session.user.id && session.user.id !== "admin") {
         updateData.nguoiPhuTrachMa = session.user.id;
       }
+    }
+    if (res.soTienThucThu != null && res.soTienThucThu > 0) {
+      updateData.soTienThucThu = res.soTienThucThu;
     }
     if (res.chiTiet) {
       updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, res.chiTiet);

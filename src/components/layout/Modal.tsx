@@ -16,6 +16,7 @@ export interface ModalProps {
   noPadding?: boolean;
   headerStyle?: string;
   className?: string;
+  bodyClassName?: string;
   closeOnOutsideClick?: boolean;
 }
 
@@ -31,7 +32,8 @@ export default function Modal({
   noPadding = false,
   headerStyle,
   className = "",
-  closeOnOutsideClick = true,
+  bodyClassName,
+  closeOnOutsideClick = false,
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -92,7 +94,7 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className={`flex-1 overflow-y-auto overflow-x-hidden min-w-0 max-w-full ${noPadding ? "" : "p-5 sm:p-6"} bg-white`}>
+        <div className={`flex-1 min-w-0 max-w-full ${bodyClassName || `${noPadding ? "" : "p-5 sm:p-6"} overflow-y-auto overflow-x-hidden`} bg-white`}>
           {children}
         </div>
 
