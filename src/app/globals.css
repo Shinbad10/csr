@@ -1,55 +1,54 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-manrope), 'Manrope', ui-sans-serif, system-ui;
-  --font-serif: var(--font-fraunces), 'Fraunces', ui-serif, Georgia;
-  --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular;
+  --font-sans: var(--font-manrope), 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-fraunces), 'Fraunces', ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
-  --navy: #031da6;
-  --navy-deep: #020f5c;
-  --navy-ink: #010833;
-  --navy-50: rgba(3, 29, 166, 0.05);
-  --navy-100: rgba(3, 29, 166, 0.09);
+  --color-navy: #031da6;
+  --color-navy-deep: #020f5c;
+  --color-navy-ink: #010833;
+  --color-navy-50: rgba(3, 29, 166, 0.04);
+  --color-navy-100: rgba(3, 29, 166, 0.08);
 
-  --teal: #02b8a9;
-  --teal-deep: #018a7f;
-  --teal-soft: #e6faf7;
-  --teal-softer: #f2fcfa;
+  --color-teal: #02b8a9;
+  --color-teal-deep: #018a7f;
+  --color-teal-soft: #e6faf7;
+  --color-teal-softer: #f2fcfa;
 
-  --bg: #f1f4fa;
-  --surface: #ffffff;
-  --surface-bg: #f1f4fa;
-  --surface-soft: #f8fafd;
-  --surface-hover: #f1f4f9;
-  --ink: #0d1025;
-  --ink-soft: #45495e;
-  --mute: #8a8fa3;
-  --mute-soft: #b8bcca;
+  --color-bg: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-surface-soft: #fafbfd;
+  --color-surface-hover: #f1f4f9;
+  --color-ink: #0d1025;
+  --color-ink-soft: #45495e;
+  --color-mute: #8a8fa3;
+  --color-mute-soft: #b8bcca;
 
-  --line: #e2e8f0;
-  --line-soft: #f1f4f9;
-  --line-strong: #d3dbe8;
+  --color-line: #eef0f5;
+  --color-line-soft: #f4f5f9;
+  --color-line-strong: #d3dbe8;
 
-  --amber: #d97706;
-  --amber-soft: #fef6eb;
-  --amber-deep: #b45309;
-  --rose: #e11d48;
-  --rose-soft: #fef1f4;
-  --green: #059669;
-  --green-soft: #ecfdf5;
+  --color-amber: #d97706;
+  --color-amber-soft: #fef6eb;
+  --color-amber-deep: #b45309;
+  --color-rose: #e11d48;
+  --color-rose-soft: #fef1f4;
+  --color-green: #059669;
+  --color-green-soft: #ecfdf5;
 
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
   --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
   --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
   --shadow-md: 0 4px 12px rgba(13, 16, 37, 0.06), 0 2px 4px rgba(13, 16, 37, 0.03);
   --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.08);
 
-  --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
-  --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
+  --shadow-navy: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
+  --shadow-navy-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
 }
 
 @variant dark (&:where(.dark, .dark *));
@@ -68,11 +67,12 @@
     --scrollbar-thumb: rgba(3, 29, 166, 0.2);
     --scrollbar-track: transparent;
 
+    /* Company UI Design Tokens */
     --navy: #031da6;
     --navy-deep: #020f5c;
     --navy-ink: #010833;
-    --navy-50: rgba(3, 29, 166, 0.05);
-    --navy-100: rgba(3, 29, 166, 0.09);
+    --navy-50: rgba(3, 29, 166, 0.04);
+    --navy-100: rgba(3, 29, 166, 0.08);
     --navy-soft: #eef2ff;
     --navy-200: #c7d2fe;
 
@@ -81,18 +81,18 @@
     --teal-soft: #e6faf7;
     --teal-softer: #f2fcfa;
 
-    --bg: #f1f4fa;
+    --bg: #f7f8fc;
     --surface: #ffffff;
-    --surface-bg: #f1f4fa;
-    --surface-soft: #f8fafd;
+    --surface-bg: #f7f8fc;
+    --surface-soft: #fafbfd;
     --surface-hover: #f1f4f9;
     --ink: #0d1025;
     --ink-soft: #45495e;
     --mute: #8a8fa3;
     --mute-soft: #b8bcca;
 
-    --line: #e2e8f0;
-    --line-soft: #f1f4f9;
+    --line: #eef0f5;
+    --line-soft: #f4f5f9;
     --line-strong: #d3dbe8;
 
     --amber: #d97706;
@@ -103,6 +103,19 @@
     --green: #059669;
     --green-soft: #ecfdf5;
     --green-deep: #047857;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 18px;
+
+    --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
+    --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
+    --shadow-md: 0 4px 12px rgba(13, 16, 37, 0.06), 0 2px 4px rgba(13, 16, 37, 0.03);
+    --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.08);
+
+    --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
+    --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
 
     --b0: var(--surface);
     --b1: var(--surface-soft);
@@ -163,15 +176,22 @@
 }
 
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+
   body {
     background-color: var(--bg);
     color: var(--ink);
     min-height: 100vh;
     font-family: var(--font-sans);
+    line-height: 1.5;
   }
 }
 
@@ -185,7 +205,7 @@
   font-weight: 700;
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
   user-select: none;
   white-space: nowrap;
 }
@@ -203,7 +223,7 @@
   }
 
   &:active {
-    opacity: 0.92;
+    opacity: 0.94;
   }
 }
 
@@ -223,7 +243,7 @@
 
   &:active {
     background: var(--surface-hover);
-    opacity: 0.92;
+    opacity: 0.94;
   }
 }
 
@@ -267,10 +287,10 @@
 
 @utility card {
   background: var(--surface);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-xs);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 
   &:hover {
@@ -281,16 +301,16 @@
 
 @utility input-field {
   width: 100%;
-  padding: 6px 11px;
+  padding: 7px 12px;
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-size: 12.5px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.45;
   outline: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:focus {
     border-color: var(--navy);
@@ -352,6 +372,17 @@
   }
 }
 
+@keyframes pulse-teal {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
 /* Standard Scrollbar */
 * {
   scrollbar-width: thin;
@@ -387,4 +418,3 @@
   width: 0 !important;
   height: 0 !important;
 }
-

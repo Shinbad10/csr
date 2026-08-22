@@ -82,17 +82,23 @@ export async function GET(request: Request) {
     }
 
     const wb = XLSX.utils.book_new();
-    const sheetName = buoiKhamInfo?.xa ? `KhamMat_${buoiKhamInfo.xa}`.slice(0, 31) : "Danh sách BN";
+    const sheetName = buoiKhamInfo?.xa
+      ? (isKhamSucKhoe ? `KSK_${buoiKhamInfo.xa}` : `KhamMat_${buoiKhamInfo.xa}`).slice(0, 31)
+      : (isKhamSucKhoe ? "KhamSucKhoe" : "Danh sách BN");
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
-    let fileName = `VISI_CSR_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    let fileName = isKhamSucKhoe
+      ? `Kham_Suc_Khoe_VISI_${new Date().toISOString().slice(0, 10)}.xlsx`
+      : `VISI_CSR_${new Date().toISOString().slice(0, 10)}.xlsx`;
     if (buoiKhamInfo) {
       const dateStr = buoiKhamInfo.ngayKham
         ? new Date(buoiKhamInfo.ngayKham).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10);
       const cleanXa = (buoiKhamInfo.xa || "KhamMat").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
-      fileName = `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+      fileName = isKhamSucKhoe
+        ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx`
+        : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
     }
 
     const asciiName = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, "_");

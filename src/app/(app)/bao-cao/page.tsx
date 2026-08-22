@@ -102,14 +102,16 @@ export default function BaoCaoPage() {
     loadStats();
   }, [loadStats]);
 
-  const exportExcel = async (buoiKhamId?: string) => {
+  const exportExcel = async (buoiKhamId?: string, format: "khamSucKhoe" | "default" = "khamSucKhoe") => {
     if (buoiKhamId) {
       setExportingSessionId(buoiKhamId);
     } else {
       setExporting(true);
     }
     try {
-      const url = buoiKhamId ? `/api/csr/export?buoiKhamId=${buoiKhamId}` : `/api/csr/export`;
+      const url = buoiKhamId
+        ? `/api/csr/export?buoiKhamId=${buoiKhamId}&format=${format}`
+        : `/api/csr/export?format=${format}`;
       const res = await fetch(url);
       if (!res.ok) {
         addToast({ type: "error", message: "Không thể xuất file (cần quyền Kế toán/Quản lý)" });
@@ -119,12 +121,18 @@ export default function BaoCaoPage() {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
+      const dateStr = new Date().toISOString().slice(0, 10);
       a.download = buoiKhamId
-        ? `VISI_KhamMat_${buoiKhamId}_${new Date().toISOString().slice(0, 10)}.xlsx`
-        : `VISI_CSR_BaoCao_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        ? (format === "khamSucKhoe" ? `Kham_Suc_Khoe_${buoiKhamId}_${dateStr}.xlsx` : `VISI_KhamMat_${buoiKhamId}_${dateStr}.xlsx`)
+        : (format === "khamSucKhoe" ? `Kham_Suc_Khoe_TongHop_${dateStr}.xlsx` : `VISI_CSR_BaoCao_${dateStr}.xlsx`);
       a.click();
       URL.revokeObjectURL(blobUrl);
-      addToast({ type: "success", message: "Đã xuất file Excel thành công." });
+      addToast({
+        type: "success",
+        message: format === "khamSucKhoe"
+          ? "Đã xuất file Excel mẫu Khám Sức Khỏe (101 cột) thành công."
+          : "Đã xuất file Excel thành công."
+      });
     } catch {
       addToast({ type: "error", message: "Mất kết nối máy chủ" });
     } finally {

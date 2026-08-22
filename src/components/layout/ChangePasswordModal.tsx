@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { KeyRound, Check, Loader2, X } from "lucide-react";
+import { KeyRound, Check, Loader2 } from "lucide-react";
 import Modal from "@/components/layout/Modal";
-import { SectionHeader, Field } from "@/components/csr/fields";
+import { SectionHeader } from "@/components/csr/fields";
 import { useToast } from "@/components/providers/ToastProvider";
+import { TextField, Button, Alert, Box } from "@mui/material";
 
 interface ChangePasswordModalProps {
   open: boolean;
@@ -68,67 +69,86 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
       maxWidth="max-w-[500px]"
       noPadding
     >
-      <form onSubmit={submit} className="p-4 sm:p-7 space-y-6 bg-white">
+      <Box component="form" onSubmit={submit} sx={{ p: { xs: 2.5, sm: 3.5 }, display: "flex", flexDirection: "column", gap: 3, bgcolor: "background.paper" }}>
         {err && (
-          <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2 animate-shake">
-            <X className="w-4 h-4 shrink-0" /> {err}
-          </div>
+          <Alert severity="error" sx={{ borderRadius: "12px", fontWeight: 600 }}>
+            {err}
+          </Alert>
         )}
 
-        <div className="space-y-4">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <SectionHeader n={1} accent="Mật khẩu hiện tại" />
-          <Field label="Mật khẩu đang sử dụng" required>
-            <input
-              type="password"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              required
-              className="input-field font-mono h-10 text-[14px]"
-              placeholder="Nhập mật khẩu hiện tại..."
-              autoFocus
-            />
-          </Field>
-        </div>
+          <TextField
+            fullWidth
+            type="password"
+            label="Mật khẩu đang sử dụng *"
+            value={oldPassword}
+            onChange={(e) => setOldPassword(e.target.value)}
+            required
+            autoFocus
+            slotProps={{
+              input: {
+                sx: { fontFamily: "var(--font-mono)", borderRadius: "12px" },
+              },
+            }}
+            placeholder="Nhập mật khẩu hiện tại..."
+          />
+        </Box>
 
-        <div className="space-y-4 pt-2">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           <SectionHeader n={2} accent="Mật khẩu mới" />
-          <Field label="Mật khẩu mới (ít nhất 6 ký tự)" required>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              minLength={6}
-              className="input-field font-mono h-10 text-[14px]"
-              placeholder="Nhập mật khẩu mới..."
-            />
-          </Field>
-          <Field label="Xác nhận mật khẩu mới" required>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
-              className="input-field font-mono h-10 text-[14px]"
-              placeholder="Nhập lại mật khẩu mới..."
-            />
-          </Field>
-        </div>
+          <TextField
+            fullWidth
+            type="password"
+            label="Mật khẩu mới (ít nhất 6 ký tự) *"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            slotProps={{
+              input: {
+                sx: { fontFamily: "var(--font-mono)", borderRadius: "12px" },
+                inputProps: { minLength: 6 },
+              },
+            }}
+            placeholder="Nhập mật khẩu mới..."
+          />
+          <TextField
+            fullWidth
+            type="password"
+            label="Xác nhận mật khẩu mới *"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            slotProps={{
+              input: {
+                sx: { fontFamily: "var(--font-mono)", borderRadius: "12px" },
+                inputProps: { minLength: 6 },
+              },
+            }}
+            placeholder="Nhập lại mật khẩu mới..."
+          />
+        </Box>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--line-soft)] mt-6">
-          <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">
-            Hủy bỏ
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20"
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1.5, pt: 2, borderTop: "1px solid var(--line-soft)" }}>
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={onClose}
+            sx={{ px: 3, py: 1, borderRadius: "12px", fontWeight: 700 }}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />} Cập nhật mật khẩu
-          </button>
-        </div>
-      </form>
+            Hủy bỏ
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={saving}
+            startIcon={saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />}
+            sx={{ px: 3.5, py: 1, borderRadius: "12px", fontWeight: 700 }}
+          >
+            Cập nhật mật khẩu
+          </Button>
+        </Box>
+      </Box>
     </Modal>
   );
 }

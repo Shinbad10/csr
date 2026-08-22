@@ -5,7 +5,7 @@ import Modal from "@/components/layout/Modal";
 import {
   Users, Search, Calendar, MapPin, UserCheck, Loader2,
   Stethoscope, Eye, CheckCircle2, Clock, Phone, CreditCard,
-  FileSpreadsheet, Sparkles, Filter, X
+  FileSpreadsheet, Sparkles, Filter, X, ChevronDown
 } from "lucide-react";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, type HoSo } from "@/lib/csr";
 import { parseDoctorList } from "./DoctorAutocomplete";
@@ -38,13 +38,24 @@ export default function BuoiKhamPatientsModal({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "CHUA_MO">("ALL");
-  const [exporting, setExporting] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = React.useRef<HTMLDivElement>(null);
 
-  const handleExport = async () => {
-    if (!buoiKham?.id || exporting) return;
-    setExporting(true);
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    const h = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setExportMenuOpen(false);
+    };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, [exportMenuOpen]);
+
+  const handleExport = async (format: "khamSucKhoe" | "default" = "khamSucKhoe") => {
+    if (!buoiKham?.id || exportingFormat) return;
+    setExportingFormat(format);
     try {
-      const res = await fetch(`/api/csr/export?buoiKhamId=${encodeURIComponent(buoiKham.id)}`);
+      const res = await fetch(`/api/csr/export?buoiKhamId=${encodeURIComponent(buoiKham.id)}&format=${format}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Không thể xuất file Excel");
@@ -67,7 +78,9 @@ export default function BuoiKhamPatientsModal({
       if (!filename) {
         const dateStr = buoiKham.ngayKham ? new Date(buoiKham.ngayKham).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
         const cleanXa = (buoiKham.xa || "KhamMat").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
-        filename = `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+        filename = format === "khamSucKhoe"
+          ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx`
+          : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
       }
       a.download = filename;
       document.body.appendChild(a);
@@ -77,7 +90,9 @@ export default function BuoiKhamPatientsModal({
       addToast({
         type: "success",
         title: "Xuất Excel thành công",
-        message: `Đã tải file danh sách bệnh nhân ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (chuẩn Google Sheet)`,
+        message: format === "khamSucKhoe"
+          ? `Đã tải file khám sức khỏe ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu 101 cột)`
+          : `Đã tải file danh sách bệnh nhân ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu Google Sheet)`,
       });
     } catch (err) {
       addToast({
@@ -86,7 +101,7 @@ export default function BuoiKhamPatientsModal({
         message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel",
       });
     } finally {
-      setExporting(false);
+      setExportingFormat(null);
     }
   };
 
@@ -285,16 +300,67 @@ export default function BuoiKhamPatientsModal({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={exporting || patients.length === 0}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ml-auto bg-teal-700 text-white hover:bg-teal-800 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Xuất danh sách khám mắt theo dạng Google Sheet (19 cột chuẩn)"
-            >
-              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
-              <span>Xuất Excel (Google Sheet)</span>
-            </button>
+            {/* Nút Xuất Excel với Menu chọn 2 mẫu */}
+            <div className="relative ml-auto" ref={exportMenuRef}>
+              <div className="inline-flex rounded-lg shadow-xs overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => handleExport("khamSucKhoe")}
+                  disabled={!!exportingFormat || patients.length === 0}
+                  className="px-3 py-1.5 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-[#018a7f] hover:bg-[#016e65] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Xuất file Excel theo mẫu Khám Sức Khỏe (101 cột chuẩn HIS)"
+                >
+                  {exportingFormat === "khamSucKhoe" ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#e6faf7]" />
+                  )}
+                  <span>Xuất Excel (Khám SK 101 cột)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportMenuOpen((o) => !o)}
+                  disabled={!!exportingFormat || patients.length === 0}
+                  className="px-1.5 py-1.5 text-xs font-bold transition-all flex items-center justify-center cursor-pointer bg-[#017a70] hover:bg-[#01635b] text-white border-l border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Tùy chọn mẫu xuất Excel"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {exportMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 z-50 animate-dropdown text-[#0f172a]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportMenuOpen(false);
+                      handleExport("khamSucKhoe");
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#018a7f] hover:bg-[#e6faf7] transition-colors text-left cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-[#02b8a9] shrink-0" />
+                    <div>
+                      <div className="font-bold">Mẫu Khám Sức Khỏe (101 cột)</div>
+                      <div className="text-[10.5px] text-[#64748b] font-normal">Mẫu chuẩn nộp HIS & trạm y tế</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportMenuOpen(false);
+                      handleExport("default");
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#334155] hover:bg-[#f1f5f9] transition-colors text-left cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-[#64748b] shrink-0" />
+                    <div>
+                      <div className="font-bold">Mẫu Google Sheet (25 cột)</div>
+                      <div className="text-[10.5px] text-[#94a3b8] font-normal">Mẫu danh sách khám sàng lọc</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

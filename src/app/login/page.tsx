@@ -5,17 +5,32 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import {
+  OutlinedInput,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Alert,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Box,
+  Typography,
+  Chip,
+} from "@mui/material";
+import {
   Lock,
   User,
   Eye,
   EyeOff,
-  ShieldCheck,
-  Activity,
   ChevronRight,
   Sun,
   Moon,
   Sparkles,
   Building2,
+  Activity,
+  ShieldCheck,
 } from "lucide-react";
 import { getActiveFacilities, setSelectedFacilityCookie, getLoginUserFacility } from "./actions";
 
@@ -39,7 +54,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Default to light theme unless explicitly set to dark in localStorage
     const savedTheme = localStorage.getItem("visi_theme");
     if (savedTheme === "dark") {
       setTheme("dark");
@@ -94,17 +108,14 @@ export default function LoginPage() {
           setError("Tên đăng nhập hoặc mật khẩu không chính xác.");
           setIsLoading(false);
         } else {
-          // Kiểm tra vai trò & đơn vị mặc định của người dùng
           const userCtx = await getLoginUserFacility(username);
 
-          // Tài khoản không phải Quản lý hoặc có đơn vị cố định: Tự động dùng đơn vị mặc định, không bắt chọn
           if (!userCtx.isCorporate && userCtx.defaultCoSoId) {
             await setSelectedFacilityCookie(userCtx.defaultCoSoId);
             setIsRedirecting(true);
             router.push("/");
             router.refresh();
           } else if (userCtx.isCorporate && facilities.length > 0) {
-            // Chỉ tài khoản Quản trị / Quản lý mới hiện bảng chọn đơn vị
             setShowFacilityModal(true);
             setIsLoading(false);
           } else {
@@ -226,7 +237,7 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        {/* Right: Login Card */}
+        {/* Right: Login Card with MUI Component Integration */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -278,51 +289,74 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3"
+                <Alert
+                  severity="error"
+                  sx={{
+                    mb: 3,
+                    borderRadius: "16px",
+                    fontWeight: 600,
+                    fontSize: "0.8125rem",
+                    border: "1px solid rgba(225, 29, 72, 0.2)",
+                  }}
                 >
-                  <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
-                  <span className="text-[12px] sm:text-[13px] font-bold text-rose-500">{error}</span>
-                </motion.div>
+                  {error}
+                </Alert>
               )}
 
-              <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6">
-                {/* Username Input */}
+              <Box component="form" onSubmit={handleLogin} sx={{ display: "flex", flexDirection: "column", gap: { xs: 2.5, sm: 3 } }}>
+                {/* Username Input using MUI OutlinedInput */}
                 <div className="space-y-2">
                   <label className="text-[10px] items-center gap-2 flex font-black uppercase tracking-[0.2em] text-[var(--mute)] dark:text-slate-400 ml-1 transition-colors font-mono">
                     <User size={13} className="text-[var(--teal)]" /> Tên đăng nhập / Mã cán bộ
                   </label>
-                  <div className="relative group">
-                    <div className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-[var(--mute)] group-focus-within:text-[var(--teal)] transition-colors">
-                      <User size={18} />
-                    </div>
-                    <input
-                      type="text"
-                      tabIndex={1}
-                      autoComplete="username"
-                      className="w-full pl-11 sm:pl-13 pr-5 py-3.5 sm:py-4 border rounded-[16px] sm:rounded-[20px] outline-none transition-all duration-300 font-bold text-sm sm:text-base
-                        bg-[var(--surface-soft)] dark:bg-slate-800/40 
-                        border-[var(--line-strong)] dark:border-white/10 
-                        text-[var(--ink)] dark:text-white
-                        focus:bg-white dark:focus:bg-slate-800/60 
-                        focus:border-[var(--teal)] 
-                        focus:ring-4 focus:ring-[var(--teal)]/10 dark:focus:ring-[var(--teal)]/10"
-                      placeholder="VD: admin, mkt01, tvv01..."
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value);
-                        if (fieldErrors.username) setFieldErrors({ ...fieldErrors, username: undefined });
-                      }}
-                    />
-                  </div>
+                  <OutlinedInput
+                    fullWidth
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      if (fieldErrors.username) setFieldErrors({ ...fieldErrors, username: undefined });
+                    }}
+                    error={!!fieldErrors.username}
+                    placeholder="VD: admin, mkt01, tvv01..."
+                    startAdornment={
+                      <InputAdornment position="start" sx={{ ml: 1, mr: 1.5 }}>
+                        <User size={18} className="text-[var(--mute)]" />
+                      </InputAdornment>
+                    }
+                    sx={{
+                      borderRadius: { xs: "16px", sm: "20px" },
+                      backgroundColor: "var(--surface-soft)",
+                      fontWeight: 700,
+                      fontSize: { xs: "0.875rem", sm: "1rem" },
+                      transition: "all 0.3s ease",
+                      "& .MuiOutlinedInput-input": {
+                        py: { xs: "14px", sm: "16px" },
+                        pl: 0,
+                      },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "var(--line-strong)",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "var(--teal)",
+                      },
+                      "&.Mui-focused": {
+                        backgroundColor: "var(--surface)",
+                        boxShadow: "0 0 0 4px rgba(2, 184, 169, 0.1)",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "var(--teal)",
+                        borderWidth: "1.5px",
+                      },
+                    }}
+                  />
                   {fieldErrors.username && (
                     <p className="text-[11px] text-rose-500 font-bold pl-2 mt-1">{fieldErrors.username}</p>
                   )}
                 </div>
 
-                {/* Password Input */}
+                {/* Password Input using MUI OutlinedInput */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 pr-1">
                     <label className="text-[10px] items-center gap-2 flex font-black uppercase tracking-[0.2em] text-[var(--mute)] dark:text-slate-400 ml-1 transition-colors font-mono">
@@ -332,72 +366,90 @@ export default function LoginPage() {
                       type="button"
                       tabIndex={-1}
                       onClick={() => alert("Vui lòng liên hệ Quản trị viên hệ thống để reset mật khẩu.")}
-                      className="text-[10px] font-black uppercase tracking-widest text-[var(--teal)] hover:text-[var(--teal-deep)] hover:underline transition-colors font-mono"
+                      className="text-[10px] font-black uppercase tracking-widest text-[var(--teal)] hover:text-[var(--teal-deep)] hover:underline transition-colors font-mono cursor-pointer"
                     >
                       Quên mật khẩu?
                     </button>
                   </div>
-                  <div className="relative group">
-                    <div className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-[var(--mute)] group-focus-within:text-[var(--teal)] transition-colors">
-                      <Lock size={18} />
-                    </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      tabIndex={2}
-                      autoComplete="current-password"
-                      className="w-full pl-11 sm:pl-13 pr-12 py-3.5 sm:py-4 border rounded-[16px] sm:rounded-[20px] outline-none transition-all duration-300 font-bold tracking-[0.2em] text-sm sm:text-base
-                        bg-[var(--surface-soft)] dark:bg-slate-800/40 
-                        border-[var(--line-strong)] dark:border-white/10 
-                        text-[var(--ink)] dark:text-white
-                        focus:bg-white dark:focus:bg-slate-800/60 
-                        focus:border-[var(--teal)] 
-                        focus:ring-4 focus:ring-[var(--teal)]/10 dark:focus:ring-[var(--teal)]/10 font-mono"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
-                      }}
-                    />
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--teal)] transition-colors p-2 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
+                  <OutlinedInput
+                    fullWidth
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
+                    }}
+                    error={!!fieldErrors.password}
+                    placeholder="••••••••"
+                    startAdornment={
+                      <InputAdornment position="start" sx={{ ml: 1, mr: 1.5 }}>
+                        <Lock size={18} className="text-[var(--mute)]" />
+                      </InputAdornment>
+                    }
+                    endAdornment={
+                      <InputAdornment position="end" sx={{ mr: 1 }}>
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                          tabIndex={-1}
+                          sx={{ color: "var(--mute)", "&:hover": { color: "var(--teal)" } }}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                    sx={{
+                      borderRadius: { xs: "16px", sm: "20px" },
+                      backgroundColor: "var(--surface-soft)",
+                      fontWeight: 700,
+                      letterSpacing: "0.2em",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: { xs: "0.875rem", sm: "1rem" },
+                      transition: "all 0.3s ease",
+                      "& .MuiOutlinedInput-input": {
+                        py: { xs: "14px", sm: "16px" },
+                        pl: 0,
+                      },
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "var(--line-strong)",
+                        transition: "border-color 0.2s, box-shadow 0.2s",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "var(--teal)",
+                      },
+                      "&.Mui-focused": {
+                        backgroundColor: "var(--surface)",
+                        boxShadow: "0 0 0 4px rgba(2, 184, 169, 0.1)",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "var(--teal)",
+                        borderWidth: "1.5px",
+                      },
+                    }}
+                  />
                   {fieldErrors.password && (
                     <p className="text-[11px] text-rose-500 font-bold pl-2 mt-1">{fieldErrors.password}</p>
                   )}
                 </div>
 
-                {/* Checkbox */}
-                <div className="flex items-center gap-4 ml-1 py-1">
-                  <label className="relative flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      tabIndex={3}
-                      className="sr-only"
+                {/* Checkbox using MUI Checkbox */}
+                <div className="flex items-center gap-2 ml-1 py-1">
+                  <label className="relative flex items-center cursor-pointer group select-none">
+                    <Checkbox
                       checked={remember}
                       onChange={(e) => setRemember(e.target.checked)}
+                      icon={
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[var(--line-strong)] dark:border-white/20 rounded-lg sm:rounded-xl group-hover:border-[var(--teal)] transition-all" />
+                      }
+                      checkedIcon={
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-[var(--teal)] border-2 border-[var(--teal)] rounded-lg sm:rounded-xl flex items-center justify-center transition-all">
+                          <ShieldCheck size={14} className="text-white" strokeWidth={3.5} />
+                        </div>
+                      }
+                      sx={{ p: 0 }}
                     />
-                    <div
-                      className={`w-5 h-5 sm:w-6 sm:h-6 border-2 rounded-lg sm:rounded-xl transition-all active:scale-90 flex items-center justify-center ${
-                        remember
-                          ? "bg-[var(--teal)] border-[var(--teal)]"
-                          : "border-[var(--line-strong)] dark:border-white/20 group-hover:border-[var(--teal)]"
-                      }`}
-                    >
-                      <ShieldCheck
-                        className={`text-white transition-all duration-300 ${
-                          remember ? "scale-100 opacity-100" : "scale-0 opacity-0"
-                        }`}
-                        size={13}
-                        strokeWidth={4}
-                      />
-                    </div>
                     <span
                       className={`ml-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-colors font-mono ${
                         remember
@@ -410,31 +462,50 @@ export default function LoginPage() {
                   </label>
                 </div>
 
-                {/* Submit Button */}
-                <button
+                {/* Submit Button using MUI Button */}
+                <Button
                   type="submit"
+                  variant="contained"
                   disabled={isLoading}
-                  tabIndex={4}
-                  className="w-full group relative overflow-hidden py-4 sm:py-4.5 rounded-[16px] sm:rounded-[20px] font-black text-[12px] sm:text-[13px] uppercase tracking-[0.2em] active:scale-[0.98] transition-all duration-500 disabled:opacity-70
-                    bg-gradient-to-r from-[var(--teal)] via-[var(--navy)] to-[var(--navy)] text-white shadow-[0_20px_40px_-10px_rgba(3,29,166,0.4)] hover:shadow-[0_28px_56px_-10px_rgba(3,29,166,0.6)] cursor-pointer"
+                  fullWidth
+                  size="large"
+                  endIcon={
+                    !isLoading ? (
+                      <ChevronRight
+                        size={18}
+                        className="transition-transform duration-300"
+                        strokeWidth={3}
+                      />
+                    ) : undefined
+                  }
+                  sx={{
+                    py: { xs: 1.8, sm: 2 },
+                    borderRadius: { xs: "16px", sm: "20px" },
+                    fontSize: { xs: "0.75rem", sm: "0.8125rem" },
+                    fontWeight: 900,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    fontFamily: "var(--font-sans)",
+                    background: "linear-gradient(90deg, var(--teal) 0%, var(--navy) 50%, var(--navy) 100%)",
+                    boxShadow: "0 20px 40px -10px rgba(3, 29, 166, 0.4)",
+                    color: "#ffffff",
+                    position: "relative",
+                    overflow: "hidden",
+                    "&:hover": {
+                      background: "linear-gradient(90deg, var(--teal-deep) 0%, var(--navy-deep) 50%, var(--navy-ink) 100%)",
+                      boxShadow: "0 28px 56px -10px rgba(3, 29, 166, 0.6)",
+                      "& .MuiButton-endIcon": {
+                        transform: "translateX(4px)",
+                      },
+                    },
+                    "&:active": {
+                      transform: "scale(0.98)",
+                    },
+                  }}
                 >
-                  <div className="relative z-10 flex items-center justify-center gap-3">
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-[3px] border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        XÁC THỰC TRUY CẬP{" "}
-                        <ChevronRight
-                          size={18}
-                          className="group-hover:translate-x-2 transition-transform duration-300"
-                          strokeWidth={3}
-                        />
-                      </>
-                    )}
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                </button>
-              </form>
+                  {isLoading ? <CircularProgress size={22} color="inherit" /> : "XÁC THỰC TRUY CẬP"}
+                </Button>
+              </Box>
 
               <div className="mt-8 sm:mt-10 pt-5 border-t border-[var(--line)] dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p className="text-[9px] sm:text-[10px] font-black text-[var(--mute)] dark:text-slate-500 uppercase tracking-widest font-mono">
@@ -452,82 +523,120 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Unit / Facility Selector Modal */}
-      <AnimatePresence>
-        {showFacilityModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-[520px] p-8 rounded-[32px] border shadow-2xl transition-all duration-500 bg-white dark:bg-slate-900 border-white/40 dark:border-white/10 shadow-[0_30px_60px_rgba(3,29,166,0.2)]"
+      {/* Unit / Facility Selector Modal with MUI Dialog */}
+      <Dialog
+        open={showFacilityModal}
+        onClose={() => {}}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: "32px",
+              p: { xs: 2, sm: 4 },
+              border: "1px solid var(--line-strong)",
+              boxShadow: "0 30px 60px rgba(3,29,166,0.2)",
+              backgroundColor: "var(--surface)",
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ textAlign: "center", pt: 1, pb: 1 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Box
+              sx={{
+                width: 64,
+                height: 64,
+                borderRadius: "20px",
+                backgroundColor: "var(--teal-soft)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 2,
+                border: "1px solid rgba(2, 184, 169, 0.25)",
+              }}
             >
-              {isRedirecting ? (
-                <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                  <div className="w-10 h-10 border-4 border-[var(--teal)]/30 border-t-[var(--teal)] rounded-full animate-spin" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--teal)] animate-pulse font-mono">
-                    Đang nạp phiên làm việc...
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col items-center text-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-[var(--teal)]/10 flex items-center justify-center mb-4 ring-1 ring-[var(--teal)]/20">
-                      <Building2 size={32} className="text-[var(--teal)]" />
-                    </div>
-                    <h2 className="text-2xl font-black text-[var(--ink)] dark:text-white uppercase tracking-tight font-serif">
-                      Xác định cơ sở làm việc
-                    </h2>
-                    <p className="text-[var(--ink-soft)] dark:text-slate-300 text-sm font-bold mt-2 opacity-80">
-                      Tài khoản của bạn có quyền tại nhiều cơ sở, <br />
-                      vui lòng chọn đơn vị làm việc cho phiên này.
-                    </p>
-                  </div>
+              <Building2 size={32} className="text-[var(--teal)]" />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", fontFamily: "var(--font-serif)" }}>
+              Xác định cơ sở làm việc
+            </Typography>
+            <Typography variant="body2" sx={{ color: "var(--ink-soft)", mt: 1, maxWidth: 380, fontWeight: 600 }}>
+              Tài khoản của bạn có quyền tại nhiều cơ sở, <br />
+              vui lòng chọn đơn vị làm việc cho phiên này.
+            </Typography>
+          </Box>
+        </DialogTitle>
 
-                  <div className="space-y-3 max-h-[340px] overflow-y-auto pr-2 custom-scrollbar">
-                    {facilities.map((f) => (
-                      <button
-                        type="button"
-                        key={f.id}
-                        disabled={isRedirecting}
-                        onClick={() => handleConfirmFacility(f.id)}
-                        className="w-full group flex items-center gap-4 p-4 rounded-[22px] border transition-all duration-300 disabled:opacity-50
-                          bg-[var(--surface-soft)] dark:bg-slate-800/40 border-[var(--line-strong)] dark:border-white/5 
-                          hover:border-[var(--teal)] hover:bg-white dark:hover:bg-slate-800 hover:shadow-md cursor-pointer text-left"
-                      >
-                        <div className="w-11 h-11 rounded-[16px] flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xs bg-gradient-to-br from-[var(--teal)]/10 to-[var(--teal-deep)]/10 border border-[var(--teal)]/20 group-hover:from-[var(--teal)] group-hover:to-[var(--teal-deep)] group-hover:border-transparent shrink-0">
-                          <Activity size={18} className="text-[var(--teal)] group-hover:text-white transition-colors" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-black uppercase tracking-wider text-[var(--ink)] dark:text-white transition-colors duration-300 group-hover:text-[var(--teal-deep)] dark:group-hover:text-[var(--teal)]">
-                            {f.ten}
-                          </p>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-[0.12em] bg-[var(--teal)]/10 text-[var(--teal-deep)] border border-[var(--teal)]/20 dark:bg-[var(--teal)]/15 dark:text-[var(--teal)] font-mono">
-                              Cơ sở: {f.id}
-                            </span>
-                          </div>
-                        </div>
-                        <ChevronRight
-                          size={18}
-                          className="text-[var(--teal)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 shrink-0"
-                          strokeWidth={3}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        <DialogContent sx={{ px: 1, py: 2 }}>
+          {isRedirecting ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 5, gap: 2 }}>
+              <CircularProgress size={36} sx={{ color: "var(--teal)" }} />
+              <Typography sx={{ fontSize: "0.6875rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--teal)", fontFamily: "var(--font-mono)" }}>
+                Đang nạp phiên làm việc...
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, maxHeight: 340, overflowY: "auto", pr: 1 }}>
+              {facilities.map((f) => (
+                <Button
+                  key={f.id}
+                  onClick={() => handleConfirmFacility(f.id)}
+                  disabled={isRedirecting}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    justifyContent: "flex-start",
+                    p: 2,
+                    borderRadius: "22px",
+                    borderColor: "var(--line-strong)",
+                    backgroundColor: "var(--surface-soft)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    textAlign: "left",
+                    "&:hover": {
+                      borderColor: "var(--teal)",
+                      backgroundColor: "var(--surface)",
+                      boxShadow: "var(--shadow-sm)",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "16px",
+                      backgroundColor: "var(--teal-soft)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      border: "1px solid rgba(2, 184, 169, 0.2)",
+                    }}
+                  >
+                    <Activity size={20} className="text-[var(--teal)]" />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                      {f.ten}
+                    </Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      <Chip
+                        label={`Cơ sở: ${f.id}`}
+                        size="small"
+                        color="secondary"
+                        sx={{ fontSize: "0.625rem", height: 20 }}
+                      />
+                    </Box>
+                  </Box>
+                  <ChevronRight size={18} className="text-[var(--teal)]" />
+                </Button>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

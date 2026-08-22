@@ -5,6 +5,7 @@ import ToastProvider from "@/components/providers/ToastProvider";
 import ConfirmProvider from "@/components/providers/ConfirmProvider";
 import { RealtimeProvider } from "@/components/providers/RealtimeProvider";
 import PWARegister from "@/components/providers/PWARegister";
+import MUIThemeProvider from "@/components/providers/MUIThemeProvider";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -52,14 +53,16 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi" className={`${manrope.variable} ${fraunces.variable} ${jetbrains.variable} antialiased h-full`} suppressHydrationWarning>
       <body className="min-h-full font-sans bg-[var(--surface-bg)] text-[var(--ink)]" suppressHydrationWarning>
-        <PWARegister />
-        <SessionProvider>
-          <RealtimeProvider>
-            <ToastProvider>
-              <ConfirmProvider>{children}</ConfirmProvider>
-            </ToastProvider>
-          </RealtimeProvider>
-        </SessionProvider>
+        <MUIThemeProvider>
+          <PWARegister />
+          <SessionProvider>
+            <RealtimeProvider>
+              <ToastProvider>
+                <ConfirmProvider>{children}</ConfirmProvider>
+              </ToastProvider>
+            </RealtimeProvider>
+          </SessionProvider>
+        </MUIThemeProvider>
       </body>
     </html>
   );
