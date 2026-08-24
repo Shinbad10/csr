@@ -105,7 +105,7 @@ export const HOSO_HEADER = [
   "Giới tính", "Số điện thoại", "BHYT", "Có bệnh lý",
   "Đục thủy tinh thể", "Mộng", "Khác", "Chi tiết chẩn đoán",
   "Bác sỹ khám", "Nhân viên tư vấn", "Xác nhận điều trị", "Ngày điều trị dự kiến",
-  "Ngày đến BV", "Ngày mổ thực tế", "Trạng thái điều trị", "Thực thu HIS", "Ghi chú",
+  "Ngày đến BV", "Ngày mổ thực tế", "Trạng thái điều trị", "Thực thu HIS", "Mã BN HIS", "Ghi chú",
   "Mã BN", // cột kỹ thuật — khoá upsert Google Sheet, kế toán có thể ẩn
 ] as const;
 
@@ -116,7 +116,7 @@ const staffName = (rel?: { hoTen: string } | null, ma?: string | null) =>
 const YN = (b: boolean) => (b ? "YES" : "NO");
 
 export interface HoSoExport {
-  maBN: string; stt: number; hoTen: string; namSinh: number | null; ngaySinh?: Date | string | null; gioiTinh: string;
+  maBN: string; maBNHIS?: string | null; stt: number; hoTen: string; namSinh: number | null; ngaySinh?: Date | string | null; gioiTinh: string;
   cccd?: string | null; sdt: string | null; sdtNguoiNha?: string | null;
   diaChi?: string | null; khuPho?: string | null; xaPhuong?: string | null;
   benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null;
@@ -225,6 +225,9 @@ export function hoSoToCells(h: HoSoExport, forSheet = false): (string | number)[
 
   const ghiChuStr = [h.ghiChuTuVan, h.ghiChuMat2].filter(Boolean).join(" | ");
 
+  const maHisMatch = ghiChuStr.match(/(?:Mã HIS:\s*|maHIS:\s*)([A-Za-z0-9.]+)/i);
+  const maBNHIS = h.maBNHIS || (maHisMatch ? maHisMatch[1] : "");
+
   return [
     h.buoiKham?.xa ?? "",                              // 1  Xã
     h.diemKham || h.buoiKham?.diaDiem || "",           // 2  Điểm xã
@@ -249,8 +252,9 @@ export function hoSoToCells(h: HoSoExport, forSheet = false): (string | number)[
     actualNgayMo,                                      // 21 Ngày mổ thực tế
     h.trangThaiDieuTri || "",                          // 22 Trạng thái điều trị
     soTienStr,                                         // 23 Thực thu HIS
-    ghiChuStr,                                         // 24 Ghi chú
-    h.maBN,                                            // 25 Mã BN (khoá)
+    maBNHIS,                                           // 24 Mã BN HIS
+    ghiChuStr,                                         // 25 Ghi chú
+    h.maBN,                                            // 26 Mã BN (khoá)
   ];
 }
 

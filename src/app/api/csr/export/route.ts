@@ -76,6 +76,7 @@ export async function GET(request: Request) {
         { wch: 14 }, // Ngày mổ thực tế
         { wch: 18 }, // Trạng thái điều trị
         { wch: 16 }, // Thực thu HIS
+        { wch: 16 }, // Mã BN HIS
         { wch: 40 }, // Ghi chú
         { wch: 18 }, // Mã BN
       ];
