@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -13,6 +14,7 @@ import {
 import { fmtDate, fmtBuoiKhamName } from "@/lib/csr";
 import { Dropdown } from "@/components/csr/fields";
 import { SkeletonTable } from "@/components/layout/Skeleton";
+import { useCurrentFacility } from "@/lib/useFacility";
 
 interface BuoiKham {
   id: string;
@@ -52,6 +54,7 @@ function StatCard({ label, value, sub, icon: Icon, tone }: {
 export default function DoiChieuHisPage() {
   const { addToast } = useToast();
   const confirm = useConfirm();
+  const { currentCoSo, activeCoSoId, hasHisConfig, loading: facilityLoading } = useCurrentFacility();
   const [tab, setTab] = useState<"batch" | "reverse">("batch");
 
   // Tab 1: Batch Check state (Mặc định chọn tháng hiện tại)
@@ -369,6 +372,34 @@ export default function DoiChieuHisPage() {
       return true;
     });
   }, [revList, revSearch, revFilterDate, revFilterStatus]);
+
+  if (!facilityLoading && !hasHisConfig) {
+    return (
+      <div className="space-y-6 pb-16">
+        <PageHeader
+          title="Đối chiếu máy chủ HIS"
+          description="Quét & đồng bộ tự động giữa danh sách tầm soát CSR và hệ thống HIS bệnh viện."
+        />
+        <div className="card p-10 text-center max-w-2xl mx-auto space-y-4 my-8 bg-white border border-[var(--line)] rounded-2xl shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-sm">
+            <Database className="w-8 h-8" />
+          </div>
+          <h2 className="text-[18px] font-bold text-[var(--ink)]">
+            Đơn vị chưa cấu hình kết nối CSDL HIS
+          </h2>
+          <p className="text-[13.5px] text-[var(--mute)] max-w-lg mx-auto leading-relaxed">
+            Cơ sở <strong className="text-[var(--ink)]">{currentCoSo?.ten || activeCoSoId || "hiện tại"}</strong> chưa được thiết lập địa chỉ IP máy chủ và tên Database HIS. Vui lòng vào mục <strong>Quản trị → Cấu hình đơn vị</strong> để điền thông tin kết nối SQL Server HIS.
+          </p>
+          <div className="pt-2">
+            <Link href="/quan-tri" className="btn btn-primary px-6 py-2.5 font-bold rounded-xl inline-flex items-center gap-2">
+              <span>Đến trang Quản trị cấu hình</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 pb-16">

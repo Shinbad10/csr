@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { classifyCSRNhom } from "@/lib/csr";
 
 export const dynamic = "force-dynamic";
 
@@ -46,11 +47,7 @@ export async function GET(request: Request) {
       prisma.hoSoBenhNhan.count({
         where: {
           ...where,
-          OR: [
-            { ngayMoThucTe: { not: null } },
-            { trangThai: "DaMoHauPhau" },
-            { trangThaiDieuTri: "Đã mổ" },
-          ],
+          ngayMoThucTe: { not: null },
         },
       }),
       prisma.hoSoBenhNhan.findMany({
@@ -64,11 +61,16 @@ export async function GET(request: Request) {
           mucHuongBHYT: true,
           trangThai: true,
           nhom: true,
+          xacNhanDieuTri: true,
           khuyenNghi: true,
+          huongXuTri: true,
+          benhLy: true,
           chanDoan: true,
           chanDoanMP: true,
           chanDoanMT: true,
           chanDoanKhac: true,
+          chanDoanKhacMP: true,
+          chanDoanKhacMT: true,
           loaiBenhLy: true,
           bacSiChiDinh: true,
           nhanVienTuVan: true,
@@ -156,16 +158,18 @@ export async function GET(request: Request) {
     const currentYear = new Date().getFullYear();
 
     for (const h of allHoSos) {
-      if (h.nhom === "A" || h.khuyenNghi === "Phẫu thuật" || h.trangThai === "NhomA" || h.trangThai === "CoChiDinhMo" || h.trangThai === "DaMoHauPhau") {
+      const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(h);
+
+      if (isNhomA) {
         nhomA++;
-      } else if (h.nhom === "B" || h.khuyenNghi === "Theo dõi" || h.trangThai === "NhomB" || h.trangThai === "TheoDoi") {
+      } else if (isNhomB) {
         nhomB++;
       }
 
       if (h.trangThai !== "TiepNhan") {
         daKhamCount++;
       }
-      if (h.trangThai === "NhomA" || h.trangThai === "DaNhacLich" || h.trangThai === "DaDonVien" || h.trangThai === "DaMoHauPhau" || h.nhom === "A") {
+      if (isNhomA || h.trangThai === "DaNhacLich" || h.trangThai === "DaDonVien" || h.trangThai === "DaMoHauPhau") {
         daChotTuVanCount++;
       }
 
@@ -231,8 +235,8 @@ export async function GET(request: Request) {
       if (bs) {
         if (!doctorMap[bs]) doctorMap[bs] = { total: 0, nhomA: 0, daMo: 0 };
         doctorMap[bs].total++;
-        if (h.nhom === "A" || h.khuyenNghi === "Phẫu thuật") doctorMap[bs].nhomA++;
-        if (h.ngayMoThucTe || h.trangThai === "DaMoHauPhau") doctorMap[bs].daMo++;
+        if (isNhomA) doctorMap[bs].nhomA++;
+        if (isDaMo) doctorMap[bs].daMo++;
       }
 
       // Tư vấn viên
@@ -240,8 +244,8 @@ export async function GET(request: Request) {
       if (tvv) {
         if (!counselorMap[tvv]) counselorMap[tvv] = { total: 0, chotMo: 0, daMo: 0 };
         counselorMap[tvv].total++;
-        if (h.nhom === "A") counselorMap[tvv].chotMo++;
-        if (h.ngayMoThucTe || h.trangThai === "DaMoHauPhau") counselorMap[tvv].daMo++;
+        if (isNhomA) counselorMap[tvv].chotMo++;
+        if (isDaMo) counselorMap[tvv].daMo++;
       }
 
       // Buổi khám
@@ -260,9 +264,9 @@ export async function GET(request: Request) {
           };
         }
         sessionMap[h.buoiKhamId].tong++;
-        if (h.nhom === "A" || h.khuyenNghi === "Phẫu thuật") sessionMap[h.buoiKhamId].nhomA++;
-        if (h.nhom === "B" || h.khuyenNghi === "Theo dõi") sessionMap[h.buoiKhamId].nhomB++;
-        if (h.ngayMoThucTe || h.trangThai === "DaMoHauPhau") sessionMap[h.buoiKhamId].daMo++;
+        if (isNhomA) sessionMap[h.buoiKhamId].nhomA++;
+        if (isNhomB) sessionMap[h.buoiKhamId].nhomB++;
+        if (isDaMo) sessionMap[h.buoiKhamId].daMo++;
       }
     }
 
@@ -301,7 +305,7 @@ export async function GET(request: Request) {
       funnel: [
         { stage: "Tiếp nhận", count: tong, pct: 100 },
         { stage: "Đã khám mắt", count: daKhamCount, pct: tong > 0 ? Math.round((daKhamCount / tong) * 100) : 0 },
-        { stage: "Chỉ định mổ (Nhóm A)", count: nhomA, pct: tong > 0 ? Math.round((nhomA / tong) * 100) : 0 },
+        { stage: "Nhóm A (Đồng ý phẫu thuật)", count: nhomA, pct: tong > 0 ? Math.round((nhomA / tong) * 100) : 0 },
         { stage: "Đã chốt mổ / Đón viện", count: daChotTuVanCount, pct: nhomA > 0 ? Math.round((daChotTuVanCount / nhomA) * 100) : 0 },
         { stage: "Đã phẫu thuật (HIS)", count: daMo, pct: nhomA > 0 ? Math.round((daMo / nhomA) * 100) : 0 },
       ],

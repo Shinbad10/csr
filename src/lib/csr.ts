@@ -7,6 +7,60 @@ export const NHOM = ["A", "B"] as const;                                        
 export const TT_DIEU_TRI = ["Đã mổ", "Hủy", "Không đến"] as const;              // SRS §7
 export const THI_LUC = ["", "10/10", "8/10", "6/10", "5/10", "4/10", "3/10", "2/10", "1/10", "ĐNT 3m", "ĐNT 2m", "ĐNT 1m", "BBT", "ST(+)", "ST(-)"];
 
+/**
+ * Phân loại Nhóm CSR chuẩn cho bệnh nhân (theo quy tắc nghiệp vụ CSR chuẩn hóa):
+ * - Có bệnh lý (hasPathology): bệnh nhân có chẩn đoán/khuyến nghị/hướng xử trí/bệnh lý bất thường.
+ * - Nhóm A: Có chỉ định và đã đồng ý/chốt mổ (nhom === 'A', xacNhanDieuTri === true, hoặc trạng thái thuộc [NhomA, DaNhacLich, DaDonVien, DaMoHauPhau]).
+ * - Nhóm B: Có chỉ định/bệnh lý nhưng chưa đồng ý hoặc theo dõi (hasPathology && !isNhomA).
+ * - Đã mổ: Có ngày mổ thực tế (ngayMoThucTe != null).
+ */
+export function classifyCSRNhom(h: {
+  nhom?: string | null;
+  xacNhanDieuTri?: boolean | null;
+  chanDoanMP?: string | null;
+  chanDoanMT?: string | null;
+  chanDoan?: string | null;
+  chanDoanKhacMP?: string | null;
+  chanDoanKhacMT?: string | null;
+  chanDoanKhac?: string | null;
+  benhLy?: string | null;
+  khuyenNghi?: string | null;
+  huongXuTri?: string | null;
+  trangThai?: string | null;
+  ngayMoThucTe?: Date | string | null;
+}) {
+  const hasPathology =
+    Boolean(h.nhom) ||
+    h.xacNhanDieuTri != null ||
+    (Boolean(h.chanDoanMP) && h.chanDoanMP !== "[]" && h.chanDoanMP !== "") ||
+    (Boolean(h.chanDoanMT) && h.chanDoanMT !== "[]" && h.chanDoanMT !== "") ||
+    (Boolean(h.chanDoan) && h.chanDoan !== "[]" && h.chanDoan !== "") ||
+    Boolean(h.chanDoanKhacMP) ||
+    Boolean(h.chanDoanKhacMT) ||
+    Boolean(h.chanDoanKhac) ||
+    (Boolean(h.benhLy) && h.benhLy !== "Chưa phát hiện bất thường" && h.benhLy !== "Bình thường") ||
+    h.khuyenNghi === "Phẫu thuật" ||
+    h.huongXuTri === "Phẫu thuật" ||
+    h.huongXuTri === "Điều trị khác";
+
+  if (!hasPathology) {
+    return { hasPathology: false, isNhomA: false, isNhomB: false, isDaMo: Boolean(h.ngayMoThucTe) };
+  }
+
+  const isNhomA =
+    h.nhom === "A" ||
+    h.xacNhanDieuTri === true ||
+    h.trangThai === "NhomA" ||
+    h.trangThai === "DaNhacLich" ||
+    h.trangThai === "DaDonVien" ||
+    h.trangThai === "DaMoHauPhau";
+
+  const isNhomB = !isNhomA;
+  const isDaMo = Boolean(h.ngayMoThucTe);
+
+  return { hasPathology: true, isNhomA, isNhomB, isDaMo };
+}
+
 export const parseDiag = (raw: string | null): string[] => {
   try { const v = JSON.parse(raw || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
 };

@@ -8,8 +8,9 @@ import { clearBhxhCache } from "@/lib/bhxh";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || !can(session.user.role, "admin.masterdata")) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   const { id } = await params;
+  const isAllowed = session && (can(session.user.role, "admin.masterdata") || (can(session.user.role, "admin.users") && session.user.coSoId === id));
+  if (!session || !isAllowed) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   try {
     const { ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName, cauHinhTruong } = await request.json();
 

@@ -126,22 +126,22 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
           </button>
         )}
 
-        {/* Drawer Mobile: Inline Accordion Expansion */}
+        {/* Drawer Mobile: Floating Popover (Overlay, không đẩy menu xuống) */}
         <AnimatePresence>
           {!isDark && open && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              initial={{ opacity: 0, scale: 0.96, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 4 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               suppressHydrationWarning
-              className="mt-2 bg-white dark:bg-slate-800 border border-[var(--line-strong)] dark:border-white/10 rounded-2xl shadow-xs p-1.5 text-[var(--ink)] overflow-hidden"
+              className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-2xl shadow-2xl p-2 text-[var(--ink)]"
             >
-              <div className="px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1 flex items-center justify-between">
+              <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1.5 flex items-center justify-between">
                 <span>Đổi cơ sở làm việc</span>
                 <span className="text-[9px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] font-sans">{coSos.length} cơ sở</span>
               </div>
-              <div className="space-y-1">
+              <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                 {coSos.map((c) => {
                   const active = c.id === selected;
                   return (
@@ -149,23 +149,23 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
                       key={c.id}
                       type="button"
                       onClick={() => { setOpen(false); onChange(c.id); }}
-                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-[12px] font-bold transition-all text-left cursor-pointer ${
+                      className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition-all text-left cursor-pointer ${
                         active
                           ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
-                          : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-700 hover:text-[var(--navy)]"
+                          : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
-                            active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-700 text-[var(--mute)]"
+                          className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                            active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
                           }`}
                         >
-                          <Building2 className="w-3 h-3" />
+                          <Building2 className="w-3.5 h-3.5" />
                         </div>
                         <span className="truncate leading-snug">{c.ten}</span>
                       </div>
-                      {active && <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" strokeWidth={3} />}
+                      {active && <Check className="w-4 h-4 text-[var(--teal)] shrink-0" strokeWidth={3} />}
                     </button>
                   );
                 })}

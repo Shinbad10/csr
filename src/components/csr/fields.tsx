@@ -1,31 +1,39 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft, Calendar as CalendarIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const labelCls = "block text-[11px] sm:text-[12px] font-bold text-[var(--ink-soft)] mb-1";
 
+export interface PortalPos {
+  top?: number;
+  bottom?: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+}
+
 /** Vị trí popup dạng portal: tự lật lên trên khi không đủ chỗ bên dưới,
  *  và tự canh lề ngang (left) để không bao giờ bị tràn khỏi màn hình. */
 export function usePortalPosition(
   open: boolean, 
   ref: React.RefObject<HTMLElement | null>, 
-  dropdownHeight: number = 320,
+  dropdownHeight: number = 280,
   minWidth?: number
 ) {
-  const [pos, setPos] = useState<{ top?: number; bottom?: number; left?: number; width?: number; maxHeight?: number; ready: boolean }>({ ready: false });
+  const [pos, setPos] = useState<PortalPos | null>(null);
 
-  const update = useCallback(() => {
-    if (!ref.current) return;
+  const calculate = useCallback((): PortalPos | null => {
+    if (!ref.current) return null;
     const rect = ref.current.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     
     const spaceBelow = viewportHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+    const openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
     
     // Chiều rộng hiệu dụng
     const effectiveWidth = minWidth ? Math.max(rect.width, minWidth) : rect.width;
@@ -41,41 +49,62 @@ export function usePortalPosition(
     }
 
     if (openUp) {
-      const availableHeight = Math.max(160, Math.min(dropdownHeight, spaceAbove - 16));
-      setPos({ 
+      const availableHeight = Math.max(140, Math.min(dropdownHeight, spaceAbove - 16));
+      return { 
         bottom: viewportHeight - rect.top + 4, 
         left, 
-        width: minWidth ? effectiveWidth : rect.width,
+        width: effectiveWidth,
         maxHeight: availableHeight,
-        ready: true
-      });
+      };
     } else {
-      const availableHeight = Math.max(160, Math.min(dropdownHeight, spaceBelow - 16));
-      setPos({ 
+      const availableHeight = Math.max(140, Math.min(dropdownHeight, spaceBelow - 16));
+      return { 
         top: rect.bottom + 4, 
         left, 
-        width: minWidth ? effectiveWidth : rect.width,
+        width: effectiveWidth,
         maxHeight: availableHeight,
-        ready: true
-      });
+      };
     }
   }, [dropdownHeight, minWidth, ref]);
 
-  useEffect(() => {
-    if (!open) {
-      setPos((p) => (p.ready ? { ready: false } : p));
-      return;
+  const update = useCallback(() => {
+    const p = calculate();
+    if (p) setPos(p);
+  }, [calculate]);
+
+  useLayoutEffect(() => {
+    if (open) {
+      update();
     }
-    update();
-    window.addEventListener("scroll", update, true);
-    window.addEventListener("resize", update);
+  }, [open, update]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleScrollOrResize = () => update();
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
     return () => {
-      window.removeEventListener("scroll", update, true);
-      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
     };
   }, [open, update]);
 
-  return pos;
+  const style: React.CSSProperties = {
+    position: "fixed",
+    zIndex: 99999,
+    ...(pos?.top !== undefined ? { top: pos.top } : {}),
+    ...(pos?.bottom !== undefined ? { bottom: pos.bottom } : {}),
+    left: pos?.left ?? 0,
+    width: pos?.width ?? "auto",
+    maxHeight: pos?.maxHeight ?? dropdownHeight,
+  };
+
+  return {
+    pos,
+    style,
+    ready: !!pos,
+    update,
+  };
 }
 
 export function Field({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
@@ -123,18 +152,33 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
   const ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const disp = (o: string) => (o ? labels?.[o] ?? o : placeholder);
-  const pos = usePortalPosition(open, ref, 280);
+  const { ready, style, update } = usePortalPosition(open, ref, 280);
+
+  const toggle = () => {
+    if (disabled) return;
+    const next = !open;
+    setOpen(next);
+    if (next) update();
+  };
 
   useEffect(() => {
     if (!open) { setSearch(""); return; }
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node) && (!popupRef.current || !popupRef.current.contains(e.target as Node))) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (ref.current && ref.current.contains(target)) return;
+      if (popupRef.current && popupRef.current.contains(target)) return;
+      setOpen(false);
     };
-    const esc = (e: KeyboardEvent) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Escape") setOpen(false); };
-    window.addEventListener("mousedown", h); window.addEventListener("keydown", esc);
-    return () => { window.removeEventListener("mousedown", h); window.removeEventListener("keydown", esc); };
+    const esc = (e: KeyboardEvent) => {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", h);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("mousedown", h);
+      window.removeEventListener("keydown", esc);
+    };
   }, [open]);
 
   const showSearch = options.length > 8;
@@ -144,43 +188,42 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
 
   return (
     <div className="relative" ref={ref}>
-      <motion.button
-        whileTap={!disabled ? { scale: 0.99 } : undefined}
+      <button
         type="button"
-        onClick={() => !disabled && setOpen((o) => !o)}
+        onClick={toggle}
         disabled={disabled}
-        className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none h-8 text-[12px] px-2.5 ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)]" : ""}`}
+        className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none h-10 text-[13px] px-3 transition-colors ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)] cursor-not-allowed" : ""}`}
       >
         <span className={`${value ? `text-[var(--ink)] font-medium ${mono && !labels ? "font-mono" : ""}` : "text-[var(--mute-soft)]"} truncate`}>
           {value ? disp(value) : placeholder}
         </span>
-        <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
-      </motion.button>
+        <ChevronDown className={`w-4 h-4 shrink-0 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
+      </button>
       <AnimatePresence>
-        {open && pos.ready && typeof document !== "undefined" && createPortal(
+        {open && ready && typeof document !== "undefined" && createPortal(
           <motion.div 
             ref={popupRef} 
-            style={{ ...pos }}
+            style={style}
             initial={{ opacity: 0, scale: 0.98, y: 3 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 3 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
-            className="fixed z-[99999] max-h-[260px] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-xl p-1 text-[12px]"
+            className="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-1 text-[12.5px] overflow-hidden"
           >
             {showSearch && (
-              <div className="p-1 border-b border-[var(--line)] mb-1">
+              <div className="p-1.5 border-b border-[var(--line)] mb-1">
                 <input
                   autoFocus
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Tìm nhanh..."
-                  className="w-full px-2 py-1 text-[11.5px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-all"
+                  className="w-full px-2.5 py-1 text-[12px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-all"
                 />
               </div>
             )}
-            <div className="overflow-y-auto flex-1 p-0.5 space-y-0.5 custom-scrollbar">
+            <div className="overflow-y-auto flex-1 p-0.5 space-y-0.5 custom-scrollbar max-h-[240px]">
               {filtered.length === 0 ? (
-                <div className="px-2.5 py-2 text-center text-xs text-[var(--mute)]">Không tìm thấy kết quả</div>
+                <div className="px-3 py-2 text-center text-xs text-[var(--mute)]">Không tìm thấy kết quả</div>
               ) : (
                 filtered.map((o) => {
                   const isSelected = value === o;
@@ -189,11 +232,11 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
                       key={o || "__empty"} 
                       type="button" 
                       onClick={() => { onChange(o); setOpen(false); }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11.5px] sm:text-[12px] flex items-center justify-between gap-1.5 transition-colors cursor-pointer ${
+                      className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] flex items-center justify-between gap-2 transition-colors cursor-pointer ${
                         isSelected ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 hover:text-[var(--ink)]"} ${mono && o && !labels ? "font-mono" : ""}`}
                     >
                       <span className={o ? "truncate" : "text-[var(--mute-soft)]"}>{disp(o)}</span>
-                      {isSelected && o && <Check className="w-3.5 h-3.5 shrink-0 text-[var(--teal-deep)] stroke-[2.5]" />}
+                      {isSelected && o && <Check className="w-4 h-4 shrink-0 text-[var(--teal-deep)] stroke-[2.5]" />}
                     </button>
                   );
                 })
@@ -421,8 +464,7 @@ export function DateField({
   }, [open, value]);
 
   // Căn lề thông minh qua Portal Position
-  const pos = usePortalPosition(open, ref, 340, 275);
-  const { maxHeight, ...safePos } = pos;
+  const { ready, style: portalStyle } = usePortalPosition(open, ref, 340, 275);
 
   useEffect(() => {
     if (!open) return;
@@ -710,11 +752,11 @@ export function DateField({
         </button>
       </div>
 
-      {open && pos.ready && typeof document !== "undefined" && createPortal(
+      {open && ready && typeof document !== "undefined" && createPortal(
         <div 
           ref={popupRef} 
-          style={{ ...safePos, width: 275 }} 
-          className="fixed z-[99999] bg-white border border-[#cbd5e1] rounded-2xl shadow-2xl p-2.5 animate-dropdown select-none flex flex-col overflow-hidden"
+          style={{ ...portalStyle, width: 275 }} 
+          className="bg-white border border-[#cbd5e1] rounded-2xl shadow-2xl p-2.5 animate-dropdown select-none flex flex-col overflow-hidden"
         >
           {/* Header chọn tháng & năm */}
           <div className="flex items-center justify-between gap-1 pb-2 mb-1.5 border-b border-[#e2e8f0]">
@@ -850,14 +892,15 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const pos = usePortalPosition(open, ref, 200);
+  const { ready, style } = usePortalPosition(open, ref, 200);
   
   useEffect(() => {
     if (!open) return;
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node) && (!popupRef.current || !popupRef.current.contains(e.target as Node))) {
-        setOpen(false);
-      }
+      const t = e.target as Node;
+      if (ref.current && ref.current.contains(t)) return;
+      if (popupRef.current && popupRef.current.contains(t)) return;
+      setOpen(false);
     };
     window.addEventListener("mousedown", h);
     return () => window.removeEventListener("mousedown", h);
@@ -880,8 +923,8 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
         />
         <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)] pointer-events-none transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
       </div>
-      {open && typeof document !== "undefined" && createPortal(
-        <div ref={popupRef} style={{ ...pos }} className="fixed z-[99999] max-h-[200px] overflow-y-auto bg-white border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-dropdown">
+      {open && ready && typeof document !== "undefined" && createPortal(
+        <div ref={popupRef} style={style} className="overflow-y-auto bg-white border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-dropdown">
           {options.length === 0 && !showAdd && (
             <div className="px-3 py-2.5 text-[12.5px] text-[var(--mute)] text-center">Chưa có điểm đón nào.<br/>Nhập để tạo mới.</div>
           )}
@@ -970,7 +1013,7 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
   const [q, setQ] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
-  const pos = usePortalPosition(open, ref, 320);
+  const { ready, style } = usePortalPosition(open, ref, 320);
   const close = useCallback(() => { setOpen(false); setQ(""); }, []);
 
   useEffect(() => {
@@ -1014,10 +1057,10 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
       )}
 
       <AnimatePresence>
-        {open && pos.ready && !disabled && typeof document !== "undefined" && createPortal(
+        {open && ready && !disabled && typeof document !== "undefined" && createPortal(
           <motion.div
             ref={popupRef}
-            style={{ ...pos }}
+            style={style}
             initial={{ opacity: 0, scale: 0.95, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 4 }}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import {
   CalendarHeart,
@@ -10,26 +10,24 @@ import {
   ArrowRight,
   PhoneCall,
   Users,
-  Calendar,
   HeartHandshake,
   CheckCircle2,
   Activity,
   Loader2,
   Sparkles,
+  Stethoscope,
+  Building2,
+  ShieldCheck,
+  TrendingUp,
+  Clock,
+  ChevronRight,
+  Eye,
 } from "lucide-react";
 import { motion, type Variants } from "framer-motion";
 import { can } from "@/lib/permissions";
-import { STATUS, statusOf } from "@/lib/csr";
-import { Donut, BarChart, CHART_COLORS, type Slice } from "@/components/charts";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-
-const TILES = [
-  { label: "Đợt khám tầm soát", desc: "Tiếp nhận, đo thị lực, khám mắt & tư vấn theo đợt", href: "/buoi-kham", icon: CalendarHeart, cap: undefined, badge: "Thường trực" },
-  { label: "Theo dõi A/B", desc: "Theo dõi, nhắc lịch, cập nhật trạng thái mổ & viện phí", href: "/theo-doi", icon: PhoneCall, cap: "hoso.followup" as const, badge: "Chăm sóc" },
-  { label: "Đối chiếu HIS", desc: "Quét đối chiếu hàng loạt theo đợt & danh sách HIS", href: "/doi-chieu-his", icon: Activity, cap: "hoso.followup" as const, badge: "Tự động" },
-  { label: "Hồ sơ bệnh nhân", desc: "Tra cứu, lọc, tìm kiếm theo tên, mã, SĐT hoặc CCCD", href: "/ho-so", icon: ClipboardList, cap: undefined, badge: "Tra cứu" },
-  { label: "Báo cáo & thống kê", desc: "Xuất file Excel theo bộ lọc, biểu đồ tổng hợp", href: "/bao-cao", icon: BarChart3, cap: "report.export" as const, badge: "Tổng hợp" },
-];
+import { useCurrentFacility } from "@/lib/useFacility";
+import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
 
 interface Stats {
   tong: number;
@@ -40,66 +38,41 @@ interface Stats {
   daMo: number;
 }
 
-const STATUS_ORDER = Object.keys(STATUS);
-const statusColor = (key: string) => CHART_COLORS[Math.max(0, STATUS_ORDER.indexOf(key)) % CHART_COLORS.length];
-
-const KPIS = [
-  {
-    key: "tong",
-    label: "Tổng bệnh nhân",
-    icon: Users,
-    iconBg: "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200/60 dark:border-blue-800/40",
-    sparkColor: "text-blue-500",
-  },
-  {
-    key: "soBuoi",
-    label: "Buổi khám đã tạo",
-    icon: Calendar,
-    iconBg: "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200/60 dark:border-sky-800/40",
-    sparkColor: "text-sky-500",
-  },
-  {
-    key: "nhomA",
-    label: "Nhóm A (Chỉ định mổ)",
-    icon: HeartHandshake,
-    iconBg: "bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-200/60 dark:border-teal-800/40",
-    sparkColor: "text-teal-600",
-  },
-  {
-    key: "daMo",
-    label: "Đã mổ thành công",
-    icon: CheckCircle2,
-    iconBg: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/40",
-    sparkColor: "text-emerald-600",
-  },
-] as const;
-
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
+      staggerChildren: 0.06,
     },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 350, damping: 25 },
+    transition: { type: "spring", stiffness: 380, damping: 26 },
   },
 };
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
-  const role = session?.user?.role;
-  const tiles = TILES.filter((t) => !t.cap || can(role, t.cap));
+  const role = session?.user?.role || "";
+  const { currentCoSo, hasHisConfig } = useCurrentFacility();
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // State cho Modal chi tiết khi click vào KPI
+  const [detailTarget, setDetailTarget] = useState<ReportModalTarget | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const openDetail = (target: ReportModalTarget) => {
+    setDetailTarget(target);
+    setModalOpen(true);
+  };
 
   const loadStats = useCallback(() => {
     fetch("/api/csr/reports")
@@ -121,152 +94,434 @@ export default function Dashboard() {
 
   const ready = status !== "loading" && !loading;
 
-  const slices: Slice[] = stats
-    ? STATUS_ORDER.map((k) => ({
-        label: statusOf(k).label,
-        value: stats.byStatus[k] || 0,
-        color: statusColor(k),
-      })).filter((s) => s.value > 0)
-    : [];
+  // Tính toán tỷ lệ phần trăm
+  const tongBN = stats?.tong ?? 0;
+  const nhomA = stats?.nhomA ?? 0;
+  const nhomB = stats?.nhomB ?? 0;
+  const daMo = stats?.daMo ?? 0;
+  const soBuoi = stats?.soBuoi ?? 0;
+
+  const tyLeChiDinh = tongBN > 0 ? Math.round((nhomA / tongBN) * 100) : 0;
+  const tyLeMoThanhCong = nhomA > 0 ? Math.round((daMo / nhomA) * 100) : 0;
+
+  // Danh mục điều hướng nghiệp vụ chính (đồng đều, cân đối)
+  const navTiles = useMemo(() => {
+    const all = [
+      {
+        id: "buoi-kham",
+        label: "Đợt khám tầm soát",
+        desc: "Lập lịch, tiếp nhận cộng đồng, đo thị lực & quản lý danh sách khám.",
+        href: "/buoi-kham",
+        icon: CalendarHeart,
+        cap: undefined,
+        tag: "Tiếp nhận",
+        accent: "from-blue-600 to-indigo-700",
+        chip: "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300",
+      },
+      {
+        id: "tu-van",
+        label: "Tư vấn điều trị",
+        desc: "Khám lâm sàng, phân loại Nhóm A/B, tư vấn phẫu thuật & đặt hẹn mổ.",
+        href: "/tu-van",
+        icon: Stethoscope,
+        cap: "hoso.clinical" as const,
+        tag: "Chỉ định mổ",
+        accent: "from-teal-600 to-emerald-700",
+        chip: "bg-teal-50 text-teal-800 border-teal-200/60 dark:bg-teal-950/40 dark:text-teal-300",
+      },
+      {
+        id: "theo-doi",
+        label: "Theo dõi & Chăm sóc",
+        desc: "Chăm sóc Nhóm A/B, gọi nhắc lịch đến viện, cập nhật mổ & thực thu.",
+        href: "/theo-doi",
+        icon: PhoneCall,
+        cap: "hoso.followup" as const,
+        tag: "Chăm sóc",
+        accent: "from-amber-600 to-orange-700",
+        chip: "bg-amber-50 text-amber-800 border-amber-200/60 dark:bg-amber-950/40 dark:text-amber-300",
+      },
+      {
+        id: "ho-so",
+        label: "Hồ sơ bệnh nhân",
+        desc: "Tra cứu thông tin, lịch sử khám, tìm kiếm theo tên, SĐT, CCCD hoặc mã BN.",
+        href: "/ho-so",
+        icon: ClipboardList,
+        cap: undefined,
+        tag: "Tra cứu",
+        accent: "from-sky-600 to-blue-700",
+        chip: "bg-sky-50 text-sky-800 border-sky-200/60 dark:bg-sky-950/40 dark:text-sky-300",
+      },
+      {
+        id: "bao-cao",
+        label: "Báo cáo & Thống kê",
+        desc: "Xem biểu đồ chuyên sâu, tổng hợp kết quả toàn diện & xuất file Excel.",
+        href: "/bao-cao",
+        icon: BarChart3,
+        cap: "report.export" as const,
+        tag: "Dữ liệu & Excel",
+        accent: "from-purple-600 to-violet-700",
+        chip: "bg-purple-50 text-purple-800 border-purple-200/60 dark:bg-purple-950/40 dark:text-purple-300",
+      },
+      {
+        id: "quan-tri",
+        label: "Quản trị hệ thống",
+        desc: "Cấu hình đơn vị, danh sách bác sĩ, phân quyền tài khoản & kết nối HIS/BHYT.",
+        href: "/quan-tri",
+        icon: Building2,
+        cap: "admin.users" as const,
+        tag: "Cấu hình",
+        accent: "from-slate-700 to-slate-900",
+        chip: "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-200",
+      },
+      {
+        id: "doi-chieu-his",
+        label: "Đối chiếu CSDL HIS",
+        desc: "Quét đối chiếu tự động danh sách mổ & đồng bộ thực thu từ máy chủ HIS.",
+        href: "/doi-chieu-his",
+        icon: Activity,
+        cap: "hoso.followup" as const,
+        tag: "Tự động HIS",
+        accent: "from-emerald-600 to-teal-700",
+        chip: "bg-emerald-50 text-emerald-800 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300",
+        requireHis: true,
+      },
+    ];
+
+    return all
+      .filter((t) => !t.cap || can(role, t.cap))
+      .filter((t) => !t.requireHis || hasHisConfig);
+  }, [role, hasHisConfig]);
 
   if (!ready) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 sm:py-40 gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" />
-        <span className="text-xs font-mono text-[var(--mute)] font-semibold">Đang nạp dữ liệu bảng điều khiển...</span>
+      <div className="flex flex-col items-center justify-center py-36 gap-3">
+        <Loader2 className="w-9 h-9 animate-spin text-[var(--navy)]" />
+        <span className="text-[13px] font-mono text-[var(--mute)] font-semibold">
+          Đang nạp dữ liệu tổng quan...
+        </span>
       </div>
     );
   }
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="max-w-[1280px] mx-auto space-y-4 sm:space-y-5 pb-8 pt-1"
-    >
-      {/* KPI 4 Cards Grid */}
-      <div data-tour="db-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4.5">
-        {KPIS.map((c) => {
-          const Icon = c.icon;
-          const val = (stats?.[c.key as keyof Stats] as number) ?? 0;
-          return (
-            <motion.div
-              key={c.key}
-              variants={itemVariants}
-              whileHover={{ y: -3, scale: 1.01 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-[var(--line-strong)] dark:border-white/10 p-4 sm:p-5 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group cursor-default"
+    <>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="w-full space-y-5 sm:space-y-6 pb-12 pt-1"
+      >
+        {/* TOP: 4 KPI CARDS GỌN GÀNG & RÕ RÀNG (2x2 TRÊN MOBILE) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4.5">
+          {/* KPI 1: Tổng tiếp nhận */}
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() =>
+              openDetail({
+                type: "kpi_tong",
+                title: "Danh sách Bệnh nhân Tiếp nhận",
+                subtitle: "Toàn bộ hồ sơ bệnh nhân trong hệ thống",
+                icon: Users,
+              })
+            }
+            className="card p-3.5 sm:p-5 relative overflow-hidden group cursor-pointer hover:border-blue-400 hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider block truncate">
+                  Tổng tiếp nhận
+                </span>
+                <div className="text-[22px] sm:text-[34px] font-black font-mono text-[var(--ink)] mt-1 leading-tight">
+                  {tongBN.toLocaleString("vi-VN")}
+                </div>
+              </div>
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200/60 shadow-2xs group-hover:scale-105 transition-transform">
+                <Users className="w-4.5 h-4.5 sm:w-6 sm:h-6" />
+              </div>
+            </div>
+            <div className="mt-2.5 pt-2 sm:mt-4 sm:pt-3 border-t border-[var(--line-soft)] flex items-center justify-between text-[10.5px] sm:text-[12px] text-[var(--mute)]">
+              <span className="truncate">Đã tiếp nhận</span>
+              <span className="text-blue-700 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 shrink-0">
+                Chi tiết ➔
+              </span>
+            </div>
+          </motion.div>
+
+          {/* KPI 2: Đợt khám CSR */}
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() =>
+              openDetail({
+                type: "kpi_soBuoi",
+                title: "Danh sách Đợt khám CSR",
+                subtitle: "Tổng hợp các đợt khám sàng lọc cộng đồng",
+                icon: CalendarHeart,
+              })
+            }
+            className="card p-3.5 sm:p-5 relative overflow-hidden group cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-600 to-purple-600" />
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider block truncate">
+                  Đợt khám CSR
+                </span>
+                <div className="text-[22px] sm:text-[34px] font-black font-mono text-[var(--ink)] mt-1 leading-tight">
+                  {soBuoi.toLocaleString("vi-VN")}
+                </div>
+              </div>
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-200/60 shadow-2xs group-hover:scale-105 transition-transform">
+                <CalendarHeart className="w-4.5 h-4.5 sm:w-6 sm:h-6" />
+              </div>
+            </div>
+            <div className="mt-2.5 pt-2 sm:mt-4 sm:pt-3 border-t border-[var(--line-soft)] flex items-center justify-between text-[10.5px] sm:text-[12px] text-[var(--mute)]">
+              <span className="truncate">Đợt đã tạo</span>
+              <span className="text-indigo-700 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 shrink-0">
+                Chi tiết ➔
+              </span>
+            </div>
+          </motion.div>
+
+          {/* KPI 3: Chỉ định mổ Nhóm A */}
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() =>
+              openDetail({
+                type: "kpi_nhomA",
+                title: "Danh sách Bệnh nhân Nhóm A (Chỉ định mổ)",
+                subtitle: "Bệnh nhân có chỉ định phẫu thuật",
+                icon: HeartHandshake,
+              })
+            }
+            className="card p-3.5 sm:p-5 relative overflow-hidden group cursor-pointer hover:border-teal-400 hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-emerald-600" />
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider block truncate">
+                  Chỉ định mổ (A)
+                </span>
+                <div className="text-[22px] sm:text-[34px] font-black font-mono text-[var(--teal-deep)] mt-1 leading-tight">
+                  {nhomA.toLocaleString("vi-VN")}
+                </div>
+              </div>
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-teal-50 text-teal-800 flex items-center justify-center shrink-0 border border-teal-200/60 shadow-2xs group-hover:scale-105 transition-transform">
+                <HeartHandshake className="w-4.5 h-4.5 sm:w-6 sm:h-6" />
+              </div>
+            </div>
+            <div className="mt-2.5 pt-2 sm:mt-4 sm:pt-3 border-t border-[var(--line-soft)] flex items-center justify-between text-[10.5px] sm:text-[12px]">
+              <span className="text-[var(--mute)] truncate">
+                Tỷ lệ: <strong className="text-teal-800 font-mono">{tyLeChiDinh}%</strong>
+              </span>
+              <span className="text-teal-800 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 shrink-0">
+                Chi tiết ➔
+              </span>
+            </div>
+          </motion.div>
+
+          {/* KPI 4: Đã phẫu thuật thành công */}
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -3 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() =>
+              openDetail({
+                type: "kpi_daMo",
+                title: "Danh sách Bệnh nhân Đã phẫu thuật (HIS)",
+                subtitle: "Bệnh nhân đã mổ mắt thành công",
+                icon: CheckCircle2,
+              })
+            }
+            className="card p-3.5 sm:p-5 relative overflow-hidden group cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all flex flex-col justify-between"
+          >
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-600" />
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider block truncate">
+                  Đã phẫu thuật
+                </span>
+                <div className="text-[22px] sm:text-[34px] font-black font-mono text-emerald-800 mt-1 leading-tight">
+                  {daMo.toLocaleString("vi-VN")}
+                </div>
+              </div>
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200/60 shadow-2xs group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-4.5 h-4.5 sm:w-6 sm:h-6" />
+              </div>
+            </div>
+            <div className="mt-2.5 pt-2 sm:mt-4 sm:pt-3 border-t border-[var(--line-soft)] flex items-center justify-between text-[10.5px] sm:text-[12px]">
+              <span className="text-[var(--mute)] truncate">
+                Tỷ lệ mổ: <strong className="text-emerald-800 font-mono">{tyLeMoThanhCong}%</strong>
+              </span>
+              <span className="text-emerald-800 font-bold group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-0.5 shrink-0">
+                Chi tiết ➔
+              </span>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* MIDDLE: PIPELINE TÓM TẮT TIẾN ĐỘ NGHIỆP VỤ & LỐI TẮT BÁO CÁO */}
+        <motion.div
+          variants={itemVariants}
+          className="card p-4 sm:p-5 bg-gradient-to-r from-white via-slate-50/70 to-indigo-50/40 border border-[var(--line)] shadow-2xs"
+        >
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[var(--teal)] animate-pulse" />
+                <h3 className="text-[14.5px] sm:text-[15.5px] font-bold text-[var(--ink)]">
+                  Tiến độ vận hành & Phân loại dòng bệnh nhân
+                </h3>
+              </div>
+              <p className="text-[12.5px] text-[var(--mute)]">
+                Tóm tắt luồng hoạt động từ Tiếp nhận cộng đồng ➔ Khám phân loại ➔ Hẹn mổ & Điều trị tại viện
+              </p>
+            </div>
+
+            <Link
+              href="/bao-cao"
+              className="inline-flex items-center gap-2 px-4 py-2 text-[12.5px] font-bold text-[var(--navy)] bg-white hover:bg-[var(--navy-50)] border border-[var(--navy)]/20 hover:border-[var(--navy)] rounded-xl transition-all shadow-2xs shrink-0 self-start lg:self-center"
             >
-              <div className="flex items-center justify-between">
-                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl border flex items-center justify-center ${c.iconBg} shadow-2xs group-hover:scale-105 transition-transform duration-300`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <Sparkles className={`w-3.5 h-3.5 ${c.sparkColor} opacity-50 group-hover:opacity-100 transition-opacity`} />
-              </div>
+              <BarChart3 className="w-4 h-4 text-[var(--teal-deep)]" />
+              <span>Xem Báo cáo biểu đồ chi tiết & Xuất Excel</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
 
-              <div className="mt-3.5 sm:mt-4">
-                <div className="font-mono text-[26px] sm:text-[32px] font-black text-[var(--ink)] dark:text-white tracking-tight leading-none">
-                  {val.toLocaleString("vi-VN")}
-                </div>
-                <div className="text-[12px] sm:text-[12.5px] font-bold text-[var(--ink-soft)] dark:text-slate-400 mt-1.5 truncate">
-                  {c.label}
-                </div>
+          {/* 4 Pipeline Stages */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[var(--line-soft)]">
+            <div className="p-3 rounded-xl bg-white border border-[var(--line-soft)] shadow-2xs">
+              <div className="text-[11px] font-bold text-[var(--mute)] uppercase">1. Tiếp nhận</div>
+              <div className="text-[20px] font-black font-mono text-blue-700 mt-1">
+                {tongBN.toLocaleString("vi-VN")} <span className="text-[11px] font-normal text-[var(--mute)]">ca</span>
               </div>
-            </motion.div>
-          );
-        })}
-      </div>
+              <div className="text-[11px] text-[var(--mute)] mt-1">Đã vào danh sách</div>
+            </div>
 
-      {/* Charts Section: Donut + Bar */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
-        {/* Left: Donut Chart */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-[var(--line-strong)] dark:border-white/10 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--line-soft)] dark:border-white/5">
-            <h3 className="font-serif text-[15.5px] sm:text-[16.5px] font-bold text-[var(--ink)] dark:text-white">
-              Phân bố hồ sơ theo trạng thái
-            </h3>
-            <span className="text-[10.5px] font-mono font-bold text-[var(--mute)] bg-[var(--surface-soft)] dark:bg-slate-800 px-2.5 py-0.5 rounded-md border border-[var(--line)] dark:border-white/10">
-              Tổng: {((stats?.tong) ?? 0).toLocaleString("vi-VN")} ca
+            <div className="p-3 rounded-xl bg-white border border-[var(--line-soft)] shadow-2xs">
+              <div className="text-[11px] font-bold text-[var(--mute)] uppercase">2. Nhóm A (Mổ)</div>
+              <div className="text-[20px] font-black font-mono text-[var(--teal-deep)] mt-1">
+                {nhomA.toLocaleString("vi-VN")} <span className="text-[11px] font-normal text-[var(--mute)]">ca</span>
+              </div>
+              <div className="text-[11px] text-[var(--mute)] mt-1">{tyLeChiDinh}% tổng khám</div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white border border-[var(--line-soft)] shadow-2xs">
+              <div className="text-[11px] font-bold text-[var(--mute)] uppercase">3. Nhóm B (Chăm sóc)</div>
+              <div className="text-[20px] font-black font-mono text-amber-700 mt-1">
+                {nhomB.toLocaleString("vi-VN")} <span className="text-[11px] font-normal text-[var(--mute)]">ca</span>
+              </div>
+              <div className="text-[11px] text-[var(--mute)] mt-1">Theo dõi định kỳ</div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white border border-[var(--line-soft)] shadow-2xs">
+              <div className="text-[11px] font-bold text-[var(--mute)] uppercase">4. Đã phẫu thuật</div>
+              <div className="text-[20px] font-black font-mono text-emerald-700 mt-1">
+                {daMo.toLocaleString("vi-VN")} <span className="text-[11px] font-normal text-[var(--mute)]">ca</span>
+              </div>
+              <div className="text-[11px] text-[var(--mute)] mt-1">{tyLeMoThanhCong}% ca Nhóm A</div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* BOTTOM: CÁC CARD ĐIỀU HƯỚNG NGHIỆP VỤ ĐỒNG ĐỀU & ĐẸP */}
+        <motion.div variants={itemVariants} className="space-y-3.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-[16px] sm:text-[17px] font-bold text-[var(--ink)] tracking-tight">
+                Chức năng điều hướng nhanh
+              </h2>
+              <p className="text-[12px] text-[var(--mute)] mt-0.5">
+                Truy cập trực tiếp các quy trình nghiệp vụ chính của hệ thống
+              </p>
+            </div>
+            <span className="text-[11px] font-mono text-[var(--mute)] hidden sm:inline-block">
+              {navTiles.length} phân hệ
             </span>
           </div>
-          <div className="py-2 flex items-center justify-center">
-            <Donut data={slices} size={190} centerLabel="Hồ sơ" />
-          </div>
-        </div>
 
-        {/* Right: Bar Chart */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-[var(--line-strong)] dark:border-white/10 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--line-soft)] dark:border-white/5">
-            <h3 className="font-serif text-[15.5px] sm:text-[16.5px] font-bold text-[var(--ink)] dark:text-white">
-              Phân nhóm &amp; kết quả
-            </h3>
-            <span className="text-[10.5px] font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] bg-[var(--teal-soft)] dark:bg-teal-950/40 px-2.5 py-0.5 rounded-md border border-[var(--teal)]/20">
-              Nhóm A: {stats?.nhomA ?? 0}
-            </span>
-          </div>
-          <div className="py-2">
-            <BarChart
-              data={[
-                { label: "Nhóm A", value: stats?.nhomA ?? 0, color: CHART_COLORS[1] },
-                { label: "Nhóm B", value: stats?.nhomB ?? 0, color: CHART_COLORS[3] },
-                { label: "Đã mổ", value: stats?.daMo ?? 0, color: CHART_COLORS[0] },
-              ]}
-              height={195}
-            />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Quick Actions Grid */}
-      <motion.div variants={itemVariants} className="pt-2">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h3 className="font-sans font-extrabold text-[11px] uppercase tracking-[0.15em] text-[var(--mute)] font-mono">
-            Chức năng truy cập nhanh
-          </h3>
-          <span className="text-[11px] text-[var(--mute)] hidden sm:inline font-medium">Bấm vào thẻ để chuyển trang</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {tiles.map((t) => {
-            const Icon = t.icon;
-            return (
-              <motion.div
-                key={t.href}
-                whileHover={{ y: -2, scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              >
-                <Link
-                  href={t.href}
-                  className="h-full bg-white dark:bg-slate-900 rounded-2xl border border-[var(--line-strong)] dark:border-white/10 p-4 sm:p-4.5 shadow-xs hover:border-[var(--teal)] hover:shadow-md transition-all duration-200 flex items-start gap-3.5 group cursor-pointer"
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4.5">
+            {navTiles.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <motion.div
+                  key={tile.id}
+                  whileHover={{ y: -3 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="h-full"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-[var(--navy-50)] text-[var(--navy)] dark:text-[var(--teal)] flex items-center justify-center shrink-0 group-hover:bg-[var(--navy)] group-hover:text-[var(--teal)] group-hover:scale-105 transition-all duration-200 shadow-2xs">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-serif text-[15.5px] font-bold text-[var(--ink)] dark:text-white group-hover:text-[var(--navy)] dark:group-hover:text-[var(--teal)] transition-colors truncate">
-                        {t.label}
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-[var(--mute-soft)] group-hover:text-[var(--teal)] group-hover:translate-x-0.5 transition-all shrink-0" />
+                  <Link
+                    href={tile.href}
+                    className="card p-3 sm:p-5 h-full flex flex-col justify-between hover:border-[var(--teal)] hover:shadow-md transition-all duration-200 group relative overflow-hidden cursor-pointer"
+                  >
+                    {/* Accent subtle bar */}
+                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${tile.accent}`} />
+
+                    <div>
+                      {/* Card Header: Icon + Badge */}
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div
+                          className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br ${tile.accent} text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform shrink-0`}
+                        >
+                          <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white" />
+                        </div>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span
+                            className={`px-1.5 sm:px-2.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider border truncate ${tile.chip}`}
+                          >
+                            {tile.tag}
+                          </span>
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[var(--surface-soft)] group-hover:bg-[var(--teal-soft)] hidden sm:flex items-center justify-center text-[var(--mute)] group-hover:text-[var(--teal-deep)] transition-colors">
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Title & Desc */}
+                      <div className="mt-2.5 sm:mt-3.5">
+                        <h3 className="text-[13px] sm:text-[15.5px] font-bold text-[var(--ink)] group-hover:text-[var(--navy)] transition-colors leading-snug line-clamp-1 sm:line-clamp-none">
+                          {tile.label}
+                        </h3>
+                        <p className="text-[11px] sm:text-[12px] text-[var(--ink-soft)] mt-1 sm:mt-1.5 leading-snug line-clamp-2">
+                          {tile.desc}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[12px] text-[var(--ink-soft)] dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                      {t.desc}
-                    </p>
-                    {t.badge && (
-                      <span className="inline-block mt-2.5 px-2 py-0.5 rounded-md text-[9.5px] font-mono font-bold uppercase tracking-wider bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10 group-hover:bg-[var(--teal-soft)] dark:group-hover:bg-teal-950/60 group-hover:text-[var(--teal-deep)] dark:group-hover:text-[var(--teal)] group-hover:border-[var(--teal)]/30 transition-colors">
-                        {t.badge}
+
+                    {/* Card Footer action indicator */}
+                    <div className="mt-2.5 pt-2 sm:mt-4 sm:pt-3 border-t border-[var(--line-soft)] flex items-center justify-between text-[10.5px] sm:text-[11.5px] font-semibold text-[var(--mute)] group-hover:text-[var(--navy)] transition-colors">
+                      <span className="truncate">Mở phân hệ</span>
+                      <span className="font-mono text-[10px] sm:text-[11px] text-[var(--teal-deep)] font-bold group-hover:translate-x-0.5 transition-transform shrink-0">
+                        ➔
                       </span>
-                    )}
-                  </div>
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      {/* Modal Chi tiết khi click vào KPI */}
+      {modalOpen && detailTarget && (
+        <ReportDetailModal
+          open={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setDetailTarget(null);
+          }}
+          target={detailTarget}
+          dateFilter="all"
+        />
+      )}
+    </>
   );
 }
-

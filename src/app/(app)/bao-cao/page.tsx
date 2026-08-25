@@ -20,10 +20,15 @@ import {
   UserCheck,
   Eye,
   Filter,
+  ShieldAlert,
+  CalendarHeart,
+  PhoneCall,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { STATUS, statusOf } from "@/lib/csr";
+import { STATUS, statusOf, fmtDate } from "@/lib/csr";
 import { Donut, BarChart, CHART_COLORS, type Slice } from "@/components/charts";
+import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
 
 interface StatsData {
   tong: number;
@@ -70,6 +75,15 @@ export default function BaoCaoPage() {
   const [exportingSessionId, setExportingSessionId] = useState<string | null>(null);
 
   const [dateFilter, setDateFilter] = useState<"all" | "30days" | "90days" | "year">("all");
+
+  // State cho Modal chi tiết khi nhấp vào từng mục trên Dashboard
+  const [detailTarget, setDetailTarget] = useState<ReportModalTarget | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const openDetail = (target: ReportModalTarget) => {
+    setDetailTarget(target);
+    setModalOpen(true);
+  };
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -154,8 +168,9 @@ export default function BaoCaoPage() {
               {stats?.coSoName || "Đơn vị"}
             </span>
           </div>
-          <p className="text-xs text-[var(--mute)] mt-1 font-medium">
-            Trung tâm điều hành & phân tích số liệu khám sàng lọc mắt cộng đồng
+          <p className="text-xs text-[var(--mute)] mt-1 font-medium flex items-center gap-1.5">
+            <span>Trung tâm điều hành & phân tích số liệu khám sàng lọc mắt cộng đồng</span>
+            <span className="text-teal-600 font-bold hidden sm:inline">• Nhấp vào từng mục để xem danh sách chi tiết</span>
           </p>
         </div>
 
@@ -227,114 +242,222 @@ export default function BaoCaoPage() {
         </div>
       ) : stats ? (
         <>
-          {/* Hàng thẻ KPI chỉ số chính */}
+          {/* Hàng thẻ KPI chỉ số chính - Nhấp vào từng thẻ để xem chi tiết */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
             {/* Tổng tiếp nhận */}
-            <div className="card p-4 hover:border-[var(--navy)]/30 transition-all">
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_tong",
+                  title: "Danh sách Bệnh nhân Tiếp nhận",
+                  subtitle: "Toàn bộ hồ sơ bệnh nhân tiếp nhận qua các đợt khám",
+                  icon: Users,
+                })
+              }
+              className="card p-4 hover:border-[var(--navy)] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+              title="Nhấp để xem danh sách chi tiết"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold text-[var(--mute)]">Tổng tiếp nhận</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--navy-50)] text-[var(--navy)]">
+                <span className="text-[11.5px] font-semibold text-[var(--mute)] group-hover:text-[var(--navy)] transition-colors">
+                  Tổng tiếp nhận
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--navy-50)] text-[var(--navy)] group-hover:scale-110 transition-transform">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-[var(--ink)] mt-2 leading-none">
                 {stats.tong.toLocaleString("vi-VN")}
               </div>
-              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center gap-1">
-                <span className="font-semibold text-emerald-600">100%</span> hồ sơ tiếp nhận
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  <span className="font-semibold text-emerald-600">100%</span> hồ sơ
+                </div>
+                <span className="text-[10px] text-[var(--navy)] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
               </div>
             </div>
 
-            {/* Buổi khám */}
-            <div className="card p-4 hover:border-[var(--navy)]/30 transition-all">
+            {/* Đợt khám CSR */}
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_soBuoi",
+                  title: "Danh sách các Đợt khám CSR",
+                  subtitle: "Tổng hợp các đợt khám sàng lọc mắt cộng đồng",
+                  icon: Calendar,
+                })
+              }
+              className="card p-4 hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+              title="Nhấp để xem danh sách chi tiết các đợt khám"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold text-[var(--mute)]">Đợt khám CSR</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600">
+                <span className="text-[11.5px] font-semibold text-[var(--mute)] group-hover:text-blue-600 transition-colors">
+                  Đợt khám CSR
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 group-hover:scale-110 transition-transform">
                   <Calendar className="w-4 h-4" />
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-[var(--ink)] mt-2 leading-none">
                 {stats.soBuoi.toLocaleString("vi-VN")}
               </div>
-              <div className="text-[11px] text-[var(--mute)] mt-1.5">
-                TB{" "}
-                <span className="font-semibold text-[var(--ink)]">
-                  {stats.soBuoi > 0 ? Math.round(stats.tong / stats.soBuoi) : 0}
-                </span>{" "}
-                BN/đợt
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  TB{" "}
+                  <span className="font-semibold text-[var(--ink)]">
+                    {stats.soBuoi > 0 ? Math.round(stats.tong / stats.soBuoi) : 0}
+                  </span>{" "}
+                  BN/đợt
+                </div>
+                <span className="text-[10px] text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
               </div>
             </div>
 
             {/* Nhóm A (Chỉ định mổ) */}
-            <div className="card p-4 hover:border-emerald-300 transition-all">
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_nhomA",
+                  title: "Danh sách Bệnh nhân Nhóm A (Đồng ý phẫu thuật)",
+                  subtitle: "Có chỉ định và đã đồng ý phẫu thuật mắt",
+                  icon: HeartHandshake,
+                })
+              }
+              className="card p-4 hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+              title="Nhấp để xem danh sách bệnh nhân nhóm A"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold text-[var(--mute)]">Nhóm A (Chỉ định mổ)</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600">
+                <span className="text-[11.5px] font-semibold text-[var(--mute)] group-hover:text-emerald-700 transition-colors">
+                  Nhóm A (Đồng ý phẫu thuật)
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
                   <HeartHandshake className="w-4 h-4" />
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-emerald-700 mt-2 leading-none">
                 {stats.nhomA.toLocaleString("vi-VN")}
               </div>
-              <div className="text-[11px] text-[var(--mute)] mt-1.5">
-                Tỷ lệ{" "}
-                <span className="font-bold text-emerald-600">
-                  {stats.tong > 0 ? ((stats.nhomA / stats.tong) * 100).toFixed(1) : 0}%
-                </span>{" "}
-                tiếp nhận
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  Tỷ lệ{" "}
+                  <span className="font-bold text-emerald-600">
+                    {stats.tong > 0 ? ((stats.nhomA / stats.tong) * 100).toFixed(1) : 0}%
+                  </span>{" "}
+                  <span className="text-[var(--mute)]">tiếp nhận khám</span>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
               </div>
             </div>
 
             {/* Nhóm B (Theo dõi) */}
-            <div className="card p-4 hover:border-amber-300 transition-all">
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_nhomB",
+                  title: "Danh sách Bệnh nhân Nhóm B (Chưa đồng ý / Theo dõi)",
+                  subtitle: "Có chỉ định nhưng chưa đồng ý phẫu thuật hoặc cần theo dõi",
+                  icon: Activity,
+                })
+              }
+              className="card p-4 hover:border-amber-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+              title="Nhấp để xem danh sách bệnh nhân nhóm B"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold text-[var(--mute)]">Nhóm B (Theo dõi)</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600">
+                <span className="text-[11.5px] font-semibold text-[var(--mute)] group-hover:text-amber-700 transition-colors">
+                  Nhóm B (Chưa đồng ý / Theo dõi)
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
                   <Activity className="w-4 h-4" />
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-amber-700 mt-2 leading-none">
                 {stats.nhomB.toLocaleString("vi-VN")}
               </div>
-              <div className="text-[11px] text-[var(--mute)] mt-1.5">
-                Tỷ lệ{" "}
-                <span className="font-bold text-amber-600">
-                  {stats.tong > 0 ? ((stats.nhomB / stats.tong) * 100).toFixed(1) : 0}%
-                </span>{" "}
-                tiếp nhận
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  Tỷ lệ{" "}
+                  <span className="font-bold text-amber-600">
+                    {stats.tong > 0 ? ((stats.nhomB / stats.tong) * 100).toFixed(1) : 0}%
+                  </span>{" "}
+                  <span className="text-[var(--mute)]">tiếp nhận khám</span>
+                </div>
+                <span className="text-[10px] text-amber-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
               </div>
             </div>
 
             {/* Đã mổ (HIS) */}
-            <div className="card p-4 hover:border-[var(--teal)] transition-all bg-gradient-to-br from-white to-[var(--teal-soft)]/20">
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_daMo",
+                  title: "Danh sách Bệnh nhân Đã phẫu thuật (HIS)",
+                  subtitle: "Bệnh nhân đã phẫu thuật mắt thành công",
+                  icon: CheckCircle2,
+                })
+              }
+              className="card p-4 hover:border-[var(--teal)] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-br from-white to-[var(--teal-soft)]/20 cursor-pointer group"
+              title="Nhấp để xem danh sách bệnh nhân đã mổ"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold text-[var(--teal-deep)]">Đã mổ (HIS)</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--teal-soft)] text-[var(--teal-deep)]">
+                <span className="text-[11.5px] font-semibold text-[var(--teal-deep)] group-hover:text-[var(--teal-deep)] transition-colors">
+                  Đã mổ (HIS)
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--teal-soft)] text-[var(--teal-deep)] group-hover:scale-110 transition-transform">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-[var(--teal-deep)] mt-2 leading-none">
                 {stats.daMo.toLocaleString("vi-VN")}
               </div>
-              <div className="text-[11px] text-[var(--mute)] mt-1.5">
-                Chuyển đổi{" "}
-                <span className="font-bold text-[var(--teal-deep)]">{stats.chuyenDoiMoPct}%</span> nhóm A
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  Chuyển đổi{" "}
+                  <span className="font-bold text-[var(--teal-deep)]">{stats.chuyenDoiMoPct}%</span>
+                </div>
+                <span className="text-[10px] text-[var(--teal-deep)] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
               </div>
             </div>
 
             {/* Có BHYT */}
-            <div className="card p-4 hover:border-indigo-300 transition-all">
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_bhyt",
+                  title: "Danh sách Bệnh nhân có thẻ BHYT",
+                  subtitle: "Bệnh nhân tham gia bảo hiểm y tế",
+                  icon: ShieldCheck,
+                })
+              }
+              className="card p-4 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+              title="Nhấp để xem danh sách bệnh nhân có BHYT"
+            >
               <div className="flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold text-[var(--mute)]">Bao phủ BHYT</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600">
+                <span className="text-[11.5px] font-semibold text-[var(--mute)] group-hover:text-indigo-700 transition-colors">
+                  Bao phủ BHYT
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-50 text-indigo-600 group-hover:scale-110 transition-transform">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-indigo-700 mt-2 leading-none">
                 {stats.bhytPct}%
               </div>
-              <div className="text-[11px] text-[var(--mute)] mt-1.5">
-                <span className="font-bold text-indigo-600">{stats.coBhytCount.toLocaleString("vi-VN")}</span> BN có thẻ
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-indigo-600">{stats.coBhytCount.toLocaleString("vi-VN")}</span> BN có thẻ
+                </div>
+                <span className="text-[10px] text-indigo-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
               </div>
             </div>
           </div>
@@ -348,14 +471,16 @@ export default function BaoCaoPage() {
                   <h2 className="font-serif text-base font-bold text-[var(--ink)]">
                     Phễu chuyển đổi Khám ➔ Phẫu thuật
                   </h2>
-                  <p className="text-[11.5px] text-[var(--mute)]">Hiệu quả từng bước trong quy trình CSR</p>
+                  <p className="text-[11.5px] text-[var(--mute)]">
+                    Hiệu quả từng bước trong quy trình CSR (Bấm vào từng bước để xem chi tiết)
+                  </p>
                 </div>
                 <span className="text-xs font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-1 rounded-full border border-[var(--teal)]/30">
                   Tỷ lệ mổ: {stats.chuyenDoiMoPct}%
                 </span>
               </div>
 
-              <div className="space-y-3 pt-1">
+              <div className="space-y-2 pt-1">
                 {stats.funnel.map((item, idx) => {
                   const colors = [
                     "from-blue-600 to-indigo-600",
@@ -364,23 +489,49 @@ export default function BaoCaoPage() {
                     "from-amber-500 to-orange-500",
                     "from-teal-600 to-emerald-600",
                   ];
+                  const funnelTypes = [
+                    "funnel_tiepNhan",
+                    "funnel_daKham",
+                    "funnel_chiDinhMo",
+                    "funnel_chotMo",
+                    "funnel_daMo",
+                  ];
+                  const funnelIcons = [Users, Eye, HeartHandshake, UserCheck, CheckCircle2];
+                  const targetType = funnelTypes[idx] || "kpi_tong";
+                  const TargetIcon = funnelIcons[idx] || Users;
+
                   return (
-                    <div key={item.stage} className="space-y-1">
+                    <div
+                      key={item.stage}
+                      onClick={() =>
+                        openDetail({
+                          type: targetType,
+                          title: `Phễu CSR: ${item.stage}`,
+                          subtitle: `Danh sách bệnh nhân ở giai đoạn ${item.stage}`,
+                          icon: TargetIcon,
+                        })
+                      }
+                      className="p-2 rounded-xl hover:bg-[var(--surface-hover)] cursor-pointer transition-all space-y-1 group"
+                      title={`Xem danh sách: ${item.stage}`}
+                    >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-[var(--ink-soft)] flex items-center gap-1.5">
-                          <span className="w-4 h-4 rounded-full bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center text-[10px] font-bold text-[var(--mute)]">
+                        <span className="font-semibold text-[var(--ink-soft)] group-hover:text-[var(--navy)] flex items-center gap-1.5 transition-colors">
+                          <span className="w-4 h-4 rounded-full bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center text-[10px] font-bold text-[var(--mute)] group-hover:border-[var(--navy)] group-hover:text-[var(--navy)]">
                             {idx + 1}
                           </span>
                           {item.stage}
                         </span>
                         <div className="flex items-center gap-2 font-mono">
-                          <span className="font-bold text-[var(--ink)]">{item.count.toLocaleString("vi-VN")}</span>
+                          <span className="font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
+                            {item.count.toLocaleString("vi-VN")}
+                          </span>
                           <span className="text-[var(--mute)] text-[11px]">({item.pct}%)</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--navy)] group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
                       <div className="w-full h-2.5 bg-[var(--surface-soft)] rounded-full overflow-hidden border border-[var(--line-soft)]">
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all duration-500`}
+                          className={`h-full rounded-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all duration-500 group-hover:brightness-110`}
                           style={{ width: `${Math.max(item.pct, 2)}%` }}
                         />
                       </div>
@@ -391,17 +542,34 @@ export default function BaoCaoPage() {
             </div>
 
             {/* Cơ cấu Bệnh lý Nhãn khoa */}
-            <div className="card lg:col-span-6 p-5">
+            <div className="card lg:col-span-6 p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="font-serif text-base font-bold text-[var(--ink)]">Cơ cấu Bệnh lý Phát hiện</h2>
-                  <p className="text-[11.5px] text-[var(--mute)]">Phân loại bệnh lý mắt qua các buổi sàng lọc</p>
+                  <p className="text-[11.5px] text-[var(--mute)]">
+                    Phân loại bệnh lý mắt (Nhấp vào bệnh lý để xem danh sách bệnh nhân)
+                  </p>
                 </div>
                 <Eye className="w-4 h-4 text-[var(--mute)]" />
               </div>
 
               {stats.diseases.length > 0 ? (
-                <Donut data={stats.diseases} size={180} centerLabel="Ca bệnh" />
+                <div className="py-2">
+                  <Donut
+                    data={stats.diseases}
+                    size={180}
+                    centerLabel="Ca bệnh"
+                    onSliceClick={(slice) =>
+                      openDetail({
+                        type: "disease",
+                        val: slice.label,
+                        title: `Bệnh lý: ${slice.label}`,
+                        subtitle: `Danh sách bệnh nhân phát hiện bệnh lý ${slice.label}`,
+                        icon: Eye,
+                      })
+                    }
+                  />
+                </div>
               ) : (
                 <div className="py-12 text-center text-xs text-[var(--mute)]">Chưa có dữ liệu chẩn đoán bệnh lý.</div>
               )}
@@ -413,20 +581,38 @@ export default function BaoCaoPage() {
             {/* Phân bố độ tuổi */}
             <div className="card p-5">
               <h3 className="font-serif text-sm font-bold text-[var(--ink)] mb-1">Nhóm tuổi</h3>
-              <p className="text-[11px] text-[var(--mute)] mb-4">Tỷ lệ người cao tuổi trong cộng đồng</p>
-              <div className="space-y-2.5">
-                {stats.demographics.age.map((a) => {
+              <p className="text-[11px] text-[var(--mute)] mb-3">
+                Tỷ lệ người cao tuổi trong cộng đồng tiếp nhận khám (Bấm để xem danh sách)
+              </p>
+              <div className="space-y-1.5">
+                {stats.demographics.age.map((a, idx) => {
+                  const ageKeys = ["u18", "18to40", "41to60", "over60"];
                   const pct = stats.tong > 0 ? Math.round((a.value / stats.tong) * 100) : 0;
                   return (
-                    <div key={a.label} className="space-y-1">
+                    <div
+                      key={a.label}
+                      onClick={() =>
+                        openDetail({
+                          type: "age",
+                          val: ageKeys[idx] || "all",
+                          title: `Độ tuổi: ${a.label}`,
+                          subtitle: `Danh sách bệnh nhân tiếp nhận khám nhóm tuổi ${a.label}`,
+                          icon: Users,
+                        })
+                      }
+                      className="p-1.5 rounded-xl hover:bg-[var(--surface-hover)] cursor-pointer transition-all space-y-1 group"
+                      title={`Xem danh sách: ${a.label}`}
+                    >
                       <div className="flex justify-between text-xs">
-                        <span className="text-[var(--ink-soft)] font-medium">{a.label}</span>
-                        <span className="font-mono font-bold text-[var(--ink)]">
-                          {a.value.toLocaleString("vi-VN")} ({pct}%)
+                        <span className="text-[var(--ink-soft)] font-medium group-hover:text-[var(--navy)] transition-colors">
+                          {a.label}
+                        </span>
+                        <span className="font-mono font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
+                          {a.value.toLocaleString("vi-VN")} người khám ({pct}%)
                         </span>
                       </div>
                       <div className="w-full h-2 bg-[var(--surface-soft)] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: a.color }} />
+                        <div className="h-full rounded-full group-hover:brightness-110" style={{ width: `${pct}%`, background: a.color }} />
                       </div>
                     </div>
                   );
@@ -435,22 +621,44 @@ export default function BaoCaoPage() {
             </div>
 
             {/* Phân bố Giới tính */}
-            <div className="card p-5">
-              <h3 className="font-serif text-sm font-bold text-[var(--ink)] mb-1">Giới tính</h3>
-              <p className="text-[11px] text-[var(--mute)] mb-4">Tỷ lệ bệnh nhân Nam / Nữ</p>
-              <div className="flex items-center justify-around py-4">
-                {stats.demographics.gender.map((g) => {
+            <div className="card p-5 flex flex-col justify-between">
+              <div>
+                <h3 className="font-serif text-sm font-bold text-[var(--ink)] mb-1">Giới tính</h3>
+                <p className="text-[11px] text-[var(--mute)] mb-4">
+                  Tỷ lệ Nam / Nữ tiếp nhận khám (Bấm để xem danh sách bệnh nhân)
+                </p>
+              </div>
+              <div className="flex items-center justify-around py-3">
+                {stats.demographics.gender.map((g, idx) => {
+                  const genderVal = idx === 0 ? "nam" : "nu";
                   const pct = stats.tong > 0 ? Math.round((g.value / stats.tong) * 100) : 0;
                   return (
-                    <div key={g.label} className="text-center">
+                    <div
+                      key={g.label}
+                      onClick={() =>
+                        openDetail({
+                          type: "gender",
+                          val: genderVal,
+                          title: `Giới tính: ${g.label}`,
+                          subtitle: `Danh sách bệnh nhân tiếp nhận khám giới tính ${g.label}`,
+                          icon: Users,
+                        })
+                      }
+                      className="text-center cursor-pointer p-3 rounded-2xl hover:bg-[var(--surface-hover)] hover:scale-105 transition-all group"
+                      title={`Xem danh sách bệnh nhân ${g.label}`}
+                    >
                       <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center font-mono font-bold text-base text-white mx-auto shadow-xs"
+                        className="w-16 h-16 rounded-full flex items-center justify-center font-mono font-bold text-base text-white mx-auto shadow-xs group-hover:shadow-md transition-shadow"
                         style={{ background: g.color }}
                       >
                         {pct}%
                       </div>
-                      <div className="text-xs font-bold text-[var(--ink)] mt-2">{g.label}</div>
-                      <div className="font-mono text-[11px] text-[var(--mute)]">{g.value.toLocaleString("vi-VN")} BN</div>
+                      <div className="text-xs font-bold text-[var(--ink)] mt-2 group-hover:text-[var(--navy)]">
+                        {g.label}
+                      </div>
+                      <div className="font-mono text-[11px] text-[var(--mute)]">
+                        {g.value.toLocaleString("vi-VN")} BN
+                      </div>
                     </div>
                   );
                 })}
@@ -460,20 +668,38 @@ export default function BaoCaoPage() {
             {/* Mức hưởng BHYT */}
             <div className="card p-5">
               <h3 className="font-serif text-sm font-bold text-[var(--ink)] mb-1">Mức hưởng BHYT</h3>
-              <p className="text-[11px] text-[var(--mute)] mb-4">Hỗ trợ chi trả bảo hiểm y tế</p>
-              <div className="space-y-2.5">
-                {stats.demographics.bhyt.map((b) => {
+              <p className="text-[11px] text-[var(--mute)] mb-3">
+                Hỗ trợ chi trả BHYT cho người tiếp nhận khám (Bấm để xem danh sách)
+              </p>
+              <div className="space-y-1.5">
+                {stats.demographics.bhyt.map((b, idx) => {
+                  const bhytKeys = ["100", "95", "80", "none"];
                   const pct = stats.tong > 0 ? Math.round((b.value / stats.tong) * 100) : 0;
                   return (
-                    <div key={b.label} className="space-y-1">
+                    <div
+                      key={b.label}
+                      onClick={() =>
+                        openDetail({
+                          type: "bhyt_tier",
+                          val: bhytKeys[idx] || "all",
+                          title: `Mức hưởng BHYT: ${b.label}`,
+                          subtitle: `Danh sách bệnh nhân theo mức hưởng ${b.label}`,
+                          icon: b.label.includes("Không") ? ShieldAlert : ShieldCheck,
+                        })
+                      }
+                      className="p-1.5 rounded-xl hover:bg-[var(--surface-hover)] cursor-pointer transition-all space-y-1 group"
+                      title={`Xem danh sách: ${b.label}`}
+                    >
                       <div className="flex justify-between text-xs">
-                        <span className="text-[var(--ink-soft)] font-medium">{b.label}</span>
-                        <span className="font-mono font-bold text-[var(--ink)]">
+                        <span className="text-[var(--ink-soft)] font-medium group-hover:text-indigo-700 transition-colors">
+                          {b.label}
+                        </span>
+                        <span className="font-mono font-bold text-[var(--ink)] group-hover:text-indigo-700">
                           {b.value.toLocaleString("vi-VN")} ({pct}%)
                         </span>
                       </div>
                       <div className="w-full h-2 bg-[var(--surface-soft)] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: b.color }} />
+                        <div className="h-full rounded-full group-hover:brightness-110" style={{ width: `${pct}%`, background: b.color }} />
                       </div>
                     </div>
                   );
@@ -490,7 +716,7 @@ export default function BaoCaoPage() {
                   Báo cáo Hiệu quả từng Đợt Khám CSR
                 </h2>
                 <p className="text-xs text-[var(--mute)]">
-                  Tổng hợp số liệu tiếp nhận, chỉ định và phẫu thuật theo từng địa bàn
+                  Tổng hợp số liệu tiếp nhận, chỉ định và phẫu thuật theo từng địa bàn (Bấm vào dòng để xem danh sách bệnh nhân)
                 </p>
               </div>
               <span className="text-xs font-bold text-[var(--mute)] bg-white px-3 py-1 rounded-lg border border-[var(--line)]">
@@ -525,11 +751,25 @@ export default function BaoCaoPage() {
                     stats.sessions.map((s) => {
                       const tyLeMo = s.nhomA > 0 ? Math.round((s.daMo / s.nhomA) * 100) : 0;
                       return (
-                        <tr key={s.id} className="hover:bg-[var(--surface-hover)] transition-colors">
-                          <td className="py-3 px-4 font-mono font-bold text-[var(--ink)]">
+                        <tr
+                          key={s.id}
+                          onClick={() =>
+                            openDetail({
+                              type: "session",
+                              val: s.id,
+                              title: `Đợt khám: ${s.xa || s.diaDiem}`,
+                              subtitle: `Ngày khám: ${s.ngayKham ? fmtDate(s.ngayKham) : "—"} | Bác sĩ: ${s.bacSi || "—"} | Điểm khám: ${s.diaDiem || "—"}`,
+                              icon: CalendarHeart,
+                            })
+                          }
+                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
+                        >
+                          <td className="py-3 px-4 font-mono font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
                             {s.ngayKham ? new Date(s.ngayKham).toLocaleDateString("vi-VN") : "—"}
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[var(--ink)]">{s.xa || "—"}</td>
+                          <td className="py-3 px-4 font-semibold text-[var(--ink)] group-hover:text-[var(--navy)]">
+                            {s.xa || "—"}
+                          </td>
                           <td className="py-3 px-4 text-[var(--ink-soft)] truncate max-w-[200px]" title={s.diaDiem}>
                             {s.diaDiem || "—"}
                           </td>
@@ -559,7 +799,7 @@ export default function BaoCaoPage() {
                               {tyLeMo}%
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => exportExcel(s.id)}
                               disabled={exportingSessionId === s.id}
@@ -592,7 +832,9 @@ export default function BaoCaoPage() {
                   <h3 className="font-serif text-sm font-bold text-[var(--ink)]">
                     Top Bác sĩ Chỉ định & Khám Sàng Lọc
                   </h3>
-                  <p className="text-[11px] text-[var(--mute)]">Theo số ca khám và tỷ lệ chỉ định phẫu thuật</p>
+                  <p className="text-[11px] text-[var(--mute)]">
+                    Theo số ca khám và tỷ lệ chỉ định (Bấm để xem danh sách bệnh nhân của bác sĩ)
+                  </p>
                 </div>
                 <Stethoscope className="w-4 h-4 text-[var(--navy)]" />
               </div>
@@ -603,13 +845,25 @@ export default function BaoCaoPage() {
                   stats.topDoctors.map((doc, i) => (
                     <div
                       key={doc.name}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--line-soft)] text-xs"
+                      onClick={() =>
+                        openDetail({
+                          type: "doctor",
+                          val: doc.name,
+                          title: `Bác sĩ: ${doc.name}`,
+                          subtitle: `Danh sách bệnh nhân được khám và chỉ định bởi Bác sĩ ${doc.name}`,
+                          icon: Stethoscope,
+                        })
+                      }
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-soft)] hover:bg-[var(--surface-hover)] border border-[var(--line-soft)] hover:border-[var(--navy)]/30 text-xs cursor-pointer transition-all group"
+                      title={`Xem danh sách bệnh nhân của ${doc.name}`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-5 h-5 rounded-full bg-white border border-[var(--line)] flex items-center justify-center font-bold text-[10px] text-[var(--navy)] shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-white border border-[var(--line)] flex items-center justify-center font-bold text-[10px] text-[var(--navy)] shrink-0 group-hover:bg-[var(--navy)] group-hover:text-white transition-colors">
                           {i + 1}
                         </span>
-                        <span className="font-bold text-[var(--ink)] truncate">{doc.name}</span>
+                        <span className="font-bold text-[var(--ink)] group-hover:text-[var(--navy)] truncate transition-colors">
+                          {doc.name}
+                        </span>
                       </div>
                       <div className="flex items-center gap-4 font-mono shrink-0">
                         <span className="text-[var(--mute)]">
@@ -617,6 +871,7 @@ export default function BaoCaoPage() {
                         </span>
                         <span className="text-emerald-700 font-bold">Chỉ định: {doc.nhomA}</span>
                         <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: {doc.daMo}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--navy)] group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   ))
@@ -629,7 +884,9 @@ export default function BaoCaoPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="font-serif text-sm font-bold text-[var(--ink)]">Top Tư Vấn Viên Chốt Ca Mổ</h3>
-                  <p className="text-[11px] text-[var(--mute)]">Theo số ca tư vấn thành công và đã phẫu thuật</p>
+                  <p className="text-[11px] text-[var(--mute)]">
+                    Theo số ca tư vấn và đã phẫu thuật (Bấm để xem danh sách bệnh nhân)
+                  </p>
                 </div>
                 <UserCheck className="w-4 h-4 text-emerald-600" />
               </div>
@@ -640,13 +897,25 @@ export default function BaoCaoPage() {
                   stats.topCounselors.map((c, i) => (
                     <div
                       key={c.name}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-soft)] border border-[var(--line-soft)] text-xs"
+                      onClick={() =>
+                        openDetail({
+                          type: "counselor",
+                          val: c.name,
+                          title: `Tư vấn viên: ${c.name}`,
+                          subtitle: `Danh sách bệnh nhân được tư vấn và chốt ca bởi ${c.name}`,
+                          icon: UserCheck,
+                        })
+                      }
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-soft)] hover:bg-[var(--surface-hover)] border border-[var(--line-soft)] hover:border-emerald-300 text-xs cursor-pointer transition-all group"
+                      title={`Xem danh sách bệnh nhân của tư vấn viên ${c.name}`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-5 h-5 rounded-full bg-white border border-[var(--line)] flex items-center justify-center font-bold text-[10px] text-emerald-700 shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-white border border-[var(--line)] flex items-center justify-center font-bold text-[10px] text-emerald-700 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                           {i + 1}
                         </span>
-                        <span className="font-bold text-[var(--ink)] truncate">{c.name}</span>
+                        <span className="font-bold text-[var(--ink)] group-hover:text-emerald-800 truncate transition-colors">
+                          {c.name}
+                        </span>
                       </div>
                       <div className="flex items-center gap-4 font-mono shrink-0">
                         <span className="text-[var(--mute)]">
@@ -654,6 +923,7 @@ export default function BaoCaoPage() {
                         </span>
                         <span className="text-emerald-700 font-bold">Chốt mổ: {c.chotMo}</span>
                         <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: {c.daMo}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   ))
@@ -663,7 +933,22 @@ export default function BaoCaoPage() {
           </div>
         </>
       ) : null}
+
+      {/* Modal Chi tiết khi click vào bất kỳ mục nào trên Dashboard */}
+      {modalOpen && detailTarget && (
+        <ReportDetailModal
+          open={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setDetailTarget(null);
+          }}
+          target={detailTarget}
+          dateFilter={dateFilter}
+          coSoName={stats?.coSoName}
+          sessions={stats?.sessions}
+          onExportSessionExcel={(sessionId) => exportExcel(sessionId)}
+        />
+      )}
     </div>
   );
 }
-

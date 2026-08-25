@@ -44,8 +44,10 @@ export async function PATCH(
     if (!existing) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
 
     const phase = phaseOf(existing.ngayKham);
-    if (phase.key === "DaKetThuc") {
-      return NextResponse.json({ error: "Đợt khám đã kết thúc, không thể chỉnh sửa thông tin" }, { status: 400 });
+    // Cho phép quản lý cập nhật bác sĩ, ghi chú hoặc địa điểm để hoàn thiện dữ liệu
+    const isOnlyMetaUpdate = xa === undefined && diaDiem === undefined && ngayKham === undefined;
+    if (phase.key === "DaKetThuc" && !isOnlyMetaUpdate && !can(session.user.role, "buoikham.manage")) {
+      return NextResponse.json({ error: "Đợt khám đã kết thúc, không thể đổi ngày hoặc địa bàn" }, { status: 400 });
     }
 
     const updateData: any = {};

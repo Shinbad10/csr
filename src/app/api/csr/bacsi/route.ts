@@ -26,10 +26,9 @@ export async function GET(request: Request) {
       });
     }
 
-    // 1. Chỉ lấy danh sách người dùng chính thức có vai trò Bác sĩ (bao gồm cả bác sĩ đã đồng bộ từ DMNhanSu HIS)
-    let users: any[] = [];
-    try {
-      users = await prisma.nguoiDungCSR.findMany({
+    // 1. Lấy danh sách người dùng có vai trò Bác sĩ (bao gồm cả bác sĩ từ HIS)
+    const [users, bkDoctors, hsDoctors] = await Promise.all([
+      prisma.nguoiDungCSR.findMany({
         where: {
           trangThai: "active",
           OR: [
@@ -42,41 +41,56 @@ export async function GET(request: Request) {
             { hoTen: { startsWith: "Bác sĩ" } },
           ],
         },
-        select: { maNV: true, hoTen: true, maHIS: true, coSoId: true } as any,
+        select: { maNV: true, hoTen: true, maHIS: true, coSoId: true },
         orderBy: { hoTen: "asc" },
-      });
-    } catch (err) {
-      // Fallback nếu Prisma client đang reload
-      users = await prisma.nguoiDungCSR.findMany({
-        where: {
-          trangThai: "active",
-          OR: [
-            { vaiTro: "BacSi" },
-            { vaiTro: { contains: "BacSi" } },
-            { vaiTro: { contains: "Bác sỹ" } },
-            { vaiTro: { contains: "Bác sĩ" } },
-            { hoTen: { startsWith: "BS" } },
-            { hoTen: { startsWith: "Bác sỹ" } },
-            { hoTen: { startsWith: "Bác sĩ" } },
-          ],
-        },
-        select: { maNV: true, hoTen: true, coSoId: true },
-        orderBy: { hoTen: "asc" },
-      });
-    }
+      }),
+      prisma.buoiKham.findMany({
+        where: { bacSiKham: { not: null } },
+        select: { bacSiKham: true },
+        distinct: ["bacSiKham"],
+      }),
+      prisma.hoSoBenhNhan.findMany({
+        where: { bacSiChiDinh: { not: null } },
+        select: { bacSiChiDinh: true },
+        distinct: ["bacSiChiDinh"],
+      }),
+    ]);
 
-    // Lọc trùng theo họ tên
+    // Lọc trùng theo họ tên chuẩn hóa
     const map = new Map<string, { maNV: string; hoTen: string; maHIS: string | null; coSoId: string | null }>();
+
     for (const u of users) {
       const name = u.hoTen?.trim();
       if (name && name.length >= 3) {
-        if (!map.has(name) || (!map.get(name)?.maHIS && u.maHIS)) {
-          map.set(name, {
-            maNV: u.maNV,
-            hoTen: name,
-            maHIS: u.maHIS || null,
-            coSoId: u.coSoId || null,
-          });
+        map.set(name.toLowerCase(), {
+          maNV: u.maNV,
+          hoTen: name,
+          maHIS: u.maHIS || null,
+          coSoId: u.coSoId || null,
+        });
+      }
+    }
+
+    // Bổ sung bác sĩ từ các đợt khám đã có nếu chưa có trong danh mục
+    for (const bk of bkDoctors) {
+      if (!bk.bacSiKham) continue;
+      const parts = bk.bacSiKham.split(/[,;\n]+/).map((s) => s.trim()).filter((s) => s.length >= 3);
+      for (const p of parts) {
+        const key = p.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { maNV: `BS-${Date.now().toString().slice(-4)}`, hoTen: p, maHIS: null, coSoId: null });
+        }
+      }
+    }
+
+    // Bổ sung bác sĩ từ hồ sơ bệnh nhân
+    for (const hs of hsDoctors) {
+      if (!hs.bacSiChiDinh) continue;
+      const name = hs.bacSiChiDinh.trim();
+      if (name.length >= 3) {
+        const key = name.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { maNV: `BS-${Date.now().toString().slice(-4)}`, hoTen: name, maHIS: null, coSoId: null });
         }
       }
     }

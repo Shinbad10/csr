@@ -4,7 +4,7 @@
  * Server không bao giờ tin client: mọi mutation đều gọi can() trong handler.
  */
 
-export type Role = "MKT" | "TuVanVien" | "KeToan" | "QuanLy";
+export type Role = "MKT" | "TuVanVien" | "KeToan" | "QuanLy" | "IT";
 
 export type Capability =
   | "buoikham.manage" // tạo / quản lý buổi khám
@@ -13,7 +13,8 @@ export type Capability =
   | "hoso.treatment" // cập nhật điều trị tại BV
   | "hoso.followup" // theo dõi nhóm B, nhắc lịch
   | "report.export" // xuất Excel + thống kê
-  | "admin.masterdata"; // quản trị cơ sở / tài khoản
+  | "admin.users" // quản lý tài khoản cơ sở / đơn vị
+  | "admin.masterdata"; // quản trị cơ sở / toàn hệ thống
 
 const MATRIX: Record<Role, Capability[]> = {
   MKT: [
@@ -33,6 +34,15 @@ const MATRIX: Record<Role, Capability[]> = {
     "report.export",
   ],
   KeToan: ["report.export"],
+  IT: [
+    "buoikham.manage",
+    "hoso.create",
+    "hoso.clinical",
+    "hoso.treatment",
+    "hoso.followup",
+    "report.export",
+    "admin.users",
+  ],
   QuanLy: [
     "buoikham.manage",
     "hoso.create",
@@ -40,6 +50,7 @@ const MATRIX: Record<Role, Capability[]> = {
     "hoso.treatment",
     "hoso.followup",
     "report.export",
+    "admin.users",
     "admin.masterdata",
   ],
 };
@@ -49,6 +60,8 @@ export function normalizeRole(raw?: string | null): Role {
     case "QuanLy":
     case "Admin":
       return "QuanLy";
+    case "IT":
+      return "IT";
     case "TuVanVien":
     case "BacSi":
       return "TuVanVien";
@@ -79,11 +92,13 @@ export const ROLE_LABEL: Record<Role, string> = {
   MKT: "Marketing (MKT)",
   TuVanVien: "Tư vấn viên",
   KeToan: "Kế toán",
-  QuanLy: "Quản lý",
+  QuanLy: "Quản lý (Toàn hệ thống)",
+  IT: "Quản trị viên IT (Đơn vị)",
 };
 
 export function roleLabel(raw?: string | null): string {
   if (raw === "BacSi" || raw === "Bác sĩ" || raw === "Bác sỹ") return "Bác sĩ";
+  if (raw === "IT") return "Quản trị IT";
   if (raw === "MKT" || raw === "Marketing" || raw === "CSKH") return "MKT";
-  return ROLE_LABEL[normalizeRole(raw)];
+  return ROLE_LABEL[normalizeRole(raw)] || raw || "Nhân viên";
 }

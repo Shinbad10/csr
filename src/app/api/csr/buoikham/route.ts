@@ -6,6 +6,8 @@ import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 
+import { classifyCSRNhom } from "@/lib/csr";
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -78,33 +80,14 @@ export async function GET(request: Request) {
     const statsMap = new Map<string, { nhomA: number; nhomB: number }>();
     for (const g of hoSoGroups) {
       if (!g.buoiKhamId) continue;
-
-      // Kiểm tra chỉ đếm các hồ sơ CÓ BỆNH LÝ
-      const hasPathology =
-        !!g.nhom ||
-        g.xacNhanDieuTri != null ||
-        (g.chanDoanMP && g.chanDoanMP !== "[]" && g.chanDoanMP !== "") ||
-        (g.chanDoanMT && g.chanDoanMT !== "[]" && g.chanDoanMT !== "") ||
-        (g.chanDoan && g.chanDoan !== "[]" && g.chanDoan !== "") ||
-        !!g.chanDoanKhacMP ||
-        !!g.chanDoanKhacMT ||
-        !!g.chanDoanKhac ||
-        (g.benhLy && g.benhLy !== "Chưa phát hiện bất thường" && g.benhLy !== "Bình thường") ||
-        g.khuyenNghi === "Phẫu thuật" ||
-        g.huongXuTri === "Phẫu thuật" ||
-        g.huongXuTri === "Điều trị khác";
-
-      if (!hasPathology) continue; // Ca bình thường không đếm vào A hay B
-
       let curr = statsMap.get(g.buoiKhamId);
       if (!curr) {
         curr = { nhomA: 0, nhomB: 0 };
         statsMap.set(g.buoiKhamId, curr);
       }
-      const cnt = g._count._all;
-      const isA = g.nhom === "A" || g.xacNhanDieuTri === true || ["NhomA", "DaNhacLich", "DaDonVien", "DaMoHauPhau"].includes(g.trangThai);
-      if (isA) curr.nhomA += cnt;
-      else curr.nhomB += cnt; // Bệnh nhân có bệnh lý nhưng chưa thuộc Nhóm A thì tính vào Nhóm B
+      const { isNhomA, isNhomB } = classifyCSRNhom(g);
+      if (isNhomA) curr.nhomA += g._count._all;
+      else if (isNhomB) curr.nhomB += g._count._all;
     }
 
     const result = buoiKhams.map((bk) => {

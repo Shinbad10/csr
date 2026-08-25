@@ -13,8 +13,8 @@ export type Slice = { label: string; value: number; color?: string };
 const fmt = (n: number) => n.toLocaleString("vi-VN");
 
 /* ─── Donut ─── vòng tròn phân loại, tâm hiển thị tổng, chú giải + % trực tiếp. */
-export function Donut({ data, size = 200, thickness = 26, centerLabel = "Tổng" }: {
-  data: Slice[]; size?: number; thickness?: number; centerLabel?: string;
+export function Donut({ data, size = 200, thickness = 26, centerLabel = "Tổng", onSliceClick }: {
+  data: Slice[]; size?: number; thickness?: number; centerLabel?: string; onSliceClick?: (slice: Slice, index: number) => void;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   const total = data.reduce((a, d) => a + (d.value || 0), 0);
@@ -40,7 +40,8 @@ export function Donut({ data, size = 200, thickness = 26, centerLabel = "Tổng"
               <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={color}
                 strokeWidth={hover === i ? thickness + 4 : thickness}
                 strokeDasharray={dash} strokeDashoffset={offset} strokeLinecap="butt"
-                style={{ transition: "stroke-width .15s", cursor: "default" }}
+                style={{ transition: "stroke-width .15s", cursor: onSliceClick ? "pointer" : "default" }}
+                onClick={() => onSliceClick && onSliceClick(d, i)}
                 onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
             );
           })}
@@ -55,11 +56,12 @@ export function Donut({ data, size = 200, thickness = 26, centerLabel = "Tổng"
           const pct = total > 0 ? Math.round((d.value / total) * 100) : 0;
           const color = d.color || CHART_COLORS[i % CHART_COLORS.length];
           return (
-            <div key={i} className="flex items-center gap-2 text-[12.5px] rounded-md px-1.5 py-0.5"
+            <div key={i} className={`flex items-center gap-2 text-[12.5px] rounded-lg px-2 py-1 transition-all ${onSliceClick ? "cursor-pointer hover:bg-[var(--surface-hover)]" : ""}`}
               style={{ background: hover === i ? "var(--surface-hover)" : "transparent" }}
+              onClick={() => onSliceClick && onSliceClick(d, i)}
               onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
               <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ background: color }} />
-              <span className="font-medium text-[var(--ink-soft)] truncate flex-1">{d.label}</span>
+              <span className="font-medium text-[var(--ink-soft)] truncate flex-1 hover:text-[var(--ink)]">{d.label}</span>
               <span className="font-mono font-bold text-[var(--ink)]">{fmt(d.value)}</span>
               <span className="font-mono text-[var(--mute)] w-[38px] text-right">{pct}%</span>
             </div>
@@ -72,7 +74,7 @@ export function Donut({ data, size = 200, thickness = 26, centerLabel = "Tổng"
 }
 
 /* ─── Bar (dọc) ─── so sánh độ lớn, đỉnh bo 4px, nhãn số trực tiếp. */
-export function BarChart({ data, height = 200, unit }: { data: Slice[]; height?: number; unit?: string }) {
+export function BarChart({ data, height = 200, unit, onBarClick }: { data: Slice[]; height?: number; unit?: string; onBarClick?: (bar: Slice, index: number) => void }) {
   const [hover, setHover] = useState<number | null>(null);
   const uid = useId();
   const max = Math.max(1, ...data.map((d) => d.value || 0));
@@ -85,11 +87,12 @@ export function BarChart({ data, height = 200, unit }: { data: Slice[]; height?:
           const h = Math.round(((d.value || 0) / max) * plotH);
           const color = d.color || CHART_COLORS[i % CHART_COLORS.length];
           return (
-            <div key={`${uid}-${i}`} className="flex-1 flex flex-col items-center justify-end h-full min-w-0"
+            <div key={`${uid}-${i}`} className={`flex-1 flex flex-col items-center justify-end h-full min-w-0 ${onBarClick ? "cursor-pointer group" : ""}`}
+              onClick={() => onBarClick && onBarClick(d, i)}
               onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
               <span className="font-mono text-[12px] font-bold text-[var(--ink)] mb-1">{fmt(d.value)}</span>
               <div className="w-full max-w-[64px] rounded-t-[4px] transition-all" style={{ height: Math.max(h, 2), background: color, opacity: hover === null || hover === i ? 1 : 0.55 }} />
-              <span className="text-[11px] text-[var(--mute)] mt-2 text-center leading-tight line-clamp-2">{d.label}{unit ? ` (${unit})` : ""}</span>
+              <span className="text-[11px] text-[var(--mute)] mt-2 text-center leading-tight line-clamp-2 group-hover:text-[var(--ink)]">{d.label}{unit ? ` (${unit})` : ""}</span>
             </div>
           );
         })}

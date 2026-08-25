@@ -1892,7 +1892,7 @@ export default function ExamPage() {
                 <Meta k="Ngày khám" v={fmtDate(buoiKham?.ngayKham)} mono />
                 {isFieldOn(cfg, "diemKham") && <Meta k="Điểm khám" v={buoiKham?.diaDiem || "—"} />}
                 <Meta k="Xã khám" v={buoiKham?.xa || "—"} />
-                <Meta k="Bác sĩ khám" v={buoiKham?.bacSiKham || selected.bacSiChiDinh || "—"} />
+                <Meta k="Bác sĩ khám" v={f.bacSiChiDinh || buoiKham?.bacSiKham || selected.bacSiChiDinh || "—"} />
                 {isFieldOn(cfg, "nhanVienTuVan") && (
                   <Meta k="NV tư vấn" v={f.nhanVienTuVan || session?.user?.name || "—"} />
                 )}
@@ -2289,7 +2289,7 @@ export default function ExamPage() {
                             <span className="text-[var(--rose)]">* (Chọn bác sĩ khám ca này)</span>
                           )}
                         </label>
-                        {parseDoctorList(buoiKham?.bacSiKham).length > 1 ? (
+                        {parseDoctorList(buoiKham?.bacSiKham).length > 0 ? (
                           <div className="space-y-2 mt-1">
                             {/* Phím chọn nhanh 1 chạm cho các bác sĩ trong đoàn */}
                             <div className="flex flex-wrap gap-1.5">
@@ -2302,7 +2302,7 @@ export default function ExamPage() {
                                     onClick={() => setF((s) => ({ ...s, bacSiChiDinh: doc }))}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                                       active
-                                        ? "bg-[#031da6] text-white shadow-xs scale-102"
+                                        ? "bg-[#031da6] text-white shadow-xs scale-102 ring-2 ring-[#02b8a9]"
                                         : "bg-[#f1f5f9] text-[#334155] hover:bg-[#e2e8f0] border border-[#cbd5e1]"
                                     }`}
                                     disabled={readOnly}
@@ -2317,7 +2317,7 @@ export default function ExamPage() {
                             <DoctorAutocomplete
                               value={f.bacSiChiDinh}
                               onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
-                              placeholder="Hoặc chọn/nhập bác sĩ khác..."
+                              placeholder="Hoặc chọn / nhập bác sĩ khác..."
                               disabled={readOnly}
                             />
                           </div>

@@ -14,13 +14,13 @@ export const MENU_GROUPS: NavGroup[] = [
   {
     title: "Tầm soát cộng đồng",
     items: [
-      { label: "Đợt khám tầm soát", icon: CalendarHeart, href: "/buoi-kham" }, // gồm Tham gia khám + Tư vấn theo đợt
+      { label: "Đợt khám tầm soát", icon: CalendarHeart, href: "/buoi-kham", cap: "buoikham.manage" },
     ],
   },
   {
     title: "Điều trị & Chăm sóc",
     items: [
-      { label: "Tư vấn điều trị", icon: UserCog, href: "/tu-van" },
+      { label: "Tư vấn điều trị", icon: UserCog, href: "/tu-van", cap: "hoso.clinical" },
       { label: "Theo dõi & Chăm sóc", icon: PhoneCall, href: "/theo-doi", cap: "hoso.followup" },
       { label: "Đối chiếu HIS", icon: Activity, href: "/doi-chieu-his", cap: "hoso.followup" },
     ],
@@ -32,7 +32,7 @@ export const MENU_GROUPS: NavGroup[] = [
       { label: "Báo cáo & thống kê", icon: BarChart3, href: "/bao-cao", cap: "report.export" },
     ],
   },
-  { title: "Hệ thống", items: [{ label: "Quản trị", icon: Settings, href: "/quan-tri", cap: "admin.masterdata" }] },
+  { title: "Hệ thống", items: [{ label: "Quản trị", icon: Settings, href: "/quan-tri", cap: "admin.users" }] },
 ];
 
 /** Mục đang active theo pathname (khớp chính xác, hoặc là tiền tố của route con). */

@@ -82,9 +82,12 @@ const isOverdue28Days = (p: HoSo) => {
   return diffDays > 28;
 };
 
+import { useCurrentFacility } from "@/lib/useFacility";
+
 export default function TheoDoiPage() {
   const { data: session } = useSession();
   const isManager = isCorporate(session?.user?.role);
+  const { hasHisConfig } = useCurrentFacility();
 
   const { addToast } = useToast();
   const [tab, setTab] = useState<"A" | "B">("A");
@@ -675,42 +678,46 @@ export default function TheoDoiPage() {
         description="Theo dõi nhóm B (chăm sóc) và nhóm A (nhắc lịch & cập nhật điều trị tại BV)."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              disabled={batchChecking || !selBk}
-              onClick={runBatchCheckHIS}
-              className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-bold h-[34px] rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50 disabled:pointer-events-none"
-              title="Tự động kiểm tra lịch sử mổ & thực thu tiền từ hệ thống HIS cho tất cả bệnh nhân đợt khám này"
-            >
-              {batchChecking ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
-              ) : (
-                <span className="text-amber-600 font-black">⚡</span>
-              )}
-              <span>{batchChecking ? "Đang đối chiếu HIS..." : "Đối chiếu HIS hàng loạt đợt khám"}</span>
-            </button>
-            {isManager && (
-              <button
-                type="button"
-                disabled={batchUnlinking || !selBk}
-                onClick={runBatchUnlinkHIS}
-                className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-bold h-[34px] rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50 disabled:pointer-events-none"
-                title="Hủy liên kết mã HIS hàng loạt cho tất cả bệnh nhân trong đợt khám này để chọn đối chiếu lại từ đầu"
-              >
-                {batchUnlinking ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-700" />
-                ) : (
-                  <X className="w-3.5 h-3.5 text-rose-600 font-black" />
+            {hasHisConfig && (
+              <>
+                <button
+                  type="button"
+                  disabled={batchChecking || !selBk}
+                  onClick={runBatchCheckHIS}
+                  className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-bold h-[34px] rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50 disabled:pointer-events-none"
+                  title="Tự động kiểm tra lịch sử mổ & thực thu tiền từ hệ thống HIS cho tất cả bệnh nhân đợt khám này"
+                >
+                  {batchChecking ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                  ) : (
+                    <span className="text-amber-600 font-black">⚡</span>
+                  )}
+                  <span>{batchChecking ? "Đang đối chiếu HIS..." : "Đối chiếu HIS hàng loạt đợt khám"}</span>
+                </button>
+                {isManager && (
+                  <button
+                    type="button"
+                    disabled={batchUnlinking || !selBk}
+                    onClick={runBatchUnlinkHIS}
+                    className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-bold h-[34px] rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50 disabled:pointer-events-none"
+                    title="Hủy liên kết mã HIS hàng loạt cho tất cả bệnh nhân trong đợt khám này để chọn đối chiếu lại từ đầu"
+                  >
+                    {batchUnlinking ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-700" />
+                    ) : (
+                      <X className="w-3.5 h-3.5 text-rose-600 font-black" />
+                    )}
+                    <span>{batchUnlinking ? "Đang hủy liên kết..." : "Hủy liên kết HIS hàng loạt"}</span>
+                  </button>
                 )}
-                <span>{batchUnlinking ? "Đang hủy liên kết..." : "Hủy liên kết HIS hàng loạt"}</span>
-              </button>
+                <Link
+                  href="/doi-chieu-his"
+                  className="btn btn-secondary px-2.5 sm:px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-semibold h-[34px] rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors flex items-center gap-1.5 text-teal-800 bg-teal-50/50 shadow-2xs"
+                >
+                  Tra cứu HIS
+                </Link>
+              </>
             )}
-            <Link
-              href="/doi-chieu-his"
-              className="btn btn-secondary px-2.5 sm:px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-semibold h-[34px] rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors flex items-center gap-1.5 text-teal-800 bg-teal-50/50 shadow-2xs"
-            >
-              Tra cứu HIS
-            </Link>
             <button
               data-tour="td-bk"
               onClick={() => setShowBkModal(true)}

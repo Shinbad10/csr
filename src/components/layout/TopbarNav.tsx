@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { can } from "@/lib/permissions";
 import { MENU_GROUPS, isNavActive, type NavGroup } from "@/lib/nav";
 import FacilitySwitcher from "@/components/layout/FacilitySwitcher";
+import { useCurrentFacility } from "@/lib/useFacility";
 
 /** Nhóm menu dạng dropdown trên thanh ngang Navy. */
 function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
@@ -24,6 +25,11 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
     window.addEventListener("keydown", onEsc);
     return () => { window.removeEventListener("mousedown", onDown); window.removeEventListener("keydown", onEsc); };
   }, [open]);
+
+  // Đóng dropdown khi chuyển trang
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   // Nhóm chỉ có 1 mục → link thẳng, không cần dropdown
   if (group.items.length === 1) {
@@ -102,9 +108,15 @@ export default function TopbarNav() {
   const { data: session } = useSession();
   const [drawer, setDrawer] = useState(false);
   const role = session?.user?.role || "";
+  const { hasHisConfig } = useCurrentFacility();
 
   const groups = MENU_GROUPS
-    .map((g) => ({ ...g, items: g.items.filter((it) => !it.cap || can(role, it.cap)) }))
+    .map((g) => ({
+      ...g,
+      items: g.items
+        .filter((it) => !it.cap || can(role, it.cap))
+        .filter((it) => it.href !== "/doi-chieu-his" || hasHisConfig),
+    }))
     .filter((g) => g.items.length > 0);
 
   // Đóng drawer khi đổi trang

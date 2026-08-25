@@ -623,7 +623,11 @@ export default function BuoiKhamPage() {
   const doctorOptions = useMemo<Option[]>(() => {
     const set = new Set<string>();
     list.forEach((b) => {
-      if (b.bacSiKham) set.add(b.bacSiKham.trim());
+      if (b.bacSiKham) {
+        parseDoctorList(b.bacSiKham).forEach((d) => {
+          if (d.trim()) set.add(d.trim());
+        });
+      }
     });
     const items = Array.from(set).sort().map((d) => ({
       value: d,

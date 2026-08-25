@@ -11,26 +11,43 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
   const { id } = await params;
   const isSelf = session.user.id === id;
-  const isAdmin = can(session.user.role, "admin.masterdata");
-  if (!isSelf && !isAdmin) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
+  const isMaster = can(session.user.role, "admin.masterdata");
+  const isIT = can(session.user.role, "admin.users");
+  if (!isSelf && !isMaster && !isIT) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
 
   try {
+    const targetUser = await getPrisma().nguoiDungCSR.findUnique({ where: { maNV: id } });
+    if (!targetUser) return NextResponse.json({ error: "Không tìm thấy người dùng" }, { status: 404 });
+
+    // Kiểm tra quyền theo đơn vị đối với IT
+    if (isIT && !isMaster && !isSelf) {
+      if (targetUser.vaiTro === "QuanLy" || (targetUser.coSoId && targetUser.coSoId !== session.user.coSoId)) {
+        return NextResponse.json({ error: "Bạn chỉ có quyền quản lý tài khoản thuộc đơn vị của mình" }, { status: 403 });
+      }
+    }
+
     const b = await request.json();
     const data: Record<string, unknown> = {};
-    if (isAdmin) {
+    if (isMaster || isIT) {
       if (b.hoTen) data.hoTen = b.hoTen.trim();
-      if (b.vaiTro) { data.vaiTro = b.vaiTro; data.coSoId = b.vaiTro === "QuanLy" ? null : b.coSoId || null; }
-      else if (b.coSoId !== undefined) data.coSoId = b.coSoId || null;
+      if (b.vaiTro) {
+        if (isIT && !isMaster && b.vaiTro === "QuanLy") {
+          return NextResponse.json({ error: "IT đơn vị không được gán quyền Quản trị toàn hệ thống" }, { status: 403 });
+        }
+        data.vaiTro = b.vaiTro;
+        data.coSoId = b.vaiTro === "QuanLy" ? null : (isMaster ? b.coSoId || null : session.user.coSoId || null);
+      } else if (b.coSoId !== undefined && isMaster) {
+        data.coSoId = b.coSoId || null;
+      }
       if (b.trangThai) data.trangThai = b.trangThai;
     }
     if (b.matKhau) {
       if (id === "admin") {
         return NextResponse.json({ error: "Tài khoản admin mặc định không thể đổi mật khẩu tại đây" }, { status: 400 });
       }
-      if (!isAdmin || isSelf) {
+      if (!isMaster && !isIT && isSelf) {
         if (!b.oldPassword) return NextResponse.json({ error: "Vui lòng nhập mật khẩu hiện tại" }, { status: 400 });
-        const currentUser = await getPrisma().nguoiDungCSR.findUnique({ where: { maNV: id } });
-        if (!currentUser || !(await bcrypt.compare(b.oldPassword, currentUser.matKhauHash))) {
+        if (!(await bcrypt.compare(b.oldPassword, targetUser.matKhauHash))) {
           return NextResponse.json({ error: "Mật khẩu hiện tại không đúng" }, { status: 400 });
         }
       }
@@ -50,10 +67,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 // Xoá cứng khỏi hệ thống và cascade xóa các dữ liệu con
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  if (!session || !can(session.user.role, "admin.masterdata")) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
+  if (!session) return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
+  const isMaster = can(session.user.role, "admin.masterdata");
+  const isIT = can(session.user.role, "admin.users");
+  if (!isMaster && !isIT) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   const { id } = await params;
   const prisma = getPrisma();
   try {
+    const targetUser = await prisma.nguoiDungCSR.findUnique({ where: { maNV: id } });
+    if (!targetUser) return NextResponse.json({ error: "Không tìm thấy tài khoản" }, { status: 404 });
+
+    if (isIT && !isMaster) {
+      if (targetUser.vaiTro === "QuanLy" || (targetUser.coSoId && targetUser.coSoId !== session.user.coSoId)) {
+        return NextResponse.json({ error: "Bạn chỉ có quyền xóa tài khoản thuộc đơn vị của mình" }, { status: 403 });
+      }
+    }
     // 1. Gỡ liên kết trong Hồ sơ bệnh nhân (các trường nullable)
     await prisma.hoSoBenhNhan.updateMany({ where: { tuVanVienMa: id }, data: { tuVanVienMa: null } });
     await prisma.hoSoBenhNhan.updateMany({ where: { nguoiPhuTrachMa: id }, data: { nguoiPhuTrachMa: null } });
