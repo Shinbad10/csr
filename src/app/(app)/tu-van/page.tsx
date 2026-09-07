@@ -1147,7 +1147,7 @@ export default function TuVanSessionPage() {
                   {/* 2. CONSULTATION ACTION FORM (Asymmetric 2-column layout: wide decision form + balanced 520px call log) */}
                   <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-start">
                     {/* CỘT TRÁI: PHƯƠNG ÁN & KẾ HOẠCH ĐIỀU TRỊ */}
-                    <div className="card p-4 sm:p-5 shadow-xs border border-[var(--line)] space-y-4.5 bg-white h-full flex flex-col justify-between">
+                    <div className="card p-4 sm:p-5 shadow-xs border border-[var(--line)] space-y-4 bg-white">
                       {/* Header & Quyết định */}
                       <div data-tour="tv-nhom">
                         <label className="text-[13.5px] sm:text-[14px] font-extrabold text-[#031da6] uppercase tracking-wider block mb-2.5">

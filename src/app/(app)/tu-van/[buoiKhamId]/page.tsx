@@ -651,11 +651,11 @@ export default function TuVanSessionPage() {
 
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-start">
                 {/* CỘT TRÁI: PHƯƠNG ÁN & KẾ HOẠCH ĐIỀU TRỊ */}
-                <div className="card p-4 sm:p-5 shadow-xs border border-slate-200 space-y-4.5 bg-white h-full flex flex-col justify-between">
+                <div className="card p-4 sm:p-5 shadow-xs border border-slate-200 space-y-4 bg-white">
                   <h3 className="font-serif text-[16px] font-black text-slate-900 flex items-center gap-2">
                     <UserCog className="w-5 h-5 text-[#031da6]" /> Phương án & Kế hoạch điều trị
                   </h3>
-                  <div className="grid grid-cols-1 gap-y-4">
+                  <div className="space-y-4">
                     <div>
                       <label className="text-[13.5px] sm:text-[14px] font-extrabold text-[#031da6] uppercase tracking-wider block mb-2.5">
                         Phương án / Quyết định của bệnh nhân *
