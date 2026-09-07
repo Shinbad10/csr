@@ -567,44 +567,44 @@ export default function TuVanSessionPage() {
 
         <main className="flex-1 min-w-0 card p-0 flex flex-col min-h-0">
           {selected ? (<>
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 flex flex-col min-h-0 p-4 sm:p-5 space-y-3.5 overflow-hidden">
               {/* COMPACT PATIENT HEADER STRIP */}
-              <div className="bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-4 shadow-2xs flex flex-col gap-2">
+              <div className="bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-[var(--r-lg)] p-3 sm:p-3.5 shadow-2xs flex flex-col gap-2 shrink-0">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
-                    <h2 className="font-serif font-bold text-[19px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
-                    <span className="font-mono font-bold text-[var(--navy)] bg-white px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
+                    <h2 className="font-serif font-bold text-[18px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
+                    <span className="font-mono font-bold text-[var(--navy)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
 
                     {/* Badge đã tư vấn sau khám */}
                     {isTuVanDone(selected) ? (
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-300 flex items-center gap-1">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-300 flex items-center gap-1">
                         <Check className="w-3.5 h-3.5 text-teal-600" />
                         <span>Đã tư vấn sau khám {selected.nhatKy?.length ? `(${selected.nhatKy.length} cuộc gọi)` : ""}</span>
                       </span>
                     ) : (
-                      <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-300 flex items-center gap-1">
+                      <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-300 flex items-center gap-1">
                         <Phone className="w-3.5 h-3.5 text-rose-600" />
                         <span>Chưa tư vấn sau khám</span>
                       </span>
                     )}
 
                     {selected.nhom === "A" || selected.xacNhanDieuTri === true ? (
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300">Đồng ý điều trị</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300">Đồng ý điều trị</span>
                     ) : selected.nhom === "B" || selected.xacNhanDieuTri === false ? (
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">Cần suy nghĩ</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">Cần suy nghĩ</span>
                     ) : selected.nhom === "TheoDoi" ? (
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300">Theo dõi tại nhà</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300">Theo dõi tại nhà</span>
                     ) : null}
                     <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
                   </div>
                   {getPatientDiags(selected).length > 0 && (
-                    <div className="text-[12px] font-bold text-[var(--rose)] bg-rose-50 px-2.5 py-1 rounded border border-rose-200">
+                    <div className="text-[11.5px] font-bold text-[var(--rose)] bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
                       Chẩn đoán: {getPatientDiags(selected).join(" · ")}
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-xs text-[var(--ink-soft)] pt-1.5 border-t border-[var(--line-soft)]/80">
+                <div className="flex items-center gap-x-5 gap-y-1 flex-wrap text-xs text-[var(--ink-soft)] pt-1 border-t border-[var(--line-soft)]/80">
                   {selected.cccd && (
                     <div className="flex items-center gap-1">
                       <span className="text-[var(--mute)] font-semibold">CCCD:</span>
@@ -637,11 +637,11 @@ export default function TuVanSessionPage() {
               </div>
 
               {/* --- Clinical Results Card --- */}
-              <div data-tour="tvs-clinical" className="card p-0 border-[var(--gold-line)] overflow-hidden shadow-[var(--shadow-sm)]">
-                <div className="bg-[var(--gold-soft)] px-5 py-3 border-b border-[var(--gold-line)] flex items-center justify-between">
-                  <h3 className="font-serif text-[15px] font-bold text-[var(--gold-deep)] flex items-center gap-2"><Stethoscope className="w-[18px] h-[18px]" /> Kết quả khám lâm sàng</h3>
+              <div data-tour="tvs-clinical" className="card p-0 border-[var(--gold-line)] overflow-hidden shadow-[var(--shadow-sm)] shrink-0">
+                <div className="bg-[var(--gold-soft)] px-4 py-2 border-b border-[var(--gold-line)] flex items-center justify-between">
+                  <h3 className="font-serif text-[14px] font-bold text-[var(--gold-deep)] flex items-center gap-2"><Stethoscope className="w-4 h-4" /> Kết quả khám lâm sàng</h3>
                 </div>
-                <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 bg-[var(--gold-50)]">
+                <div className="p-3 sm:p-3.5 grid grid-cols-1 md:grid-cols-3 gap-3 bg-[var(--gold-50)] text-[12.5px]">
                   <Info label="Thị lực Mắt phải (MP)" value={selected.thiLucMP} />
                   <Info label="Thị lực Mắt trái (MT)" value={selected.thiLucMT} />
                   <Info label="Khuyến nghị điều trị" value={selected.khuyenNghi} />
@@ -649,18 +649,21 @@ export default function TuVanSessionPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-start">
+              {/* HAI CỘT VỚI CHIỀU CAO CỐ ĐỊNH, CUỘN ĐỘC LẬP TRONG TỪNG CARD */}
+              <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-stretch overflow-hidden">
                 {/* CỘT TRÁI: PHƯƠNG ÁN & KẾ HOẠCH ĐIỀU TRỊ */}
-                <div className="card p-4 sm:p-5 shadow-xs border border-slate-200 space-y-4 bg-white">
-                  <h3 className="font-serif text-[16px] font-black text-slate-900 flex items-center gap-2">
-                    <UserCog className="w-5 h-5 text-[#031da6]" /> Phương án & Kế hoạch điều trị
-                  </h3>
-                  <div className="space-y-4">
+                <div className="card p-0 shadow-xs border border-slate-200 bg-white flex flex-col h-full min-h-0 overflow-hidden">
+                  <div className="p-3.5 px-4 sm:px-5 border-b border-slate-100 shrink-0">
+                    <h3 className="font-serif text-[15px] sm:text-[16px] font-black text-slate-900 flex items-center gap-2">
+                      <UserCog className="w-5 h-5 text-[#031da6]" /> Phương án & Kế hoạch điều trị
+                    </h3>
+                  </div>
+                  <div className="p-4 sm:p-5 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                     <div>
-                      <label className="text-[13.5px] sm:text-[14px] font-extrabold text-[#031da6] uppercase tracking-wider block mb-2.5">
+                      <label className="text-[13px] font-extrabold text-[#031da6] uppercase tracking-wider block mb-2">
                         Phương án / Quyết định của bệnh nhân *
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         {PHUONG_AN_TU_VAN.map((opt) => {
                           const active = f.nhom === opt.key;
                           return (
@@ -672,20 +675,20 @@ export default function TuVanSessionPage() {
                                 nhom: opt.key,
                                 ngayHen: opt.key === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen,
                               }))}
-                              className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${active
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${active
                                   ? `${opt.tone} shadow-sm ring-2 ring-indigo-500/20 font-bold`
                                   : "bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-400 hover:shadow-2xs"
                                 }`}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-extrabold text-[14.5px]">{opt.label}</span>
+                                <span className="font-extrabold text-[13.5px]">{opt.label}</span>
                                 {active && (
-                                  <span className="w-5.5 h-5.5 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
-                                    <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                                  <span className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <Check className="w-3 h-3 text-white stroke-[3]" />
                                   </span>
                                 )}
                               </div>
-                              <span className={`text-[12px] mt-2 leading-snug ${active ? "opacity-95 font-semibold" : "text-slate-500 font-medium"}`}>
+                              <span className={`text-[11.5px] mt-1.5 leading-snug ${active ? "opacity-95 font-semibold" : "text-slate-500 font-medium"}`}>
                                 {opt.sub}
                               </span>
                             </button>
@@ -695,10 +698,10 @@ export default function TuVanSessionPage() {
                     </div>
 
                     {f.nhom === "A" ? (
-                      <div className="pt-3 border-t border-slate-200 animate-fade-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="pt-3 border-t border-slate-200 animate-fade-in space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           <div>
-                            <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+                            <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
                               Số tiền dự kiến (đồng)
                             </label>
                             <input
@@ -718,7 +721,7 @@ export default function TuVanSessionPage() {
                             />
                           </div>
                           <div className="sm:col-span-2">
-                            <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                            <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                               <Bus className="w-4 h-4 text-[var(--navy)]" />
                               <span>Đoàn xe đón (Điểm đón & Giờ xe đón)</span>
                             </label>
@@ -740,7 +743,7 @@ export default function TuVanSessionPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="pt-3 border-t border-slate-200 text-[12.5px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-dashed border-slate-300 animate-fade-in">
+                      <div className="pt-3 border-t border-slate-200 text-[12px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300 animate-fade-in">
                         <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
                         <span>
                           {f.nhom === "B"
@@ -751,8 +754,9 @@ export default function TuVanSessionPage() {
                         </span>
                       </div>
                     )}
+
                     <div className="pt-3 border-t border-slate-200">
-                      <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 block">
+                      <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 block">
                         Ghi chú tư vấn / Dặn dò bệnh nhân
                       </label>
                       <textarea
@@ -760,133 +764,131 @@ export default function TuVanSessionPage() {
                         onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
                         placeholder="Nhập ghi chú tư vấn, nguyện vọng, người liên hệ, hẹn gọi lại…"
                         rows={2}
-                        className="w-full p-3 rounded-lg border border-slate-300 text-[13.5px] font-medium bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none shadow-2xs"
+                        className="w-full p-2.5 rounded-lg border border-slate-300 text-[13px] font-medium bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none shadow-2xs"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* CỘT PHẢI: LỊCH SỬ GỌI ĐIỆN & NHẬT KÝ TƯ VẤN (RỘNG 520PX THOẢI MÁI) */}
-                <div className="card p-4 sm:p-5 shadow-xs border border-slate-200 space-y-4 bg-white h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                <div className="card p-0 shadow-xs border border-slate-200 bg-white flex flex-col h-full min-h-0 overflow-hidden">
+                  <div className="p-3.5 px-4 sm:px-5 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-[#031da6] flex items-center justify-center shrink-0 border border-indigo-200 shadow-2xs">
-                        <PhoneCall className="w-4.5 h-4.5 text-[#031da6]" />
+                      <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#031da6] flex items-center justify-center shrink-0 border border-indigo-200 shadow-2xs">
+                        <PhoneCall className="w-4 h-4 text-[#031da6]" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-extrabold text-[14px] text-slate-900 uppercase tracking-wider truncate">
+                        <h3 className="font-extrabold text-[13.5px] text-slate-900 uppercase tracking-wider truncate">
                           Lịch sử gọi điện & Nhật ký tư vấn
                         </h3>
-                        <p className="text-[12px] text-slate-500 font-medium truncate">
+                        <p className="text-[11.5px] text-slate-500 font-medium truncate">
                           Ghi nhận các cuộc gọi chăm sóc bệnh nhân
                         </p>
                       </div>
                     </div>
-                    <span className="font-mono text-[12px] font-extrabold px-3 py-1 rounded-full bg-slate-100 text-indigo-900 border border-slate-200 shrink-0">
+                    <span className="font-mono text-[11.5px] font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-indigo-900 border border-slate-200 shrink-0">
                       {selected.nhatKy?.length || 0} cuộc gọi
                     </span>
                   </div>
 
-                  {/* Layout dọc trong cột phải */}
-                  <div className="flex flex-col gap-4 items-stretch flex-1">
+                  {/* Vùng cuộn riêng của cột phải */}
+                  <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3.5">
                     {/* Ghi nhật ký cuộc gọi mới */}
-                    <div className="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-                      <div className="space-y-2.5">
-                        <label className="text-[12.5px] font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                          <Pencil className="w-4 h-4 text-teal-700" />
-                          Ghi nhật ký cuộc gọi mới
-                        </label>
+                    <div className="space-y-2.5 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                      <label className="text-[12px] font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                        <Pencil className="w-3.5 h-3.5 text-teal-700" />
+                        Ghi nhật ký cuộc gọi mới
+                      </label>
 
-                        {/* Mẫu gợi ý nhanh — Chọn 1 nút duy nhất, nhấn lại để tắt/xoá */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {[
-                            "Đã gọi - Hẹn gọi lại",
-                            "Đã gọi - Đồng ý mổ",
-                            "Đã gọi - Cần suy nghĩ thêm",
-                            "Thuê bao / Không nghe máy",
-                            "Đã tư vấn qua người nhà",
-                          ].map((tag) => {
-                            const isSelected = callNote === tag;
-                            return (
-                              <button
-                                key={tag}
-                                type="button"
-                                onClick={() => setCallNote(isSelected ? "" : tag)}
-                                className={`text-[11.5px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs ${isSelected
-                                    ? "bg-[#018a7f] text-white font-extrabold border-[#018a7f] shadow-xs"
-                                    : "bg-white border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
-                                  }`}
-                              >
-                                {isSelected ? `✓ ${tag}` : `+ ${tag}`}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <div className="flex flex-col gap-2.5">
-                          <textarea
-                            value={callNote}
-                            onChange={(e) => setCallNote(e.target.value)}
-                            placeholder="Nhập nội dung cuộc gọi tư vấn..."
-                            rows={2}
-                            className="w-full p-3 rounded-lg border border-slate-300 text-[13.5px] font-medium bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none shadow-2xs min-h-[64px]"
-                          />
-                          <div className="flex justify-end">
+                      {/* Mẫu gợi ý nhanh */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {[
+                          "Đã gọi - Hẹn gọi lại",
+                          "Đã gọi - Đồng ý mổ",
+                          "Đã gọi - Cần suy nghĩ thêm",
+                          "Thuê bao / Không nghe máy",
+                          "Đã tư vấn qua người nhà",
+                        ].map((tag) => {
+                          const isSelected = callNote === tag;
+                          return (
                             <button
+                              key={tag}
                               type="button"
-                              onClick={() => saveCallLog()}
-                              disabled={savingCallNote || !callNote.trim()}
-                              className="btn px-4 py-2 text-[13px] font-extrabold shrink-0 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 shadow-sm bg-[#018a7f] hover:bg-[#016e65] text-white rounded-lg active:scale-95"
+                              onClick={() => setCallNote(isSelected ? "" : tag)}
+                              className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs ${isSelected
+                                  ? "bg-[#018a7f] text-white font-extrabold border-[#018a7f] shadow-xs"
+                                  : "bg-white border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+                                }`}
                             >
-                              {savingCallNote ? (
-                                <Loader2 className="w-4 h-4 animate-spin text-white" />
-                              ) : (
-                                <Send className="w-4 h-4 text-white" />
-                              )}
-                              <span>Gửi ghi chú</span>
+                              {isSelected ? `✓ ${tag}` : `+ ${tag}`}
                             </button>
-                          </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <textarea
+                          value={callNote}
+                          onChange={(e) => setCallNote(e.target.value)}
+                          placeholder="Nhập nội dung cuộc gọi tư vấn..."
+                          rows={2}
+                          className="w-full p-2.5 rounded-lg border border-slate-300 text-[13px] font-medium bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none shadow-2xs min-h-[58px]"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => saveCallLog()}
+                            disabled={savingCallNote || !callNote.trim()}
+                            className="btn px-3.5 py-1.5 text-[12px] font-extrabold shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 shadow-sm bg-[#018a7f] hover:bg-[#016e65] text-white rounded-lg active:scale-95"
+                          >
+                            {savingCallNote ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5 text-white" />
+                            )}
+                            <span>Gửi ghi chú</span>
+                          </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Cột 2: Danh sách nhật ký cuộc gọi đã lưu */}
-                    <div className="space-y-2.5 bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col h-full min-h-[190px]">
+                    {/* Danh sách nhật ký cuộc gọi đã lưu */}
+                    <div className="space-y-2 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
                       <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-extrabold uppercase tracking-wider text-slate-600">
+                        <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-slate-600">
                           Lịch sử cuộc gọi ({selected.nhatKy?.length || 0})
                         </span>
                         {selected.nhatKy && selected.nhatKy.length > 0 && (
-                          <span className="text-[11.5px] font-bold text-teal-900 bg-teal-100 px-2.5 py-0.5 rounded-md border border-teal-300">
+                          <span className="text-[11px] font-bold text-teal-900 bg-teal-100 px-2 py-0.5 rounded-md border border-teal-300">
                             Đã gọi {selected.nhatKy.length} lần
                           </span>
                         )}
                       </div>
 
                       {selected.nhatKy && selected.nhatKy.length > 0 ? (
-                        <div className="space-y-2.5 max-h-[240px] overflow-y-auto pr-1 flex-1">
+                        <div className="space-y-2">
                           {selected.nhatKy.map((log) => (
                             <div
                               key={log.id}
-                              className="p-3 rounded-xl border border-slate-200 bg-white text-[13.5px] space-y-1 hover:border-indigo-300 transition-colors shadow-2xs"
+                              className="p-2.5 rounded-xl border border-slate-200 bg-white text-[13px] space-y-1 hover:border-indigo-300 transition-colors shadow-2xs"
                             >
-                              <div className="flex items-center justify-between text-[12px] text-slate-500">
+                              <div className="flex items-center justify-between text-[11.5px] text-slate-500">
                                 <span className="font-bold text-indigo-900 flex items-center gap-1.5">
-                                  <PhoneCall className="w-3.5 h-3.5 text-teal-700" />
+                                  <PhoneCall className="w-3 h-3 text-teal-700" />
                                   {log.nguoiGoi?.hoTen || "Tư vấn viên"}
                                 </span>
                                 <span className="font-mono font-bold">{fmtDate(log.ngay)} {fmtTime(log.ngay)}</span>
                               </div>
-                              <p className="text-[13.5px] text-slate-900 font-semibold leading-relaxed whitespace-pre-wrap">
+                              <p className="text-[13px] text-slate-900 font-semibold leading-relaxed whitespace-pre-wrap">
                                 {log.noiDung}
                               </p>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 rounded-xl bg-white text-[13px] text-slate-500 gap-1.5 font-medium">
-                          <Phone className="w-6 h-6 text-slate-400" />
-                          <span>Chưa có lịch sử cuộc gọi nào. Hãy chọn nút gợi ý hoặc nhập ghi chú cuộc gọi ở trên.</span>
+                        <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 rounded-xl bg-white text-[12.5px] text-slate-500 gap-1 font-medium">
+                          <Phone className="w-5 h-5 text-slate-400" />
+                          <span>Chưa có lịch sử cuộc gọi nào.</span>
                         </div>
                       )}
                     </div>

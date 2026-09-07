@@ -995,113 +995,111 @@ export default function TuVanSessionPage() {
           <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-[var(--surface-bg)] overflow-hidden">
             {selected ? (
               <>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                   {/* 1. UNIFIED CLINICAL & PATIENT MEDICAL HEADER CARD */}
-                  <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-4 shadow-xs space-y-3.5 shrink-0">
+                  <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 shadow-xs space-y-3 shrink-0">
                     {/* Row 1: Patient Identity + Status Badge + Doctor Info */}
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <h2 className="font-serif font-black text-[20px] sm:text-[22px] text-slate-900 tracking-tight">
+                        <h2 className="font-serif font-black text-[19px] sm:text-[20px] text-slate-900 tracking-tight">
                           {selected.hoTen}
                         </h2>
-                        <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 text-[13px] shadow-2xs">
+                        <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200 text-[12px] shadow-2xs">
                           {selected.maBN}
                         </span>
-                        <span className="text-[13px] font-extrabold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                        <span className="text-[12px] font-extrabold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
                           {selected.gioiTinh} · {ageOf(selected)} tuổi
                         </span>
 
                         {/* Note Đã tư vấn / Chưa tư vấn sau khám trên Thẻ tên chính */}
                         {isTuVanDone(selected) ? (
-                          <span className="text-[12.5px] font-bold px-3 py-1 rounded-lg bg-teal-50 text-teal-900 border border-teal-300 shadow-2xs flex items-center gap-1.5">
-                            <Check className="w-4 h-4 text-teal-600 stroke-[3]" />
+                          <span className="text-[12px] font-bold px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-900 border border-teal-300 shadow-2xs flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5 text-teal-600 stroke-[3]" />
                             <span>Đã tư vấn sau khám {selected.nhatKy?.length ? `(${selected.nhatKy.length} cuộc gọi)` : ""}</span>
                           </span>
                         ) : (
-                          <span className="text-[12.5px] font-bold text-rose-700 bg-rose-50 px-3 py-1 rounded-lg border border-rose-300 shadow-2xs flex items-center gap-1.5">
-                            <Phone className="w-4 h-4 text-rose-600 stroke-[2.5]" />
+                          <span className="text-[12px] font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-lg border border-rose-300 shadow-2xs flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5 text-rose-600 stroke-[2.5]" />
                             <span>Chưa tư vấn sau khám</span>
                           </span>
                         )}
 
                         {selected.nhom === "A" || selected.xacNhanDieuTri === true ? (
-                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
+                          <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
                             ✓ Đồng ý điều trị
                           </span>
                         ) : selected.nhom === "B" || selected.xacNhanDieuTri === false ? (
-                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                          <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
                             ⏳ Cần suy nghĩ
                           </span>
                         ) : selected.nhom === "TheoDoi" ? (
-                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-sky-100 text-sky-900 border border-sky-300 shadow-2xs">
+                          <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-sky-100 text-sky-900 border border-sky-300 shadow-2xs">
                             👁️ Theo dõi tại nhà
                           </span>
                         ) : (
-                          <span className="text-[12.5px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs">
+                          <span className="text-[12px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200 shadow-2xs">
                             Chưa chốt tư vấn
                           </span>
                         )}
 
                         {/* Trạng thái Bệnh viện: Đã đến & Đã mổ của bệnh nhân đang chọn */}
                         {(selected.daDon || selected.ngayDenBV || selected.trangThai === "DaDonVien" || selected.trangThaiDieuTri === "Đã đến trước đây") && (
-                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-sky-100 text-sky-950 border border-sky-300 shadow-2xs flex items-center gap-1.5" title={selected.ngayDenBV ? `Ngày đến BV: ${fmtDate(selected.ngayDenBV)}` : "Bệnh nhân đã đến bệnh viện"}>
+                          <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-sky-100 text-sky-950 border border-sky-300 shadow-2xs flex items-center gap-1" title={selected.ngayDenBV ? `Ngày đến BV: ${fmtDate(selected.ngayDenBV)}` : "Bệnh nhân đã đến bệnh viện"}>
                             <span>🏥 Đã đến BV</span>
-                            {selected.ngayDenBV && <span className="font-mono text-[11.5px] text-sky-800 font-normal">({fmtDate(selected.ngayDenBV)})</span>}
+                            {selected.ngayDenBV && <span className="font-mono text-[11px] text-sky-800 font-normal">({fmtDate(selected.ngayDenBV)})</span>}
                           </span>
                         )}
                         {(selected.trangThaiDieuTri === "Đã mổ" || Boolean(selected.ngayMoThucTe) || selected.trangThai === "DaMoHauPhau") && (
-                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-emerald-600 text-white shadow-2xs flex items-center gap-1.5" title={selected.ngayMoThucTe ? `Ngày mổ: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
-                            <Check className="w-4 h-4 stroke-[3]" />
+                          <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Ngày mổ: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
                             <span>Đã mổ</span>
-                            {selected.ngayMoThucTe && <span className="font-mono text-[11.5px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
+                            {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
                           </span>
                         )}
                       </div>
 
                       {/* Bác sĩ khám & Khuyến nghị */}
-                      <div className="flex items-center gap-3 text-[13px] flex-wrap">
+                      <div className="flex items-center gap-2.5 text-[12.5px] flex-wrap">
                         {selected.bacSiChiDinh && (
                           <span className="text-slate-600 font-medium">
                             BS khám: <b className="text-indigo-900 font-bold bg-indigo-50/80 px-2 py-0.5 rounded-md border border-indigo-200">BS. {selected.bacSiChiDinh}</b>
                           </span>
                         )}
                         <span className="text-slate-600 font-medium">
-                          Chỉ định: <b className="text-emerald-900 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 font-bold">{selected.khuyenNghi || selected.huongXuTri || "Phẫu thuật"}</b>
+                          Chỉ định: <b className="text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-bold">{selected.khuyenNghi || selected.huongXuTri || "Phẫu thuật"}</b>
                         </span>
                       </div>
                     </div>
 
-                    {/* Row 2: Medical Examination Snapshot (Thị lực + Chẩn đoán + Tiền sử) */}
-                    <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-3.5 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-3.5 items-center">
-                      {/* Chẩn đoán & Thị lực 2 mắt */}
-                      <div className="md:col-span-2 flex items-start gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                          <Stethoscope className="w-5 h-5" />
+                    {/* Row 2: Medical Examination Snapshot */}
+                    <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-2.5 sm:p-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                      <div className="md:col-span-2 flex items-start gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                          <Stethoscope className="w-4 h-4" />
                         </div>
-                        <div className="space-y-1.5 min-w-0">
+                        <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[11.5px] font-black uppercase tracking-wider text-slate-500">Chẩn đoán:</span>
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Chẩn đoán:</span>
                             {getPatientDiags(selected).length > 0 ? (
-                              <span className="font-extrabold text-[14.5px] text-rose-700 bg-white px-2.5 py-0.5 rounded-lg border border-rose-200 shadow-2xs">
+                              <span className="font-extrabold text-[13.5px] text-rose-700 bg-white px-2 py-0.5 rounded-lg border border-rose-200 shadow-2xs">
                                 {getPatientDiags(selected).join(" · ")}
                               </span>
                             ) : (
-                              <span className="text-[13.5px] text-slate-500 italic">Chưa phát hiện bệnh lý</span>
+                              <span className="text-[12.5px] text-slate-500 italic">Chưa phát hiện bệnh lý</span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-[13px] text-slate-700 font-semibold flex-wrap">
-                            <span>Thị lực MP: <b className="font-mono font-bold text-indigo-900 bg-white px-2 py-0.5 rounded border border-slate-200">{selected.thiLucMP || "—"}</b></span>
+                          <div className="flex items-center gap-2.5 text-[12.5px] text-slate-700 font-semibold flex-wrap">
+                            <span>Thị lực MP: <b className="font-mono font-bold text-indigo-900 bg-white px-1.5 py-0.2 rounded border border-slate-200">{selected.thiLucMP || "—"}</b></span>
                             <span>·</span>
-                            <span>Thị lực MT: <b className="font-mono font-bold text-indigo-900 bg-white px-2 py-0.5 rounded border border-slate-200">{selected.thiLucMT || "—"}</b></span>
-                            {selected.matKham && <span>· Mắt khám: <b className="text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">{selected.matKham}</b></span>}
+                            <span>Thị lực MT: <b className="font-mono font-bold text-indigo-900 bg-white px-1.5 py-0.2 rounded border border-slate-200">{selected.thiLucMT || "—"}</b></span>
+                            {selected.matKham && <span>· Mắt khám: <b className="text-slate-900 bg-white px-1.5 py-0.2 rounded border border-slate-200">{selected.matKham}</b></span>}
                           </div>
                         </div>
                       </div>
 
-                      {/* Tiền sử & Thể trạng */}
-                      <div className="text-[13px] text-slate-700 border-t md:border-t-0 md:border-l border-slate-200 md:pl-4 space-y-1">
+                      <div className="text-[12.5px] text-slate-700 border-t md:border-t-0 md:border-l border-slate-200 md:pl-3 space-y-0.5">
                         <div>
-                          <span className="text-slate-500 font-semibold">Tiền sử bệnh: </span>
+                          <span className="text-slate-500 font-semibold">Tiền sử: </span>
                           <b className={selected.benhSu ? "text-amber-900 font-bold" : "text-slate-600 font-semibold"}>
                             {selected.benhSu ? (parseDiags(selected.loaiBenhSu, selected.loaiBenhSuKhac).join(", ") || "Có tiền sử bệnh") : "Không ghi nhận"}
                           </b>
@@ -1114,283 +1112,285 @@ export default function TuVanSessionPage() {
                     </div>
 
                     {/* Row 3: Patient Contact Strip */}
-                    <div className="flex items-center gap-x-6 gap-y-2 flex-wrap text-[13.5px] text-slate-700 font-medium">
+                    <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-[12.5px] text-slate-700 font-medium">
                       {selected.cccd && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <span className="text-slate-500 font-bold">CCCD:</span>
                           <span className="font-mono font-extrabold text-slate-900">{selected.cccd}</span>
                         </div>
                       )}
                       {selected.bhyt && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <span className="text-slate-500 font-bold">BHYT:</span>
-                          <span className="font-mono font-extrabold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">{selected.bhyt} ({bhytLevel(selected.bhyt)})</span>
+                          <span className="font-mono font-extrabold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">{selected.bhyt} ({bhytLevel(selected.bhyt)})</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
                         <span className="text-slate-500 font-bold">SĐT:</span>
                         {selected.sdt ? (
-                          <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 hover:bg-indigo-100 hover:underline inline-flex items-center gap-1">
-                            <Phone className="w-3.5 h-3.5 text-indigo-600" /> {selected.sdt}
+                          <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200 hover:bg-indigo-100 hover:underline inline-flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-indigo-600" /> {selected.sdt}
                           </a>
                         ) : (
                           <span className="font-mono text-slate-400">—</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 truncate">
+                      <div className="flex items-center gap-1 truncate">
                         <span className="text-slate-500 font-bold">Địa chỉ:</span>
                         <span className="truncate text-slate-900 font-semibold">{selected.diaChi || "—"}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* 2. CONSULTATION ACTION FORM (Asymmetric 2-column layout: wide decision form + balanced 520px call log) */}
-                  <div className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-start">
+                  {/* 2. HAI CỘT VỚI CHIỀU CAO CỐ ĐỊNH, CUỘN ĐỘC LẬP TRONG TỪNG CARD */}
+                  <div className="p-4 sm:p-5 flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-stretch overflow-hidden">
                     {/* CỘT TRÁI: PHƯƠNG ÁN & KẾ HOẠCH ĐIỀU TRỊ */}
-                    <div className="card p-4 sm:p-5 shadow-xs border border-[var(--line)] space-y-4 bg-white">
-                      {/* Header & Quyết định */}
-                      <div data-tour="tv-nhom">
-                        <label className="text-[13.5px] sm:text-[14px] font-extrabold text-[#031da6] uppercase tracking-wider block mb-2.5">
+                    <div className="card p-0 shadow-xs border border-[var(--line)] bg-white flex flex-col h-full min-h-0 overflow-hidden">
+                      <div className="p-3.5 px-4 sm:px-5 border-b border-slate-100 shrink-0">
+                        <label className="text-[13px] font-extrabold text-[#031da6] uppercase tracking-wider block">
                           Phương án / Quyết định của bệnh nhân *
                         </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          {PHUONG_AN_TU_VAN.map((opt) => {
-                            const active = f.nhom === opt.key;
-                            return (
-                              <button
-                                key={opt.key}
-                                type="button"
-                                onClick={() => {
-                                  setF((s) => ({
-                                    ...s,
-                                    nhom: opt.key,
-                                    ngayHen: opt.key === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen,
-                                  }));
-                                }}
-                                className={`p-4 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${active
-                                    ? `${opt.activeClass} shadow-sm ring-2 ring-indigo-500/20`
-                                    : "bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-400 hover:shadow-2xs"
-                                  }`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="font-extrabold text-[14.5px]">{opt.label}</span>
-                                  {active && (
-                                    <span className={`w-5.5 h-5.5 rounded-full ${opt.badgeClass} flex items-center justify-center shrink-0 shadow-2xs`}>
-                                      <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                                    </span>
-                                  )}
-                                </div>
-                                <span className={`text-[12px] mt-2 leading-snug ${active ? "opacity-95 font-semibold" : "text-slate-500 font-medium"}`}>
-                                  {opt.sub}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
                       </div>
 
-                      {/* Chi tiết kế hoạch đưa đón & viện phí (Chỉ mở khi Đồng ý điều trị tại BV) */}
-                      {f.nhom === "A" ? (
-                        <div className="pt-3 border-t border-slate-200 animate-fade-in" data-tour="tv-lich">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
-                                Số tiền dự kiến (đồng)
-                              </label>
-                              <div className="relative">
-                                <input
-                                  inputMode="numeric"
-                                  value={f.soTienBao ? new Intl.NumberFormat("vi-VN").format(Number(f.soTienBao)) : ""}
-                                  onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))}
-                                  className="w-full h-10 px-3 font-mono font-bold text-teal-800 bg-white border border-slate-300 rounded-lg text-[14px] focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs pr-12"
-                                  placeholder="VD: 5.000.000"
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] font-bold uppercase">
-                                  VNĐ
-                                </span>
-                              </div>
-                            </div>
-
-                            <div>
-                              <DateField
-                                label="Ngày điều trị tại BV"
-                                value={f.ngayHen}
-                                onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))}
-                                min={tomorrowISO()}
-                              />
-                            </div>
-
-                            <div className="sm:col-span-2">
-                              <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                                <Bus className="w-4 h-4 text-[var(--navy)]" />
-                                <span>Đoàn xe đón (Điểm đón & Giờ xe đón)</span>
-                              </label>
-                              <DoanXeAutocomplete
-                                diemDon={f.diemDon}
-                                gioDon={f.gioDon}
-                                ngayHen={f.ngayHen}
-                                buoiKhamXa={bks.find((b) => b.id === selBk)?.xa || ""}
-                                onSelect={(val) => {
-                                  setF((s) => ({
-                                    ...s,
-                                    diemDon: val.diemDon,
-                                    gioDon: val.gioDon,
-                                    ngayHen: val.ngayHen || s.ngayHen,
-                                  }));
-                                }}
-                              />
-                            </div>
+                      <div className="p-4 sm:p-5 flex-1 overflow-y-auto custom-scrollbar space-y-4">
+                        <div data-tour="tv-nhom">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            {PHUONG_AN_TU_VAN.map((opt) => {
+                              const active = f.nhom === opt.key;
+                              return (
+                                <button
+                                  key={opt.key}
+                                  type="button"
+                                  onClick={() => {
+                                    setF((s) => ({
+                                      ...s,
+                                      nhom: opt.key,
+                                      ngayHen: opt.key === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen,
+                                    }));
+                                  }}
+                                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${active
+                                      ? `${opt.activeClass} shadow-sm ring-2 ring-indigo-500/20`
+                                      : "bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-400 hover:shadow-2xs"
+                                    }`}
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-extrabold text-[13.5px]">{opt.label}</span>
+                                    {active && (
+                                      <span className={`w-5 h-5 rounded-full ${opt.badgeClass} flex items-center justify-center shrink-0 shadow-2xs`}>
+                                        <Check className="w-3 h-3 text-white stroke-[3]" />
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className={`text-[11.5px] mt-1.5 leading-snug ${active ? "opacity-95 font-semibold" : "text-slate-500 font-medium"}`}>
+                                    {opt.sub}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
-                      ) : (
-                        <div className="pt-3 border-t border-slate-200 text-[12.5px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-dashed border-slate-300 animate-fade-in">
-                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
-                          <span>
-                            {f.nhom === "B"
-                              ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
-                              : f.nhom === "TheoDoi"
-                                ? "Bệnh nhân theo dõi tại nhà — Không cần xếp lịch đưa đón tại viện. Vui lòng nhập dặn dò tái khám vào ô ghi chú bên dưới."
-                                : "Vui lòng chọn quyết định điều trị của bệnh nhân."}
-                          </span>
-                        </div>
-                      )}
 
-                      {/* GHI CHÚ TƯ VẤN */}
-                      <div className="pt-3 border-t border-slate-200">
-                        <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 block">
-                          Ghi chú tư vấn / Dặn dò bệnh nhân
-                        </label>
-                        <textarea
-                          value={f.ghiChuTuVan}
-                          onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
-                          placeholder="Nhập ghi chú tư vấn, nguyện vọng của bệnh nhân, dặn dò trước khi lên viện, số người nhà liên hệ..."
-                          rows={2}
-                          className="w-full p-3 rounded-lg border border-slate-300 text-[13.5px] font-medium bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none shadow-2xs"
-                        />
+                        {/* Chi tiết kế hoạch đưa đón & viện phí (Chỉ mở khi Đồng ý điều trị tại BV) */}
+                        {f.nhom === "A" ? (
+                          <div className="pt-3 border-t border-slate-200 animate-fade-in space-y-3" data-tour="tv-lich">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                              <div>
+                                <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+                                  Số tiền dự kiến (đồng)
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    inputMode="numeric"
+                                    value={f.soTienBao ? new Intl.NumberFormat("vi-VN").format(Number(f.soTienBao)) : ""}
+                                    onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))}
+                                    className="w-full h-10 px-3 font-mono font-bold text-teal-800 bg-white border border-slate-300 rounded-lg text-[14px] focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs pr-12"
+                                    placeholder="VD: 5.000.000"
+                                  />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] font-bold uppercase">
+                                    VNĐ
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div>
+                                <DateField
+                                  label="Ngày điều trị tại BV"
+                                  value={f.ngayHen}
+                                  onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))}
+                                  min={tomorrowISO()}
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2">
+                                <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                  <Bus className="w-4 h-4 text-[var(--navy)]" />
+                                  <span>Đoàn xe đón (Điểm đón & Giờ xe đón)</span>
+                                </label>
+                                <DoanXeAutocomplete
+                                  diemDon={f.diemDon}
+                                  gioDon={f.gioDon}
+                                  ngayHen={f.ngayHen}
+                                  buoiKhamXa={bks.find((b) => b.id === selBk)?.xa || ""}
+                                  onSelect={(val) => {
+                                    setF((s) => ({
+                                      ...s,
+                                      diemDon: val.diemDon,
+                                      gioDon: val.gioDon,
+                                      ngayHen: val.ngayHen || s.ngayHen,
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="pt-3 border-t border-slate-200 text-[12px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300 animate-fade-in">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
+                            <span>
+                              {f.nhom === "B"
+                                ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
+                                : f.nhom === "TheoDoi"
+                                  ? "Bệnh nhân theo dõi tại nhà — Không cần xếp lịch đưa đón tại viện. Vui lòng nhập dặn dò tái khám vào ô ghi chú bên dưới."
+                                  : "Vui lòng chọn quyết định điều trị của bệnh nhân."}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* GHI CHÚ TƯ VẤN */}
+                        <div className="pt-3 border-t border-slate-200">
+                          <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 block">
+                            Ghi chú tư vấn / Dặn dò bệnh nhân
+                          </label>
+                          <textarea
+                            value={f.ghiChuTuVan}
+                            onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
+                            placeholder="Nhập ghi chú tư vấn, nguyện vọng của bệnh nhân, dặn dò trước khi lên viện, số người nhà liên hệ..."
+                            rows={2}
+                            className="w-full p-2.5 rounded-lg border border-slate-300 text-[13px] font-medium bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none shadow-2xs"
+                          />
+                        </div>
                       </div>
                     </div>
 
                     {/* CỘT PHẢI: LỊCH SỬ GỌI ĐIỆN & NHẬT KÝ TƯ VẤN (RỘNG 520PX THOẢI MÁI) */}
-                    <div className="card p-4 sm:p-5 shadow-xs border border-slate-200 space-y-4 bg-white h-full flex flex-col justify-between">
-                      <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                    <div className="card p-0 shadow-xs border border-slate-200 bg-white flex flex-col h-full min-h-0 overflow-hidden">
+                      <div className="p-3.5 px-4 sm:px-5 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-[#031da6] flex items-center justify-center shrink-0 border border-indigo-200 shadow-2xs">
-                            <PhoneCall className="w-4.5 h-4.5 text-[#031da6]" />
+                          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#031da6] flex items-center justify-center shrink-0 border border-indigo-200 shadow-2xs">
+                            <PhoneCall className="w-4 h-4 text-[#031da6]" />
                           </div>
                           <div className="min-w-0">
-                            <h3 className="font-extrabold text-[14px] text-slate-900 uppercase tracking-wider truncate">
+                            <h3 className="font-extrabold text-[13.5px] text-slate-900 uppercase tracking-wider truncate">
                               Lịch sử gọi điện & Nhật ký tư vấn
                             </h3>
-                            <p className="text-[12px] text-slate-500 font-medium truncate">
+                            <p className="text-[11.5px] text-slate-500 font-medium truncate">
                               Ghi nhận các cuộc gọi chăm sóc bệnh nhân
                             </p>
                           </div>
                         </div>
-                        <span className="font-mono text-[12px] font-extrabold px-3 py-1 rounded-full bg-slate-100 text-indigo-900 border border-slate-200 shrink-0">
+                        <span className="font-mono text-[11.5px] font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-indigo-900 border border-slate-200 shrink-0">
                           {selected.nhatKy?.length || 0} cuộc gọi
                         </span>
                       </div>
 
-                      {/* Layout dọc trong cột phải */}
-                      <div className="flex flex-col gap-4 items-stretch flex-1">
+                      {/* Vùng cuộn riêng của cột phải */}
+                      <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3.5">
                         {/* Ghi nhật ký cuộc gọi mới */}
-                        <div className="space-y-3 bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-                          <div className="space-y-2.5">
-                            <label className="text-[12.5px] font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                              <Pencil className="w-4 h-4 text-teal-700" />
-                              Ghi nhật ký cuộc gọi mới
-                            </label>
+                        <div className="space-y-2.5 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                          <label className="text-[12px] font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                            <Pencil className="w-3.5 h-3.5 text-teal-700" />
+                            Ghi nhật ký cuộc gọi mới
+                          </label>
 
-                            {/* Mẫu gợi ý nhanh — Chọn 1 nút duy nhất, nhấn lại để tắt/xoá */}
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {[
-                                "Đã gọi - Hẹn gọi lại",
-                                "Đã gọi - Đồng ý mổ",
-                                "Đã gọi - Cần suy nghĩ thêm",
-                                "Thuê bao / Không nghe máy",
-                                "Đã tư vấn qua người nhà",
-                              ].map((tag) => {
-                                const isSelected = callNote === tag;
-                                return (
-                                  <button
-                                    key={tag}
-                                    type="button"
-                                    onClick={() => setCallNote(isSelected ? "" : tag)}
-                                    className={`text-[11.5px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs ${isSelected
-                                        ? "bg-[#018a7f] text-white font-extrabold border-[#018a7f] shadow-xs"
-                                        : "bg-white border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
-                                      }`}
-                                  >
-                                    {isSelected ? `✓ ${tag}` : `+ ${tag}`}
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            <div className="flex flex-col gap-2.5">
-                              <textarea
-                                value={callNote}
-                                onChange={(e) => setCallNote(e.target.value)}
-                                placeholder="Nhập nội dung cuộc gọi tư vấn với bệnh nhân hoặc người nhà..."
-                                rows={2}
-                                className="w-full p-3 rounded-lg border border-slate-300 text-[13.5px] font-medium bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none shadow-2xs min-h-[64px]"
-                              />
-                              <div className="flex justify-end">
+                          {/* Mẫu gợi ý nhanh */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {[
+                              "Đã gọi - Hẹn gọi lại",
+                              "Đã gọi - Đồng ý mổ",
+                              "Đã gọi - Cần suy nghĩ thêm",
+                              "Thuê bao / Không nghe máy",
+                              "Đã tư vấn qua người nhà",
+                            ].map((tag) => {
+                              const isSelected = callNote === tag;
+                              return (
                                 <button
+                                  key={tag}
                                   type="button"
-                                  onClick={() => saveCallLog()}
-                                  disabled={savingCallNote || !callNote.trim()}
-                                  className="btn px-4 py-2 text-[13px] font-extrabold shrink-0 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 shadow-sm bg-[#018a7f] hover:bg-[#016e65] text-white rounded-lg active:scale-95"
+                                  onClick={() => setCallNote(isSelected ? "" : tag)}
+                                  className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs ${isSelected
+                                      ? "bg-[#018a7f] text-white font-extrabold border-[#018a7f] shadow-xs"
+                                      : "bg-white border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+                                    }`}
                                 >
-                                  {savingCallNote ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                  ) : (
-                                    <Send className="w-4 h-4 text-white" />
-                                  )}
-                                  <span>Gửi ghi chú</span>
+                                  {isSelected ? `✓ ${tag}` : `+ ${tag}`}
                                 </button>
-                              </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <textarea
+                              value={callNote}
+                              onChange={(e) => setCallNote(e.target.value)}
+                              placeholder="Nhập nội dung cuộc gọi tư vấn với bệnh nhân hoặc người nhà..."
+                              rows={2}
+                              className="w-full p-2.5 rounded-lg border border-slate-300 text-[13px] font-medium bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none shadow-2xs min-h-[58px]"
+                            />
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => saveCallLog()}
+                                disabled={savingCallNote || !callNote.trim()}
+                                className="btn px-3.5 py-1.5 text-[12px] font-extrabold shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 shadow-sm bg-[#018a7f] hover:bg-[#016e65] text-white rounded-lg active:scale-95"
+                              >
+                                {savingCallNote ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                                ) : (
+                                  <Send className="w-3.5 h-3.5 text-white" />
+                                )}
+                                <span>Gửi ghi chú</span>
+                              </button>
                             </div>
                           </div>
                         </div>
 
-                        {/* Cột 2: Danh sách nhật ký cuộc gọi đã lưu */}
-                        <div className="space-y-2.5 bg-slate-50/80 p-4 rounded-xl border border-slate-200 flex flex-col h-full min-h-[190px]">
+                        {/* Danh sách nhật ký cuộc gọi đã lưu */}
+                        <div className="space-y-2 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
                           <div className="flex items-center justify-between">
-                            <span className="text-[12px] font-extrabold uppercase tracking-wider text-slate-600">
+                            <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-slate-600">
                               Lịch sử cuộc gọi ({selected.nhatKy?.length || 0})
                             </span>
                             {selected.nhatKy && selected.nhatKy.length > 0 && (
-                              <span className="text-[11.5px] font-bold text-teal-900 bg-teal-100 px-2.5 py-0.5 rounded-md border border-teal-300">
+                              <span className="text-[11px] font-bold text-teal-900 bg-teal-100 px-2 py-0.5 rounded-md border border-teal-300">
                                 Đã gọi {selected.nhatKy.length} lần
                               </span>
                             )}
                           </div>
 
                           {selected.nhatKy && selected.nhatKy.length > 0 ? (
-                            <div className="space-y-2.5 max-h-[240px] overflow-y-auto pr-1 flex-1">
+                            <div className="space-y-2">
                               {selected.nhatKy.map((log) => (
                                 <div
                                   key={log.id}
-                                  className="p-3 rounded-xl border border-slate-200 bg-white text-[13.5px] space-y-1 hover:border-indigo-300 transition-colors shadow-2xs"
+                                  className="p-2.5 rounded-xl border border-slate-200 bg-white text-[13px] space-y-1 hover:border-indigo-300 transition-colors shadow-2xs"
                                 >
-                                  <div className="flex items-center justify-between text-[12px] text-slate-500">
+                                  <div className="flex items-center justify-between text-[11.5px] text-slate-500">
                                     <span className="font-bold text-indigo-900 flex items-center gap-1.5">
-                                      <PhoneCall className="w-3.5 h-3.5 text-teal-700" />
+                                      <PhoneCall className="w-3 h-3 text-teal-700" />
                                       {log.nguoiGoi?.hoTen || "Tư vấn viên"}
                                     </span>
                                     <span className="font-mono font-bold">{fmtDate(log.ngay)} {fmtTime(log.ngay)}</span>
                                   </div>
-                                  <p className="text-[13.5px] text-slate-900 font-semibold leading-relaxed whitespace-pre-wrap">
+                                  <p className="text-[13px] text-slate-900 font-semibold leading-relaxed whitespace-pre-wrap">
                                     {log.noiDung}
                                   </p>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 rounded-xl bg-white text-[13px] text-slate-500 gap-1.5 font-medium">
-                              <Phone className="w-6 h-6 text-slate-400" />
-                              <span>Chưa có lịch sử cuộc gọi nào. Hãy chọn nút gợi ý hoặc nhập ghi chú cuộc gọi ở trên.</span>
+                            <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 rounded-xl bg-white text-[12.5px] text-slate-500 gap-1 font-medium">
+                              <Phone className="w-5 h-5 text-slate-400" />
+                              <span>Chưa có lịch sử cuộc gọi nào.</span>
                             </div>
                           )}
                         </div>
