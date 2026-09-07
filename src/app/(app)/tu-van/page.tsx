@@ -19,7 +19,9 @@ import {
   PhoneCall,
   Send,
   Clock,
+  Bus,
 } from "lucide-react";
+import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -37,14 +39,15 @@ import { StatusBadge, labelCls, Combobox, SectionHeader, Select, DateField } fro
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 
-type FilterKey = "" | "chuagoi" | "dagoi" | "nhomA" | "nhomB";
+type FilterKey = "" | "chuagoi" | "dagoi" | "nhomA" | "nhomB" | "daden" | "damo";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "", label: "Tất cả" },
+  { key: "nhomA", label: "Đồng ý (A)" },
   { key: "chuagoi", label: "Chưa gọi" },
   { key: "dagoi", label: "Đã gọi" },
-  { key: "nhomA", label: "Đồng ý (A)" },
-  { key: "nhomB", label: "Suy nghĩ (B)" },
+  { key: "daden", label: "Đã đến" },
+  { key: "damo", label: "Đã mổ" },
 ];
 
 /** Kiểm tra bệnh nhân đã được tư vấn sau khám hay chưa */
@@ -274,7 +277,45 @@ export default function TuVanSessionPage() {
   }, [bks, bkSearch]);
 
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
-  const uniqueDiemDon = useMemo(() => Array.from(new Set(patients.map((p) => p.diemDon).filter(Boolean))) as string[], [patients]);
+  
+  // Nạp danh sách điểm đón và chuyến xe chưa qua ngày trên toàn hệ thống (không phân biệt đợt khám)
+  const [activeDiemDonList, setActiveDiemDonList] = useState<string[]>([]);
+  const [activeChuyenXeList, setActiveChuyenXeList] = useState<
+    Array<{
+      key: string;
+      diemDon: string;
+      gioDon: string;
+      ngayDieuTri: string;
+      soBN: number;
+      cacXa: string[];
+    }>
+  >([]);
+
+  const loadActiveDoanXe = useCallback(async () => {
+    try {
+      const res = await fetch("/api/csr/doan-xe/diem-don");
+      const json = await res.json();
+      if (res.ok) {
+        if (Array.isArray(json.diemDonList)) setActiveDiemDonList(json.diemDonList);
+        if (Array.isArray(json.chuyenXeList)) setActiveChuyenXeList(json.chuyenXeList);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadActiveDoanXe();
+  }, [loadActiveDoanXe]);
+
+  useRealtimeEvent(["hoso_change", "buoikham_change"], () => {
+    loadActiveDoanXe();
+  });
+
+  const uniqueDiemDon = useMemo(() => {
+    const set = new Set<string>();
+    activeDiemDonList.forEach((d) => d && set.add(d.trim()));
+    patients.forEach((p) => p.diemDon?.trim() && set.add(p.diemDon.trim()));
+    return Array.from(set).sort();
+  }, [activeDiemDonList, patients]);
 
   const [callNote, setCallNote] = useState("");
   const [savingCallNote, setSavingCallNote] = useState(false);
@@ -283,10 +324,15 @@ export default function TuVanSessionPage() {
     const filtered = patients.filter((p) => {
       const called = !!(p.nhatKy && p.nhatKy.length > 0);
       const isA = p.nhom === "A" || p.xacNhanDieuTri === true;
+      const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau";
+      const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || isMo;
+
       if (filter === "chuagoi" && called) return false;
       if (filter === "dagoi" && !called) return false;
       if (filter === "nhomA" && !isA) return false;
       if (filter === "nhomB" && isA) return false;
+      if (filter === "daden" && !isDaDen) return false;
+      if (filter === "damo" && !isMo) return false;
       return true;
     });
 
@@ -300,14 +346,16 @@ export default function TuVanSessionPage() {
     });
   }, [patients, filter, sortBy]);
 
-  // Bộ đếm nhanh trạng thái tư vấn & gọi điện
+  // Bộ đếm nhanh trạng thái tư vấn & tiến độ viện
   const counts = useMemo(() => {
     const total = patients.length;
     const called = patients.filter((p) => !!(p.nhatKy && p.nhatKy.length > 0)).length;
     const uncalled = total - called;
     const nhomA = patients.filter((p) => p.nhom === "A" || p.xacNhanDieuTri === true).length;
     const nhomB = total - nhomA;
-    return { total, called, uncalled, nhomA, nhomB };
+    const daMo = patients.filter((p) => p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau").length;
+    const daDen = patients.filter((p) => Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || (p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe))).length;
+    return { total, called, uncalled, nhomA, nhomB, daDen, daMo };
   }, [patients]);
 
   const saveCallLog = async (presetText?: string) => {
@@ -523,7 +571,7 @@ export default function TuVanSessionPage() {
         title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
         subtitle="Lấy danh sách bệnh nhân bệnh lý để tư vấn điều trị"
         icon={CalendarDays}
-        maxWidth="max-w-[620px]"
+        maxWidth="max-w-[660px]"
         noPadding
       >
         {/* Search */}
@@ -551,13 +599,13 @@ export default function TuVanSessionPage() {
                   setSelBk(b.id);
                   setShowBkModal(false);
                 }}
-                className={`w-full text-left p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-center gap-4 border cursor-pointer ${active
+                className={`w-full text-left p-3.5 sm:p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-start gap-3.5 sm:gap-4 border cursor-pointer ${active
                     ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]"
                     : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"
                   }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors ${active
+                  className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${active
                       ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs"
                       : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"
                     }`}
@@ -566,14 +614,14 @@ export default function TuVanSessionPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[15px] truncate text-[var(--ink)]" title={fmtBuoiKhamName(b)}>
+                    <span className="font-bold text-[14.5px] sm:text-[15px] truncate text-[var(--ink)]" title={fmtBuoiKhamName(b)}>
                       {fmtBuoiKhamName(b)}
                     </span>
-                    <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">
+                    <span className="font-mono text-[11px] sm:text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">
                       {b.id}
                     </span>
                   </div>
-                  <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
+                  <div className="text-[12.5px] sm:text-[13px] text-[var(--mute)] mt-1 flex items-center gap-3.5 font-medium flex-wrap">
                     <span className="flex items-center gap-1.5 shrink-0 font-mono">
                       <CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" /> {fmtDate(b.ngayKham)}
                     </span>
@@ -581,6 +629,43 @@ export default function TuVanSessionPage() {
                       <span className="flex items-center gap-1.5 truncate">
                         <MapPin className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" />{" "}
                         <span className="truncate">{b.diaDiem}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Thống kê Phân nhóm A/B & Đã mổ */}
+                  <div className="flex items-center gap-2 mt-2.5 pt-2 border-t border-[var(--line-soft)] flex-wrap">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-bg)] text-[var(--ink-soft)] border border-[var(--line)]" title="Tổng số bệnh nhân tiếp nhận">
+                      {b._count?.hoSo ?? 0} BN
+                    </span>
+
+                    <div className="inline-flex rounded-md overflow-hidden border border-[var(--line)] font-mono text-[11px] font-bold shadow-2xs">
+                      <span className="px-2 py-0.5 bg-[#fef1f4] text-[#e11d48] border-r border-[#e11d48]/20" title="Nhóm A: Đồng ý điều trị / Chỉ định mổ">
+                        Nhóm A: {b.stats?.nhomA ?? 0}
+                      </span>
+                      <span className="px-2 py-0.5 bg-[#fef6eb] text-[#d97706]" title="Nhóm B: Cần suy nghĩ thêm / Theo dõi">
+                        Nhóm B: {b.stats?.nhomB ?? 0}
+                      </span>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold border shadow-2xs ${
+                        (b.stats?.daMo ?? 0) > 0
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : "bg-slate-50 text-slate-500 border-slate-200"
+                      }`}
+                      title={`Đã mổ thực tế: ${b.stats?.daMo ?? 0} ca${(b.stats?.nhomA ?? 0) > 0 ? ` trên tổng ${b.stats?.nhomA} ca nhóm A` : ""}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${(b.stats?.daMo ?? 0) > 0 ? "bg-emerald-600" : "bg-slate-400"}`} />
+                      <span>
+                        Đã mổ: {b.stats?.daMo ?? 0}
+                        {(b.stats?.nhomA ?? 0) > 0 ? `/${b.stats?.nhomA ?? 0}` : ""}
+                      </span>
+                    </span>
+
+                    {b.bacSiKham && (
+                      <span className="text-[11px] font-medium text-[var(--mute)] ml-auto truncate" title={`Bác sĩ chỉ định / khám: ${b.bacSiKham}`}>
+                        BS: {b.bacSiKham.replace(/^(BS|Bác sĩ|BSCKI|BSCKII)\s*/i, "")}
                       </span>
                     )}
                   </div>
@@ -628,7 +713,7 @@ export default function TuVanSessionPage() {
 
           {/* COL 1 — Patient Queue Sidebar */}
           <aside
-            className={`w-full xl:w-[350px] shrink-0 border-r border-[var(--line)] bg-white flex flex-col min-h-0 h-full fixed xl:static inset-y-0 left-0 z-40 transition-transform duration-200 ${showList ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
+            className={`w-full xl:w-[410px] 2xl:w-[440px] shrink-0 border-r border-[var(--line)] bg-white flex flex-col min-h-0 h-full fixed xl:static inset-y-0 left-0 z-40 transition-transform duration-200 ${showList ? "translate-x-0" : "-translate-x-full xl:translate-x-0"
               }`}
           >
             {/* Header */}
@@ -688,7 +773,11 @@ export default function TuVanSessionPage() {
                           ? counts.nhomA
                           : ft.key === "nhomB"
                             ? counts.nhomB
-                            : counts.total;
+                            : ft.key === "daden"
+                              ? counts.daDen
+                              : ft.key === "damo"
+                                ? counts.daMo
+                                : counts.total;
                   return (
                     <button
                       key={ft.key}
@@ -759,9 +848,16 @@ export default function TuVanSessionPage() {
                   const hasCallLog = !!(p.nhatKy && p.nhatKy.length > 0);
                   const latestCallLog = hasCallLog ? p.nhatKy![0] : null;
 
+                  const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau";
+                  const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || isMo;
+
                   let cardBgCls = "";
                   if (active) {
                     cardBgCls = "bg-indigo-50/75 border-2 border-[#002b7f] shadow-sm ring-2 ring-indigo-500/15";
+                  } else if (isMo) {
+                    cardBgCls = "bg-emerald-50/20 border border-emerald-300/80 hover:border-emerald-500 hover:shadow-xs shadow-2xs border-l-[3.5px] border-l-emerald-600";
+                  } else if (isDaDen) {
+                    cardBgCls = "bg-sky-50/20 border border-sky-300/80 hover:border-sky-500 hover:shadow-xs shadow-2xs border-l-[3.5px] border-l-sky-600";
                   } else if (hasCallLog) {
                     cardBgCls = "bg-emerald-50/25 border border-emerald-300/80 hover:border-emerald-500 hover:shadow-xs shadow-2xs";
                   } else {
@@ -790,17 +886,17 @@ export default function TuVanSessionPage() {
                         </div>
 
                         {/* Status Badges */}
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {p.nhom === "A" || p.xacNhanDieuTri === true ? (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs">
+                            <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs">
                               Đồng ý
                             </span>
                           ) : p.nhom === "B" || p.xacNhanDieuTri === false ? (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
+                            <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
                               Suy nghĩ
                             </span>
                           ) : p.nhom === "TheoDoi" ? (
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-sky-100 text-sky-950 border border-sky-300 shadow-2xs">
+                            <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-sky-100 text-sky-950 border border-sky-300 shadow-2xs">
                               Theo dõi
                             </span>
                           ) : null}
@@ -826,6 +922,40 @@ export default function TuVanSessionPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* Dòng 2.5: Trạng thái Đã đến & Đã mổ chi tiết (kèm ngày) */}
+                      {(isDaDen || isMo) && (
+                        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                          {isDaDen && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-sky-50 text-sky-900 border border-sky-300 shadow-2xs"
+                              title={p.ngayDenBV ? `Đã đến bệnh viện ngày: ${fmtDate(p.ngayDenBV)}` : "Đã xác nhận đến bệnh viện"}
+                            >
+                              <span>🏥 Đã đến</span>
+                              {p.ngayDenBV && (
+                                <span className="font-mono text-[10px] text-sky-700 font-normal">
+                                  ({fmtDate(p.ngayDenBV)})
+                                </span>
+                              )}
+                            </span>
+                          )}
+
+                          {isMo && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-2xs"
+                              title={p.ngayMoThucTe ? `Đã mổ ngày: ${fmtDate(p.ngayMoThucTe)}` : "Đã phẫu thuật"}
+                            >
+                              <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
+                              <span>Đã mổ</span>
+                              {p.ngayMoThucTe && (
+                                <span className="font-mono text-[10px] text-emerald-700 font-normal">
+                                  ({fmtDate(p.ngayMoThucTe)})
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Dòng 3 & 4: Ghi chú tư vấn & Nhật ký cuộc gọi gần nhất */}
                       {(p.ghiChuTuVan || (hasCallLog && latestCallLog?.noiDung)) ? (
@@ -909,6 +1039,21 @@ export default function TuVanSessionPage() {
                         ) : (
                           <span className="text-[12.5px] font-bold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 shadow-2xs">
                             Chưa chốt tư vấn
+                          </span>
+                        )}
+
+                        {/* Trạng thái Bệnh viện: Đã đến & Đã mổ của bệnh nhân đang chọn */}
+                        {(selected.daDon || selected.ngayDenBV || selected.trangThai === "DaDonVien" || selected.trangThaiDieuTri === "Đã đến trước đây") && (
+                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-sky-100 text-sky-950 border border-sky-300 shadow-2xs flex items-center gap-1.5" title={selected.ngayDenBV ? `Ngày đến BV: ${fmtDate(selected.ngayDenBV)}` : "Bệnh nhân đã đến bệnh viện"}>
+                            <span>🏥 Đã đến BV</span>
+                            {selected.ngayDenBV && <span className="font-mono text-[11.5px] text-sky-800 font-normal">({fmtDate(selected.ngayDenBV)})</span>}
+                          </span>
+                        )}
+                        {(selected.trangThaiDieuTri === "Đã mổ" || Boolean(selected.ngayMoThucTe) || selected.trangThai === "DaMoHauPhau") && (
+                          <span className="text-[12.5px] font-extrabold px-3 py-1 rounded-lg bg-emerald-600 text-white shadow-2xs flex items-center gap-1.5" title={selected.ngayMoThucTe ? `Ngày mổ: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                            <Check className="w-4 h-4 stroke-[3]" />
+                            <span>Đã mổ</span>
+                            {selected.ngayMoThucTe && <span className="font-mono text-[11.5px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
                           </span>
                         )}
                       </div>
@@ -1075,61 +1220,24 @@ export default function TuVanSessionPage() {
                               />
                             </div>
 
-                            <div>
+                            <div className="sm:col-span-2">
                               <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                                <span>Giờ đón (dự kiến)</span>
+                                <Bus className="w-4 h-4 text-[var(--navy)]" />
+                                <span>Đoàn xe đón (Điểm đón & Giờ xe đón)</span>
                               </label>
-                              <div className="space-y-1.5">
-                                <div className="relative">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={f.gioDon}
-                                    onChange={(e) => {
-                                      const next = format24hTimeInput(e.target.value, f.gioDon);
-                                      setF((s) => ({ ...s, gioDon: next }));
-                                    }}
-                                    onBlur={() => {
-                                      setF((s) => ({ ...s, gioDon: normalize24hOnBlur(s.gioDon) }));
-                                    }}
-                                    placeholder="06:30 (24h)"
-                                    maxLength={5}
-                                    className="w-full h-10 px-3 pl-9 font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-xl text-[14px] outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs transition-all"
-                                  />
-                                  <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  {["06:00", "06:30", "07:00", "07:30", "08:00", "13:30", "14:00"].map((t) => {
-                                    const active = f.gioDon === t;
-                                    return (
-                                      <button
-                                        key={t}
-                                        type="button"
-                                        onClick={() => setF((s) => ({ ...s, gioDon: active ? "" : t }))}
-                                        className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
-                                          active
-                                            ? "bg-[#031da6] text-white border-[#031da6] shadow-2xs font-extrabold"
-                                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
-                                        }`}
-                                      >
-                                        {t}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
-                                Điểm đón
-                              </label>
-                              <Combobox
-                                value={f.diemDon}
-                                onChange={(v) => setF((s) => ({ ...s, diemDon: v }))}
-                                options={uniqueDiemDon}
-                                placeholder="Chọn hoặc nhập điểm đón…"
+                              <DoanXeAutocomplete
+                                diemDon={f.diemDon}
+                                gioDon={f.gioDon}
+                                ngayHen={f.ngayHen}
+                                buoiKhamXa={bks.find((b) => b.id === selBk)?.xa || ""}
+                                onSelect={(val) => {
+                                  setF((s) => ({
+                                    ...s,
+                                    diemDon: val.diemDon,
+                                    gioDon: val.gioDon,
+                                    ngayHen: val.ngayHen || s.ngayHen,
+                                  }));
+                                }}
                               />
                             </div>
                           </div>

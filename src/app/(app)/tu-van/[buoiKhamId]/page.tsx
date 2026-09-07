@@ -4,13 +4,14 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, type HoSo } from "@/lib/csr";
 import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
+import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 
 interface BuoiKham { id: string; xa: string; diaDiem: string; ghiChu?: string | null; ngayKham: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null } }
 const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "", ghiChuTuVan: "" };
@@ -182,7 +183,45 @@ export default function TuVanSessionPage() {
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
   const dirty = JSON.stringify(f) !== baseline;
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
-  const uniqueDiemDon = useMemo(() => Array.from(new Set(patients.map((p) => p.diemDon).filter(Boolean))) as string[], [patients]);
+
+  // Nạp danh sách điểm đón và chuyến xe chưa qua ngày trên toàn hệ thống (không phân biệt đợt khám)
+  const [activeDiemDonList, setActiveDiemDonList] = useState<string[]>([]);
+  const [activeChuyenXeList, setActiveChuyenXeList] = useState<
+    Array<{
+      key: string;
+      diemDon: string;
+      gioDon: string;
+      ngayDieuTri: string;
+      soBN: number;
+      cacXa: string[];
+    }>
+  >([]);
+
+  const loadActiveDoanXe = useCallback(async () => {
+    try {
+      const res = await fetch("/api/csr/doan-xe/diem-don");
+      const json = await res.json();
+      if (res.ok) {
+        if (Array.isArray(json.diemDonList)) setActiveDiemDonList(json.diemDonList);
+        if (Array.isArray(json.chuyenXeList)) setActiveChuyenXeList(json.chuyenXeList);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadActiveDoanXe();
+  }, [loadActiveDoanXe]);
+
+  useRealtimeEvent(["hoso_change", "buoikham_change"], () => {
+    loadActiveDoanXe();
+  });
+
+  const uniqueDiemDon = useMemo(() => {
+    const set = new Set<string>();
+    activeDiemDonList.forEach((d) => d && set.add(d.trim()));
+    patients.forEach((p) => p.diemDon?.trim() && set.add(p.diemDon.trim()));
+    return Array.from(set).sort();
+  }, [activeDiemDonList, patients]);
 
   const loadForm = useCallback((p: HoSo) => {
     const next = {
@@ -678,60 +717,24 @@ export default function TuVanSessionPage() {
                               onChange={(v) => setF((s) => ({ ...s, ngayHen: v }))}
                             />
                           </div>
-                          <div>
+                          <div className="sm:col-span-2">
                             <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                              <span>Giờ đón (dự kiến)</span>
+                              <Bus className="w-4 h-4 text-[var(--navy)]" />
+                              <span>Đoàn xe đón (Điểm đón & Giờ xe đón)</span>
                             </label>
-                            <div className="space-y-1.5">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={f.gioDon}
-                                  onChange={(e) => {
-                                    const next = format24hTimeInput(e.target.value, f.gioDon);
-                                    setF((s) => ({ ...s, gioDon: next }));
-                                  }}
-                                  onBlur={() => {
-                                    setF((s) => ({ ...s, gioDon: normalize24hOnBlur(s.gioDon) }));
-                                  }}
-                                  placeholder="06:30 (24h)"
-                                  maxLength={5}
-                                  className="w-full h-10 px-3 pl-9 font-mono font-bold text-slate-900 bg-white border border-slate-300 rounded-xl text-[14px] outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs transition-all"
-                                />
-                                <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                              </div>
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {["06:00", "06:30", "07:00", "07:30", "08:00", "13:30", "14:00"].map((t) => {
-                                  const active = f.gioDon === t;
-                                  return (
-                                    <button
-                                      key={t}
-                                      type="button"
-                                      onClick={() => setF((s) => ({ ...s, gioDon: active ? "" : t }))}
-                                      className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
-                                        active
-                                          ? "bg-[#031da6] text-white border-[#031da6] shadow-2xs font-extrabold"
-                                          : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300"
-                                      }`}
-                                    >
-                                      {t}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-[12.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
-                              Điểm đón
-                            </label>
-                            <Combobox
-                              value={f.diemDon}
-                              onChange={(v) => setF((s) => ({ ...s, diemDon: v }))}
-                              options={uniqueDiemDon}
-                              placeholder="VD: Ngã ba xã / xe nhà…"
+                            <DoanXeAutocomplete
+                              diemDon={f.diemDon}
+                              gioDon={f.gioDon}
+                              ngayHen={f.ngayHen}
+                              buoiKhamXa={buoiKham?.xa || ""}
+                              onSelect={(val) => {
+                                setF((s) => ({
+                                  ...s,
+                                  diemDon: val.diemDon,
+                                  gioDon: val.gioDon,
+                                  ngayHen: val.ngayHen || s.ngayHen,
+                                }));
+                              }}
                             />
                           </div>
                         </div>

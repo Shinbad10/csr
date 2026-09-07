@@ -113,9 +113,7 @@ export default function TopbarNav() {
   const groups = MENU_GROUPS
     .map((g) => ({
       ...g,
-      items: g.items
-        .filter((it) => !it.cap || can(role, it.cap))
-        .filter((it) => it.href !== "/doi-chieu-his" || hasHisConfig),
+      items: g.items.filter((it) => !it.cap || can(role, it.cap)),
     }))
     .filter((g) => g.items.length > 0);
 

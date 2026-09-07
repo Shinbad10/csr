@@ -1682,7 +1682,7 @@ export default function TheoDoiPage() {
         title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
         subtitle="Lấy danh sách bệnh nhân để theo dõi & chăm sóc"
         icon={CalendarDays}
-        maxWidth="max-w-[620px]"
+        maxWidth="max-w-[660px]"
         noPadding
       >
         {/* Search */}
@@ -1720,14 +1720,14 @@ export default function TheoDoiPage() {
                   setSelBk(b.id);
                   setShowBkModal(false);
                 }}
-                className={`w-full text-left p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-center gap-4 border cursor-pointer ${
+                className={`w-full text-left p-3.5 sm:p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-start gap-3.5 sm:gap-4 border cursor-pointer ${
                   active
                     ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]"
                     : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"
                 }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors ${
+                  className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${
                     active
                       ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs"
                       : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"
@@ -1737,14 +1737,14 @@ export default function TheoDoiPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-[15px] truncate text-[var(--ink)]" title={fmtBuoiKhamName(b)}>
+                    <span className="font-bold text-[14.5px] sm:text-[15px] truncate text-[var(--ink)]" title={fmtBuoiKhamName(b)}>
                       {fmtBuoiKhamName(b)}
                     </span>
-                    <span className="font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">
+                    <span className="font-mono text-[11px] sm:text-[11.5px] font-bold px-2 py-0.5 rounded-[var(--r-sm)] shrink-0 bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">
                       {b.id}
                     </span>
                   </div>
-                  <div className="text-[13px] text-[var(--mute)] mt-1.5 flex items-center gap-4 font-medium">
+                  <div className="text-[12.5px] sm:text-[13px] text-[var(--mute)] mt-1 flex items-center gap-3.5 font-medium flex-wrap">
                     <span className="flex items-center gap-1.5 shrink-0 font-mono">
                       <CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" /> {fmtDate(b.ngayKham)}
                     </span>
@@ -1752,6 +1752,43 @@ export default function TheoDoiPage() {
                       <span className="flex items-center gap-1.5 truncate">
                         <MapPin className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" />{" "}
                         <span className="truncate">{b.diaDiem}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Thống kê Phân nhóm A/B & Đã mổ */}
+                  <div className="flex items-center gap-2 mt-2.5 pt-2 border-t border-[var(--line-soft)] flex-wrap">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--surface-bg)] text-[var(--ink-soft)] border border-[var(--line)]" title="Tổng số bệnh nhân tiếp nhận">
+                      {b._count?.hoSo ?? 0} BN
+                    </span>
+
+                    <div className="inline-flex rounded-md overflow-hidden border border-[var(--line)] font-mono text-[11px] font-bold shadow-2xs">
+                      <span className="px-2 py-0.5 bg-[#fef1f4] text-[#e11d48] border-r border-[#e11d48]/20" title="Nhóm A: Đồng ý điều trị / Chỉ định mổ">
+                        Nhóm A: {b.stats?.nhomA ?? 0}
+                      </span>
+                      <span className="px-2 py-0.5 bg-[#fef6eb] text-[#d97706]" title="Nhóm B: Cần suy nghĩ thêm / Theo dõi">
+                        Nhóm B: {b.stats?.nhomB ?? 0}
+                      </span>
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold border shadow-2xs ${
+                        (b.stats?.daMo ?? 0) > 0
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : "bg-slate-50 text-slate-500 border-slate-200"
+                      }`}
+                      title={`Đã mổ thực tế: ${b.stats?.daMo ?? 0} ca${(b.stats?.nhomA ?? 0) > 0 ? ` trên tổng ${b.stats?.nhomA} ca nhóm A` : ""}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${(b.stats?.daMo ?? 0) > 0 ? "bg-emerald-600" : "bg-slate-400"}`} />
+                      <span>
+                        Đã mổ: {b.stats?.daMo ?? 0}
+                        {(b.stats?.nhomA ?? 0) > 0 ? `/${b.stats?.nhomA ?? 0}` : ""}
+                      </span>
+                    </span>
+
+                    {b.bacSiKham && (
+                      <span className="text-[11px] font-medium text-[var(--mute)] ml-auto truncate" title={`Bác sĩ chỉ định / khám: ${b.bacSiKham}`}>
+                        BS: {b.bacSiKham.replace(/^(BS|Bác sĩ|BSCKI|BSCKII)\s*/i, "")}
                       </span>
                     )}
                   </div>

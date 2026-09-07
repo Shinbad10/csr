@@ -128,7 +128,7 @@ export default function BaoCaoPage() {
         : `/api/csr/export?format=${format}`;
       const res = await fetch(url);
       if (!res.ok) {
-        addToast({ type: "error", message: "Không thể xuất file (cần quyền Kế toán/Quản lý)" });
+        addToast({ type: "error", message: "Không thể xuất file (cần quyền HCNS/Kế toán/Quản lý)" });
         return;
       }
       const blob = await res.blob();

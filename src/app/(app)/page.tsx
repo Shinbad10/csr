@@ -13,6 +13,7 @@ import {
   HeartHandshake,
   CheckCircle2,
   Activity,
+  Bus,
   Loader2,
   Sparkles,
   Stethoscope,
@@ -113,7 +114,7 @@ export default function Dashboard() {
         desc: "Lập lịch, tiếp nhận cộng đồng, đo thị lực & quản lý danh sách khám.",
         href: "/buoi-kham",
         icon: CalendarHeart,
-        cap: undefined,
+        cap: "buoikham.view" as const,
         tag: "Tiếp nhận",
         accent: "from-blue-600 to-indigo-700",
         chip: "bg-blue-50 text-blue-700 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300",
@@ -174,23 +175,20 @@ export default function Dashboard() {
         chip: "bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-200",
       },
       {
-        id: "doi-chieu-his",
-        label: "Đối chiếu CSDL HIS",
-        desc: "Quét đối chiếu tự động danh sách mổ & đồng bộ thực thu từ máy chủ HIS.",
-        href: "/doi-chieu-his",
-        icon: Activity,
+        id: "doan-xe",
+        label: "Danh sách đoàn xe đón",
+        desc: "Điều phối lộ trình xe, điểm đón, giờ đón và danh sách bệnh nhân điều trị.",
+        href: "/doan-xe",
+        icon: Bus,
         cap: "hoso.followup" as const,
-        tag: "Tự động HIS",
-        accent: "from-emerald-600 to-teal-700",
-        chip: "bg-emerald-50 text-emerald-800 border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300",
-        requireHis: true,
+        tag: "Xe đón",
+        accent: "from-blue-600 to-indigo-700",
+        chip: "bg-blue-50 text-blue-800 border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300",
       },
     ];
 
-    return all
-      .filter((t) => !t.cap || can(role, t.cap))
-      .filter((t) => !t.requireHis || hasHisConfig);
-  }, [role, hasHisConfig]);
+    return all.filter((t) => !t.cap || can(role, t.cap));
+  }, [role]);
 
   if (!ready) {
     return (

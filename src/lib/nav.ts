@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, CalendarHeart, Activity, ClipboardList,
+  LayoutDashboard, CalendarHeart, Bus, ClipboardList,
   PhoneCall, BarChart3, Settings, UserCog,
 } from "lucide-react";
 import { type Capability } from "./permissions";
@@ -14,7 +14,7 @@ export const MENU_GROUPS: NavGroup[] = [
   {
     title: "Tầm soát cộng đồng",
     items: [
-      { label: "Đợt khám tầm soát", icon: CalendarHeart, href: "/buoi-kham", cap: "buoikham.manage" },
+      { label: "Đợt khám tầm soát", icon: CalendarHeart, href: "/buoi-kham", cap: "buoikham.view" },
     ],
   },
   {
@@ -22,7 +22,7 @@ export const MENU_GROUPS: NavGroup[] = [
     items: [
       { label: "Tư vấn điều trị", icon: UserCog, href: "/tu-van", cap: "hoso.clinical" },
       { label: "Theo dõi & Chăm sóc", icon: PhoneCall, href: "/theo-doi", cap: "hoso.followup" },
-      { label: "Đối chiếu HIS", icon: Activity, href: "/doi-chieu-his", cap: "hoso.followup" },
+      { label: "Danh sách đoàn xe", icon: Bus, href: "/doan-xe", cap: "hoso.followup" },
     ],
   },
   {

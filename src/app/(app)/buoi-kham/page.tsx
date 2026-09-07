@@ -8,7 +8,8 @@ import Modal from "@/components/layout/Modal";
 import {
   Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X,
   Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet, UserCheck,
-  RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical
+  RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical,
+  ClipboardList
 } from "lucide-react";
 import { can } from "@/lib/permissions";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
@@ -138,9 +139,47 @@ function VISISelect<T extends string>({
 }
 
 /** Nút vào đợt khám theo pha ngày khám. */
-function JoinAction({ b, block }: { b: BuoiKham; block?: boolean }) {
+function JoinAction({
+  b,
+  block,
+  canClinical,
+  canViewTamSoat,
+  onViewPatients,
+}: {
+  b: BuoiKham;
+  block?: boolean;
+  canClinical?: boolean;
+  canViewTamSoat?: boolean;
+  onViewPatients?: (b: BuoiKham) => void;
+}) {
   const p = phaseOf(b.ngayKham);
   const size = block ? "py-2 px-3 text-[13px] flex-1 justify-center" : "h-7.5 px-3 text-[11.5px] font-bold";
+
+  // Khi là vai trò hành chính / quản lý không khám lâm sàng (như HCNS), ưu tiên nút Xem DS tầm soát
+  if (!canClinical && canViewTamSoat) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onViewPatients?.(b)}
+          className={`btn ${size} inline-flex items-center gap-1.5 border border-[#031da6]/25 bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white font-bold cursor-pointer shadow-2xs transition-all active:scale-95`}
+          title="Xem danh sách bệnh nhân tầm soát trong đợt khám này"
+        >
+          <ClipboardList className="w-3.5 h-3.5 shrink-0" />
+          <span>DS tầm soát</span>
+        </button>
+        <Link
+          href={`/kham/${b.id}`}
+          className={`btn ${size} inline-flex items-center gap-1.5 border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#475569] font-semibold cursor-pointer shadow-2xs`}
+          title="Xem chi tiết hồ sơ bệnh nhân đợt khám"
+        >
+          <Eye className="w-3.5 h-3.5 text-[#031da6]" />
+          <span>Hồ sơ</span>
+        </Link>
+      </div>
+    );
+  }
+
   if (p.key === "DaKetThuc") {
     return (
       <Link
@@ -174,17 +213,23 @@ function JoinAction({ b, block }: { b: BuoiKham; block?: boolean }) {
 function BuoiKhamRowActions({
   b,
   canManage,
+  canViewTamSoat,
+  canClinical,
   exportingId,
   onExport,
   onEdit,
   onComplete,
+  onViewPatients,
 }: {
   b: BuoiKham;
   canManage: boolean;
+  canViewTamSoat?: boolean;
+  canClinical?: boolean;
   exportingId: string | null;
   onExport: (b: BuoiKham, format?: "khamSucKhoe" | "default") => void;
   onEdit: (b: BuoiKham) => void;
   onComplete: (b: BuoiKham) => void;
+  onViewPatients?: (b: BuoiKham) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -229,6 +274,24 @@ function BuoiKhamRowActions({
 
         {menuOpen && (
           <div className="absolute right-0 top-full mt-1 z-50 min-w-[230px] bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 animate-dropdown text-[#0f172a]">
+            {/* Xem danh sách tầm soát (Cho HCNS / Quản trị) */}
+            {canViewTamSoat && onViewPatients && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onViewPatients(b);
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#031da6] hover:bg-[#eef2ff] transition-colors text-left cursor-pointer"
+              >
+                <ClipboardList className="w-4 h-4 text-[#031da6] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="leading-tight">Xem danh sách tầm soát</div>
+                  <div className="text-[10px] text-[#64748b] font-normal">Xem {b._count?.hoSo ?? 0} bệnh nhân & kết quả khám</div>
+                </div>
+              </button>
+            )}
+
             {/* Xuất Excel Mẫu Khám Sức Khỏe (101 cột) */}
             <button
               type="button"
@@ -296,8 +359,13 @@ function BuoiKhamRowActions({
         )}
       </div>
 
-      {/* Nút hành động chính (Tham gia khám / Xem hồ sơ / Chưa tới ngày) */}
-      <JoinAction b={b} />
+      {/* Nút hành động chính (Tham gia khám / Xem hồ sơ / DS tầm soát cho HCNS) */}
+      <JoinAction
+        b={b}
+        canClinical={canClinical}
+        canViewTamSoat={canViewTamSoat}
+        onViewPatients={onViewPatients}
+      />
     </div>
   );
 }
@@ -346,6 +414,9 @@ export default function BuoiKhamPage() {
   const { data: session } = useSession();
   const { addToast } = useToast();
   const canManage = can(session?.user?.role, "buoikham.manage");
+  const canViewTamSoat = can(session?.user?.role, "tamsoat.view");
+  const canClinical = can(session?.user?.role, "hoso.clinical");
+  const canExport = can(session?.user?.role, "report.export");
 
   const [list, setList] = useState<BuoiKham[]>([]);
   const [cosos, setCosos] = useState<CoSo[]>([]);
@@ -1035,10 +1106,13 @@ export default function BuoiKhamPage() {
                     <BuoiKhamRowActions
                       b={b}
                       canManage={canManage}
+                      canViewTamSoat={canViewTamSoat}
+                      canClinical={canClinical}
                       exportingId={exportingId}
                       onExport={handleExportBuoiKham}
                       onEdit={openEditModal}
                       onComplete={setConfirmCompleteModal}
+                      onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
                     />
                   </div>
                 </div>
@@ -1175,10 +1249,13 @@ export default function BuoiKhamPage() {
                         <BuoiKhamRowActions
                           b={b}
                           canManage={canManage}
+                          canViewTamSoat={canViewTamSoat}
+                          canClinical={canClinical}
                           exportingId={exportingId}
                           onExport={handleExportBuoiKham}
                           onEdit={openEditModal}
                           onComplete={setConfirmCompleteModal}
+                          onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
                         />
                       </div>
                     </td>

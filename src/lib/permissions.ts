@@ -4,10 +4,12 @@
  * Server không bao giờ tin client: mọi mutation đều gọi can() trong handler.
  */
 
-export type Role = "MKT" | "TuVanVien" | "KeToan" | "QuanLy" | "IT";
+export type Role = "MKT" | "TuVanVien" | "KeToan" | "HCNS" | "QuanLy" | "IT";
 
 export type Capability =
+  | "buoikham.view" // xem danh sách đợt khám
   | "buoikham.manage" // tạo / quản lý buổi khám
+  | "tamsoat.view" // xem danh sách tầm soát
   | "hoso.create" // tiếp nhận bệnh nhân
   | "hoso.clinical" // lâm sàng + tư vấn, phân nhóm A/B
   | "hoso.treatment" // cập nhật điều trị tại BV
@@ -18,7 +20,9 @@ export type Capability =
 
 const MATRIX: Record<Role, Capability[]> = {
   MKT: [
+    "buoikham.view",
     "buoikham.manage",
+    "tamsoat.view",
     "hoso.create",
     "hoso.clinical",
     "hoso.treatment",
@@ -26,16 +30,28 @@ const MATRIX: Record<Role, Capability[]> = {
     "report.export",
   ],
   TuVanVien: [
+    "buoikham.view",
     "buoikham.manage",
+    "tamsoat.view",
     "hoso.create",
     "hoso.clinical",
     "hoso.treatment",
     "hoso.followup",
     "report.export",
   ],
-  KeToan: ["report.export"],
+  KeToan: [
+    "buoikham.view",
+    "report.export",
+  ],
+  HCNS: [
+    "buoikham.view",
+    "tamsoat.view",
+    "report.export",
+  ],
   IT: [
+    "buoikham.view",
     "buoikham.manage",
+    "tamsoat.view",
     "hoso.create",
     "hoso.clinical",
     "hoso.treatment",
@@ -44,7 +60,9 @@ const MATRIX: Record<Role, Capability[]> = {
     "admin.users",
   ],
   QuanLy: [
+    "buoikham.view",
     "buoikham.manage",
+    "tamsoat.view",
     "hoso.create",
     "hoso.clinical",
     "hoso.treatment",
@@ -67,6 +85,11 @@ export function normalizeRole(raw?: string | null): Role {
       return "TuVanVien";
     case "KeToan":
       return "KeToan";
+    case "HCNS":
+    case "HanhChinh":
+    case "HanhChinhNhanSu":
+    case "HC-NS":
+      return "HCNS";
     case "MKT":
     case "Marketing":
     case "CSKH":
@@ -92,6 +115,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   MKT: "Marketing (MKT)",
   TuVanVien: "Tư vấn viên",
   KeToan: "Kế toán",
+  HCNS: "Hành chính Nhân sự (HCNS)",
   QuanLy: "Quản lý (Toàn hệ thống)",
   IT: "Quản trị viên IT (Đơn vị)",
 };
@@ -100,5 +124,6 @@ export function roleLabel(raw?: string | null): string {
   if (raw === "BacSi" || raw === "Bác sĩ" || raw === "Bác sỹ") return "Bác sĩ";
   if (raw === "IT") return "Quản trị IT";
   if (raw === "MKT" || raw === "Marketing" || raw === "CSKH") return "MKT";
+  if (raw === "HCNS" || raw === "HanhChinh" || raw === "HanhChinhNhanSu" || raw === "HC-NS") return "Hành chính Nhân sự (HCNS)";
   return ROLE_LABEL[normalizeRole(raw)] || raw || "Nhân viên";
 }

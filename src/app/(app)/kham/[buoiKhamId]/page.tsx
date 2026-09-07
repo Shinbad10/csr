@@ -13,6 +13,7 @@ import {
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
+import { can, roleLabel } from "@/lib/permissions";
 import {
   CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
 } from "@/lib/csr";
@@ -891,13 +892,12 @@ export default function ExamPage() {
   // Lời gọi nạp danh sách bệnh nhân đang bay — dùng để gộp các lần trùng nhau
   const inflightListRef = useRef<{ url: string; p: Promise<HoSo[] | null> } | null>(null);
 
-  // Tên người đăng nhập — điền sẵn "Nhân viên tư vấn" cho hồ sơ chưa có
-  const sessionName = useRef("");
-  useEffect(() => { sessionName.current = session?.user?.name || ""; }, [session]);
-
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
   const isDone = selected && selected.trangThai !== "TiepNhan";
-  const readOnly = false;
+  const userRole = session?.user?.role;
+  const canCreateHoSo = can(userRole, "hoso.create");
+  const canClinical = can(userRole, "hoso.clinical");
+  const readOnly = !canCreateHoSo && !canClinical;
 
   /** Khuyến nghị hiệu lực: nếu bật "Hướng xử trí" thì suy từ đó, không thì dùng trường cũ. */
   const effKhuyenNghi = isFieldOn(cfg, "huongXuTri") ? huongXuTriToKhuyenNghi(f.huongXuTri) : f.khuyenNghi;
@@ -943,13 +943,13 @@ export default function ExamPage() {
       benhLy: p.benhLy || "", loaiBenhLy: parseDiag(p.loaiBenhLy ?? "[]"), loaiBenhLyKhac: p.loaiBenhLyKhac || "",
       huongXuTri: p.huongXuTri || "", huongXuTriKhac: p.huongXuTriKhac || "",
       bacSiChiDinh: p.bacSiChiDinh || (parseDoctorList(buoiKham?.bacSiKham).length === 1 ? parseDoctorList(buoiKham?.bacSiKham)[0] : ""),
-      nhanVienTuVan: p.nhanVienTuVan || sessionName.current || session?.user?.name || "",
+      nhanVienTuVan: p.nhanVienTuVan || p.tuVanVien?.hoTen || "",
       xacNhanDieuTri: boolToChoice(p.xacNhanDieuTri), lyDoKhongDieuTri: p.lyDoKhongDieuTri || "",
       ngayDieuTri: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "",
       ghiChuTuVan: p.ghiChuTuVan || "",
     };
     setF(next); setBaseline(JSON.stringify(next));
-  }, [buoiKham?.bacSiKham, session?.user?.name]);
+  }, [buoiKham?.bacSiKham]);
 
   const fetchPatients = useCallback(async (keepSel?: string, forceForm = false) => {
     const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
@@ -1148,7 +1148,7 @@ export default function ExamPage() {
     const defaultDoc = teamDocs.length === 1 ? teamDocs[0] : null;
     payload.bacSiChiDinh = f.bacSiChiDinh || defaultDoc || selected.bacSiChiDinh || null;
     if (on("diemKham")) payload.diemKham = buoiKham?.diaDiem || null;
-    if (on("nhanVienTuVan")) payload.nhanVienTuVan = f.nhanVienTuVan || sessionName.current || session?.user?.name || null;
+    if (on("nhanVienTuVan")) payload.nhanVienTuVan = f.nhanVienTuVan || null;
     if (on("xacNhanDieuTri")) { payload.xacNhanDieuTri = choiceToBool(f.xacNhanDieuTri); payload.lyDoKhongDieuTri = f.lyDoKhongDieuTri; }
     if (on("ngayDieuTri")) payload.ngayDieuTri = f.ngayDieuTri || null;
     payload.ghiChuTuVan = f.ghiChuTuVan || null;
@@ -1199,7 +1199,7 @@ export default function ExamPage() {
       sdt: f.sdt || undefined,
       bacSiChiDinh: f.bacSiChiDinh || defaultDoc || selected.bacSiChiDinh || null,
       diemKham: buoiKham?.diaDiem || null,
-      nhanVienTuVan: f.nhanVienTuVan || sessionName.current || session?.user?.name || null,
+      nhanVienTuVan: f.nhanVienTuVan || selected.nhanVienTuVan || null,
     };
 
     setSaving(true);
@@ -1578,6 +1578,21 @@ export default function ExamPage() {
         />
       </div>
 
+      {readOnly && (
+        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/40 border-y border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-[12px] flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2 font-medium">
+            <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span>Chế độ xem danh sách tầm soát — Bạn đang đăng nhập vai trò <strong>{roleLabel(session?.user?.role)}</strong> (Chỉ xem dữ liệu, không chỉnh sửa kết quả y khoa).</span>
+          </div>
+          <Link
+            href="/buoi-kham"
+            className="text-[11.5px] font-bold text-[#031da6] hover:underline shrink-0"
+          >
+            ← Về danh sách đợt khám
+          </Link>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-t border-[var(--line)] overflow-y-auto xl:overflow-hidden relative">
         {/* Backdrop for Mobile Patient Drawer */}
         {showList && <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-[2px] transition-opacity xl:hidden" onClick={() => setShowList(false)} />}
@@ -1594,15 +1609,17 @@ export default function ExamPage() {
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <button
-                data-tour="kh-reg"
-                onClick={() => setShowReg(true)}
-                title="Tiếp nhận bệnh nhân mới"
-                className="h-7 px-2 rounded-md bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] flex items-center gap-1 text-[11px] font-bold transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>Tiếp nhận</span>
-              </button>
+              {!readOnly && (
+                <button
+                  data-tour="kh-reg"
+                  onClick={() => setShowReg(true)}
+                  title="Tiếp nhận bệnh nhân mới"
+                  className="h-7 px-2 rounded-md bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] flex items-center gap-1 text-[11px] font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Tiếp nhận</span>
+                </button>
+              )}
               <button onClick={() => setShowList(false)} className="p-1 rounded-md hover:bg-[var(--surface-soft)] text-[var(--mute)] xl:hidden">
                 <X className="w-4 h-4" />
               </button>
@@ -1894,7 +1911,7 @@ export default function ExamPage() {
                 <Meta k="Xã khám" v={buoiKham?.xa || "—"} />
                 <Meta k="Bác sĩ khám" v={f.bacSiChiDinh || buoiKham?.bacSiKham || selected.bacSiChiDinh || "—"} />
                 {isFieldOn(cfg, "nhanVienTuVan") && (
-                  <Meta k="NV tư vấn" v={f.nhanVienTuVan || session?.user?.name || "—"} />
+                  <Meta k="NV tư vấn" v={f.nhanVienTuVan || selected.nhanVienTuVan || selected.tuVanVien?.hoTen || "—"} />
                 )}
               </dl>
             </div>
@@ -1983,7 +2000,7 @@ export default function ExamPage() {
                     {isFieldOn(cfg, "khuPho") && <Row k="Khu phố" v={selected.khuPho || "—"} />}
                     {isFieldOn(cfg, "xaPhuong") && <Row k="Xã/Phường" v={selected.xaPhuong || "—"} />}
                     <Row k="Bác sĩ khám" v={buoiKham?.bacSiKham || selected.bacSiChiDinh || "—"} />
-                    {isFieldOn(cfg, "nhanVienTuVan") && <Row k="NV tư vấn" v={f.nhanVienTuVan || session?.user?.name || "—"} />}
+                    {isFieldOn(cfg, "nhanVienTuVan") && <Row k="NV tư vấn" v={f.nhanVienTuVan || selected.nhanVienTuVan || selected.tuVanVien?.hoTen || "—"} />}
                   </dl>
 
                   <div>
@@ -2373,6 +2390,30 @@ export default function ExamPage() {
                       </Field>
                     </div>
 
+                    {isFieldOn(cfg, "nhanVienTuVan") && (
+                      <Field label="Nhân viên tư vấn">
+                        <div className="relative flex items-center">
+                          <input
+                            value={f.nhanVienTuVan}
+                            onChange={(e) => setF((s) => ({ ...s, nhanVienTuVan: e.target.value }))}
+                            placeholder="Tên nhân viên tư vấn ca này..."
+                            className="input-field pr-24"
+                            disabled={readOnly}
+                          />
+                          {!readOnly && session?.user?.name && f.nhanVienTuVan !== session.user.name && (
+                            <button
+                              type="button"
+                              onClick={() => setF((s) => ({ ...s, nhanVienTuVan: session?.user?.name || "" }))}
+                              className="absolute right-1.5 px-2 py-0.5 rounded text-[10.5px] font-bold bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white transition-colors border border-[#c7d2fe] cursor-pointer"
+                              title="Gán tên tôi làm nhân viên tư vấn ca này"
+                            >
+                              Tôi tư vấn
+                            </button>
+                          )}
+                        </div>
+                      </Field>
+                    )}
+
                     <div className="flex-1 flex flex-col">
                       <Field label="Ghi chú tư vấn & dặn dò">
                         <textarea
@@ -2454,28 +2495,37 @@ export default function ExamPage() {
               </div>
 
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleQuickNormal}
-                  disabled={saving || !!isDone}
-                  className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
-                  title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 10/10, Theo dõi) và tự động chuyển ca kế tiếp"}
-                >
-                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                  <span className="hidden sm:inline">Khám bình thường</span>
-                  <span className="sm:hidden">Bình thường</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={save}
-                  disabled={saving || !dirty}
-                  className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
-                  <span>Lưu</span>
-                  <span className="hidden sm:inline"> kết quả</span>
-                  <span className="hidden md:inline font-mono text-[10.5px] opacity-70 font-normal">(Ctrl+S)</span>
-                </button>
+                {readOnly ? (
+                  <div className="h-8 sm:h-9 px-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-semibold text-[11.5px] sm:text-[12.5px] flex items-center gap-1.5 shadow-2xs">
+                    <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>Chế độ chỉ xem</span>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleQuickNormal}
+                      disabled={saving || !!isDone}
+                      className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                      title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 10/10, Theo dõi) và tự động chuyển ca kế tiếp"}
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
+                      <span className="hidden sm:inline">Khám bình thường</span>
+                      <span className="sm:hidden">Bình thường</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={save}
+                      disabled={saving || !dirty}
+                      className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                    >
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
+                      <span>Lưu</span>
+                      <span className="hidden sm:inline"> kết quả</span>
+                      <span className="hidden md:inline font-mono text-[10.5px] opacity-70 font-normal">(Ctrl+S)</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </>) : (
@@ -2505,14 +2555,16 @@ export default function ExamPage() {
                       <span>Danh sách ({counts.total})</span>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setShowReg(true)}
-                    className="btn btn-primary px-4 py-2 text-[12.5px] font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-md active:scale-95"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>+ Tiếp nhận</span>
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => setShowReg(true)}
+                      className="btn btn-primary px-4 py-2 text-[12.5px] font-bold cursor-pointer inline-flex items-center gap-1.5 shadow-md active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>+ Tiếp nhận</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

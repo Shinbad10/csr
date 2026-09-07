@@ -15,8 +15,8 @@ interface CoSo { id: string; ten: string; diaChi: string | null; trangThai: stri
 interface NguoiDung { maNV: string; hoTen: string; vaiTro: string; coSoId: string | null; tenDangNhap: string; trangThai: string; coSo?: { ten: string } }
 interface Audit { id: number; bang: string; banGhiId: string; hanhDong: string; nguoiDung: string; thoiDiem: string }
 
-const ALL_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "IT", "QuanLy"];
-const IT_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "IT"];
+const ALL_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "HCNS", "IT", "QuanLy"];
+const IT_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "HCNS", "IT"];
 
 export default function QuanTriPage() {
   const { data: session } = useSession();
@@ -650,6 +650,7 @@ function UserModal({
     MKT: "Marketing (MKT)",
     TuVanVien: "Tư vấn viên",
     KeToan: "Kế toán",
+    HCNS: "Hành chính Nhân sự (HCNS)",
     IT: "Quản trị viên IT (Đơn vị)",
     QuanLy: "Quản lý (Toàn hệ thống)",
     CSKH: "Marketing (MKT)",
