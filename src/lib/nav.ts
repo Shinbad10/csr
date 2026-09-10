@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, CalendarHeart, Bus, ClipboardList,
-  PhoneCall, BarChart3, Settings, UserCog,
+  PhoneCall, BarChart3, Settings, UserCog, Activity,
 } from "lucide-react";
 import { type Capability } from "./permissions";
 
@@ -29,6 +29,7 @@ export const MENU_GROUPS: NavGroup[] = [
     title: "Dữ liệu & Báo cáo",
     items: [
       { label: "Hồ sơ bệnh nhân", icon: ClipboardList, href: "/ho-so" },
+      { label: "Đối chiếu dữ liệu HIS", icon: Activity, href: "/doi-chieu-his" },
       { label: "Báo cáo & thống kê", icon: BarChart3, href: "/bao-cao", cap: "report.export" },
     ],
   },

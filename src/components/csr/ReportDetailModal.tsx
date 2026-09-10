@@ -51,6 +51,9 @@ interface ReportDetailModalProps {
   onClose: () => void;
   target: ReportModalTarget | null;
   dateFilter: "all" | "30days" | "90days" | "year";
+  /** Khoảng ngày cụ thể (YYYY-MM-DD). Nếu có thì ĐƯỢC ƯU TIÊN hơn `dateFilter`. */
+  from?: string;
+  to?: string;
   coSoName?: string;
   sessions?: Array<{
     id: string;
@@ -71,6 +74,8 @@ export default function ReportDetailModal({
   onClose,
   target,
   dateFilter,
+  from,
+  to,
   coSoName,
   sessions = [],
   onExportSessionExcel,
@@ -116,17 +121,24 @@ export default function ReportDetailModal({
         if (target.val) {
           url += `&val=${encodeURIComponent(target.val)}`;
         }
-        const now = new Date();
-        if (dateFilter === "30days") {
-          const d = new Date();
-          d.setDate(d.getDate() - 30);
-          url += `&from=${d.toISOString().slice(0, 10)}`;
-        } else if (dateFilter === "90days") {
-          const d = new Date();
-          d.setDate(d.getDate() - 90);
-          url += `&from=${d.toISOString().slice(0, 10)}`;
-        } else if (dateFilter === "year") {
-          url += `&from=${now.getFullYear()}-01-01`;
+        /* Có khoảng ngày cụ thể thì dùng luôn — danh sách chi tiết phải khớp
+           đúng kỳ đang lọc ở trang cha, không tự suy diễn lại. */
+        if (from || to) {
+          if (from) url += `&from=${from}`;
+          if (to) url += `&to=${to}`;
+        } else {
+          const now = new Date();
+          if (dateFilter === "30days") {
+            const d = new Date();
+            d.setDate(d.getDate() - 30);
+            url += `&from=${d.toISOString().slice(0, 10)}`;
+          } else if (dateFilter === "90days") {
+            const d = new Date();
+            d.setDate(d.getDate() - 90);
+            url += `&from=${d.toISOString().slice(0, 10)}`;
+          } else if (dateFilter === "year") {
+            url += `&from=${now.getFullYear()}-01-01`;
+          }
         }
 
         const res = await fetch(url);
@@ -148,7 +160,7 @@ export default function ReportDetailModal({
     return () => {
       active = false;
     };
-  }, [open, target, dateFilter]);
+  }, [open, target, dateFilter, from, to]);
 
   // Bộ lọc tìm kiếm & nhóm
   const filtered = useMemo(() => {

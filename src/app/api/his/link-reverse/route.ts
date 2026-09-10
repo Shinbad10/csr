@@ -31,8 +31,17 @@ export async function POST(request: Request) {
         followUpStatus: "Đã chốt",
       };
 
+      const isMat2 = Boolean(
+        item.isMat2 ||
+        (hoSo.daDon && hoSo.ngayMoThucTe && item.ngayMo && new Date(item.ngayMo).getTime() > new Date(hoSo.ngayMoThucTe).getTime() + 86400000)
+      );
+
       if (item.ngayMo) {
-        updateData.ngayMoThucTe = new Date(item.ngayMo);
+        if (!hoSo.ngayMoThucTe) {
+          updateData.ngayMoThucTe = new Date(item.ngayMo);
+        } else if (!isMat2) {
+          updateData.ngayMoThucTe = new Date(item.ngayMo);
+        }
       } else if (!hoSo.ngayMoThucTe) {
         updateData.ngayMoThucTe = new Date();
       }
@@ -62,8 +71,13 @@ export async function POST(request: Request) {
         }
       }
 
-      const chiTiet = item.chiTiet || `Bệnh nhân phẫu thuật HIS (Mã HIS: ${item.maHIS})`;
-      updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, chiTiet);
+      if (isMat2) {
+        const matInfo = item.matMo ? ` - ${item.matMo}` : "";
+        const svcInfo = item.tenDichVu ? ` (${item.tenDichVu})` : "";
+        const dateStr = item.ngayMo ? new Date(item.ngayMo).toLocaleDateString("vi-VN") : "";
+        const mat2Note = `[Mắt 2]: Mổ ngày ${dateStr}${svcInfo}${matInfo}`;
+        updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, mat2Note);
+      }
 
       await prisma.hoSoBenhNhan.update({
         where: { id: item.hoSoId },

@@ -422,3 +422,45 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+/* Thanh cuộn mảnh dùng trong bảng dữ liệu / popover (đồng bộ VISIHUB). */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--mute-soft);
+}
+
+/* Micro-animation cho menu thả xuống của thanh công cụ bảng. */
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
+}
+.animate-dropdown {
+  animation: dropIn 0.15s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Thanh tiến trình mảnh cho bảng dữ liệu khi đang tải/refetch. */
+@keyframes dtbar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}

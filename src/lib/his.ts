@@ -913,7 +913,21 @@ export async function searchHIS(coSoId: string, keyword: string) {
   }
 }
 
-export async function getHISSurgeryList(coSoId: string, monthStr?: string | null) {
+export async function getHISSurgeryList(
+  coSoId: string,
+  monthStrOrOpts?: string | null | { month?: string | null; date?: string | null },
+  dateStrParam?: string | null
+) {
+  let monthStr: string | null = null;
+  let dateStr: string | null = null;
+  if (typeof monthStrOrOpts === "object" && monthStrOrOpts !== null) {
+    monthStr = monthStrOrOpts.month || null;
+    dateStr = monthStrOrOpts.date || null;
+  } else {
+    monthStr = monthStrOrOpts || null;
+    dateStr = dateStrParam || null;
+  }
+
   const config = await getHisConfig(coSoId);
   const dbConfig: sql.config = {
     user: config.user,
@@ -936,7 +950,10 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
 
     let monthFilter = "";
     const req = pool.request();
-    if (monthStr) {
+    if (dateStr) {
+      req.input("exactDate", sql.VarChar, dateStr.slice(0, 10));
+      monthFilter = " AND CONVERT(VARCHAR(10), mo.Ngaymo, 120) = @exactDate";
+    } else if (monthStr) {
       const parts = monthStr.split(/[-/]/);
       let targetYear = "", targetMonth = "";
       if (parts[0].length === 4) { targetYear = parts[0]; targetMonth = parts[1]; }
@@ -950,6 +967,7 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
 
     const query = `
       SELECT TOP 500
+        mo.ID as moId,
         c.Ma as maHIS,
         c.Hoten as hoTen,
         c.Namsinh as namSinh,
@@ -957,7 +975,13 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
         ${bhytSelect}
         ${sdtSelect}
         mo.Ngaymo as ngayMo,
+        -- Giờ treo tường đúng như HIS lưu. Driver đọc cột datetime theo UTC nên
+        -- new Date(ngayMo) bị lệch +7h ở VN, khiến ca 9/9 17:15 hiện thành 10/9 00:15
+        -- trong khi bộ lọc theo ngày lại chạy trên giá trị gốc -> quét ngày và quét
+        -- tháng ra kết quả khác nhau.
+        CONVERT(VARCHAR(19), mo.Ngaymo, 120) as ngayMoLocal,
         mo.Khoa as khoaMo,
+        mo.Phongmo as phongMo,
         hsba.Chandoan_Ravien as chanDoanRavien,
         hsba.Chandoan_Vaovien as chanDoanVaovien,
         bm.BsDieutri as bsDieuTri,
@@ -973,18 +997,141 @@ export async function getHISSurgeryList(coSoId: string, monthStr?: string | null
     const res = await req.query(query);
     const rows = res.recordset || [];
 
-    return rows.map((r: any) => ({
-      maHIS: String(r.maHIS || "").trim(),
-      hoTen: String(r.hoTen || "").trim(),
-      namSinh: String(r.namSinh || "").trim(),
-      cccd: String(r.cccd || "").trim(),
-      bhyt: String(r.bhyt || "").trim(),
-      sdt: String(r.sdt || "").trim(),
-      ngayMo: r.ngayMo ? new Date(r.ngayMo).toISOString() : null,
-      khoaMo: r.khoaMo || "KMTH",
-      chanDoan: r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || "",
-      bsDieuTri: r.bsDieuTri || "",
-    }));
+    // Query dịch vụ phẫu thuật hàng loạt từ BN_CTDichvu + DMDichvuCM cho các bệnh nhân có trong danh sách
+    const uniqueMa = Array.from(new Set(rows.map((r) => String(r.maHIS || "").trim()).filter(Boolean)));
+    const serviceMap = new Map<string, Array<{ ngayLap: Date; tenDichVu: string; loaiPT: string }>>();
+
+    for (let i = 0; i < uniqueMa.length; i += 80) {
+      const chunk = uniqueMa.slice(i, i + 80);
+      const svcReq = pool.request();
+      const params = chunk.map((m, idx) => {
+        svcReq.input(`m${idx}`, sql.NVarChar, m);
+        return `@m${idx}`;
+      });
+
+      try {
+        const svcRes = await svcReq.query(`
+          SELECT 
+            dv.MaBN,
+            dv.Ngaylap,
+            dm.Ten as tenDichVu
+          FROM BN_CTDichvu dv WITH (NOLOCK)
+          JOIN DMDichvuCM dm WITH (NOLOCK) ON dv.MaDV = dm.Ma
+          WHERE dv.MaBN IN (${params.join(",")})
+            AND (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%' OR LOWER(dm.Ten) LIKE '%phaco%')
+          ORDER BY dv.Ngaylap DESC
+        `);
+
+        for (const s of svcRes.recordset || []) {
+          const ma = String(s.MaBN || "").trim();
+          if (!serviceMap.has(ma)) serviceMap.set(ma, []);
+          const ten = String(s.tenDichVu || "").trim();
+          let loaiPT = "Phẫu thuật";
+          if (/phaco/i.test(ten)) loaiPT = "Phaco";
+          else if (/mộng/i.test(ten)) loaiPT = "Mộng thịt";
+          else if (/quặm/i.test(ten)) loaiPT = "Quặm";
+          else if (/lác/i.test(ten)) loaiPT = "Lác";
+          else if (/thủy tinh|thuỷ tinh/i.test(ten)) loaiPT = "Đục TTT";
+
+          serviceMap.get(ma)!.push({
+            ngayLap: s.Ngaylap,
+            tenDichVu: ten,
+            loaiPT,
+          });
+        }
+      } catch (svcErr) {
+        console.warn("Lỗi lấy chi tiết dịch vụ PT từ BN_CTDichvu:", svcErr);
+      }
+    }
+
+    // Tính toán thứ tự lần mổ (Mắt 1 vs Mắt 2) cho từng bệnh nhân
+    // Nhóm theo MaBenhnhan và sắp xếp theo ngày mổ tăng dần
+    /* Lần mổ phải tính trên TOÀN BỘ lịch sử của bệnh nhân, không chỉ các dòng
+       nằm trong kỳ đang lọc. Trước đây nhóm theo `rows` nên quét theo 1 ngày thì
+       ca mổ mắt trước đó (tháng trước) không có mặt → mọi ca đều ra "Mắt 1". */
+    const historyMap = new Map<string, string[]>();
+    for (let i = 0; i < uniqueMa.length; i += 80) {
+      const chunk = uniqueMa.slice(i, i + 80);
+      const hReq = pool.request();
+      const hParams = chunk.map((m, idx) => {
+        hReq.input(`h${idx}`, sql.NVarChar, m);
+        return `@h${idx}`;
+      });
+      try {
+        const hRes = await hReq.query(`
+          SELECT mo.MaBenhnhan as ma, CONVERT(VARCHAR(19), mo.Ngaymo, 120) as t
+          FROM QLyPhongMo mo WITH (NOLOCK)
+          WHERE mo.Ngaymo IS NOT NULL AND mo.MaBenhnhan IN (${hParams.join(",")})
+          ORDER BY mo.Ngaymo ASC
+        `);
+        for (const h of hRes.recordset || []) {
+          const ma = String(h.ma || "").trim();
+          if (!historyMap.has(ma)) historyMap.set(ma, []);
+          historyMap.get(ma)!.push(String(h.t || ""));
+        }
+      } catch (histErr) {
+        console.warn("Lỗi lấy lịch sử mổ để tính Mắt 1/Mắt 2:", histErr);
+      }
+    }
+
+    const surgeryOrderMap = new Map<object, { lanMo: number; isMat2: boolean }>();
+    rows.forEach((r) => {
+      const ma = String(r.maHIS || "").trim();
+      const t = String(r.ngayMoLocal || "");
+      const hist = historyMap.get(ma) || [];
+      // So sánh chuỗi "YYYY-MM-DD HH:mm:ss" — thứ tự chuỗi trùng thứ tự thời gian.
+      let idx = hist.indexOf(t);
+      if (idx < 0) idx = hist.filter((x) => x && t && x < t).length;
+      const lanMo = idx + 1;
+      surgeryOrderMap.set(r, { lanMo, isMat2: lanMo >= 2 });
+    });
+
+    return rows.map((r: any) => {
+      const orderInfo = surgeryOrderMap.get(r) || { lanMo: 1, isMat2: false };
+      const cd = (r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || "").trim();
+      let matMo = "";
+      if (cd.toLowerCase().includes("mắt phải") || cd.includes("(MP)") || cd.startsWith("MP:")) {
+        matMo = "Mắt phải";
+      } else if (cd.toLowerCase().includes("mắt trái") || cd.includes("(MT)") || cd.startsWith("MT:")) {
+        matMo = "Mắt trái";
+      } else if (cd.toLowerCase().includes("hai mắt") || cd.includes("(2M)")) {
+        matMo = "Hai mắt";
+      }
+
+      const ma = String(r.maHIS || "").trim();
+      const svcs = serviceMap.get(ma) || [];
+      let matchedSvc = null;
+      if (svcs.length > 0) {
+        const moTime = r.ngayMo ? new Date(r.ngayMo).getTime() : 0;
+        matchedSvc = svcs.find((s) => {
+          const sTime = s.ngayLap ? new Date(s.ngayLap).getTime() : 0;
+          return Math.abs(moTime - sTime) <= 86400000;
+        }) || svcs[0];
+      }
+
+      return {
+        moId: r.moId,
+        maHIS: ma,
+        hoTen: String(r.hoTen || "").trim(),
+        namSinh: String(r.namSinh || "").trim(),
+        cccd: String(r.cccd || "").trim(),
+        bhyt: String(r.bhyt || "").trim(),
+        sdt: String(r.sdt || "").trim(),
+        ngayMo: r.ngayMo ? new Date(r.ngayMo).toISOString() : null,
+        /** "YYYY-MM-DD HH:mm:ss" đúng giờ HIS lưu — dùng cái này để hiển thị,
+         *  `ngayMo` (ISO) chỉ giữ lại cho code cũ còn tham chiếu. */
+        ngayMoLocal: r.ngayMoLocal ? String(r.ngayMoLocal) : null,
+        khoaMo: r.khoaMo || "KMTH",
+        phongMo: r.phongMo || "",
+        chanDoan: cd,
+        matMo,
+        tenDichVu: matchedSvc ? matchedSvc.tenDichVu : "Phẫu thuật mắt",
+        loaiPT: matchedSvc ? matchedSvc.loaiPT : "Phẫu thuật",
+        bsDieuTri: r.bsDieuTri || "",
+        lanMo: orderInfo.lanMo,
+        isMat2: orderInfo.isMat2,
+      };
+    });
   } catch (err: any) {
     console.error("HIS Surgery List Error:", err);
     throw new Error(`Lỗi lấy danh sách mổ HIS (${config.host}): ${err?.message || "Không xác định"}`);
@@ -1148,3 +1295,120 @@ export async function syncHisDoctors(targetCoSoId?: string | null): Promise<{ sy
 
   return { syncedCount, doctors: Array.from(syncedNames) };
 }
+
+/**
+ * Thống kê số ca mổ Phẫu thuật Phaco 2 lần (Mắt 2) theo từng đợt khám (buoiKhamId)
+ * Bệnh nhân có >= 2 lần chỉ định dịch vụ Phaco trong bảng BN_CTDichvu của HIS.
+ */
+export async function fetchPhaco2LanStats(coSoId?: string): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  try {
+    const config = await getHisConfig(coSoId || "");
+    const hisDbName = config.dbName || "shpt_phongKham";
+    const pool = await new sql.ConnectionPool({
+      user: config.user,
+      password: config.pass,
+      server: config.host,
+      port: config.port,
+      database: "visi_csr",
+      options: { encrypt: true, trustServerCertificate: true },
+      connectionTimeout: 4000,
+      requestTimeout: 10000,
+    }).connect();
+
+    try {
+      const query = `
+        SELECT 
+          t.buoiKhamId,
+          COUNT(*) as phaco2Lan
+        FROM (
+          SELECT 
+            h.buoiKhamId,
+            h.id
+          FROM HoSoBenhNhan h WITH (NOLOCK)
+          INNER JOIN [${hisDbName}].dbo.BN_CTDichvu dv WITH (NOLOCK) 
+            ON (dv.MaBN = h.maBNHIS OR REPLACE(dv.MaBN, '.', '') = REPLACE(h.maBNHIS, '.', ''))
+          INNER JOIN [${hisDbName}].dbo.DMDichvuCM dm WITH (NOLOCK) 
+            ON dm.Ma = dv.MaDV
+          WHERE h.maBNHIS IS NOT NULL
+            ${coSoId ? "AND h.coSoId = @coSoId" : ""}
+            AND (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%')
+            AND (dm.Ten LIKE '%phaco%' OR dm.Ten LIKE '%Phaco%' OR dm.Ten LIKE '%PHACO%' OR dm.Ten LIKE N'%tán nhuyễn%')
+          GROUP BY h.buoiKhamId, h.id
+          HAVING COUNT(dv.Ngaylap) >= 2
+        ) t
+        GROUP BY t.buoiKhamId
+      `;
+
+      const req = pool.request();
+      if (coSoId) req.input("coSoId", sql.NVarChar, coSoId);
+      const res = await req.query(query);
+      for (const row of res.recordset || []) {
+        if (row.buoiKhamId) {
+          result.set(row.buoiKhamId, Number(row.phaco2Lan) || 0);
+        }
+      }
+    } finally {
+      await pool.close();
+    }
+  } catch (err) {
+    console.error("fetchPhaco2LanStats error:", err);
+  }
+  return result;
+}
+
+/**
+ * Lấy danh sách ID bệnh nhân trong 1 đợt khám (hoặc toàn bộ) đã mổ Phaco 2 lần (Mắt 2)
+ */
+export async function fetchPhaco2LanPatientIds(buoiKhamId?: string, coSoId?: string): Promise<Set<string>> {
+  const result = new Set<string>();
+  try {
+    const config = await getHisConfig(coSoId || "");
+    const hisDbName = config.dbName || "shpt_phongKham";
+    const pool = await new sql.ConnectionPool({
+      user: config.user,
+      password: config.pass,
+      server: config.host,
+      port: config.port,
+      database: "visi_csr",
+      options: { encrypt: true, trustServerCertificate: true },
+      connectionTimeout: 4000,
+      requestTimeout: 10000,
+    }).connect();
+
+    try {
+      const query = `
+        SELECT 
+          h.id
+        FROM HoSoBenhNhan h WITH (NOLOCK)
+        INNER JOIN [${hisDbName}].dbo.BN_CTDichvu dv WITH (NOLOCK) 
+          ON (dv.MaBN = h.maBNHIS OR REPLACE(dv.MaBN, '.', '') = REPLACE(h.maBNHIS, '.', ''))
+        INNER JOIN [${hisDbName}].dbo.DMDichvuCM dm WITH (NOLOCK) 
+          ON dm.Ma = dv.MaDV
+        WHERE h.maBNHIS IS NOT NULL
+          ${buoiKhamId ? "AND h.buoiKhamId = @buoiKhamId" : ""}
+          ${coSoId ? "AND h.coSoId = @coSoId" : ""}
+          AND (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%')
+          AND (dm.Ten LIKE '%phaco%' OR dm.Ten LIKE '%Phaco%' OR dm.Ten LIKE '%PHACO%' OR dm.Ten LIKE N'%tán nhuyễn%')
+        GROUP BY h.id
+        HAVING COUNT(dv.Ngaylap) >= 2
+      `;
+
+      const req = pool.request();
+      if (buoiKhamId) req.input("buoiKhamId", sql.NVarChar, buoiKhamId);
+      if (coSoId) req.input("coSoId", sql.NVarChar, coSoId);
+      const res = await req.query(query);
+      for (const row of res.recordset || []) {
+        if (row.id) {
+          result.add(String(row.id));
+        }
+      }
+    } finally {
+      await pool.close();
+    }
+  } catch (err) {
+    console.error("fetchPhaco2LanPatientIds error:", err);
+  }
+  return result;
+}
+

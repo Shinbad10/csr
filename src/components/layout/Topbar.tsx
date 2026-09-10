@@ -15,11 +15,30 @@ export default function Topbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
+  const [cachedUser, setCachedUser] = useState<{ name: string; role: string }>({ name: "", role: "" });
   const ref = useRef<HTMLDivElement>(null);
 
-  const isLoading = status === "loading";
-  const name = session?.user?.name || (isLoading ? "..." : "Nhân viên");
-  const initial = isLoading ? "" : (name.trim().split(" ").pop()?.[0]?.toUpperCase() ?? "?");
+  useEffect(() => {
+    try {
+      const cn = localStorage.getItem("cached_user_name") || "";
+      const cr = localStorage.getItem("cached_user_role") || "";
+      if (cn || cr) setCachedUser({ name: cn, role: cr });
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.name) {
+      try {
+        localStorage.setItem("cached_user_name", session.user.name);
+        if (session.user.role) localStorage.setItem("cached_user_role", session.user.role);
+        setCachedUser({ name: session.user.name, role: session.user.role || "" });
+      } catch {}
+    }
+  }, [session]);
+
+  const displayName = session?.user?.name || cachedUser.name || "Nhân viên";
+  const roleCode = session?.user?.role || cachedUser.role;
+  const initial = displayName ? (displayName.trim().split(" ").pop()?.[0]?.toUpperCase() ?? "?") : "NV";
 
   useEffect(() => {
     if (!open) return;
@@ -84,17 +103,8 @@ export default function Topbar() {
             {initial}
           </div>
           <div className="text-left leading-tight hidden sm:block" suppressHydrationWarning>
-            {isLoading ? (
-              <div className="animate-pulse space-y-1">
-                <div className="h-3 bg-white/20 rounded w-16"></div>
-                <div className="h-2 bg-white/15 rounded w-12"></div>
-              </div>
-            ) : (
-              <>
-                <div className="text-[12px] font-bold text-white max-w-[140px] truncate" suppressHydrationWarning>{name}</div>
-                <div className="text-[9.5px] font-medium text-[var(--teal)] opacity-90">{roleLabel(session?.user?.role)}</div>
-              </>
-            )}
+            <div className="text-[12px] font-bold text-white max-w-[140px] truncate" suppressHydrationWarning>{displayName}</div>
+            <div className="text-[9.5px] font-medium text-[var(--teal)] opacity-90">{roleLabel(roleCode)}</div>
           </div>
           <ChevronDown className={`w-3 h-3 text-white/70 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`} />
         </motion.button>
@@ -113,7 +123,7 @@ export default function Topbar() {
                   {initial}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[14px] font-bold text-[var(--ink)] dark:text-white truncate">{name}</div>
+                  <div className="text-[14px] font-bold text-[var(--ink)] dark:text-white truncate">{displayName}</div>
                   <div className="text-[11px] font-mono text-[var(--mute)]">{session?.user?.id}</div>
                 </div>
               </div>

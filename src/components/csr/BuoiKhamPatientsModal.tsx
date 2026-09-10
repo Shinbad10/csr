@@ -26,18 +26,20 @@ interface BuoiKhamPatientsModalProps {
   open: boolean;
   onClose: () => void;
   buoiKham: BuoiKhamSummary | null;
+  initialFilter?: "ALL" | "A" | "B" | "DA_MO" | "CHUA_MO" | "PHACO_2_LAN";
 }
 
 export default function BuoiKhamPatientsModal({
   open,
   onClose,
   buoiKham,
+  initialFilter = "ALL",
 }: BuoiKhamPatientsModalProps) {
   const { addToast } = useToast();
   const [patients, setPatients] = useState<HoSo[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "CHUA_MO">("ALL");
+  const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = React.useRef<HTMLDivElement>(null);
@@ -112,6 +114,7 @@ export default function BuoiKhamPatientsModal({
       setGroupFilter("ALL");
       return;
     }
+    setGroupFilter(initialFilter || "ALL");
 
     let isCancelled = false;
     const fetchPatients = async () => {
@@ -141,8 +144,10 @@ export default function BuoiKhamPatientsModal({
     let nhomB = 0;
     let daMo = 0;
     let chuaMo = 0;
+    let phaco2Lan = 0;
 
     patients.forEach((p) => {
+      if (p.isPhaco2Lan) phaco2Lan++;
       if (p.nhom === "A") {
         nhomA++;
         if (p.trangThai === "DaMo" || p.ngayMoThucTe) daMo++;
@@ -152,7 +157,7 @@ export default function BuoiKhamPatientsModal({
       }
     });
 
-    return { total: patients.length, nhomA, nhomB, daMo, chuaMo };
+    return { total: patients.length, nhomA, nhomB, daMo, chuaMo, phaco2Lan };
   }, [patients]);
 
   // Danh sách lọc
@@ -177,6 +182,7 @@ export default function BuoiKhamPatientsModal({
       if (groupFilter === "B") return p.nhom === "B";
       if (groupFilter === "DA_MO") return p.trangThai === "DaMo" || Boolean(p.ngayMoThucTe);
       if (groupFilter === "CHUA_MO") return p.nhom === "A" && p.trangThai !== "DaMo" && !p.ngayMoThucTe;
+      if (groupFilter === "PHACO_2_LAN") return Boolean(p.isPhaco2Lan);
 
       return true;
     });
@@ -297,6 +303,21 @@ export default function BuoiKhamPatientsModal({
               >
                 <span>Đã mổ</span>
                 <span className="font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.daMo}</span>
+              </button>
+            )}
+            {stats.phaco2Lan > 0 && (
+              <button
+                type="button"
+                onClick={() => setGroupFilter("PHACO_2_LAN")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  groupFilter === "PHACO_2_LAN"
+                    ? "bg-[#7c3aed] text-white shadow-xs"
+                    : "bg-white text-[#7c3aed] border border-[#ddd6fe] hover:bg-[#f5f3ff]"
+                }`}
+                title="Xem danh sách bệnh nhân mổ Phaco 2 lần (Mắt 2)"
+              >
+                <span>Mắt 2</span>
+                <span className="font-mono bg-[#ede9fe] text-[#6d28d9] px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.phaco2Lan}</span>
               </button>
             )}
 
@@ -543,12 +564,17 @@ export default function BuoiKhamPatientsModal({
                       {/* Trạng thái mổ */}
                       <td className="py-2.5 px-3 pr-4 align-middle text-center whitespace-nowrap">
                         {isOperated ? (
-                          <div className="inline-flex flex-col items-center">
+                          <div className="inline-flex flex-col items-center gap-1">
                             <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã mổ
                             </span>
+                            {p.isPhaco2Lan && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7c3aed] bg-[#f5f3ff] px-1.5 py-0.5 rounded border border-[#ddd6fe] shadow-2xs" title="Bệnh nhân đã mổ Phẫu thuật Phaco 2 lần (Mắt 2) trên HIS">
+                                ★ Mắt 2
+                              </span>
+                            )}
                             {p.ngayMoThucTe && (
-                              <span className="text-[10px] font-mono font-semibold text-slate-500 mt-0.5">
+                              <span className="text-[10px] font-mono font-semibold text-slate-500">
                                 {fmtDate(p.ngayMoThucTe)}
                               </span>
                             )}
@@ -576,6 +602,7 @@ export default function BuoiKhamPatientsModal({
             {stats.nhomA > 0 && <span className="ml-2 text-rose-700 font-bold">• Nhóm A: {stats.nhomA}</span>}
             {stats.nhomB > 0 && <span className="ml-2 text-amber-700 font-bold">• Nhóm B: {stats.nhomB}</span>}
             {stats.daMo > 0 && <span className="ml-2 text-emerald-700 font-bold">• Đã mổ: {stats.daMo}</span>}
+            {stats.phaco2Lan > 0 && <span className="ml-2 text-[#7c3aed] font-bold">• Mắt 2: {stats.phaco2Lan}</span>}
           </div>
           <button
             type="button"

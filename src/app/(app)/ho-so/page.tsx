@@ -1,16 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   Loader2,
   Search,
   ClipboardList,
   Eye,
   Clock,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   FileSpreadsheet,
   RefreshCw,
   ChevronDown,
@@ -21,7 +17,8 @@ import { ageOf, fmtDate, fmtBuoiKhamName, parseDiag, statusOf, bhytLevel, type H
 import { isCorporate } from "@/lib/permissions";
 import { useSession } from "next-auth/react";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
-import { SkeletonTable } from "@/components/layout/Skeleton";
+import { DataView, DataTable, DataPagination } from "@/components/data";
+import type { ColumnDef } from "@tanstack/react-table";
 import { PatientInfoModal, PatientHistoryModal } from "@/components/csr/PatientModals";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -44,7 +41,6 @@ export default function HoSoPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
   const [syncing, setSyncing] = useState(false);
   const [syncMenuOpen, setSyncMenuOpen] = useState(false);
@@ -86,21 +82,17 @@ export default function HoSoPage() {
         if (data.items) {
           setRows(data.items);
           setTotal(data.total);
-          setTotalPages(data.totalPages || 1);
         } else {
           setRows(data);
           setTotal(data.length);
-          setTotalPages(1);
         }
       } else {
         setRows([]);
         setTotal(0);
-        setTotalPages(1);
       }
     } catch {
       setRows([]);
       setTotal(0);
-      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -147,21 +139,133 @@ export default function HoSoPage() {
     }
   };
 
-  // Tạo dải số trang cần hiển thị
-  const getPageNumbers = () => {
-    const pages: number[] = [];
-    const delta = 2;
-    const left = Math.max(1, page - delta);
-    const right = Math.min(totalPages, page + delta);
-
-    for (let i = left; i <= right; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
-
-  const startItem = total > 0 ? (page - 1) * pageSize + 1 : 0;
-  const endItem = Math.min(page * pageSize, total);
+  const columns = useMemo<ColumnDef<HoSo>[]>(
+    () => [
+      {
+        id: "maBN",
+        accessorKey: "maBN",
+        header: "Mã BN",
+        size: 118,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--navy)] text-[11.5px] whitespace-nowrap">
+            <span className="text-[var(--mute-soft)] font-normal">BN-</span>
+            {row.original.maBN.replace(/^BN-?/i, "")}
+          </span>
+        ),
+      },
+      {
+        id: "hoTen",
+        accessorKey: "hoTen",
+        header: "Họ tên",
+        size: 170,
+        meta: { flex: true },
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="font-bold text-[var(--ink)] text-[13px]" title={row.original.hoTen}>
+            {row.original.hoTen}
+          </span>
+        ),
+      },
+      {
+        id: "gioiTuoi",
+        header: "Giới / Tuổi",
+        size: 102,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span>
+            {row.original.gioiTinh} · {ageOf(row.original)}t
+          </span>
+        ),
+      },
+      {
+        id: "chanDoan",
+        header: "Chẩn đoán",
+        size: 220,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const t = parseDiag(row.original.chanDoan).join(", ") || "—";
+          return <span title={t}>{t}</span>;
+        },
+      },
+      {
+        id: "khuyenNghi",
+        accessorKey: "khuyenNghi",
+        header: "Khuyến nghị",
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) => <span>{row.original.khuyenNghi || "—"}</span>,
+      },
+      {
+        id: "bhyt",
+        header: "BHYT",
+        size: 88,
+        enableSorting: false,
+        cell: ({ row }) => <span className="font-mono text-[12px]">{bhytLevel(row.original.bhyt) || "—"}</span>,
+      },
+      {
+        id: "nhom",
+        header: "Nhóm",
+        size: 74,
+        enableSorting: false,
+        meta: { align: "center" },
+        cell: ({ row }) => <span className="font-bold">{row.original.nhom || "—"}</span>,
+      },
+      {
+        id: "trangThai",
+        header: "Trạng thái",
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const s = statusOf(row.original.trangThai);
+          return <StatusBadge label={s.label} cls={s.cls} sm />;
+        },
+      },
+      {
+        id: "buoiKham",
+        header: "Buổi khám",
+        size: 194,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const t = `${fmtBuoiKhamName(row.original.buoiKham)} · ${fmtDate(row.original.buoiKham?.ngayKham)}`;
+          return (
+            <span className="text-[11.5px] text-[var(--mute)]" title={t}>
+              {t}
+            </span>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Thao tác",
+        size: 182,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "right" },
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              data-tour="hs-info"
+              onClick={() => setInfoId(row.original.id)}
+              className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] font-semibold text-xs flex items-center gap-1 transition border border-[var(--navy-100)] cursor-pointer"
+              title="Xem thông tin chi tiết hồ sơ"
+            >
+              <Eye className="w-3.5 h-3.5" /> Thông tin
+            </button>
+            <button
+              data-tour="hs-history"
+              onClick={() => setHistoryId(row.original.id)}
+              className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--surface-soft)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] font-semibold text-xs flex items-center gap-1 transition border border-[var(--line)] cursor-pointer"
+              title="Xem lịch sử tương tác & thao tác"
+            >
+              <Clock className="w-3.5 h-3.5" /> Lịch sử
+            </button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <div className="space-y-3">
@@ -195,7 +299,7 @@ export default function HoSoPage() {
           </div>
         </div>
 
-        {/* Nút Đồng bộ Google Sheet (Chỉ Admin) + Chọn số bản ghi mỗi trang */}
+        {/* Nút Đồng bộ Google Sheet (Chỉ Admin) */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Nút Đồng bộ Google Sheet với Menu Lựa Chọn - Chỉ Admin */}
           {isAdmin && (
@@ -267,27 +371,30 @@ export default function HoSoPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-2 text-xs text-[var(--mute)] font-medium">
-            <span>Hiển thị:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="input-field h-9 py-0 pl-2.5 pr-7 text-[12px] bg-white w-28 min-w-[115px] font-sans font-medium cursor-pointer"
-            >
-              {PAGE_SIZE_OPTS.map((sz) => (
-                <option key={sz} value={sz}>
-                  {sz} / trang
-                </option>
-              ))}
-            </select>
+          <div className="text-xs text-[var(--mute)] font-medium">
+            Tổng <span className="font-mono font-bold text-[var(--ink)]">{total.toLocaleString("vi-VN")}</span> hồ sơ
           </div>
         </div>
       </div>
 
+      <DataView<HoSo, unknown>
+        columns={columns}
+        data={rows}
+        isLoading={loading}
+        manualPagination
+        pageCount={Math.max(1, Math.ceil(total / pageSize))}
+        total={total}
+        pageSize={pageSize}
+        pageIndex={Math.max(0, page - 1)}
+        onPaginationChange={(pi, ps) => {
+          setPage(pi + 1);
+          setPageSize(ps);
+        }}
+      >
       <div className="card p-0 overflow-hidden mt-3">
         {/* Mobile: danh sách thẻ */}
         <div className="md:hidden divide-y divide-[var(--line-soft)] bg-white">
-          {loading ? (
+          {loading && rows.length === 0 ? (
             <div className="py-16 flex justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" />
             </div>
@@ -345,157 +452,17 @@ export default function HoSoPage() {
           )}
         </div>
 
-        {/* Desktop: Bảng dữ liệu */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left border-collapse">
-            <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
-              <tr>
-                {[
-                  "Mã BN",
-                  "Họ tên",
-                  "Giới / Tuổi",
-                  "Chẩn đoán",
-                  "Khuyến nghị",
-                  "BHYT",
-                  "Nhóm",
-                  "Trạng thái",
-                  "Buổi khám",
-                  "Thao tác",
-                ].map((h) => (
-                  <th key={h} className={`py-3 px-3.5 border-b border-[var(--line)] whitespace-nowrap ${h === "Thao tác" ? "text-right" : ""}`}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-              {loading ? (
-                <SkeletonTable rows={10} cols={10} />
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="py-16 text-center text-[var(--mute)]">
-                    <ClipboardList className="w-8 h-8 mx-auto mb-2 text-[var(--mute-soft)]" />
-                    Không có hồ sơ khớp điều kiện.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((r) => (
-                  <tr key={r.id} className="hover:bg-[var(--surface-soft)] transition-colors border-b border-[var(--line-soft)] group">
-                    <td className="py-3.5 px-3.5 align-middle font-mono font-bold text-[var(--navy)] text-[11.5px] whitespace-nowrap">
-                      <span className="text-[var(--mute-soft)] font-normal">BN-</span>
-                      {r.maBN.replace(/^BN-?/i, "")}
-                    </td>
-                    <td className="py-3.5 px-3.5 align-middle font-bold text-[var(--ink)] whitespace-nowrap text-[13px] group-hover:text-[var(--navy)]">
-                      {r.hoTen}
-                    </td>
-                    <td className="py-3.5 px-3.5 align-middle whitespace-nowrap">
-                      {r.gioiTinh} · {ageOf(r)}t
-                    </td>
-                    <td className="py-3.5 px-3.5 align-middle max-w-[220px] truncate" title={parseDiag(r.chanDoan).join(", ")}>
-                      {parseDiag(r.chanDoan).join(", ") || "—"}
-                    </td>
-                    <td className="py-3.5 px-3.5 align-middle whitespace-nowrap">{r.khuyenNghi || "—"}</td>
-                    <td className="py-3.5 px-3.5 align-middle font-mono whitespace-nowrap">{bhytLevel(r.bhyt) || "—"}</td>
-                    <td className="py-3.5 px-3.5 align-middle text-center font-bold">{r.nhom || "—"}</td>
-                    <td className="py-3.5 px-3.5 align-middle whitespace-nowrap">
-                      <StatusBadge label={statusOf(r.trangThai).label} cls={statusOf(r.trangThai).cls} sm />
-                    </td>
-                    <td className="py-3.5 px-3.5 align-middle text-xs text-[var(--mute)] whitespace-nowrap">
-                      {fmtBuoiKhamName(r.buoiKham)} · {fmtDate(r.buoiKham?.ngayKham)}
-                    </td>
-                    <td className="py-3.5 px-3.5 align-middle whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          data-tour="hs-info"
-                          onClick={() => setInfoId(r.id)}
-                          className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] font-semibold text-xs flex items-center gap-1 transition border border-[var(--navy-100)] cursor-pointer"
-                          title="Xem thông tin chi tiết hồ sơ"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> Thông tin
-                        </button>
-                        <button
-                          data-tour="hs-history"
-                          onClick={() => setHistoryId(r.id)}
-                          className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--surface-soft)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] font-semibold text-xs flex items-center gap-1 transition border border-[var(--line)] cursor-pointer"
-                          title="Xem lịch sử tương tác & thao tác (Google Sheet style)"
-                        >
-                          <Clock className="w-3.5 h-3.5" /> Lịch sử
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Desktop: Bảng dữ liệu (TanStack — chuẩn VISIHUB) */}
+        <div className="hidden md:block" data-tour="hs-table">
+          <DataTable<HoSo>
+            emptyIcon={ClipboardList}
+            emptyTitle="Không có hồ sơ khớp điều kiện"
+          />
         </div>
 
-        {/* Thanh Phân Trang (Pagination Bar) */}
-        <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 flex items-center justify-between gap-3 flex-wrap text-xs text-[var(--mute)] font-medium">
-          <div>
-            Hiển thị <span className="font-mono font-bold text-[var(--ink)]">{startItem.toLocaleString("vi-VN")}–{endItem.toLocaleString("vi-VN")}</span> trong tổng số{" "}
-            <span className="font-mono font-bold text-[var(--ink)]">{total.toLocaleString("vi-VN")}</span> hồ sơ
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1 font-mono">
-              <button
-                type="button"
-                onClick={() => setPage(1)}
-                disabled={page === 1 || loading}
-                title="Trang đầu"
-                className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1 || loading}
-                title="Trang trước"
-                className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-
-              {getPageNumbers().map((pNum) => (
-                <button
-                  key={pNum}
-                  type="button"
-                  onClick={() => setPage(pNum)}
-                  disabled={loading}
-                  className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold transition-colors cursor-pointer ${
-                    pNum === page
-                      ? "bg-[var(--navy)] text-white shadow-xs"
-                      : "border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"
-                  }`}
-                >
-                  {pNum}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages || loading}
-                title="Trang kế"
-                className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setPage(totalPages)}
-                disabled={page === totalPages || loading}
-                title="Trang cuối"
-                className="w-7 h-7 rounded flex items-center justify-center border border-[var(--line)] bg-white text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer"
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
+        <DataPagination pageSizeOptions={PAGE_SIZE_OPTS} />
       </div>
+      </DataView>
 
       {infoId && <PatientInfoModal hoSoId={infoId} onClose={() => setInfoId(null)} />}
       {historyId && <PatientHistoryModal hoSoId={historyId} onClose={() => setHistoryId(null)} />}

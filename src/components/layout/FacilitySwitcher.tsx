@@ -14,6 +14,18 @@ function readCosoCookie(): string {
   return m ? m.split("=")[1] : "";
 }
 
+function readCosoNameCookie(): string {
+  if (typeof document === "undefined") return "";
+  try {
+    const cached = localStorage.getItem("cached_coso_name");
+    if (cached) return cached;
+    const m = document.cookie.split("; ").find((r) => r.startsWith("selected_coso_name="));
+    return m ? decodeURIComponent(m.split("=")[1]) : "";
+  } catch {
+    return "";
+  }
+}
+
 interface FacilitySwitcherProps {
   className?: string;
   variant?: "dark" | "light";
@@ -26,6 +38,7 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
   const [selected, setSelected] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [cachedName, setCachedName] = useState<string>("");
   const ref = useRef<HTMLDivElement>(null);
 
   const isCorporate = isCorporateRole(session?.user?.role || "");
@@ -33,16 +46,21 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
   useEffect(() => {
     setIsMounted(true);
     setSelected(readCosoCookie());
+    setCachedName(readCosoNameCookie());
 
     fetch("/api/csr/coso").then((r) => r.json()).then((data) => {
       if (!Array.isArray(data)) return;
       setCoSos(data);
-      setSelected((cur) => {
-        if (cur) return cur;
-        const id = session?.user?.coSoId || data[0]?.id || "";
-        if (id && typeof document !== "undefined") document.cookie = `selected_coso_id=${id}; path=/; max-age=31536000`;
-        return id;
-      });
+      const curId = readCosoCookie() || session?.user?.coSoId || data[0]?.id || "";
+      setSelected(curId);
+      const matched = data.find((c: CoSo) => c.id === curId);
+      if (matched) {
+        setCachedName(matched.ten);
+        try {
+          localStorage.setItem("cached_coso_name", matched.ten);
+          document.cookie = `selected_coso_name=${encodeURIComponent(matched.ten)}; path=/; max-age=31536000`;
+        } catch {}
+      }
     }).catch(() => {});
   }, [session]);
 
@@ -58,12 +76,17 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
   const onChange = (id: string) => {
     setSelected(id);
     document.cookie = `selected_coso_id=${id}; path=/; max-age=31536000`;
+    const matched = coSos.find((c) => c.id === id);
+    if (matched) {
+      try {
+        localStorage.setItem("cached_coso_name", matched.ten);
+        document.cookie = `selected_coso_name=${encodeURIComponent(matched.ten)}; path=/; max-age=31536000`;
+      } catch {}
+    }
     window.location.reload();
   };
 
-  const facilityName = isMounted
-    ? (coSos.find((c) => c.id === (selected || session?.user?.coSoId))?.ten ?? (coSos.length > 0 ? coSos[0].ten : "Cơ sở làm việc"))
-    : "Cơ sở làm việc";
+  const facilityName = (coSos.find((c) => c.id === (selected || session?.user?.coSoId))?.ten) || cachedName || "Cơ sở làm việc";
   const isDark = variant === "dark";
 
   // Corporate: Có thể chuyển đổi cơ sở

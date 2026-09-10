@@ -36,6 +36,8 @@ import { useRealtimeEvent } from "@/lib/useRealtime";
 import { fmtDate, fmtBuoiKhamName, type HoSo } from "@/lib/csr";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
+import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
+import type { ColumnDef } from "@tanstack/react-table";
 import * as XLSX from "xlsx";
 
 type StatusFilter = "all" | "chuaDon" | "daDon" | "daMo";
@@ -357,6 +359,169 @@ export default function DoanXePage() {
 
   const selectedBkObj = useMemo(() => bks.find((b) => b.id === selBk), [bks, selBk]);
 
+  // Cột cho chế độ xem BẢNG (TanStack — chuẩn VISIHUB)
+  const doanXeColumns = useMemo<ColumnDef<HoSo>[]>(
+    () => [
+      {
+        id: "stt",
+        header: "STT",
+        size: 60,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "center" },
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--mute)]">
+            #{String(row.original.stt ?? row.index + 1).padStart(2, "0")}
+          </span>
+        ),
+      },
+      {
+        id: "hoTen",
+        accessorKey: "hoTen",
+        header: "Bệnh nhân",
+        size: 200,
+        meta: { flex: true },
+        cell: ({ row }) => {
+          const p = row.original;
+          return (
+            <div className="min-w-0">
+              <div className="font-extrabold text-[13px] text-[var(--ink)] truncate">{p.hoTen}</div>
+              <div className="text-[11px] text-[var(--mute)]">
+                {p.gioiTinh} · {p.namSinh || (p.ngaySinh ? new Date(p.ngaySinh).getFullYear() : "")}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "diemDon",
+        accessorKey: "diemDon",
+        header: "Điểm đón",
+        size: 200,
+        cell: ({ row }) => (
+          <span className="font-bold text-[12px] text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 inline-flex items-center gap-1 truncate max-w-[200px]">
+            <MapPin className="w-3 h-3 shrink-0" /> {row.original.diemDon || "Chưa có điểm"}
+          </span>
+        ),
+      },
+      {
+        id: "gioDon",
+        accessorKey: "gioDon",
+        header: "Giờ đón",
+        size: 92,
+        meta: { align: "center" },
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--navy)]">{row.original.gioDon || "—"}</span>
+        ),
+      },
+      {
+        id: "ngayDon",
+        header: "Ngày đón",
+        size: 108,
+        meta: { align: "center" },
+        accessorFn: (r) => (r.ngayDieuTri ? new Date(r.ngayDieuTri).getTime() : 0),
+        cell: ({ row }) => (
+          <span className="font-mono text-[12px] text-[var(--ink-soft)]">
+            {row.original.ngayDieuTri ? fmtDate(row.original.ngayDieuTri) : "—"}
+          </span>
+        ),
+      },
+      {
+        id: "sdt",
+        accessorKey: "sdt",
+        header: "Số điện thoại",
+        size: 148,
+        cell: ({ row }) =>
+          row.original.sdt ? (
+            <a
+              href={`tel:${row.original.sdt}`}
+              data-no-row-click
+              className="font-mono font-bold text-[var(--navy)] hover:underline inline-flex items-center gap-1"
+            >
+              <Phone className="w-3 h-3 text-emerald-600" /> {row.original.sdt}
+            </a>
+          ) : (
+            <span className="text-[var(--mute)]">—</span>
+          ),
+      },
+      {
+        id: "ghiChuTuVan",
+        accessorKey: "ghiChuTuVan",
+        header: "Ghi chú đón / Dặn dò",
+        size: 220,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="text-[12px] text-amber-900" title={row.original.ghiChuTuVan || ""}>
+            {row.original.ghiChuTuVan || "—"}
+          </span>
+        ),
+      },
+      {
+        id: "trangThai",
+        header: "Trạng thái",
+        size: 128,
+        meta: { align: "center" },
+        accessorFn: (r) => {
+          const isMo = r.trangThaiDieuTri === "Đã mổ" || Boolean(r.ngayMoThucTe);
+          if (isMo) return "Đã mổ";
+          return Boolean(r.daDon) || Boolean(r.ngayDenBV) ? "Đã lên xe" : "Chờ đón";
+        },
+        cell: ({ row }) => {
+          const p = row.original;
+          const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
+          const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
+          if (isMo)
+            return (
+              <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
+                ✓ ĐÃ MỔ
+              </span>
+            );
+          if (isDaDen)
+            return (
+              <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-950 border border-emerald-300">
+                ✓ ĐÃ LÊN XE
+              </span>
+            );
+          return (
+            <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+              ⏳ CHỜ ĐÓN
+            </span>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Thao tác",
+        size: 128,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "right" },
+        cell: ({ row }) => {
+          const p = row.original;
+          const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
+          const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
+          return (
+            <button
+              type="button"
+              data-no-row-click
+              disabled={checkingInId === p.id}
+              onClick={() => toggleCheckIn(p)}
+              className={`px-3 py-1 rounded-lg text-[11.5px] font-extrabold transition-all cursor-pointer active:scale-95 shadow-2xs ${
+                isDaDen
+                  ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300"
+                  : "bg-[var(--navy)] text-white hover:bg-[var(--navy-deep)]"
+              }`}
+            >
+              {checkingInId === p.id ? "..." : isDaDen ? "✓ Đã đón" : "Đón xe"}
+            </button>
+          );
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [checkingInId]
+  );
+
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface-bg)] overflow-y-auto">
       {/* Page Header (Ẩn khi in) */}
@@ -647,7 +812,7 @@ export default function DoanXePage() {
       {/* Vùng nội dung chính (Main Content Area - Bounded with max-w-7xl) */}
       <div className="p-4 sm:p-6 flex-1 min-h-0">
         <div className="max-w-7xl mx-auto w-full">
-          {loading ? (
+          {loading && data.length === 0 ? (
             <div className="py-24 flex flex-col items-center justify-center text-[var(--mute)] space-y-3">
               <Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" />
               <span className="text-[13px] font-semibold text-[var(--ink-soft)]">
@@ -1130,105 +1295,21 @@ export default function DoanXePage() {
             /* ============================================================
                CHẾ ĐỘ 3: BẢNG DANH SÁCH CHI TIẾT (EXCEL-LIKE TABLE VIEW)
                ============================================================ */
-            <div className="rounded-2xl border border-[var(--line)] bg-white shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[900px]">
-                  <thead className="bg-[var(--surface-soft)] text-[11.5px] font-black uppercase tracking-wider text-[var(--ink)] border-b border-[var(--line)]">
-                    <tr>
-                      <th className="py-3 px-3 text-center w-14">STT</th>
-                      <th className="py-3 px-3 w-52">Bệnh nhân</th>
-                      <th className="py-3 px-3 w-52">Điểm đón</th>
-                      <th className="py-3 px-3 text-center w-24">Giờ đón</th>
-                      <th className="py-3 px-3 text-center w-28">Ngày đón</th>
-                      <th className="py-3 px-3 w-36">Số điện thoại</th>
-                      <th className="py-3 px-3">Ghi chú đón / Dặn dò</th>
-                      <th className="py-3 px-3 text-center w-28">Trạng thái</th>
-                      <th className="py-3 px-4 text-right w-32">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--line-soft)] text-[12.5px] font-medium text-[var(--ink)]">
-                    {filteredList.map((p, idx) => {
-                      const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
-                      const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
-
-                      return (
-                        <tr
-                          key={p.id}
-                          className={`hover:bg-[var(--surface-hover)] transition-colors ${
-                            isDaDen ? "bg-emerald-50/15" : ""
-                          }`}
-                        >
-                          <td className="py-2.5 px-3 text-center font-mono font-bold text-[var(--mute)]">
-                            #{String(p.stt ?? idx + 1).padStart(2, "0")}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="font-extrabold text-[13.5px] text-[var(--ink)]">{p.hoTen}</div>
-                            <div className="text-[11px] text-[var(--mute)]">
-                              {p.gioiTinh} · {p.namSinh || (p.ngaySinh ? new Date(p.ngaySinh).getFullYear() : "")}
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="font-bold text-[12px] text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 inline-block truncate max-w-[200px]">
-                              📍 {p.diemDon || "Chưa có điểm"}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-mono font-bold text-[var(--navy)]">
-                            {p.gioDon || "—"}
-                          </td>
-                          <td className="py-2.5 px-3 text-center font-mono text-[12px] text-[var(--ink-soft)]">
-                            {p.ngayDieuTri ? fmtDate(p.ngayDieuTri) : "—"}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            {p.sdt ? (
-                              <a
-                                href={`tel:${p.sdt}`}
-                                className="font-mono font-bold text-[var(--navy)] hover:underline inline-flex items-center gap-1"
-                              >
-                                <Phone className="w-3 h-3 text-emerald-600" /> {p.sdt}
-                              </a>
-                            ) : (
-                              <span className="text-[var(--mute)]">—</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-[12px] text-amber-900 max-w-[220px] truncate">
-                            {p.ghiChuTuVan || "—"}
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            {isMo ? (
-                              <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
-                                ✓ ĐÃ MỔ
-                              </span>
-                            ) : isDaDen ? (
-                              <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-950 border border-emerald-300">
-                                ✓ ĐÃ LÊN XE
-                              </span>
-                            ) : (
-                              <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                                ⏳ CHỜ ĐÓN
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-4 text-right">
-                            <button
-                              type="button"
-                              disabled={checkingInId === p.id}
-                              onClick={() => toggleCheckIn(p)}
-                              className={`px-3 py-1 rounded-lg text-[11.5px] font-extrabold transition-all cursor-pointer active:scale-95 shadow-2xs ${
-                                isDaDen
-                                  ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300"
-                                  : "bg-[var(--navy)] text-white hover:bg-[var(--navy-deep)]"
-                              }`}
-                            >
-                              {checkingInId === p.id ? "..." : isDaDen ? "✓ Đã đón" : "Đón xe"}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <DataView<HoSo, unknown> columns={doanXeColumns} data={filteredList} pageSize={100}>
+              <div className="rounded-2xl border border-[var(--line)] bg-white shadow-xs overflow-hidden flex flex-col">
+                <DataToolbar searchPlaceholder="Tìm bệnh nhân, điểm đón, số điện thoại…" />
+                <DataTable<HoSo>
+                  dense
+                  emptyIcon={Bus}
+                  emptyTitle="Không có bệnh nhân xếp xe"
+                  rowClassName={(p) => {
+                    const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
+                    return Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo ? "!bg-emerald-50/40" : undefined;
+                  }}
+                />
+                <DataPagination pageSizeOptions={[50, 100, 200, 500]} />
               </div>
-            </div>
+            </DataView>
           )}
         </div>
       </div>

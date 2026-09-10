@@ -652,6 +652,7 @@ export interface HoSo {
   daDon?: boolean; ngayDenBV?: string | null; ngayMoThucTe?: string | null; soTienThucThu?: number | null;
   trangThaiDieuTri?: string | null; ngayTaiKham?: string | null; ghiChuMat2?: string | null;
   ghiChuTuVan?: string | null;
+  isPhaco2Lan?: boolean;
   trangThai: string;
   tuVanVien?: { maNV: string; hoTen: string } | null;
   buoiKham?: { xa: string; diaDiem: string; ngayKham: string } | null;

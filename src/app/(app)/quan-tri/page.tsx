@@ -10,6 +10,8 @@ import Modal from "@/components/layout/Modal";
 import { fmtTime } from "@/lib/csr";
 import { can, roleLabel } from "@/lib/permissions";
 import { Field, Dropdown, StatusBadge, SectionHeader } from "@/components/csr/fields";
+import { DataView, DataTable, DataPagination } from "@/components/data";
+import type { ColumnDef } from "@tanstack/react-table";
 
 interface CoSo { id: string; ten: string; diaChi: string | null; trangThai: string; cauHinhTruong?: string | null; bhxhUser?: string | null; bhxhPass?: string | null; bhxhMaCSKCB?: string | null; bhxhHoTenCB?: string | null; bhxhCccdCB?: string | null; hisHost?: string | null; hisPort?: string | null; hisUser?: string | null; hisPass?: string | null; hisDbName?: string | null }
 interface NguoiDung { maNV: string; hoTen: string; vaiTro: string; coSoId: string | null; tenDangNhap: string; trangThai: string; coSo?: { ten: string } }
@@ -157,6 +159,368 @@ export default function QuanTriPage() {
     });
   };
 
+  const checkboxCls =
+    "rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer";
+
+  const cosoColumns = useMemo<ColumnDef<CoSo>[]>(
+    () => [
+      ...(!isIT
+        ? ([
+            {
+              id: "sel",
+              size: 44,
+              enableSorting: false,
+              enableResizing: false,
+              header: () => (
+                <input
+                  type="checkbox"
+                  className={checkboxCls}
+                  checked={displayedCosos.length > 0 && selectedCosos.size === displayedCosos.length}
+                  onChange={(e) =>
+                    setSelectedCosos(e.target.checked ? new Set(displayedCosos.map((c) => c.id)) : new Set())
+                  }
+                />
+              ),
+              cell: ({ row }) => (
+                <input
+                  type="checkbox"
+                  data-no-row-click
+                  className={checkboxCls}
+                  checked={selectedCosos.has(row.original.id)}
+                  onChange={(e) => {
+                    const n = new Set(selectedCosos);
+                    if (e.target.checked) n.add(row.original.id);
+                    else n.delete(row.original.id);
+                    setSelectedCosos(n);
+                  }}
+                />
+              ),
+            },
+          ] as ColumnDef<CoSo>[])
+        : []),
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "Mã",
+        size: 120,
+        cell: ({ row }) => <span className="font-mono font-bold text-[var(--teal-deep)]">{row.original.id}</span>,
+      },
+      {
+        id: "ten",
+        accessorKey: "ten",
+        header: "Tên cơ sở",
+        size: 220,
+        meta: { flex: true },
+        cell: ({ row }) => <span className="font-bold text-[var(--ink)]">{row.original.ten}</span>,
+      },
+      {
+        id: "diaChi",
+        accessorKey: "diaChi",
+        header: "Địa chỉ",
+        size: 220,
+        cell: ({ row }) => <span className="text-[var(--mute)]">{row.original.diaChi || "—"}</span>,
+      },
+      {
+        id: "trangThai",
+        accessorKey: "trangThai",
+        header: "Trạng thái",
+        size: 130,
+        cell: ({ row }) =>
+          row.original.trangThai === "active" ? (
+            <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+          ) : (
+            <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
+          ),
+      },
+      {
+        id: "actions",
+        header: "Thao tác",
+        size: 100,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "right" },
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-1" data-no-row-click>
+            <button
+              type="button"
+              onClick={() => setModal({ type: "coso", rec: row.original })}
+              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+              title="Sửa cấu hình"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            {!isIT && (
+              <button
+                type="button"
+                onClick={() => lockCoso(row.original.id)}
+                className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]"
+                title="Xóa cơ sở"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isIT, selectedCosos, displayedCosos]
+  );
+
+  const userColumns = useMemo<ColumnDef<NguoiDung>[]>(
+    () => [
+      {
+        id: "sel",
+        size: 44,
+        enableSorting: false,
+        enableResizing: false,
+        header: () => (
+          <input
+            type="checkbox"
+            className={checkboxCls}
+            checked={regularUsers.length > 0 && selectedUsers.size === regularUsers.length}
+            onChange={(e) =>
+              setSelectedUsers(e.target.checked ? new Set(regularUsers.map((u) => u.maNV)) : new Set())
+            }
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            data-no-row-click
+            className={checkboxCls}
+            checked={selectedUsers.has(row.original.maNV)}
+            onChange={(e) => {
+              const n = new Set(selectedUsers);
+              if (e.target.checked) n.add(row.original.maNV);
+              else n.delete(row.original.maNV);
+              setSelectedUsers(n);
+            }}
+          />
+        ),
+      },
+      {
+        id: "maNV",
+        accessorKey: "maNV",
+        header: "Mã NV",
+        size: 110,
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--teal-deep)] whitespace-nowrap">{row.original.maNV}</span>
+        ),
+      },
+      {
+        id: "hoTen",
+        accessorKey: "hoTen",
+        header: "Họ tên",
+        size: 180,
+        meta: { flex: true },
+        cell: ({ row }) => <span className="font-bold text-[var(--ink)]">{row.original.hoTen}</span>,
+      },
+      {
+        id: "vaiTro",
+        accessorKey: "vaiTro",
+        header: "Vai trò",
+        size: 140,
+        cell: ({ row }) => (
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">
+            {roleLabel(row.original.vaiTro)}
+          </span>
+        ),
+      },
+      {
+        id: "coSo",
+        header: "Cơ sở",
+        size: 160,
+        accessorFn: (u) => u.coSo?.ten || "Toàn hệ thống",
+        cell: ({ getValue }) => <span className="text-[var(--mute)] font-medium">{String(getValue())}</span>,
+      },
+      {
+        id: "tenDangNhap",
+        accessorKey: "tenDangNhap",
+        header: "Đăng nhập",
+        size: 130,
+        cell: ({ row }) => <span className="font-mono text-xs">{row.original.tenDangNhap}</span>,
+      },
+      {
+        id: "trangThai",
+        accessorKey: "trangThai",
+        header: "Trạng thái",
+        size: 130,
+        cell: ({ row }) =>
+          row.original.trangThai === "active" ? (
+            <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+          ) : (
+            <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
+          ),
+      },
+      {
+        id: "actions",
+        header: "Thao tác",
+        size: 100,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "right" },
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-1" data-no-row-click>
+            <button
+              type="button"
+              onClick={() => setModal({ type: "user", rec: row.original })}
+              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+              title="Sửa"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => lockUser(row.original.maNV)}
+              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]"
+              title="Xóa tài khoản"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedUsers, regularUsers]
+  );
+
+  const bacsiColumns = useMemo<ColumnDef<NguoiDung>[]>(
+    () => [
+      {
+        id: "maNV",
+        accessorKey: "maNV",
+        header: "Mã Bác sĩ",
+        size: 130,
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--teal-deep)] whitespace-nowrap">{row.original.maNV}</span>
+        ),
+      },
+      {
+        id: "hoTen",
+        accessorKey: "hoTen",
+        header: "Họ và Tên",
+        size: 200,
+        meta: { flex: true },
+        cell: ({ row }) => <span className="font-bold text-[var(--ink)] text-[14px]">{row.original.hoTen}</span>,
+      },
+      {
+        id: "coSo",
+        header: "Cơ sở làm việc",
+        size: 190,
+        accessorFn: (u) => u.coSo?.ten || "Toàn hệ thống",
+        cell: ({ getValue }) => <span className="text-[var(--mute)] font-medium">{String(getValue())}</span>,
+      },
+      {
+        id: "nguon",
+        header: "Nguồn dữ liệu",
+        size: 170,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const isHis = row.original.maNV.startsWith("HIS-") || row.original.tenDangNhap.startsWith("his_");
+          return isHis ? (
+            <StatusBadge label="Từ HIS (DMNhanSu)" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+          ) : (
+            <StatusBadge label="Nhập thủ công" cls="bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]" sm />
+          );
+        },
+      },
+      {
+        id: "trangThai",
+        accessorKey: "trangThai",
+        header: "Trạng thái",
+        size: 130,
+        cell: ({ row }) =>
+          row.original.trangThai === "active" ? (
+            <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+          ) : (
+            <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
+          ),
+      },
+      {
+        id: "actions",
+        header: "Thao tác",
+        size: 100,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "right" },
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-1" data-no-row-click>
+            <button
+              type="button"
+              onClick={() => setModal({ type: "user", rec: row.original })}
+              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+              title="Sửa"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => lockUser(row.original.maNV)}
+              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]"
+              title="Xóa tài khoản"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  const auditColumns = useMemo<ColumnDef<Audit>[]>(
+    () => [
+      {
+        id: "thoiDiem",
+        header: "Thời điểm",
+        size: 170,
+        accessorFn: (a) => (a.thoiDiem ? new Date(a.thoiDiem).getTime() : 0),
+        cell: ({ row }) => (
+          <span className="font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{fmtTime(row.original.thoiDiem)}</span>
+        ),
+      },
+      {
+        id: "nguoiDung",
+        accessorKey: "nguoiDung",
+        header: "Người dùng",
+        size: 160,
+        cell: ({ row }) => (
+          <span className="font-mono font-bold text-[var(--navy)] whitespace-nowrap">{row.original.nguoiDung}</span>
+        ),
+      },
+      {
+        id: "hanhDong",
+        accessorKey: "hanhDong",
+        header: "Hành động",
+        size: 130,
+        cell: ({ row }) => (
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--ink-soft)] border border-[var(--line)] uppercase tracking-wider">
+            {row.original.hanhDong}
+          </span>
+        ),
+      },
+      {
+        id: "bang",
+        accessorKey: "bang",
+        header: "Bảng",
+        size: 160,
+        meta: { flex: true },
+        cell: ({ row }) => <span className="text-[var(--mute)] font-mono text-[11.5px]">{row.original.bang}</span>,
+      },
+      {
+        id: "banGhiId",
+        accessorKey: "banGhiId",
+        header: "Bản ghi",
+        size: 160,
+        cell: ({ row }) => <span className="font-mono text-[11.5px] text-[var(--mute)]">{row.original.banGhiId}</span>,
+      },
+    ],
+    []
+  );
+
   return (
     <div>
       <PageHeader
@@ -182,7 +546,9 @@ export default function QuanTriPage() {
         ))}
       </div>
 
-      {loading ? <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" /></div> : (
+      {loading && users.length === 0 && cosos.length === 0 ? (
+        <div className="py-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" /></div>
+      ) : (
         <div className="mt-4">
           {tab === "bacsi" ? (
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
@@ -292,26 +658,10 @@ export default function QuanTriPage() {
                 ))}
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[700px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
-                    {!isIT && <th className="py-3.5 px-3.5 border-b border-[var(--line)] w-12"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={displayedCosos.length > 0 && selectedCosos.size === displayedCosos.length} onChange={(e) => setSelectedCosos(e.target.checked ? new Set(displayedCosos.map(c => c.id)) : new Set())} /></th>}
-                    {["Mã", "Tên cơ sở", "Địa chỉ", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
-                  </tr></thead>
-                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-                    {displayedCosos.length === 0 ? <tr><td colSpan={6} className="py-16 text-center text-[var(--mute)]">Chưa có cơ sở nào.</td></tr>
-                    : displayedCosos.map((c) => (
-                      <tr key={c.id} className="hover:bg-[var(--surface-hover)] transition-colors group">
-                        {!isIT && <td className="py-3.5 px-3.5"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={selectedCosos.has(c.id)} onChange={(e) => { const n = new Set(selectedCosos); if (e.target.checked) n.add(c.id); else n.delete(c.id); setSelectedCosos(n); }} /></td>}
-                        <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--teal-deep)]">{c.id}</td>
-                        <td className="py-3.5 px-3.5 font-bold text-[var(--ink)]">{c.ten}</td>
-                        <td className="py-3.5 px-3.5 text-[var(--mute)] whitespace-nowrap">{c.diaChi || "—"}</td>
-                        <td className="py-3.5 px-3.5 whitespace-nowrap">{c.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
-                        <td className="py-3.5 px-3.5"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "coso", rec: c })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa cấu hình"><Pencil className="w-4 h-4" /></button>{!isIT && <button onClick={() => lockCoso(c.id)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa cơ sở"><Trash2 className="w-4 h-4" /></button>}</div></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="hidden md:block">
+                <DataView<CoSo, unknown> columns={cosoColumns} data={displayedCosos} pageSize={50}>
+                  <DataTable<CoSo> dense emptyIcon={Building2} emptyTitle="Chưa có cơ sở nào" />
+                </DataView>
               </div>
               <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
                 {isIT ? `Đơn vị của bạn: ${displayedCosos[0]?.ten || session?.user?.coSoId || ""}` : <>Tổng số <span className="font-mono font-bold text-[var(--ink)]">{displayedCosos.length}</span> cơ sở</>}
@@ -346,28 +696,10 @@ export default function QuanTriPage() {
                 ))}
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
-                    <th className="py-3.5 px-3.5 border-b border-[var(--line)] w-12"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={regularUsers.length > 0 && selectedUsers.size === regularUsers.length} onChange={(e) => setSelectedUsers(e.target.checked ? new Set(regularUsers.map(u => u.maNV)) : new Set())} /></th>
-                    {["Mã NV", "Họ tên", "Vai trò", "Cơ sở", "Đăng nhập", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right whitespace-nowrap" : "whitespace-nowrap"}`}>{h}</th>)}
-                  </tr></thead>
-                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-                    {regularUsers.length === 0 ? <tr><td colSpan={8} className="py-16 text-center text-[var(--mute)]">Chưa có tài khoản nào.</td></tr>
-                    : regularUsers.map((u) => (
-                      <tr key={u.maNV} className="hover:bg-[var(--surface-hover)] transition-colors group">
-                        <td className="py-3.5 px-3.5"><input type="checkbox" className="rounded-[4px] border-[var(--line-heavy)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer" checked={selectedUsers.has(u.maNV)} onChange={(e) => { const n = new Set(selectedUsers); if (e.target.checked) n.add(u.maNV); else n.delete(u.maNV); setSelectedUsers(n); }} /></td>
-                        <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--teal-deep)] whitespace-nowrap">{u.maNV}</td>
-                        <td className="py-3.5 px-3.5 font-bold text-[var(--ink)] whitespace-nowrap">{u.hoTen}</td>
-                        <td className="py-3.5 px-3.5 whitespace-nowrap"><span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">{roleLabel(u.vaiTro)}</span></td>
-                        <td className="py-3.5 px-3.5 text-[var(--mute)] font-medium whitespace-nowrap">{u.coSo?.ten || "Toàn hệ thống"}</td>
-                        <td className="py-3.5 px-3.5 font-mono text-xs whitespace-nowrap">{u.tenDangNhap}</td>
-                        <td className="py-3.5 px-3.5 whitespace-nowrap">{u.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
-                        <td className="py-3.5 px-3.5 whitespace-nowrap"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "user", rec: u })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa"><Pencil className="w-4 h-4" /></button><button onClick={() => lockUser(u.maNV)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa tài khoản"><Trash2 className="w-4 h-4" /></button></div></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="hidden md:block">
+                <DataView<NguoiDung, unknown> columns={userColumns} data={regularUsers} pageSize={50}>
+                  <DataTable<NguoiDung> dense emptyIcon={Users} emptyTitle="Chưa có tài khoản nào" />
+                </DataView>
               </div>
               <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
                 Tổng số <span className="font-mono font-bold text-[var(--ink)]">{regularUsers.length}</span> tài khoản
@@ -401,28 +733,15 @@ export default function QuanTriPage() {
                 })}
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[800px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
-                    {["Mã Bác sĩ", "Họ và Tên", "Cơ sở làm việc", "Nguồn dữ liệu", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] ${h === "Thao tác" ? "text-right whitespace-nowrap" : "whitespace-nowrap"}`}>{h}</th>)}
-                  </tr></thead>
-                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-                    {doctorUsers.length === 0 ? <tr><td colSpan={6} className="py-16 text-center text-[var(--mute)]">Chưa có bác sĩ nào trong hệ thống hoặc không khớp bộ lọc. Bấm &ldquo;Đồng bộ từ HIS DMNhanSu&rdquo; để tải danh sách.</td></tr>
-                    : doctorUsers.map((u) => {
-                      const isHis = u.maNV.startsWith("HIS-") || u.tenDangNhap.startsWith("his_");
-                      return (
-                        <tr key={u.maNV} className="hover:bg-[var(--surface-hover)] transition-colors group">
-                          <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--teal-deep)] whitespace-nowrap">{u.maNV}</td>
-                          <td className="py-3.5 px-3.5 font-bold text-[var(--ink)] text-[14px] whitespace-nowrap">{u.hoTen}</td>
-                          <td className="py-3.5 px-3.5 text-[var(--mute)] font-medium whitespace-nowrap">{u.coSo?.ten || "Toàn hệ thống"}</td>
-                          <td className="py-3.5 px-3.5 whitespace-nowrap">{isHis ? <StatusBadge label="Từ HIS (DMNhanSu)" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Nhập thủ công" cls="bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]" />}</td>
-                          <td className="py-3.5 px-3.5 whitespace-nowrap">{u.trangThai === "active" ? <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" /> : <StatusBadge label="Đã xóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}</td>
-                          <td className="py-3.5 px-3.5 whitespace-nowrap"><div className="flex items-center justify-end gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"><button onClick={() => setModal({ type: "user", rec: u })} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Sửa"><Pencil className="w-4 h-4" /></button><button onClick={() => lockUser(u.maNV)} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]" title="Xóa tài khoản"><Trash2 className="w-4 h-4" /></button></div></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="hidden md:block">
+                <DataView<NguoiDung, unknown> columns={bacsiColumns} data={doctorUsers} pageSize={50}>
+                  <DataTable<NguoiDung>
+                    dense
+                    emptyIcon={Stethoscope}
+                    emptyTitle="Chưa có bác sĩ nào"
+                    emptyDesc="Không có bác sĩ khớp bộ lọc hoặc chưa đồng bộ từ HIS DMNhanSu."
+                  />
+                </DataView>
               </div>
               <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium flex justify-between items-center">
                 <span>Tổng số <span className="font-mono font-bold text-[var(--ink)]">{doctorUsers.length}</span> bác sĩ</span>
@@ -448,25 +767,11 @@ export default function QuanTriPage() {
                 ))}
               </div>
 
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[600px] text-left text-[13px]">
-                  <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>{["Thời điểm", "Người dùng", "Hành động", "Bảng", "Bản ghi"].map((h) => <th key={h} className="py-3.5 px-3.5 border-b border-[var(--line)] whitespace-nowrap">{h}</th>)}</tr></thead>
-                  <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-                    {audits.length === 0 ? <tr><td colSpan={5} className="py-16 text-center text-[var(--mute)]">Chưa có nhật ký kiểm toán.</td></tr>
-                    : audits.map((a) => (
-                      <tr key={a.id} className="hover:bg-[var(--surface-hover)] transition-colors">
-                        <td className="py-3.5 px-3.5 font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{fmtTime(a.thoiDiem)}</td>
-                        <td className="py-3.5 px-3.5 font-mono font-bold text-[var(--navy)] whitespace-nowrap">{a.nguoiDung}</td>
-                        <td className="py-3.5 px-3.5 whitespace-nowrap"><span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--ink-soft)] border border-[var(--line)] uppercase tracking-wider">{a.hanhDong}</span></td>
-                        <td className="py-3.5 px-3.5 text-[var(--mute)] font-mono text-[11.5px] whitespace-nowrap">{a.bang}</td>
-                        <td className="py-3.5 px-3.5 font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{a.banGhiId}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
-                Tổng số <span className="font-mono font-bold text-[var(--ink)]">{audits.length}</span> bản ghi
+              <div className="hidden md:block">
+                <DataView<Audit, unknown> columns={auditColumns} data={audits} pageSize={50}>
+                  <DataTable<Audit> dense emptyIcon={ScrollText} emptyTitle="Chưa có nhật ký kiểm toán" />
+                  <DataPagination pageSizeOptions={[25, 50, 100, 200]} />
+                </DataView>
               </div>
             </div>
           )}
@@ -911,10 +1216,142 @@ function GoogleSheetPanel() {
     load();
   };
 
-  if (loading) return <div className="py-16 flex justify-center"><Loader2 className="w-7 h-7 animate-spin text-[var(--navy)]" /></div>;
-
   const sheetUrl = (id: string) => `https://docs.google.com/spreadsheets/d/${id}`;
   const shared = !!status?.sharedSheetId; // chế độ dùng chung 1 bảng tính
+
+  const gsheetColumns = useMemo<ColumnDef<GSheetCoSo>[]>(
+    () => [
+      {
+        id: "coSo",
+        accessorKey: "ten",
+        header: "Cơ sở",
+        size: 180,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-bold text-[var(--ink)]">{row.original.ten}</div>
+            <div className="font-mono text-[11px] text-[var(--mute)]">{row.original.id}</div>
+          </div>
+        ),
+      },
+      {
+        id: "sheetId",
+        header: shared ? "Tab trong bảng tính" : "Spreadsheet ID",
+        size: 320,
+        meta: { flex: true },
+        enableSorting: false,
+        cell: ({ row }) => {
+          const c = row.original;
+          const effective = shared ? status!.sharedSheetId! : c.sheetId || c.envSheetId;
+          const draft = drafts[c.id] ?? (c.sheetId ?? "");
+          const dirty = drafts[c.id] !== undefined && drafts[c.id] !== (c.sheetId ?? "");
+          if (shared)
+            return (
+              <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--ink-soft)]">
+                <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)]">Tab</span> {c.ten}
+              </span>
+            );
+          return (
+            <div data-no-row-click>
+              <input
+                value={draft}
+                onChange={(e) => setDrafts((p) => ({ ...p, [c.id]: e.target.value }))}
+                placeholder={c.envSheetId ? `env: ${c.envSheetId}` : "Tự tạo khi đồng bộ…"}
+                className="input-field font-mono text-[12px] w-[260px] max-w-full"
+              />
+              {effective && !dirty && (
+                <a
+                  href={sheetUrl(effective)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-[var(--navy)] hover:underline truncate"
+                  title={sheetUrl(effective)}
+                >
+                  <ExternalLink className="w-3 h-3 shrink-0" /> <span className="truncate">{sheetUrl(effective)}</span>
+                </a>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "trangThai",
+        header: "Trạng thái",
+        size: 150,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const c = row.original;
+          const effective = shared ? status!.sharedSheetId! : c.sheetId || c.envSheetId;
+          if (shared)
+            return <StatusBadge label="Trong bảng chung" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />;
+          return effective ? (
+            <StatusBadge label={c.sheetId ? "Đã có sheet" : "Từ .env"} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+          ) : (
+            <StatusBadge label="Chưa có" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Thao tác",
+        size: 150,
+        enableSorting: false,
+        enableResizing: false,
+        meta: { align: "right" },
+        cell: ({ row }) => {
+          const c = row.original;
+          const effective = shared ? status!.sharedSheetId! : c.sheetId || c.envSheetId;
+          const dirty = drafts[c.id] !== undefined && drafts[c.id] !== (c.sheetId ?? "");
+          return (
+            <div className="flex items-center justify-end gap-1.5" data-no-row-click>
+              {effective && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(sheetUrl(effective));
+                    addToast({ type: "success", message: "Đã copy link." });
+                  }}
+                  className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+                  title="Copy link"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              )}
+              {effective && (
+                <a
+                  href={sheetUrl(effective)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+                  title="Mở Google Sheet"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+              {!shared && (
+                <button
+                  type="button"
+                  onClick={() => saveSheetId(c.id)}
+                  disabled={!dirty || savingId === c.id}
+                  className="btn btn-secondary px-3 py-1.5 text-[12px] font-bold disabled:opacity-40"
+                >
+                  {savingId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal)]" />} Lưu
+                </button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shared, status, drafts, savingId]
+  );
+
+  if (loading)
+    return (
+      <div className="py-16 flex justify-center">
+        <Loader2 className="w-7 h-7 animate-spin text-[var(--navy)]" />
+      </div>
+    );
 
   return (
     <div className="space-y-4">
@@ -975,54 +1412,9 @@ function GoogleSheetPanel() {
 
       {/* Sheet theo cơ sở */}
       <div className="bg-white border border-[var(--line)] rounded-[var(--r-xl)] shadow-[var(--shadow-sm)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-left text-[13px]">
-            <thead className="bg-[var(--surface-soft)] text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]"><tr>
-              {["Cơ sở", shared ? "Tab trong bảng tính" : "Spreadsheet ID", "Trạng thái", "Thao tác"].map((h) => <th key={h} className={`py-3.5 px-3.5 border-b border-[var(--line)] whitespace-nowrap ${h === "Thao tác" ? "text-right" : ""}`}>{h}</th>)}
-            </tr></thead>
-            <tbody className="text-[13px] text-[var(--ink-soft)] divide-y divide-[var(--line-soft)] bg-white">
-              {rows.map((c) => {
-                const effective = shared ? status!.sharedSheetId! : (c.sheetId || c.envSheetId);
-                const draft = drafts[c.id] ?? (c.sheetId ?? "");
-                const dirty = drafts[c.id] !== undefined && drafts[c.id] !== (c.sheetId ?? "");
-                return (
-                  <tr key={c.id} className="hover:bg-[var(--surface-hover)] transition-colors align-middle">
-                    <td className="py-3 px-5"><div className="font-bold text-[var(--ink)]">{c.ten}</div><div className="font-mono text-[11px] text-[var(--mute)]">{c.id}</div></td>
-                    <td className="py-3 px-5">
-                      {shared ? (
-                        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--ink-soft)]"><span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)]">Tab</span> {c.ten}</span>
-                      ) : (
-                        <>
-                          <input value={draft} onChange={(e) => setDrafts((p) => ({ ...p, [c.id]: e.target.value }))} placeholder={c.envSheetId ? `env: ${c.envSheetId}` : "Tự tạo khi đồng bộ…"} className="input-field font-mono text-[12px] w-[260px] max-w-full" />
-                          {effective && !dirty && (
-                            <a href={sheetUrl(effective)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-[var(--navy)] hover:underline truncate" title={sheetUrl(effective)}>
-                              <ExternalLink className="w-3 h-3 shrink-0" /> <span className="truncate">{sheetUrl(effective)}</span>
-                            </a>
-                          )}
-                        </>
-                      )}
-                    </td>
-                    <td className="py-3 px-5 whitespace-nowrap">
-                      {shared
-                        ? <StatusBadge label="Trong bảng chung" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" />
-                        : effective
-                          ? <StatusBadge label={c.sheetId ? "Đã có sheet" : "Từ .env"} cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" />
-                          : <StatusBadge label="Chưa có" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" />}
-                    </td>
-                    <td className="py-3 px-5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {effective && <button onClick={() => { navigator.clipboard?.writeText(sheetUrl(effective)); addToast({ type: "success", message: "Đã copy link." }); }} className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Copy link"><Copy className="w-4 h-4" /></button>}
-                        {effective && <a href={sheetUrl(effective)} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]" title="Mở Google Sheet"><ExternalLink className="w-4 h-4" /></a>}
-                        {!shared && <button onClick={() => saveSheetId(c.id)} disabled={!dirty || savingId === c.id} className="btn btn-secondary px-3 py-1.5 text-[12px] font-bold disabled:opacity-40">{savingId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal)]" />} Lưu</button>}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {rows.length === 0 && <tr><td colSpan={4} className="py-16 text-center text-[var(--mute)]">Chưa có cơ sở.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+        <DataView<GSheetCoSo, unknown> columns={gsheetColumns} data={rows} pageSize={100}>
+          <DataTable<GSheetCoSo> dense emptyIcon={FileSpreadsheet} emptyTitle="Chưa có cơ sở" />
+        </DataView>
       </div>
     </div>
   );

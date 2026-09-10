@@ -155,6 +155,53 @@ export default function BaoCaoPage() {
     }
   };
 
+function BaoCaoSkeleton() {
+  return (
+    <div className="space-y-6 pb-12 animate-pulse">
+      {/* Tiêu đề skeleton */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[var(--line)] shadow-xs">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-7 bg-slate-200 rounded-lg w-64" />
+            <div className="h-5 bg-slate-200 rounded-full w-24" />
+          </div>
+          <div className="h-4 bg-slate-100 rounded w-80" />
+        </div>
+        <div className="h-10 bg-slate-100 rounded-xl w-64" />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="card p-4 space-y-3 bg-white border border-[var(--line)]">
+            <div className="flex items-center justify-between">
+              <div className="h-3.5 bg-slate-200 rounded w-2/3" />
+              <div className="w-8 h-8 rounded-lg bg-slate-100" />
+            </div>
+            <div className="h-7 bg-slate-200 rounded w-1/2" />
+            <div className="h-3 bg-slate-100 rounded w-3/4" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="card p-5 bg-white border border-[var(--line)] space-y-4 h-[340px]">
+            <div className="h-5 bg-slate-200 rounded w-1/3" />
+            <div className="h-[240px] bg-slate-100 rounded-xl" />
+          </div>
+        ))}
+      </div>
+      <div className="card p-5 bg-white border border-[var(--line)] space-y-4 h-[300px]">
+        <div className="h-5 bg-slate-200 rounded w-1/4" />
+        <div className="h-[200px] bg-slate-100 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+  if (!stats && loading) {
+    return <BaoCaoSkeleton />;
+  }
+
   return (
     <div className="space-y-6 pb-12">
       {/* Tiêu đề & Hành động */}
@@ -235,12 +282,7 @@ export default function BaoCaoPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-24 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" />
-          <span className="text-xs text-[var(--mute)] font-medium">Đang tổng hợp dữ liệu báo cáo...</span>
-        </div>
-      ) : stats ? (
+      {stats ? (
         <>
           {/* Hàng thẻ KPI chỉ số chính - Nhấp vào từng thẻ để xem chi tiết */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">

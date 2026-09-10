@@ -199,10 +199,14 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
         </span>
         <ChevronDown className={`w-4 h-4 shrink-0 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
       </button>
-      <AnimatePresence>
-        {open && ready && typeof document !== "undefined" && createPortal(
-          <motion.div 
-            ref={popupRef} 
+      {/* AnimatePresence phải nằm TRONG portal: nó lọc children bằng isValidElement,
+          mà createPortal(...) trả về $$typeof = react.portal nên bị loại sạch → không render gì. */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {open && ready && (
+          <motion.div
+            key="dropdown-pop"
+            ref={popupRef} data-portal-popover
             style={style}
             initial={{ opacity: 0, scale: 0.98, y: 3 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -242,10 +246,11 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
                 })
               )}
             </div>
-          </motion.div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
@@ -464,7 +469,14 @@ export function DateField({
   }, [open, value]);
 
   // Căn lề thông minh qua Portal Position
-  const { ready, style: portalStyle } = usePortalPosition(open, ref, 340, 275);
+  const { ready, style: portalStyle, update: updatePos } = usePortalPosition(open, ref, 340, 275);
+
+  /* Phải đo vị trí NGAY khi mở, giống Dropdown. Nếu chỉ trông vào layout effect thì
+     lần bấm đầu tiên `ready` vẫn false nên portal không hiện ra. */
+  const openCalendar = () => {
+    setOpen(true);
+    updatePos();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -543,7 +555,7 @@ export function DateField({
       return;
     }
     if (e.key === "ArrowDown" && !open) {
-      setOpen(true);
+      openCalendar();
       return;
     }
 
@@ -743,7 +755,7 @@ export function DateField({
         />
         <button
           type="button"
-          onClick={() => !disabled && setOpen((o) => !o)}
+          onClick={() => !disabled && (open ? setOpen(false) : openCalendar())}
           disabled={disabled}
           className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-[#64748b] hover:text-[#031da6] hover:bg-[#f1f5f9] rounded transition-colors cursor-pointer"
           title="Mở lịch chọn ngày"
@@ -754,7 +766,7 @@ export function DateField({
 
       {open && ready && typeof document !== "undefined" && createPortal(
         <div 
-          ref={popupRef} 
+          ref={popupRef} data-portal-popover 
           style={{ ...portalStyle, width: 275 }} 
           className="bg-white border border-[#cbd5e1] rounded-2xl shadow-2xl p-2.5 animate-dropdown select-none flex flex-col overflow-hidden"
         >
@@ -924,7 +936,7 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
         <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)] pointer-events-none transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
       </div>
       {open && ready && typeof document !== "undefined" && createPortal(
-        <div ref={popupRef} style={style} className="overflow-y-auto bg-white border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-dropdown">
+        <div ref={popupRef} data-portal-popover style={style} className="overflow-y-auto bg-white border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-dropdown">
           {options.length === 0 && !showAdd && (
             <div className="px-3 py-2.5 text-[12.5px] text-[var(--mute)] text-center">Chưa có điểm đón nào.<br/>Nhập để tạo mới.</div>
           )}
@@ -1056,10 +1068,12 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
         </div>
       )}
 
-      <AnimatePresence>
-        {open && ready && !disabled && typeof document !== "undefined" && createPortal(
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {open && ready && !disabled && (
           <motion.div
-            ref={popupRef}
+            key="multiselect-pop"
+            ref={popupRef} data-portal-popover
             style={style}
             initial={{ opacity: 0, scale: 0.95, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1089,10 +1103,11 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
                 );
               })}
             </div>
-          </motion.div>,
-          document.body
-        )}
-      </AnimatePresence>
+          </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

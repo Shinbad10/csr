@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { classifyCSRNhom } from "@/lib/csr";
+import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,20 @@ export async function GET(request: Request) {
     });
 
     const currentYear = new Date().getFullYear();
+
+    /* Danh sách BN mổ Phaco 2 lần (Mắt 2) nằm bên HIS, không có trong CSDL CSR —
+       phải nạp trước vì hàm lọc bên dưới chạy đồng bộ. */
+    let phaco2Ids: Set<string> | null = null;
+    if (type === "session_phaco2" || type === "kpi_phaco2") {
+      try {
+        phaco2Ids = await fetchPhaco2LanPatientIds(
+          type === "session_phaco2" ? val || undefined : undefined,
+          coSoId || undefined
+        );
+      } catch {
+        phaco2Ids = new Set();
+      }
+    }
 
     const filtered = allHoSos.filter((h) => {
       const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(h);
@@ -264,6 +279,23 @@ export async function GET(request: Request) {
         case "session": {
           return h.buoiKhamId === val;
         }
+
+        /* Bấm vào từng con số trên bảng "Đợt khám trong kỳ":
+           lọc đồng thời theo đợt khám (val) và phân loại. */
+        case "session_nhomA":
+          return h.buoiKhamId === val && isNhomA;
+
+        case "session_nhomB":
+          return h.buoiKhamId === val && isNhomB;
+
+        case "session_daMo":
+          return h.buoiKhamId === val && isDaMo;
+
+        case "session_phaco2":
+          return h.buoiKhamId === val && Boolean(phaco2Ids?.has(h.id));
+
+        case "kpi_phaco2":
+          return Boolean(phaco2Ids?.has(h.id));
 
         default:
           return true;

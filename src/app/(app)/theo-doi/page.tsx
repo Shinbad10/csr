@@ -975,7 +975,7 @@ export default function TheoDoiPage() {
 
           {/* Patient Cards List */}
           <div data-tour="td-list" className="flex-1 overflow-y-auto p-2 space-y-2">
-            {loading ? (
+            {loading && rows.length === 0 ? (
               <SkeletonList items={6} />
             ) : rows.length === 0 ? (
               <div className="flex flex-col items-center text-center gap-2 py-14 px-6">

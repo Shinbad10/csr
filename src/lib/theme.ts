@@ -1,6 +1,5 @@
 import { createTheme } from '@mui/material/styles';
-import { viVN } from '@mui/x-data-grid/locales';
-import type {} from '@mui/x-data-grid/themeAugmentation';
+import { viVN } from '@mui/material/locale';
 
 /**
  * Company UI Design System Theme for Material UI (MUI)
@@ -499,64 +498,6 @@ export const companyTheme = createTheme(
           },
           arrow: {
             color: '#0d1025',
-          },
-        },
-      },
-      MuiDataGrid: {
-        styleOverrides: {
-          root: {
-            border: '1px solid #eef0f5',
-            borderRadius: 14,
-            backgroundColor: '#ffffff',
-            fontFamily: 'var(--font-manrope), "Manrope", sans-serif',
-            fontSize: '0.8125rem',
-            color: '#0d1025',
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#fafbfd',
-              borderBottom: '1px solid #eef0f5',
-              color: '#8a8fa3',
-              fontWeight: 700,
-              fontSize: '0.6875rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-            },
-            '& .MuiDataGrid-row': {
-              transition: 'background-color 0.15s ease',
-            },
-            '& .MuiDataGrid-row:hover': {
-              backgroundColor: 'rgba(3, 29, 166, 0.03)',
-            },
-            '& .MuiDataGrid-row.Mui-selected': {
-              backgroundColor: 'rgba(3, 29, 166, 0.06)',
-              '&:hover': {
-                backgroundColor: 'rgba(3, 29, 166, 0.09)',
-              },
-            },
-            '& .MuiDataGrid-cell': {
-              borderColor: '#eef0f5',
-              padding: '0 14px',
-            },
-            '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
-              outline: 'none !important',
-            },
-            '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
-              outline: 'none !important',
-            },
-            '& .MuiDataGrid-footerContainer': {
-              borderColor: '#eef0f5',
-              backgroundColor: '#fafbfd',
-              borderRadius: '0 0 14px 14px',
-            },
-            '& .MuiCheckbox-root.Mui-checked': {
-              color: '#02b8a9',
-            },
-            '& .MuiDataGrid-toolbarContainer': {
-              padding: '10px 14px',
-              gap: '10px',
-              borderBottom: '1px solid #eef0f5',
-              backgroundColor: '#ffffff',
-              borderRadius: '14px 14px 0 0',
-            },
           },
         },
       },

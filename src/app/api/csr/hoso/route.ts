@@ -9,6 +9,8 @@ import { triggerSync } from "@/lib/syncWorker";
 import { bhytLevel } from "@/lib/csr";
 import { broadcastEvent } from "@/lib/events";
 
+import { fetchPhaco2LanPatientIds } from "@/lib/his";
+
 // Quan hệ kèm theo cho danh sách hồ sơ trả về TRÌNH DUYỆT.
 // Không dùng `coSo: true` / `tuVanVien: true`: nó gửi cả bhxhPass, hisPass, matKhauHash ra client
 // và lặp lại trên từng dòng (danh sách ~160 kB mỗi lần nạp).
@@ -47,11 +49,15 @@ export async function GET(request: Request) {
       ],
     };
 
+    const phaco2LanIdsPromise = buoiKhamId
+      ? fetchPhaco2LanPatientIds(buoiKhamId, coSoId || undefined)
+      : Promise.resolve(new Set<string>());
+
     if (isPaginated) {
       const page = Math.max(1, parseInt(sp.get("page") || "1", 10));
       const pageSize = Math.min(200, Math.max(10, parseInt(sp.get("pageSize") || "50", 10)));
       const prisma = getPrisma();
-      const [total, items] = await Promise.all([
+      const [total, items, phaco2LanIds] = await Promise.all([
         prisma.hoSoBenhNhan.count({ where }),
         prisma.hoSoBenhNhan.findMany({
           where,
@@ -60,9 +66,14 @@ export async function GET(request: Request) {
           skip: (page - 1) * pageSize,
           take: pageSize,
         }),
+        phaco2LanIdsPromise,
       ]);
+      const mappedItems = items.map((h) => ({
+        ...h,
+        isPhaco2Lan: phaco2LanIds.has(h.id),
+      }));
       return NextResponse.json({
-        items,
+        items: mappedItems,
         total,
         page,
         pageSize,
@@ -70,12 +81,19 @@ export async function GET(request: Request) {
       });
     }
 
-    const data = await getPrisma().hoSoBenhNhan.findMany({
-      where,
-      include: RELATIONS_DANH_SACH,
-      orderBy: [{ stt: "asc" }, { createdAt: "desc" }],
-    });
-    return NextResponse.json(data);
+    const [data, phaco2LanIds] = await Promise.all([
+      getPrisma().hoSoBenhNhan.findMany({
+        where,
+        include: RELATIONS_DANH_SACH,
+        orderBy: [{ stt: "asc" }, { createdAt: "desc" }],
+      }),
+      phaco2LanIdsPromise,
+    ]);
+    const mappedData = data.map((h) => ({
+      ...h,
+      isPhaco2Lan: phaco2LanIds.has(h.id),
+    }));
+    return NextResponse.json(mappedData);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }

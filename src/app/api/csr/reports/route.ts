@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { classifyCSRNhom } from "@/lib/csr";
+import { fetchPhaco2LanStats } from "@/lib/his";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +23,24 @@ export async function GET(request: Request) {
     if (coSoId) where.coSoId = coSoId;
     if (buoiKhamId) where.buoiKhamId = buoiKhamId;
 
-    if (fromDate || toDate) {
-      where.buoiKham = {
-        ngayKham: {
-          ...(fromDate ? { gte: new Date(fromDate) } : {}),
-          ...(toDate ? { lte: new Date(`${toDate}T23:59:59.999Z`) } : {}),
-        },
-      };
+    const ngayKhamRange =
+      fromDate || toDate
+        ? {
+            ...(fromDate ? { gte: new Date(fromDate) } : {}),
+            ...(toDate ? { lte: new Date(`${toDate}T23:59:59.999Z`) } : {}),
+          }
+        : null;
+
+    if (ngayKhamRange) {
+      where.buoiKham = { ngayKham: ngayKhamRange };
     }
+
+    // Bộ lọc cho bảng BuoiKham — phải áp CÙNG khoảng ngày, nếu không thì
+    // số "đợt khám" và danh sách đợt sẽ lệch với các chỉ số hồ sơ đã lọc.
+    const buoiKhamWhere: { coSoId?: string; ngayKham?: { gte?: Date; lte?: Date } } = {
+      ...(coSoId ? { coSoId } : {}),
+      ...(ngayKhamRange ? { ngayKham: ngayKhamRange } : {}),
+    };
 
     const [
       tong,
@@ -38,11 +49,10 @@ export async function GET(request: Request) {
       coSo,
       daMo,
       allHoSos,
-      buoiKhams,
     ] = await Promise.all([
       prisma.hoSoBenhNhan.count({ where }),
       prisma.hoSoBenhNhan.groupBy({ by: ["trangThai"], where, _count: { _all: true } }),
-      prisma.buoiKham.count({ where: coSoId ? { coSoId } : {} }),
+      prisma.buoiKham.count({ where: buoiKhamWhere }),
       coSoId ? prisma.coSo.findUnique({ where: { id: coSoId }, select: { sheetId: true, ten: true } }) : Promise.resolve(null),
       prisma.hoSoBenhNhan.count({
         where: {
@@ -84,21 +94,6 @@ export async function GET(request: Request) {
               diaDiem: true,
               bacSiKham: true,
             },
-          },
-        },
-      }),
-      prisma.buoiKham.findMany({
-        where: coSoId ? { coSoId } : {},
-        orderBy: { ngayKham: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          ngayKham: true,
-          xa: true,
-          diaDiem: true,
-          bacSiKham: true,
-          _count: {
-            select: { hoSo: true },
           },
         },
       }),
@@ -152,6 +147,7 @@ export async function GET(request: Request) {
         nhomA: number;
         nhomB: number;
         daMo: number;
+        phaco2Lan: number;
       }
     > = {};
 
@@ -261,6 +257,7 @@ export async function GET(request: Request) {
             nhomA: 0,
             nhomB: 0,
             daMo: 0,
+            phaco2Lan: 0,
           };
         }
         sessionMap[h.buoiKhamId].tong++;
@@ -268,6 +265,21 @@ export async function GET(request: Request) {
         if (isNhomB) sessionMap[h.buoiKhamId].nhomB++;
         if (isDaMo) sessionMap[h.buoiKhamId].daMo++;
       }
+    }
+
+    /* Số ca mổ Phaco 2 lần (Mắt 2) lấy từ HIS theo từng đợt khám.
+       Hàm này tự nuốt lỗi và trả Map rỗng nếu đơn vị chưa cấu hình HIS. */
+    let phaco2LanMap = new Map<string, number>();
+    try {
+      phaco2LanMap = await fetchPhaco2LanStats(coSoId || undefined);
+    } catch {
+      // bỏ qua — cột Mắt 2 sẽ hiển thị 0
+    }
+
+    let phaco2LanTong = 0;
+    for (const s of Object.values(sessionMap)) {
+      s.phaco2Lan = phaco2LanMap.get(s.id) || 0;
+      phaco2LanTong += s.phaco2Lan;
     }
 
     const sessionsList = Object.values(sessionMap).sort((a, b) => (b.ngayKham > a.ngayKham ? 1 : -1));
@@ -297,6 +309,7 @@ export async function GET(request: Request) {
       nhomA,
       nhomB,
       daMo,
+      phaco2Lan: phaco2LanTong,
       chuyenDoiMoPct,
       coBhytCount,
       bhytPct,

@@ -7,6 +7,7 @@ import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 
 import { classifyCSRNhom } from "@/lib/csr";
+import { fetchPhaco2LanStats } from "@/lib/his";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     const whereCoSo = coSoId ? { coSoId } : undefined;
 
     // Tối ưu tốc độ nạp: Dùng aggregation ở cấp DB thay vì tải toàn bộ hàng ngàn dòng hồ sơ về bộ nhớ Node.js
-    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback] = await Promise.all([
+    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback, phaco2LanMap] = await Promise.all([
       prisma.buoiKham.findMany({
         where: whereCoSo,
         include: {
@@ -63,6 +64,7 @@ export async function GET(request: Request) {
         select: { buoiKhamId: true, bacSiChiDinh: true },
         distinct: ["buoiKhamId"],
       }),
+      fetchPhaco2LanStats(coSoId || undefined),
     ]);
 
     const daMoMap = new Map<string, number>();
@@ -94,6 +96,7 @@ export async function GET(request: Request) {
       const st = statsMap.get(bk.id) || { nhomA: 0, nhomB: 0 };
       const daMo = daMoMap.get(bk.id) || 0;
       const chuaMo = Math.max(0, st.nhomA - daMo);
+      const phaco2Lan = phaco2LanMap.get(bk.id) || 0;
       const bacSiKham = bk.bacSiKham || docMap.get(bk.id) || null;
       return {
         ...bk,
@@ -103,6 +106,7 @@ export async function GET(request: Request) {
           nhomB: st.nhomB,
           daMo,
           chuaMo,
+          phaco2Lan,
         },
       };
     });
