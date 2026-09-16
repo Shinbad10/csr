@@ -183,12 +183,32 @@ export async function GET(request: Request) {
       let foundInExisting = false;
       for (const dx of doanXeMap.values()) {
         if (dx.ngayDon === ngay) {
-          const matchDiem = dx.cacDiem.find((d) => d.diemDon.toLowerCase() === diem.toLowerCase());
+          // Khớp cả điểm đón VÀ giờ đón
+          const matchDiem = dx.cacDiem.find(
+            (d) => d.diemDon.toLowerCase() === diem.toLowerCase() && d.gioDon === gio
+          );
           if (matchDiem) {
             matchDiem.soBN += 1;
             if (xa && !matchDiem.cacXa.includes(xa)) matchDiem.cacXa.push(xa);
             foundInExisting = true;
             break;
+          } else {
+            // Cùng tuyến/xã nhưng phát sinh mốc giờ mới hoặc điểm đón mới trong cùng đoàn
+            const matchRoute =
+              (xa && dx.tenDoan.toLowerCase().includes(xa.toLowerCase())) ||
+              dx.cacDiem.some((d) => d.cacXa && xa && d.cacXa.includes(xa));
+            if (matchRoute) {
+              const newChang = {
+                id: `pt_${ngay}_${encodeURIComponent(diem)}_${gio}`,
+                diemDon: diem,
+                gioDon: gio,
+                soBN: 1,
+                cacXa: xa ? [xa] : [],
+              };
+              dx.cacDiem.push(newChang);
+              foundInExisting = true;
+              break;
+            }
           }
         }
       }
@@ -296,26 +316,46 @@ export async function POST(request: Request) {
     const coSoId = await getWorkingCoSoId(session);
     const stored = await readStoredRoutes();
 
-    const newRoute: StoredRoute = {
-      id: `dx_${Date.now()}`,
-      tenDoan: tenDoan.trim(),
-      ngayDon: ngayDon.slice(0, 10),
-      coSoId,
-      cacDiem: validChangs,
-      createdAt: new Date().toISOString(),
-    };
+    const existingRoute = stored.find(
+      (s) =>
+        s.tenDoan.toLowerCase() === tenDoan.trim().toLowerCase() &&
+        s.ngayDon === ngayDon.slice(0, 10) &&
+        (!coSoId || !s.coSoId || s.coSoId === coSoId)
+    );
 
-    stored.push(newRoute);
+    let targetRoute: StoredRoute;
+    if (existingRoute) {
+      for (const vc of validChangs) {
+        const dup = existingRoute.cacDiem.find(
+          (c) => c.diemDon.toLowerCase() === vc.diemDon.toLowerCase() && c.gioDon === vc.gioDon
+        );
+        if (!dup) {
+          existingRoute.cacDiem.push(vc);
+        }
+      }
+      targetRoute = existingRoute;
+    } else {
+      targetRoute = {
+        id: `dx_${Date.now()}`,
+        tenDoan: tenDoan.trim(),
+        ngayDon: ngayDon.slice(0, 10),
+        coSoId,
+        cacDiem: validChangs,
+        createdAt: new Date().toISOString(),
+      };
+      stored.push(targetRoute);
+    }
+
     await saveStoredRoutes(stored);
 
     // Phát sự kiện realtime
     broadcastEvent({
       type: "hoso_change",
       action: "create",
-      data: { action: "create_doan_xe", routeId: newRoute.id },
+      data: { action: "create_doan_xe", routeId: targetRoute.id },
     });
 
-    return NextResponse.json({ success: true, route: newRoute });
+    return NextResponse.json({ success: true, route: targetRoute });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Lỗi lưu đoàn xe mới" },

@@ -32,7 +32,7 @@ import {
   Activity,
   ShieldCheck,
 } from "lucide-react";
-import { getActiveFacilities, setSelectedFacilityCookie, getLoginUserFacility } from "./actions";
+import { getActiveFacilities, setSelectedFacilityCookie, finalizeLogin } from "./actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -108,23 +108,22 @@ export default function LoginPage() {
           setError("Tên đăng nhập hoặc mật khẩu không chính xác.");
           setIsLoading(false);
         } else {
-          const userCtx = await getLoginUserFacility(username);
+          const userCtx = await finalizeLogin(username);
 
           if (!userCtx.isCorporate && userCtx.defaultCoSoId) {
-            await setSelectedFacilityCookie(userCtx.defaultCoSoId);
             setIsRedirecting(true);
-            router.push("/");
-            router.refresh();
+            window.location.href = "/";
           } else if (userCtx.isCorporate && facilities.length > 0) {
             setShowFacilityModal(true);
             setIsLoading(false);
           } else {
             if (userCtx.defaultCoSoId || facilities[0]?.id) {
-              await setSelectedFacilityCookie(userCtx.defaultCoSoId || facilities[0]?.id);
+              const targetId = userCtx.defaultCoSoId || facilities[0]?.id;
+              const targetName = facilities.find((f) => f.id === targetId)?.ten;
+              await setSelectedFacilityCookie(targetId, targetName);
             }
             setIsRedirecting(true);
-            router.push("/");
-            router.refresh();
+            window.location.href = "/";
           }
         }
       } catch {
@@ -132,16 +131,16 @@ export default function LoginPage() {
         setIsLoading(false);
       }
     },
-    [username, password, isLoading, router, facilities]
+    [username, password, isLoading, facilities]
   );
 
   const handleConfirmFacility = async (facilityId?: string) => {
     const targetFacility = facilityId || selectedFacility;
     if (!targetFacility) return;
     setIsRedirecting(true);
-    await setSelectedFacilityCookie(targetFacility);
-    router.push("/");
-    router.refresh();
+    const targetName = facilities.find((f) => f.id === targetFacility)?.ten;
+    await setSelectedFacilityCookie(targetFacility, targetName);
+    window.location.href = "/";
   };
 
   return (
@@ -532,52 +531,91 @@ export default function LoginPage() {
         slotProps={{
           paper: {
             sx: {
-              borderRadius: "32px",
-              p: { xs: 2, sm: 4 },
+              borderRadius: { xs: "22px", sm: "32px" },
+              p: { xs: "16px 14px", sm: 4 },
+              m: { xs: 1.5, sm: 2 },
+              width: { xs: "calc(100% - 24px)", sm: "auto" },
               border: "1px solid var(--line-strong)",
-              boxShadow: "0 30px 60px rgba(3,29,166,0.2)",
+              boxShadow: { xs: "0 20px 40px rgba(3,29,166,0.18)", sm: "0 30px 60px rgba(3,29,166,0.2)" },
               backgroundColor: "var(--surface)",
             },
           },
         }}
       >
-        <DialogTitle sx={{ textAlign: "center", pt: 1, pb: 1 }}>
+        <DialogTitle sx={{ textAlign: "center", pt: { xs: 0.5, sm: 1 }, pb: { xs: 0.5, sm: 1 }, px: { xs: 0.5, sm: 3 } }}>
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <Box
               sx={{
-                width: 64,
-                height: 64,
-                borderRadius: "20px",
+                width: { xs: 44, sm: 62 },
+                height: { xs: 44, sm: 62 },
+                borderRadius: { xs: "13px", sm: "18px" },
                 backgroundColor: "var(--teal-soft)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                mb: 2,
+                mb: { xs: 1, sm: 2 },
                 border: "1px solid rgba(2, 184, 169, 0.25)",
               }}
             >
-              <Building2 size={32} className="text-[var(--teal)]" />
+              <Building2 className="w-5 h-5 sm:w-7 sm:h-7 text-[var(--teal)]" />
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, textTransform: "uppercase", letterSpacing: "-0.02em", fontFamily: "var(--font-serif)" }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "-0.02em",
+                fontFamily: "var(--font-serif)",
+                fontSize: { xs: "1.05rem", sm: "1.35rem" },
+                lineHeight: 1.25,
+              }}
+            >
               Xác định cơ sở làm việc
             </Typography>
-            <Typography variant="body2" sx={{ color: "var(--ink-soft)", mt: 1, maxWidth: 380, fontWeight: 600 }}>
-              Tài khoản của bạn có quyền tại nhiều cơ sở, <br />
-              vui lòng chọn đơn vị làm việc cho phiên này.
+            <Typography
+              variant="body2"
+              sx={{
+                color: "var(--ink-soft)",
+                mt: { xs: 0.5, sm: 1 },
+                maxWidth: 380,
+                fontWeight: 600,
+                fontSize: { xs: "0.75rem", sm: "0.85rem" },
+                lineHeight: 1.35,
+              }}
+            >
+              Tài khoản có quyền tại nhiều cơ sở, vui lòng chọn đơn vị làm việc cho phiên này.
             </Typography>
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ px: 1, py: 2 }}>
+        <DialogContent sx={{ px: { xs: 0.25, sm: 1 }, py: { xs: 1, sm: 2 } }}>
           {isRedirecting ? (
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 5, gap: 2 }}>
-              <CircularProgress size={36} sx={{ color: "var(--teal)" }} />
-              <Typography sx={{ fontSize: "0.6875rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--teal)", fontFamily: "var(--font-mono)" }}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: { xs: 3, sm: 5 }, gap: 1.5 }}>
+              <CircularProgress size={32} sx={{ color: "var(--teal)" }} />
+              <Typography
+                sx={{
+                  fontSize: "0.6875rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.15em",
+                  color: "var(--teal)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
                 Đang nạp phiên làm việc...
               </Typography>
             </Box>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, maxHeight: 340, overflowY: "auto", pr: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: { xs: 0.85, sm: 1.5 },
+                maxHeight: { xs: "48vh", sm: 340 },
+                overflowY: "auto",
+                pr: { xs: 0.25, sm: 1 },
+              }}
+            >
               {facilities.map((f) => (
                 <Button
                   key={f.id}
@@ -587,14 +625,15 @@ export default function LoginPage() {
                   fullWidth
                   sx={{
                     justifyContent: "flex-start",
-                    p: 2,
-                    borderRadius: "22px",
+                    p: { xs: "8px 10px", sm: "12px 16px" },
+                    borderRadius: { xs: "14px", sm: "20px" },
                     borderColor: "var(--line-strong)",
                     backgroundColor: "var(--surface-soft)",
                     display: "flex",
                     alignItems: "center",
-                    gap: 2,
+                    gap: { xs: 1.25, sm: 2 },
                     textAlign: "left",
+                    minHeight: { xs: 46, sm: 58 },
                     "&:hover": {
                       borderColor: "var(--teal)",
                       backgroundColor: "var(--surface)",
@@ -604,9 +643,9 @@ export default function LoginPage() {
                 >
                   <Box
                     sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "16px",
+                      width: { xs: 32, sm: 42 },
+                      height: { xs: 32, sm: 42 },
+                      borderRadius: { xs: "10px", sm: "14px" },
                       backgroundColor: "var(--teal-soft)",
                       display: "flex",
                       alignItems: "center",
@@ -615,22 +654,35 @@ export default function LoginPage() {
                       border: "1px solid rgba(2, 184, 169, 0.2)",
                     }}
                   >
-                    <Activity size={20} className="text-[var(--teal)]" />
+                    <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--teal)]" />
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 800, fontSize: "0.875rem", color: "var(--ink)", textTransform: "uppercase", letterSpacing: "0.02em" }}>
+                    <Typography
+                      sx={{
+                        fontWeight: 800,
+                        fontSize: { xs: "0.78rem", sm: "0.875rem" },
+                        color: "var(--ink)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.01em",
+                        lineHeight: 1.25,
+                      }}
+                    >
                       {f.ten}
                     </Typography>
-                    <Box sx={{ mt: 0.5 }}>
+                    <Box sx={{ mt: { xs: 0.25, sm: 0.5 } }}>
                       <Chip
                         label={`Cơ sở: ${f.id}`}
                         size="small"
                         color="secondary"
-                        sx={{ fontSize: "0.625rem", height: 20 }}
+                        sx={{
+                          fontSize: { xs: "0.58rem", sm: "0.625rem" },
+                          height: { xs: 17, sm: 20 },
+                          "& .MuiChip-label": { px: { xs: 0.75, sm: 1 } },
+                        }}
                       />
                     </Box>
                   </Box>
-                  <ChevronRight size={18} className="text-[var(--teal)]" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[var(--teal)] shrink-0" />
                 </Button>
               ))}
             </Box>

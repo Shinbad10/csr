@@ -30,6 +30,8 @@ import {
   FileText,
   ExternalLink,
   ShieldAlert,
+  AlertCircle,
+  UserX,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { fmtDate, statusOf, bhytLevel, ageOf, parseDiag, classifyCSRNhom } from "@/lib/csr";
@@ -65,6 +67,7 @@ interface ReportDetailModalProps {
     nhomA: number;
     nhomB: number;
     daMo: number;
+    denKhongMo?: number;
   }>;
   onExportSessionExcel?: (buoiKhamId: string) => void;
 }
@@ -85,7 +88,7 @@ export default function ReportDetailModal({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "OTHER">("ALL");
-  const [surgeryFilter, setSurgeryFilter] = useState<"ALL" | "DA_MO" | "CHUA_MO">("ALL");
+  const [surgeryFilter, setSurgeryFilter] = useState<"ALL" | "DA_MO" | "CHUA_MO" | "DEN_KHONG_MO">("ALL");
   const [bhytFilter, setBhytFilter] = useState<"ALL" | "CO_BHYT" | "KHONG_BHYT">("ALL");
   
   // Phân trang
@@ -210,7 +213,7 @@ export default function ReportDetailModal({
         if (!fullText.includes(q)) return false;
       }
 
-      const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(p);
+      const { isNhomA, isNhomB, isDaMo, isDenKhongMo } = classifyCSRNhom(p);
 
       // Group
       if (groupFilter === "A") {
@@ -226,6 +229,8 @@ export default function ReportDetailModal({
         if (!isDaMo) return false;
       } else if (surgeryFilter === "CHUA_MO") {
         if (isDaMo) return false;
+      } else if (surgeryFilter === "DEN_KHONG_MO") {
+        if (!isDenKhongMo) return false;
       }
 
       // BHYT
@@ -258,6 +263,7 @@ export default function ReportDetailModal({
         nhomA: totalNhomA,
         nhomB: totalNhomB,
         daMo: totalDaMo,
+        denKhongMo: 0,
         bhyt: 0,
       };
     }
@@ -265,17 +271,19 @@ export default function ReportDetailModal({
     let nhomA = 0;
     let nhomB = 0;
     let daMo = 0;
+    let denKhongMo = 0;
     let coBhyt = 0;
 
     data.forEach((p) => {
-      const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(p);
+      const { isNhomA, isNhomB, isDaMo, isDenKhongMo } = classifyCSRNhom(p);
       if (isNhomA) nhomA++;
       else if (isNhomB) nhomB++;
       if (isDaMo) daMo++;
+      if (isDenKhongMo) denKhongMo++;
       if (p.bhyt && p.bhyt.trim().length >= 8) coBhyt++;
     });
 
-    return { total: data.length, nhomA, nhomB, daMo, bhyt: coBhyt };
+    return { total: data.length, nhomA, nhomB, daMo, denKhongMo, bhyt: coBhyt };
   }, [data, sessions, target?.type]);
 
   // Paging
@@ -430,6 +438,11 @@ export default function ReportDetailModal({
                   <span className="px-2.5 py-1 rounded-lg bg-teal-50 text-[var(--teal-deep)] border border-teal-200 font-mono font-bold">
                     Đã mổ: <b>{stats.daMo.toLocaleString("vi-VN")}</b>
                   </span>
+                  {stats.denKhongMo > 0 && (
+                    <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-300 font-mono font-semibold">
+                      Đến chưa mổ: <b>{stats.denKhongMo.toLocaleString("vi-VN")}</b>
+                    </span>
+                  )}
                   <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 font-mono font-semibold">
                     BHYT: <b>{stats.bhyt.toLocaleString("vi-VN")}</b>
                   </span>
@@ -564,6 +577,19 @@ export default function ReportDetailModal({
                     }`}
                   >
                     Chưa mổ
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSurgeryFilter("DEN_KHONG_MO");
+                      setPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                      surgeryFilter === "DEN_KHONG_MO"
+                        ? "bg-amber-600 text-white font-bold shadow-2xs"
+                        : "text-amber-700 hover:text-amber-900"
+                    }`}
+                  >
+                    Đến không mổ
                   </button>
                 </div>
 
@@ -750,7 +776,7 @@ export default function ReportDetailModal({
                       const age =
                         ageOf(p) ||
                         (p.namSinh ? new Date().getFullYear() - p.namSinh : null);
-                      const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(p);
+                      const { isNhomA, isNhomB, isDaMo, isDenKhongMo } = classifyCSRNhom(p);
 
                       // Tách chẩn đoán
                       const diags = [
@@ -878,6 +904,12 @@ export default function ReportDetailModal({
                               <div className="text-[10.5px] font-bold text-[var(--teal-deep)] mt-1 flex items-center gap-1 font-mono">
                                 <CheckCircle2 className="w-3 h-3 text-[var(--teal-deep)]" />
                                 {p.ngayMoThucTe ? fmtDate(p.ngayMoThucTe) : "Đã mổ"}
+                              </div>
+                            )}
+                            {isDenKhongMo && (
+                              <div className="text-[10.5px] font-bold text-amber-700 mt-1 flex items-center gap-1 font-mono bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 w-fit">
+                                <AlertCircle className="w-3 h-3 text-amber-600" />
+                                Đến chưa mổ{p.trangThaiDieuTri === "Hủy" ? " (Hủy)" : ""}
                               </div>
                             )}
                           </td>

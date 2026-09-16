@@ -30,12 +30,14 @@ import {
   CheckCheck,
   Sparkles,
   ChevronRight,
+  Edit3,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { fmtDate, fmtBuoiKhamName, type HoSo } from "@/lib/csr";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
+import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
 import type { ColumnDef } from "@tanstack/react-table";
 import * as XLSX from "xlsx";
@@ -62,6 +64,63 @@ export default function DoanXePage() {
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [stationLoading, setStationLoading] = useState<string | null>(null);
   const [collapsedStations, setCollapsedStations] = useState<Set<string>>(new Set());
+
+  // Modal xếp xe / đổi điểm đón
+  const [editingBusPatient, setEditingBusPatient] = useState<HoSo | null>(null);
+  const [busFormDiem, setBusFormDiem] = useState("");
+  const [busFormGio, setBusFormGio] = useState("");
+  const [busFormDate, setBusFormDate] = useState("");
+  const [savingBus, setSavingBus] = useState(false);
+
+  const handleOpenAssignModal = (p: HoSo) => {
+    setEditingBusPatient(p);
+    setBusFormDiem(p.diemDon || "");
+    setBusFormGio(p.gioDon || "06:00");
+    setBusFormDate(p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "");
+  };
+
+  const handleSaveBusAssignment = async () => {
+    if (!editingBusPatient) return;
+    setSavingBus(true);
+    try {
+      const res = await fetch(`/api/csr/hoso/${editingBusPatient.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          diemDon: busFormDiem.trim() || null,
+          gioDon: busFormGio.trim() || null,
+          ngayDieuTri: busFormDate || null,
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok) {
+        addToast({
+          type: "success",
+          message: `✓ Đã xếp xe cho ${editingBusPatient.hoTen}: ${busFormDiem || "Tự túc"} (${busFormGio})`,
+        });
+        setData((prev) =>
+          prev.map((it) =>
+            it.id === editingBusPatient.id
+              ? {
+                  ...it,
+                  diemDon: busFormDiem.trim() || null,
+                  gioDon: busFormGio.trim() || null,
+                  ngayDieuTri: busFormDate || null,
+                }
+              : it
+          )
+        );
+        setEditingBusPatient(null);
+      } else {
+        addToast({ type: "error", message: json.error || "Không thể lưu điểm đón" });
+      }
+    } catch {
+      addToast({ type: "error", message: "Lỗi kết nối khi lưu điểm đón" });
+    } finally {
+      setSavingBus(false);
+    }
+  };
 
   // Nạp danh sách đợt khám để lọc
   useEffect(() => {
@@ -1067,7 +1126,7 @@ export default function DoanXePage() {
                                 </div>
 
                                 {/* Cột 3: Trạng thái & Thao tác đón (md:col-span-3 - Nằm cạnh thông tin) */}
-                                <div className="md:col-span-3 flex items-center justify-between md:justify-end gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--line-soft)]">
+                                <div className="md:col-span-3 flex items-center justify-between md:justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--line-soft)] flex-wrap">
                                   {/* Nhãn trạng thái */}
                                   <div className="text-left md:text-right">
                                     <span
@@ -1080,6 +1139,28 @@ export default function DoanXePage() {
                                       {isDaDen ? "ĐÃ LÊN XE" : "CHƯA ĐÓN"}
                                     </span>
                                   </div>
+
+                                  {/* Nút Xếp xe nếu chưa có điểm đón hoặc nút sửa nếu đã có */}
+                                  {!p.diemDon || p.diemDon === "Chưa xác định điểm đón" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenAssignModal(p)}
+                                      className="px-2.5 py-1.5 rounded-xl text-[11.5px] font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all cursor-pointer flex items-center gap-1 shadow-2xs shrink-0 active:scale-95"
+                                      title="Xếp điểm đón và giờ xe đón cho bệnh nhân này"
+                                    >
+                                      <Bus className="w-3.5 h-3.5" />
+                                      <span>Xếp xe</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenAssignModal(p)}
+                                      className="p-1.5 rounded-lg border border-[var(--line)] text-slate-400 hover:text-[var(--navy)] hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                                      title="Đổi điểm đón / giờ xe đón"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
 
                                   {/* Nút bấm Đón lên xe / Hủy đón */}
                                   <button
@@ -1397,6 +1478,78 @@ export default function DoanXePage() {
             );
           })}
         </div>
+      </Modal>
+
+      {/* Modal Xếp xe / Đổi điểm đón */}
+      <Modal
+        open={Boolean(editingBusPatient)}
+        onClose={() => setEditingBusPatient(null)}
+        title={
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#031da6] text-white flex items-center justify-center">
+              <Bus className="w-4 h-4 text-teal-300" />
+            </div>
+            <span className="text-[15px] font-bold">Xếp xe đón bệnh nhân</span>
+          </div>
+        }
+        subtitle={
+          editingBusPatient
+            ? `#${editingBusPatient.stt || ""} ${editingBusPatient.hoTen} • Tuyến xã: ${editingBusPatient.buoiKham?.xa || "Chưa có"}`
+            : ""
+        }
+        maxWidth="max-w-[500px]"
+      >
+        {editingBusPatient && (
+          <div className="space-y-4">
+            <div>
+              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+                Ngày hẹn điều trị tại BV
+              </label>
+              <input
+                type="date"
+                value={busFormDate}
+                onChange={(e) => setBusFormDate(e.target.value)}
+                className="w-full h-10 px-3 text-[13px] border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6]"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+                Đoàn xe đón (Điểm đón & Giờ xe đón)
+              </label>
+              <DoanXeAutocomplete
+                diemDon={busFormDiem}
+                gioDon={busFormGio}
+                ngayHen={busFormDate}
+                buoiKhamXa={editingBusPatient.buoiKham?.xa || ""}
+                onSelect={(val) => {
+                  setBusFormDiem(val.diemDon);
+                  setBusFormGio(val.gioDon);
+                  if (val.ngayHen) setBusFormDate(val.ngayHen);
+                }}
+              />
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setEditingBusPatient(null)}
+                className="px-4 py-2 text-[12.5px] font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                disabled={savingBus}
+                onClick={handleSaveBusAssignment}
+                className="px-4 py-2 text-[12.5px] font-bold bg-[#031da6] hover:bg-[#020f5c] text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                {savingBus && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Lưu thông tin đón</span>
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

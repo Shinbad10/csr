@@ -354,6 +354,8 @@ function DataTableRowInternal<TData>({
         const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left';
         const isLast = cell.column.id === lastColumnId;
         const isFlex = isFlexColumn(cell.column);
+        const isActions = cell.column.id === 'actions';
+        const noTruncate = isActions || (cell.column.columnDef.meta as { noTruncate?: boolean })?.noTruncate;
         return (
           <td
             key={cell.id}
@@ -363,12 +365,13 @@ function DataTableRowInternal<TData>({
             }}
             className={cn(
               dense ? 'px-3 py-2' : 'px-3 py-3',
-              'text-[13px] text-[var(--ink-soft)] font-medium align-middle border-r border-transparent transition-colors overflow-hidden',
+              'text-[13px] text-[var(--ink-soft)] font-medium align-middle border-r border-transparent transition-colors',
+              !noTruncate && 'overflow-hidden',
               'group-hover:border-[var(--line-soft)]',
               isLast && 'group-hover:border-r-0',
             )}
           >
-            <div className="truncate">{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
+            <div className={cn(!noTruncate && 'truncate')}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>
           </td>
         );
       })}

@@ -24,11 +24,15 @@ import {
   CalendarHeart,
   PhoneCall,
   Sparkles,
+  RefreshCw,
+  UserX,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { STATUS, statusOf, fmtDate } from "@/lib/csr";
 import { Donut, BarChart, CHART_COLORS, type Slice } from "@/components/charts";
+import DateRangeFilter, { resolvePreset, type DateRange } from "@/components/csr/DateRangeFilter";
 import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
+import AnimatedNumber from "@/components/csr/AnimatedNumber";
 
 interface StatsData {
   tong: number;
@@ -37,15 +41,17 @@ interface StatsData {
   nhomA: number;
   nhomB: number;
   daMo: number;
+  daDen: number;
+  denKhongMo: number;
   chuyenDoiMoPct: number;
   coBhytCount: number;
   bhytPct: number;
   sheetUrl: string | null;
   coSoName: string;
-  funnel: Array<{ stage: string; count: number; pct: number }>;
+  funnel: Array<{ key?: string; stage: string; count: number; pct: number }>;
   diseases: Array<{ label: string; value: number; color: string }>;
   demographics: {
-    age: Array<{ label: string; value: number; color: string }>;
+    age: Array<{ key?: string; label: string; value: number; color: string }>;
     gender: Array<{ label: string; value: number; color: string }>;
     bhyt: Array<{ label: string; value: number; color: string }>;
   };
@@ -59,6 +65,7 @@ interface StatsData {
     nhomA: number;
     nhomB: number;
     daMo: number;
+    denKhongMo: number;
   }>;
   topDoctors: Array<{ name: string; total: number; nhomA: number; daMo: number }>;
   topCounselors: Array<{ name: string; total: number; chotMo: number; daMo: number }>;
@@ -74,7 +81,8 @@ export default function BaoCaoPage() {
   const [exporting, setExporting] = useState(false);
   const [exportingSessionId, setExportingSessionId] = useState<string | null>(null);
 
-  const [dateFilter, setDateFilter] = useState<"all" | "30days" | "90days" | "year">("all");
+  // Mặc định lọc theo Tháng này — đổi nhanh sang Ngày / Tuần / Quý / Năm ở bộ lọc (giống Bảng điều khiển).
+  const [range, setRange] = useState<DateRange>(() => resolvePreset("thisMonth"));
 
   // State cho Modal chi tiết khi nhấp vào từng mục trên Dashboard
   const [detailTarget, setDetailTarget] = useState<ReportModalTarget | null>(null);
@@ -88,20 +96,11 @@ export default function BaoCaoPage() {
   const loadStats = useCallback(async () => {
     setLoading(true);
     try {
-      let url = "/api/csr/reports";
-      const now = new Date();
-      if (dateFilter === "30days") {
-        const d = new Date();
-        d.setDate(d.getDate() - 30);
-        url += `?from=${d.toISOString().slice(0, 10)}`;
-      } else if (dateFilter === "90days") {
-        const d = new Date();
-        d.setDate(d.getDate() - 90);
-        url += `?from=${d.toISOString().slice(0, 10)}`;
-      } else if (dateFilter === "year") {
-        url += `?from=${now.getFullYear()}-01-01`;
-      }
-      const res = await fetch(url);
+      const sp = new URLSearchParams();
+      if (range.from) sp.set("from", range.from);
+      if (range.to) sp.set("to", range.to);
+      const qs = sp.toString();
+      const res = await fetch(`/api/csr/reports${qs ? `?${qs}` : ""}`);
       if (res.ok) {
         setStats(await res.json());
       }
@@ -110,7 +109,7 @@ export default function BaoCaoPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, addToast]);
+  }, [range.from, range.to, addToast]);
 
   useEffect(() => {
     loadStats();
@@ -123,9 +122,12 @@ export default function BaoCaoPage() {
       setExporting(true);
     }
     try {
-      const url = buoiKhamId
-        ? `/api/csr/export?buoiKhamId=${buoiKhamId}&format=${format}`
-        : `/api/csr/export?format=${format}`;
+      const sp = new URLSearchParams();
+      if (buoiKhamId) sp.set("buoiKhamId", buoiKhamId);
+      sp.set("format", format);
+      if (range.from) sp.set("from", range.from);
+      if (range.to) sp.set("to", range.to);
+      const url = `/api/csr/export?${sp.toString()}`;
       const res = await fetch(url);
       if (!res.ok) {
         addToast({ type: "error", message: "Không thể xuất file (cần quyền HCNS/Kế toán/Quản lý)" });
@@ -170,8 +172,8 @@ function BaoCaoSkeleton() {
         <div className="h-10 bg-slate-100 rounded-xl w-64" />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5">
+        {Array.from({ length: 7 }).map((_, i) => (
           <div key={i} className="card p-4 space-y-3 bg-white border border-[var(--line)]">
             <div className="flex items-center justify-between">
               <div className="h-3.5 bg-slate-200 rounded w-2/3" />
@@ -222,41 +224,17 @@ function BaoCaoSkeleton() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Bộ lọc thời gian */}
-          <div className="flex items-center bg-[var(--surface-soft)] p-1 rounded-xl border border-[var(--line-soft)] text-xs font-semibold text-[var(--ink-soft)]">
-            <button
-              onClick={() => setDateFilter("all")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                dateFilter === "all" ? "bg-white text-[var(--navy)] font-bold shadow-xs" : "hover:text-[var(--ink)]"
-              }`}
-            >
-              Toàn thời gian
-            </button>
-            <button
-              onClick={() => setDateFilter("30days")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                dateFilter === "30days" ? "bg-white text-[var(--navy)] font-bold shadow-xs" : "hover:text-[var(--ink)]"
-              }`}
-            >
-              30 ngày qua
-            </button>
-            <button
-              onClick={() => setDateFilter("90days")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                dateFilter === "90days" ? "bg-white text-[var(--navy)] font-bold shadow-xs" : "hover:text-[var(--ink)]"
-              }`}
-            >
-              90 ngày qua
-            </button>
-            <button
-              onClick={() => setDateFilter("year")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                dateFilter === "year" ? "bg-white text-[var(--navy)] font-bold shadow-xs" : "hover:text-[var(--ink)]"
-              }`}
-            >
-              Năm nay
-            </button>
-          </div>
+          {/* Bộ lọc thời gian giống bên Bảng điều khiển */}
+          <DateRangeFilter value={range} onChange={setRange} className="w-full sm:w-auto" />
+          <button
+            type="button"
+            onClick={() => loadStats()}
+            title="Làm mới dữ liệu"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] bg-white px-3 text-xs font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)] transition-colors shadow-xs cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[var(--navy)]" : ""}`} />
+            Làm mới
+          </button>
 
           {/* Nút Google Sheet */}
           {stats?.sheetUrl && (
@@ -285,7 +263,7 @@ function BaoCaoSkeleton() {
       {stats ? (
         <>
           {/* Hàng thẻ KPI chỉ số chính - Nhấp vào từng thẻ để xem chi tiết */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5">
             {/* Tổng tiếp nhận */}
             <div
               onClick={() =>
@@ -308,7 +286,7 @@ function BaoCaoSkeleton() {
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-[var(--ink)] mt-2 leading-none">
-                {stats.tong.toLocaleString("vi-VN")}
+                <AnimatedNumber value={stats.tong} />
               </div>
               <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
                 <div>
@@ -342,13 +320,13 @@ function BaoCaoSkeleton() {
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-[var(--ink)] mt-2 leading-none">
-                {stats.soBuoi.toLocaleString("vi-VN")}
+                <AnimatedNumber value={stats.soBuoi} />
               </div>
               <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
                 <div>
                   TB{" "}
                   <span className="font-semibold text-[var(--ink)]">
-                    {stats.soBuoi > 0 ? Math.round(stats.tong / stats.soBuoi) : 0}
+                    <AnimatedNumber value={stats.soBuoi > 0 ? Math.round(stats.tong / stats.soBuoi) : 0} />
                   </span>{" "}
                   BN/đợt
                 </div>
@@ -380,13 +358,13 @@ function BaoCaoSkeleton() {
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-emerald-700 mt-2 leading-none">
-                {stats.nhomA.toLocaleString("vi-VN")}
+                <AnimatedNumber value={stats.nhomA} />
               </div>
               <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
                 <div>
                   Tỷ lệ{" "}
                   <span className="font-bold text-emerald-600">
-                    {stats.tong > 0 ? ((stats.nhomA / stats.tong) * 100).toFixed(1) : 0}%
+                    <AnimatedNumber value={stats.tong > 0 ? (stats.nhomA / stats.tong) * 100 : 0} decimals={1} suffix="%" />
                   </span>{" "}
                   <span className="text-[var(--mute)]">tiếp nhận khám</span>
                 </div>
@@ -418,13 +396,13 @@ function BaoCaoSkeleton() {
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-amber-700 mt-2 leading-none">
-                {stats.nhomB.toLocaleString("vi-VN")}
+                <AnimatedNumber value={stats.nhomB} />
               </div>
               <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
                 <div>
                   Tỷ lệ{" "}
                   <span className="font-bold text-amber-600">
-                    {stats.tong > 0 ? ((stats.nhomB / stats.tong) * 100).toFixed(1) : 0}%
+                    <AnimatedNumber value={stats.tong > 0 ? (stats.nhomB / stats.tong) * 100 : 0} decimals={1} suffix="%" />
                   </span>{" "}
                   <span className="text-[var(--mute)]">tiếp nhận khám</span>
                 </div>
@@ -456,14 +434,58 @@ function BaoCaoSkeleton() {
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-[var(--teal-deep)] mt-2 leading-none">
-                {stats.daMo.toLocaleString("vi-VN")}
+                <AnimatedNumber value={stats.daMo} />
               </div>
               <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
                 <div>
                   Chuyển đổi{" "}
-                  <span className="font-bold text-[var(--teal-deep)]">{stats.chuyenDoiMoPct}%</span>
+                  <span className="font-bold text-[var(--teal-deep)]">
+                    <AnimatedNumber value={stats.chuyenDoiMoPct} suffix="%" />
+                  </span>
                 </div>
                 <span className="text-[10px] text-[var(--teal-deep)] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                  Xem ➔
+                </span>
+              </div>
+            </div>
+
+            {/* Đến viện không mổ */}
+            <div
+              onClick={() =>
+                openDetail({
+                  type: "kpi_denKhongMo",
+                  title: "Danh sách Bệnh nhân Có đến nhưng không mổ",
+                  subtitle: "Bệnh nhân đã đón hoặc đến bệnh viện nhưng chưa/không thực hiện phẫu thuật",
+                  icon: UserX,
+                })
+              }
+              className="card p-4 hover:border-amber-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-br from-white to-amber-50/30 cursor-pointer group"
+              title="Nhấp để xem danh sách bệnh nhân có đến nhưng không mổ"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11.5px] font-semibold text-amber-800 group-hover:text-amber-900 transition-colors">
+                  Đến viện không mổ
+                </span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-100 text-amber-700 group-hover:scale-110 transition-transform">
+                  <UserX className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="font-mono text-2xl font-extrabold text-amber-700 mt-2 leading-none">
+                <AnimatedNumber value={stats.denKhongMo} />
+              </div>
+              <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
+                <div>
+                  Tỷ lệ{" "}
+                  <span className="font-bold text-amber-700">
+                    <AnimatedNumber
+                      value={stats.daDen > 0 ? (stats.denKhongMo / stats.daDen) * 100 : 0}
+                      decimals={1}
+                      suffix="%"
+                    />
+                  </span>{" "}
+                  ca đến
+                </div>
+                <span className="text-[10px] text-amber-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                   Xem ➔
                 </span>
               </div>
@@ -491,11 +513,14 @@ function BaoCaoSkeleton() {
                 </div>
               </div>
               <div className="font-mono text-2xl font-extrabold text-indigo-700 mt-2 leading-none">
-                {stats.bhytPct}%
+                <AnimatedNumber value={stats.bhytPct} suffix="%" />
               </div>
               <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-indigo-600">{stats.coBhytCount.toLocaleString("vi-VN")}</span> BN có thẻ
+                  <span className="font-bold text-indigo-600">
+                    <AnimatedNumber value={stats.coBhytCount} />
+                  </span>{" "}
+                  BN có thẻ
                 </div>
                 <span className="text-[10px] text-indigo-700 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                   Xem ➔
@@ -517,29 +542,45 @@ function BaoCaoSkeleton() {
                     Hiệu quả từng bước trong quy trình CSR (Bấm vào từng bước để xem chi tiết)
                   </p>
                 </div>
-                <span className="text-xs font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-1 rounded-full border border-[var(--teal)]/30">
-                  Tỷ lệ mổ: {stats.chuyenDoiMoPct}%
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openDetail({
+                        type: "kpi_denKhongMo",
+                        title: "Danh sách Bệnh nhân Có đến nhưng không mổ",
+                        subtitle: "Bệnh nhân đã đón hoặc đến bệnh viện nhưng chưa/không thực hiện phẫu thuật",
+                        icon: UserX,
+                      })
+                    }
+                    className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                    title="Nhấp để xem danh sách chi tiết bệnh nhân có đến nhưng không mổ"
+                  >
+                    <UserX className="w-3.5 h-3.5 text-amber-600" />
+                    Đến không mổ: <AnimatedNumber value={stats.denKhongMo} />
+                  </button>
+                  <span className="text-xs font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-1 rounded-full border border-[var(--teal)]/30">
+                    Tỷ lệ mổ: <AnimatedNumber value={stats.chuyenDoiMoPct} suffix="%" />
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2 pt-1">
                 {stats.funnel.map((item, idx) => {
                   const colors = [
                     "from-blue-600 to-indigo-600",
-                    "from-sky-500 to-cyan-500",
                     "from-emerald-500 to-teal-500",
                     "from-amber-500 to-orange-500",
                     "from-teal-600 to-emerald-600",
                   ];
                   const funnelTypes = [
                     "funnel_tiepNhan",
-                    "funnel_daKham",
                     "funnel_chiDinhMo",
                     "funnel_chotMo",
                     "funnel_daMo",
                   ];
-                  const funnelIcons = [Users, Eye, HeartHandshake, UserCheck, CheckCircle2];
-                  const targetType = funnelTypes[idx] || "kpi_tong";
+                  const funnelIcons = [Users, HeartHandshake, UserCheck, CheckCircle2];
+                  const targetType = item.key || funnelTypes[idx] || "kpi_tong";
                   const TargetIcon = funnelIcons[idx] || Users;
 
                   return (
@@ -565,9 +606,9 @@ function BaoCaoSkeleton() {
                         </span>
                         <div className="flex items-center gap-2 font-mono">
                           <span className="font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
-                            {item.count.toLocaleString("vi-VN")}
+                            <AnimatedNumber value={item.count} />
                           </span>
-                          <span className="text-[var(--mute)] text-[11px]">({item.pct}%)</span>
+                          <span className="text-[var(--mute)] text-[11px]">(<AnimatedNumber value={item.pct} suffix="%" />)</span>
                           <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--navy)] group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
@@ -624,11 +665,12 @@ function BaoCaoSkeleton() {
             <div className="card p-5">
               <h3 className="font-serif text-sm font-bold text-[var(--ink)] mb-1">Nhóm tuổi</h3>
               <p className="text-[11px] text-[var(--mute)] mb-3">
-                Tỷ lệ người cao tuổi trong cộng đồng tiếp nhận khám (Bấm để xem danh sách)
+                Phân bố theo các nhóm tuổi tiếp nhận khám (Bấm để xem danh sách)
               </p>
               <div className="space-y-1.5">
                 {stats.demographics.age.map((a, idx) => {
-                  const ageKeys = ["u18", "18to40", "41to60", "over60"];
+                  const ageKeys = ["u6", "6to18", "18to55", "55to60", "over60"];
+                  const ageKey = a.key || ageKeys[idx] || "all";
                   const pct = stats.tong > 0 ? Math.round((a.value / stats.tong) * 100) : 0;
                   return (
                     <div
@@ -636,7 +678,7 @@ function BaoCaoSkeleton() {
                       onClick={() =>
                         openDetail({
                           type: "age",
-                          val: ageKeys[idx] || "all",
+                          val: ageKey,
                           title: `Độ tuổi: ${a.label}`,
                           subtitle: `Danh sách bệnh nhân tiếp nhận khám nhóm tuổi ${a.label}`,
                           icon: Users,
@@ -650,7 +692,7 @@ function BaoCaoSkeleton() {
                           {a.label}
                         </span>
                         <span className="font-mono font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
-                          {a.value.toLocaleString("vi-VN")} người khám ({pct}%)
+                          <AnimatedNumber value={a.value} /> người khám (<AnimatedNumber value={pct} suffix="%" />)
                         </span>
                       </div>
                       <div className="w-full h-2 bg-[var(--surface-soft)] rounded-full overflow-hidden">
@@ -693,13 +735,13 @@ function BaoCaoSkeleton() {
                         className="w-16 h-16 rounded-full flex items-center justify-center font-mono font-bold text-base text-white mx-auto shadow-xs group-hover:shadow-md transition-shadow"
                         style={{ background: g.color }}
                       >
-                        {pct}%
+                        <AnimatedNumber value={pct} suffix="%" />
                       </div>
                       <div className="text-xs font-bold text-[var(--ink)] mt-2 group-hover:text-[var(--navy)]">
                         {g.label}
                       </div>
                       <div className="font-mono text-[11px] text-[var(--mute)]">
-                        {g.value.toLocaleString("vi-VN")} BN
+                        <AnimatedNumber value={g.value} /> BN
                       </div>
                     </div>
                   );
@@ -737,7 +779,7 @@ function BaoCaoSkeleton() {
                           {b.label}
                         </span>
                         <span className="font-mono font-bold text-[var(--ink)] group-hover:text-indigo-700">
-                          {b.value.toLocaleString("vi-VN")} ({pct}%)
+                          <AnimatedNumber value={b.value} /> (<AnimatedNumber value={pct} suffix="%" />)
                         </span>
                       </div>
                       <div className="w-full h-2 bg-[var(--surface-soft)] rounded-full overflow-hidden">
@@ -777,6 +819,7 @@ function BaoCaoSkeleton() {
                     <th className="py-3 px-3 text-right">Tiếp nhận</th>
                     <th className="py-3 px-3 text-right text-emerald-700">Nhóm A</th>
                     <th className="py-3 px-3 text-right text-amber-700">Nhóm B</th>
+                    <th className="py-3 px-3 text-right text-amber-600">Đến chưa mổ</th>
                     <th className="py-3 px-3 text-right text-[var(--teal-deep)]">Đã mổ</th>
                     <th className="py-3 px-3 text-right">Tỷ lệ mổ</th>
                     <th className="py-3 px-4 text-center">Thao tác</th>
@@ -785,7 +828,7 @@ function BaoCaoSkeleton() {
                 <tbody className="divide-y divide-[var(--line-soft)]">
                   {stats.sessions.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-10 text-center text-xs text-[var(--mute)]">
+                      <td colSpan={11} className="py-10 text-center text-xs text-[var(--mute)]">
                         Không có dữ liệu đợt khám.
                       </td>
                     </tr>
@@ -824,6 +867,29 @@ function BaoCaoSkeleton() {
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-bold text-amber-700">
                             {s.nhomB.toLocaleString("vi-VN")}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-bold text-amber-600">
+                            {s.denKhongMo > 0 ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDetail({
+                                    type: "session_denKhongMo",
+                                    val: s.id,
+                                    title: `Đợt khám: ${s.xa || s.diaDiem} — Đến chưa mổ`,
+                                    subtitle: `Bệnh nhân đã đến viện nhưng chưa/không mổ (${s.denKhongMo} ca)`,
+                                    icon: UserX,
+                                  });
+                                }}
+                                title="Bấm để xem danh sách bệnh nhân có đến nhưng không mổ"
+                                className="underline decoration-dotted underline-offset-2 hover:text-amber-800 transition-colors cursor-pointer font-bold"
+                              >
+                                {s.denKhongMo.toLocaleString("vi-VN")}
+                              </button>
+                            ) : (
+                              <span className="text-slate-300 font-normal">—</span>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-extrabold text-[var(--teal-deep)]">
                             {s.daMo.toLocaleString("vi-VN")}
@@ -909,10 +975,10 @@ function BaoCaoSkeleton() {
                       </div>
                       <div className="flex items-center gap-4 font-mono shrink-0">
                         <span className="text-[var(--mute)]">
-                          Khám: <b className="text-[var(--ink)]">{doc.total}</b>
+                          Khám: <b className="text-[var(--ink)]"><AnimatedNumber value={doc.total} /></b>
                         </span>
-                        <span className="text-emerald-700 font-bold">Chỉ định: {doc.nhomA}</span>
-                        <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: {doc.daMo}</span>
+                        <span className="text-emerald-700 font-bold">Chỉ định: <AnimatedNumber value={doc.nhomA} /></span>
+                        <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: <AnimatedNumber value={doc.daMo} /></span>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--navy)] group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
@@ -961,10 +1027,10 @@ function BaoCaoSkeleton() {
                       </div>
                       <div className="flex items-center gap-4 font-mono shrink-0">
                         <span className="text-[var(--mute)]">
-                          Tổng ca: <b className="text-[var(--ink)]">{c.total}</b>
+                          Tổng ca: <b className="text-[var(--ink)]"><AnimatedNumber value={c.total} /></b>
                         </span>
-                        <span className="text-emerald-700 font-bold">Chốt mổ: {c.chotMo}</span>
-                        <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: {c.daMo}</span>
+                        <span className="text-emerald-700 font-bold">Chốt mổ: <AnimatedNumber value={c.chotMo} /></span>
+                        <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: <AnimatedNumber value={c.daMo} /></span>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
@@ -985,7 +1051,9 @@ function BaoCaoSkeleton() {
             setDetailTarget(null);
           }}
           target={detailTarget}
-          dateFilter={dateFilter}
+          dateFilter="all"
+          from={range.from}
+          to={range.to}
           coSoName={stats?.coSoName}
           sessions={stats?.sessions}
           onExportSessionExcel={(sessionId) => exportExcel(sessionId)}

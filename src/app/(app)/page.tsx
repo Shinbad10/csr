@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Hourglass,
   Eye,
+  UserX,
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -32,6 +33,7 @@ import { useCurrentFacility } from "@/lib/useFacility";
 import { DataView, DataTable, DataPagination } from "@/components/data";
 import DateRangeFilter, { resolvePreset, type DateRange } from "@/components/csr/DateRangeFilter";
 import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
+import AnimatedNumber from "@/components/csr/AnimatedNumber";
 
 interface SessionRow {
   id: string;
@@ -43,6 +45,7 @@ interface SessionRow {
   nhomA: number;
   nhomB: number;
   daMo: number;
+  denKhongMo?: number;
   /** Số ca mổ Phaco 2 lần (Mắt 2) — lấy từ HIS. */
   phaco2Lan: number;
 }
@@ -54,6 +57,8 @@ interface Stats {
   nhomA: number;
   nhomB: number;
   daMo: number;
+  daDen?: number;
+  denKhongMo?: number;
   phaco2Lan?: number;
   sessions?: SessionRow[];
 }
@@ -99,7 +104,7 @@ function KpiCard({
         <span className="truncate text-[12.5px] font-semibold text-[var(--ink)]">{label}</span>
       </div>
       <div className="mt-2 font-mono text-[26px] font-bold leading-none tracking-tight text-[var(--ink)]">
-        {fN(value)}
+        <AnimatedNumber value={value} />
       </div>
       <span
         className={`mt-2 inline-flex items-center gap-1 text-[10.5px] font-medium opacity-80 transition-opacity group-hover:opacity-100 ${t.fg}`}
@@ -116,6 +121,7 @@ const SESSION_KIND = {
   all: { type: "session", label: "Toàn bộ bệnh nhân của đợt khám", icon: Users },
   nhomA: { type: "session_nhomA", label: "Nhóm A · Chỉ định mổ", icon: HeartHandshake },
   nhomB: { type: "session_nhomB", label: "Nhóm B · Theo dõi", icon: PhoneCall },
+  denKhongMo: { type: "session_denKhongMo", label: "Có đến nhưng không mổ", icon: UserX },
   daMo: { type: "session_daMo", label: "Đã phẫu thuật", icon: CheckCircle2 },
   phaco2: { type: "session_phaco2", label: "Mổ Phaco 2 lần (Mắt 2)", icon: Eye },
 } satisfies Record<string, { type: string; label: string; icon: LucideIcon }>;
@@ -175,8 +181,8 @@ function Legend({ tone, label, value, pct }: { tone: ToneKey; label: string; val
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <span className={`h-2 w-2 shrink-0 rounded-full ${t.dot}`} />
       <span className="text-[var(--ink-soft)]">{label}:</span>
-      <span className={`font-mono font-bold ${t.fg}`}>{fN(value)}</span>
-      <span className="font-mono text-[var(--mute)]">({fPct(pct)})</span>
+      <span className={`font-mono font-bold ${t.fg}`}><AnimatedNumber value={value} /></span>
+      <span className="font-mono text-[var(--mute)]">(<AnimatedNumber value={pct} decimals={1} suffix="%" />)</span>
     </span>
   );
 }
@@ -348,6 +354,21 @@ export default function Dashboard() {
         ),
       },
       {
+        id: "denKhongMo",
+        accessorKey: "denKhongMo",
+        header: "Đến chưa mổ",
+        size: 96,
+        meta: { align: "right" },
+        cell: ({ row }) => (
+          <NumCell
+            value={row.original.denKhongMo ?? 0}
+            color="text-amber-600"
+            title="Xem bệnh nhân có đến viện nhưng chưa/không mổ của đợt này"
+            onClick={() => openSessionDetail(row.original, "denKhongMo")}
+          />
+        ),
+      },
+      {
         id: "daMo",
         accessorKey: "daMo",
         header: "Đã mổ",
@@ -473,12 +494,30 @@ export default function Dashboard() {
               <PieChart className="h-4 w-4 text-[var(--navy)]" />
               Tiến độ phân loại &amp; điều trị
             </span>
-            <span className="font-mono text-[11.5px] text-[var(--ink-soft)]">
-              Đã phân loại: <b className="text-[var(--ink)]">{fPct(tyLePhanLoai)}</b> / 100%
+            <span className="font-mono text-[11.5px] text-[var(--ink-soft)] flex items-center gap-1.5 flex-wrap">
+              <span>Đã phân loại: <b className="text-[var(--ink)]">{fPct(tyLePhanLoai)}</b> / 100%</span>
               {chuaPhanLoai > 0 && (
-                <span className="ml-2 rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-bold text-rose-600">
+                <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-bold text-rose-600">
                   Còn {fN(chuaPhanLoai)} ca chưa phân loại
                 </span>
+              )}
+              {Number(stats?.denKhongMo) > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    openDetail({
+                      type: "kpi_denKhongMo",
+                      title: "Danh sách Bệnh nhân Có đến nhưng không mổ",
+                      subtitle: "Bệnh nhân đã đón hoặc đến bệnh viện nhưng chưa/không thực hiện phẫu thuật",
+                      icon: UserX,
+                    })
+                  }
+                  className="rounded bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200 transition-colors cursor-pointer flex items-center gap-1"
+                  title="Xem danh sách bệnh nhân có đến nhưng không mổ"
+                >
+                  <UserX className="w-3 h-3 text-amber-600" />
+                  Đến chưa mổ: <b>{fN(Number(stats?.denKhongMo))}</b>
+                </button>
               )}
             </span>
           </div>

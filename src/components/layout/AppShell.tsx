@@ -5,7 +5,21 @@ import { usePathname } from "next/navigation";
 import Topbar from "./Topbar";
 import TopPageProgress from "./TopPageProgress";
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+interface AppShellProps {
+  children: React.ReactNode;
+  initialUser?: {
+    id?: string;
+    name?: string;
+    role?: string;
+    coSoId?: string | null;
+  };
+  initialCoSo?: {
+    id?: string;
+    name?: string;
+  };
+}
+
+export default function AppShell({ children, initialUser, initialCoSo }: AppShellProps) {
   const pathname = usePathname();
   const isFullBleed = pathname.startsWith("/kham/") || pathname.startsWith("/tu-van") || pathname.startsWith("/theo-doi") || pathname === "/buoi-kham";
 
@@ -16,7 +30,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <TopPageProgress />
       </Suspense>
-      <Topbar />
+      <Topbar initialUser={initialUser} initialCoSo={initialCoSo} />
       <main className={`flex-1 relative min-w-0 ${isFullBleed ? `flex flex-col min-h-0 overflow-hidden ${pathname === "/buoi-kham" ? "px-2.5 sm:px-6 py-2 sm:py-4 pb-[calc(env(safe-area-inset-bottom,0px)+0.5rem)]" : ""}` : "overflow-y-auto px-3 sm:px-6 py-3.5 sm:py-6 pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]"}`}>
         <div className={`w-full ${isFullBleed ? "h-full flex flex-col min-h-0" : ""}`}>
           {children}

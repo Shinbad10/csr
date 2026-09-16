@@ -47,6 +47,8 @@ const TRUONG_TUY_CHON = [
   "trangThaiDieuTri",
   "followUpStatus",
   "ghiChuMat2",
+  "diemDon",
+  "gioDon",
 ] as const;
 const TRUONG_BAT_BUOC = ["hoTen", "gioiTinh"] as const;
 
@@ -73,6 +75,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const v = String(body[f] ?? "").trim();
       if (!v) return NextResponse.json({ error: `Trường ${f} không được để trống` }, { status: 400 });
       update[f] = f === "hoTen" ? v.toUpperCase() : v;
+    }
+
+    if (body.ngayDieuTri !== undefined) {
+      const d = body.ngayDieuTri ? new Date(body.ngayDieuTri) : null;
+      update.ngayDieuTri = d && !Number.isNaN(d.getTime()) ? d : null;
     }
 
     if (body.ngaySinh !== undefined) {

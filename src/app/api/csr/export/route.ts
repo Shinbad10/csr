@@ -18,6 +18,8 @@ export async function GET(request: Request) {
   const buoiKhamId = sp.get("buoiKhamId") || undefined;
   const trangThai = sp.get("trangThai") || undefined;
   const format = sp.get("format") || "default";
+  const fromDate = sp.get("from") || undefined;
+  const toDate = sp.get("to") || undefined;
 
   try {
     let buoiKhamInfo: { xa?: string; diaDiem?: string; ngayKham?: Date } | null = null;
@@ -28,8 +30,23 @@ export async function GET(request: Request) {
       });
     }
 
+    const ngayKhamRange =
+      fromDate || toDate
+        ? {
+            ...(fromDate ? { gte: new Date(fromDate) } : {}),
+            ...(toDate ? { lte: new Date(`${toDate}T23:59:59.999Z`) } : {}),
+          }
+        : null;
+
     const rows = await getPrisma().hoSoBenhNhan.findMany({
-      where: { AND: [coSoId ? { coSoId } : {}, buoiKhamId ? { buoiKhamId } : {}, trangThai ? { trangThai } : {}] },
+      where: {
+        AND: [
+          coSoId ? { coSoId } : {},
+          buoiKhamId ? { buoiKhamId } : {},
+          trangThai ? { trangThai } : {},
+          ngayKhamRange ? { buoiKham: { ngayKham: ngayKhamRange } } : {},
+        ],
+      },
       include: { buoiKham: true, tuVanVien: { select: { hoTen: true } } },
       orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }],
     });

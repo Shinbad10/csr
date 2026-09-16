@@ -17,32 +17,59 @@ export async function getActiveFacilities() {
   }
 }
 
-export async function setSelectedFacilityCookie(coSoId: string) {
+export async function setSelectedFacilityCookie(coSoId: string, facilityName?: string) {
   const cookieStore = await cookies();
-  cookieStore.set("selected_coso_id", coSoId, { path: "/", maxAge: 8 * 60 * 60 });
+  cookieStore.set("selected_coso_id", coSoId, { path: "/", maxAge: 31536000 });
+  let name = facilityName;
+  if (!name) {
+    try {
+      const coso = await getPrisma().coSo.findUnique({
+        where: { id: coSoId },
+        select: { ten: true },
+      });
+      if (coso) name = coso.ten;
+    } catch {}
+  }
+  if (name) {
+    cookieStore.set("selected_coso_name", encodeURIComponent(name), { path: "/", maxAge: 31536000 });
+  }
 }
 
-export async function getLoginUserFacility(username: string) {
+export async function finalizeLogin(username: string) {
   try {
     const trimmed = username.trim();
+    const cookieStore = await cookies();
+
     if (trimmed === "admin") {
+      cookieStore.set("user_name", encodeURIComponent("Quản trị hệ thống"), { path: "/", maxAge: 31536000 });
+      cookieStore.set("user_role", "Admin", { path: "/", maxAge: 31536000 });
       return { isCorporate: true, defaultCoSoId: null };
     }
     const user = await getPrisma().nguoiDungCSR.findUnique({
       where: { tenDangNhap: trimmed },
-      select: { vaiTro: true, coSoId: true },
+      select: { hoTen: true, vaiTro: true, coSoId: true, coSo: { select: { ten: true } } },
     });
-    if (!user) {
-      return { isCorporate: false, defaultCoSoId: null };
+
+    if (user) {
+      if (user.hoTen) cookieStore.set("user_name", encodeURIComponent(user.hoTen), { path: "/", maxAge: 31536000 });
+      if (user.vaiTro) cookieStore.set("user_role", user.vaiTro, { path: "/", maxAge: 31536000 });
     }
-    const isCorporate = user.vaiTro === "QuanLy" || user.vaiTro === "Admin";
+
+    const isCorporate = user?.vaiTro === "QuanLy" || user?.vaiTro === "Admin";
+    if (!isCorporate && user?.coSoId) {
+      cookieStore.set("selected_coso_id", user.coSoId, { path: "/", maxAge: 31536000 });
+      if (user.coSo?.ten) {
+        cookieStore.set("selected_coso_name", encodeURIComponent(user.coSo.ten), { path: "/", maxAge: 31536000 });
+      }
+    }
     return {
       isCorporate,
-      defaultCoSoId: user.coSoId,
+      defaultCoSoId: user?.coSoId || null,
     };
   } catch (error) {
-    console.error("Failed to get login user facility:", error);
+    console.error("Failed to finalize login:", error);
     return { isCorporate: false, defaultCoSoId: null };
   }
 }
+
 

@@ -11,33 +11,54 @@ import TopbarNav from "@/components/layout/TopbarNav";
 import FacilitySwitcher from "@/components/layout/FacilitySwitcher";
 import { useRealtime } from "@/lib/useRealtime";
 
-export default function Topbar() {
+interface TopbarProps {
+  initialUser?: {
+    id?: string;
+    name?: string;
+    role?: string;
+    coSoId?: string | null;
+  };
+  initialCoSo?: {
+    id?: string;
+    name?: string;
+  };
+}
+
+export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [changePwOpen, setChangePwOpen] = useState(false);
-  const [cachedUser, setCachedUser] = useState<{ name: string; role: string }>({ name: "", role: "" });
+  const [cachedUser, setCachedUser] = useState<{ name: string; role: string }>(() => {
+    if (initialUser?.name || initialUser?.role) {
+      return { name: initialUser.name || "", role: initialUser.role || "" };
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const cn = localStorage.getItem("cached_user_name") || "";
+        const cr = localStorage.getItem("cached_user_role") || "";
+        if (cn || cr) return { name: cn, role: cr };
+      } catch {}
+    }
+    return { name: "", role: "" };
+  });
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    try {
-      const cn = localStorage.getItem("cached_user_name") || "";
-      const cr = localStorage.getItem("cached_user_role") || "";
-      if (cn || cr) setCachedUser({ name: cn, role: cr });
-    } catch {}
-  }, []);
 
   useEffect(() => {
     if (session?.user?.name) {
       try {
         localStorage.setItem("cached_user_name", session.user.name);
-        if (session.user.role) localStorage.setItem("cached_user_role", session.user.role);
+        document.cookie = `user_name=${encodeURIComponent(session.user.name)}; path=/; max-age=31536000`;
+        if (session.user.role) {
+          localStorage.setItem("cached_user_role", session.user.role);
+          document.cookie = `user_role=${encodeURIComponent(session.user.role)}; path=/; max-age=31536000`;
+        }
         setCachedUser({ name: session.user.name, role: session.user.role || "" });
       } catch {}
     }
   }, [session]);
 
-  const displayName = session?.user?.name || cachedUser.name || "Nhân viên";
-  const roleCode = session?.user?.role || cachedUser.role;
+  const displayName = session?.user?.name || initialUser?.name || cachedUser.name || "Nhân viên";
+  const roleCode = session?.user?.role || initialUser?.role || cachedUser.role || "";
   const initial = displayName ? (displayName.trim().split(" ").pop()?.[0]?.toUpperCase() ?? "?") : "NV";
 
   useEffect(() => {
@@ -52,7 +73,7 @@ export default function Topbar() {
     <header className="h-[calc(3.25rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] shrink-0 bg-gradient-to-r from-[#010833] via-[#031da6] to-[#020f5c] text-white shadow-md border-b border-white/10 flex items-center gap-2 sm:gap-3.5 px-3 sm:px-5 min-w-0 z-40 relative">
       {/* Menu chức năng (dropdown theo nhóm) + drawer mobile */}
       <div className="order-1 lg:order-3">
-        <TopbarNav />
+        <TopbarNav initialRole={roleCode} initialCoSo={initialCoSo} />
       </div>
 
       {/* Thương hiệu */}
@@ -83,7 +104,7 @@ export default function Topbar() {
 
       {/* Facility Switcher */}
       <div className="hidden md:block md:w-[260px] max-w-[260px] order-5">
-        <FacilitySwitcher />
+        <FacilitySwitcher initialCoSo={initialCoSo} initialRole={roleCode} />
       </div>
 
       {/* User Profile Chip */}
@@ -93,20 +114,20 @@ export default function Topbar() {
           whileTap={{ scale: 0.97 }}
           suppressHydrationWarning
           onClick={() => setOpen((o) => !o)}
-          className={`flex items-center gap-2 rounded-xl pl-1.5 pr-2.5 py-1 transition-all border cursor-pointer ${
+          className={`h-9 flex items-center gap-2 rounded-xl pl-1.5 pr-2.5 py-1 transition-all border cursor-pointer ${
             open
               ? "bg-white/20 border-white/40 text-white shadow-inner ring-2 ring-white/20"
               : "bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/25"
           }`}
         >
-          <div suppressHydrationWarning className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--teal)] to-[var(--teal-deep)] text-[var(--navy-ink)] font-mono font-black flex items-center justify-center text-[12px] shadow-xs ring-1 ring-white/30">
+          <div suppressHydrationWarning className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--teal)] to-[var(--teal-deep)] text-[var(--navy-ink)] font-mono font-black flex items-center justify-center text-[12px] shadow-xs ring-1 ring-white/30 shrink-0">
             {initial}
           </div>
-          <div className="text-left leading-tight hidden sm:block" suppressHydrationWarning>
-            <div className="text-[12px] font-bold text-white max-w-[140px] truncate" suppressHydrationWarning>{displayName}</div>
-            <div className="text-[9.5px] font-medium text-[var(--teal)] opacity-90">{roleLabel(roleCode)}</div>
+          <div className="text-left leading-tight hidden sm:flex sm:flex-col justify-center min-w-[70px] max-w-[150px]" suppressHydrationWarning>
+            <div className="text-[12px] font-bold text-white truncate" suppressHydrationWarning>{displayName}</div>
+            <div className="text-[9.5px] font-medium text-[var(--teal)] opacity-90 truncate leading-none mt-0.5 min-h-[11px]" suppressHydrationWarning>{roleLabel(roleCode) || "\u00A0"}</div>
           </div>
-          <ChevronDown className={`w-3 h-3 text-white/70 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`} />
+          <ChevronDown className={`w-3 h-3 text-white/70 transition-transform duration-200 shrink-0 ${open ? "rotate-180 text-white" : ""}`} />
         </motion.button>
 
         <AnimatePresence>

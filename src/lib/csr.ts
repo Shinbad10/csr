@@ -28,6 +28,9 @@ export function classifyCSRNhom(h: {
   huongXuTri?: string | null;
   trangThai?: string | null;
   ngayMoThucTe?: Date | string | null;
+  daDon?: boolean | null;
+  ngayDenBV?: Date | string | null;
+  trangThaiDieuTri?: string | null;
 }) {
   const hasPathology =
     Boolean(h.nhom) ||
@@ -43,8 +46,22 @@ export function classifyCSRNhom(h: {
     h.huongXuTri === "Phẫu thuật" ||
     h.huongXuTri === "Điều trị khác";
 
+  const isDaMo = Boolean(h.ngayMoThucTe) || h.trangThaiDieuTri === "Đã mổ" || h.trangThai === "DaMoHauPhau";
+  const isDaDen =
+    Boolean(h.daDon) ||
+    Boolean(h.ngayDenBV) ||
+    h.trangThai === "DaDonVien" ||
+    h.trangThaiDieuTri === "Đã đến trước đây" ||
+    isDaMo;
+  const isDenKhongMo =
+    (Boolean(h.daDon) ||
+      Boolean(h.ngayDenBV) ||
+      h.trangThai === "DaDonVien" ||
+      h.trangThaiDieuTri === "Đã đến trước đây") &&
+    !isDaMo;
+
   if (!hasPathology) {
-    return { hasPathology: false, isNhomA: false, isNhomB: false, isDaMo: Boolean(h.ngayMoThucTe) };
+    return { hasPathology: false, isNhomA: false, isNhomB: false, isDaMo, isDaDen, isDenKhongMo };
   }
 
   const isNhomA =
@@ -56,9 +73,8 @@ export function classifyCSRNhom(h: {
     h.trangThai === "DaMoHauPhau";
 
   const isNhomB = !isNhomA;
-  const isDaMo = Boolean(h.ngayMoThucTe);
 
-  return { hasPathology: true, isNhomA, isNhomB, isDaMo };
+  return { hasPathology: true, isNhomA, isNhomB, isDaMo, isDaDen, isDenKhongMo };
 }
 
 export const parseDiag = (raw: string | null): string[] => {

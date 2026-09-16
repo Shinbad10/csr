@@ -118,7 +118,7 @@ export async function GET(request: Request) {
     }
 
     const filtered = allHoSos.filter((h) => {
-      const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(h);
+      const { isNhomA, isNhomB, isDaMo, isDenKhongMo } = classifyCSRNhom(h);
 
       const hasBhyt = Boolean(h.bhyt && h.bhyt.trim().length >= 8);
 
@@ -130,11 +130,14 @@ export async function GET(request: Request) {
         else if (num > 0) mh = 80;
       }
 
+      let hasAge = false;
       let age = 0;
       if (h.namSinh && h.namSinh > 1900) {
         age = currentYear - h.namSinh;
+        hasAge = true;
       } else if (h.ngaySinh) {
         age = currentYear - new Date(h.ngaySinh).getFullYear();
+        hasAge = true;
       }
 
       const diagStr = [
@@ -244,10 +247,16 @@ export async function GET(request: Request) {
         }
 
         case "age": {
-          if (val === "u18") return age > 0 && age < 18;
+          if (!hasAge) return false;
+          if (val === "u6") return age < 6;
+          if (val === "6to18") return age >= 6 && age < 18;
+          if (val === "18to55") return age >= 18 && age < 55;
+          if (val === "55to60") return age >= 55 && age < 60;
+          if (val === "over60") return age >= 60;
+          // Legacy support
+          if (val === "u18") return age < 18;
           if (val === "18to40") return age >= 18 && age <= 40;
           if (val === "41to60") return age >= 41 && age <= 60;
-          if (val === "over60") return age > 60;
           return true;
         }
 
@@ -290,6 +299,13 @@ export async function GET(request: Request) {
 
         case "session_daMo":
           return h.buoiKhamId === val && isDaMo;
+
+        case "session_denKhongMo":
+          return h.buoiKhamId === val && isDenKhongMo;
+
+        case "kpi_denKhongMo":
+        case "denKhongMo":
+          return isDenKhongMo;
 
         case "session_phaco2":
           return h.buoiKhamId === val && Boolean(phaco2Ids?.has(h.id));

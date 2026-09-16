@@ -103,11 +103,31 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
   );
 }
 
-export default function TopbarNav() {
+interface TopbarNavProps {
+  initialRole?: string;
+  initialCoSo?: {
+    id?: string;
+    name?: string;
+  };
+}
+
+export default function TopbarNav({ initialRole, initialCoSo }: TopbarNavProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [drawer, setDrawer] = useState(false);
-  const role = session?.user?.role || "";
+  const [cachedRole, setCachedRole] = useState<string>(() => {
+    if (initialRole) return initialRole;
+    if (typeof window !== "undefined") {
+      try {
+        const m = document.cookie.split("; ").find((r) => r.startsWith("user_role="));
+        if (m) return m.split("=")[1];
+        return localStorage.getItem("cached_user_role") || "";
+      } catch {}
+    }
+    return "";
+  });
+
+  const role = session?.user?.role || initialRole || cachedRole || "";
   const { hasHisConfig } = useCurrentFacility();
 
   const groups = MENU_GROUPS
@@ -172,7 +192,7 @@ export default function TopbarNav() {
                 <div className="text-[10px] uppercase tracking-[0.12em] font-extrabold text-[var(--mute)] flex items-center gap-1.5 mb-1.5 font-mono">
                   <Building2 className="w-3.5 h-3.5 text-[var(--teal)]" /> Cơ sở làm việc
                 </div>
-                <FacilitySwitcher className="w-full" variant="light" />
+                <FacilitySwitcher className="w-full" variant="light" initialCoSo={initialCoSo} initialRole={role} />
               </div>
 
               <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">

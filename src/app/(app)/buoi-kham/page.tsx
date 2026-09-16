@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -234,32 +235,93 @@ function BuoiKhamRowActions({
   onViewPatients?: (b: BuoiKham) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const isEnded = phaseOf(b.ngayKham).key === "DaKetThuc";
+
+  const updatePosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const menuWidth = 240;
+    const menuHeight = 260;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+
+    let left = rect.right - menuWidth;
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - menuWidth - 8);
+    }
+
+    if (openUp) {
+      setCoords({
+        bottom: Math.round(window.innerHeight - rect.top + 4),
+        left: Math.round(left),
+      });
+    } else {
+      setCoords({
+        top: Math.round(rect.bottom + 4),
+        left: Math.round(left),
+      });
+    }
+  }, []);
+
+  const toggleMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!menuOpen) {
+      updatePosition();
+      setMenuOpen(true);
+    } else {
+      setMenuOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setMenuOpen(false);
+    updatePosition();
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        menuRef.current && !menuRef.current.contains(target) &&
+        buttonRef.current && !buttonRef.current.contains(target)
+      ) {
+        setMenuOpen(false);
+      }
     };
-    const esc = (e: KeyboardEvent) => {
+
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMenuOpen(false);
     };
-    window.addEventListener("mousedown", h);
-    window.addEventListener("keydown", esc);
-    return () => {
-      window.removeEventListener("mousedown", h);
-      window.removeEventListener("keydown", esc);
+
+    const handleScrollOrResize = (e: Event) => {
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
+      setMenuOpen(false);
     };
-  }, [menuOpen]);
+
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [menuOpen, updatePosition]);
 
   return (
-    <div className="flex items-center justify-end gap-1.5" ref={ref}>
+    <div className="flex items-center justify-end gap-1.5">
       {/* Menu thao tác tùy chọn (Xuất Excel, Sửa, Kết thúc đợt) */}
       <div className="relative">
         <button
+          ref={buttonRef}
           type="button"
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={toggleMenu}
           className={`h-7.5 w-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
             menuOpen
               ? "bg-[#031da6] text-white border-[#031da6] shadow-xs"
@@ -274,8 +336,21 @@ function BuoiKhamRowActions({
           )}
         </button>
 
-        {menuOpen && (
-          <div className="absolute right-0 top-full mt-1 z-50 min-w-[230px] bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 animate-dropdown text-[#0f172a]">
+        {menuOpen && coords && typeof document !== "undefined" && createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              top: coords.top !== undefined ? `${coords.top}px` : undefined,
+              bottom: coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
+              left: `${coords.left}px`,
+              width: "240px",
+              maxHeight: "min(320px, calc(100vh - 32px))",
+              zIndex: 99999,
+            }}
+            className="overflow-y-auto bg-white border border-[#cbd5e1] rounded-xl shadow-2xl p-1 animate-dropdown text-[#0f172a]"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Xem danh sách tầm soát (Cho HCNS / Quản trị) */}
             {canViewTamSoat && onViewPatients && (
               <button
@@ -357,7 +432,8 @@ function BuoiKhamRowActions({
                 <span>Chỉnh sửa đợt khám</span>
               </button>
             )}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 

@@ -85,6 +85,9 @@ export async function GET(request: Request) {
           bacSiChiDinh: true,
           nhanVienTuVan: true,
           ngayMoThucTe: true,
+          daDon: true,
+          ngayDenBV: true,
+          trangThaiDieuTri: true,
           buoiKhamId: true,
           buoiKham: {
             select: {
@@ -117,9 +120,10 @@ export async function GET(request: Request) {
     let khacHoacBinhThuong = 0;
 
     // Phân tích nhân khẩu học
-    let ageU18 = 0;
-    let age18to40 = 0;
-    let age41to60 = 0;
+    let ageU6 = 0;
+    let age6to18 = 0;
+    let age18to55 = 0;
+    let age55to60 = 0;
     let ageOver60 = 0;
     let maleCount = 0;
     let femaleCount = 0;
@@ -147,14 +151,25 @@ export async function GET(request: Request) {
         nhomA: number;
         nhomB: number;
         daMo: number;
+        denKhongMo: number;
         phaco2Lan: number;
       }
     > = {};
 
+    let daDenCount = 0;
+    let denKhongMoCount = 0;
+
     const currentYear = new Date().getFullYear();
 
     for (const h of allHoSos) {
-      const { isNhomA, isNhomB, isDaMo } = classifyCSRNhom(h);
+      const { isNhomA, isNhomB, isDaMo, isDaDen, isDenKhongMo } = classifyCSRNhom(h);
+
+      if (isDaDen) {
+        daDenCount++;
+      }
+      if (isDenKhongMo) {
+        denKhongMoCount++;
+      }
 
       if (isNhomA) {
         nhomA++;
@@ -186,16 +201,20 @@ export async function GET(request: Request) {
       else if (gt.includes("nữ") || gt.includes("nu")) femaleCount++;
 
       // Tuổi
+      let hasAge = false;
       let age = 0;
       if (h.namSinh && h.namSinh > 1900) {
         age = currentYear - h.namSinh;
+        hasAge = true;
       } else if (h.ngaySinh) {
         age = currentYear - new Date(h.ngaySinh).getFullYear();
+        hasAge = true;
       }
-      if (age > 0) {
-        if (age < 18) ageU18++;
-        else if (age <= 40) age18to40++;
-        else if (age <= 60) age41to60++;
+      if (hasAge && age >= 0) {
+        if (age < 6) ageU6++;
+        else if (age < 18) age6to18++;
+        else if (age < 55) age18to55++;
+        else if (age < 60) age55to60++;
         else ageOver60++;
       }
 
@@ -257,6 +276,7 @@ export async function GET(request: Request) {
             nhomA: 0,
             nhomB: 0,
             daMo: 0,
+            denKhongMo: 0,
             phaco2Lan: 0,
           };
         }
@@ -264,6 +284,7 @@ export async function GET(request: Request) {
         if (isNhomA) sessionMap[h.buoiKhamId].nhomA++;
         if (isNhomB) sessionMap[h.buoiKhamId].nhomB++;
         if (isDaMo) sessionMap[h.buoiKhamId].daMo++;
+        if (isDenKhongMo) sessionMap[h.buoiKhamId].denKhongMo++;
       }
     }
 
@@ -309,6 +330,8 @@ export async function GET(request: Request) {
       nhomA,
       nhomB,
       daMo,
+      daDen: daDenCount,
+      denKhongMo: denKhongMoCount,
       phaco2Lan: phaco2LanTong,
       chuyenDoiMoPct,
       coBhytCount,
@@ -316,11 +339,10 @@ export async function GET(request: Request) {
       sheetUrl,
       coSoName: coSo?.ten || "Tất cả cơ sở",
       funnel: [
-        { stage: "Tiếp nhận", count: tong, pct: 100 },
-        { stage: "Đã khám mắt", count: daKhamCount, pct: tong > 0 ? Math.round((daKhamCount / tong) * 100) : 0 },
-        { stage: "Nhóm A (Đồng ý phẫu thuật)", count: nhomA, pct: tong > 0 ? Math.round((nhomA / tong) * 100) : 0 },
-        { stage: "Đã chốt mổ / Đón viện", count: daChotTuVanCount, pct: nhomA > 0 ? Math.round((daChotTuVanCount / nhomA) * 100) : 0 },
-        { stage: "Đã phẫu thuật (HIS)", count: daMo, pct: nhomA > 0 ? Math.round((daMo / nhomA) * 100) : 0 },
+        { key: "funnel_tiepNhan", stage: "Tiếp nhận", count: tong, pct: 100 },
+        { key: "funnel_chiDinhMo", stage: "Nhóm A (Đồng ý phẫu thuật)", count: nhomA, pct: tong > 0 ? Math.round((nhomA / tong) * 100) : 0 },
+        { key: "funnel_chotMo", stage: "Đã chốt mổ / Đón viện", count: daChotTuVanCount, pct: nhomA > 0 ? Math.round((daChotTuVanCount / nhomA) * 100) : 0 },
+        { key: "funnel_daMo", stage: "Đã phẫu thuật (HIS)", count: daMo, pct: nhomA > 0 ? Math.round((daMo / nhomA) * 100) : 0 },
       ],
       diseases: [
         { label: "Đục thủy tinh thể", value: ducThuyTinhThe, color: "#3452d8" },
@@ -332,10 +354,11 @@ export async function GET(request: Request) {
       ].filter((d) => d.value > 0),
       demographics: {
         age: [
-          { label: "Dưới 18 tuổi", value: ageU18, color: "#38bdf8" },
-          { label: "18 - 40 tuổi", value: age18to40, color: "#0ea5e9" },
-          { label: "41 - 60 tuổi", value: age41to60, color: "#2563eb" },
-          { label: "Trên 60 tuổi (Người cao tuổi)", value: ageOver60, color: "#1e3a8a" },
+          { key: "u6", label: "Dưới 6 tuổi", value: ageU6, color: "#38bdf8" },
+          { key: "6to18", label: "Từ 6 đến dưới 18 tuổi", value: age6to18, color: "#0ea5e9" },
+          { key: "18to55", label: "Từ 18 tuổi đến dưới 55 tuổi", value: age18to55, color: "#2563eb" },
+          { key: "55to60", label: "Từ 55 tuổi đến dưới 60 tuổi", value: age55to60, color: "#4f46e5" },
+          { key: "over60", label: "Từ 60 tuổi trở lên", value: ageOver60, color: "#1e3a8a" },
         ],
         gender: [
           { label: "Nam", value: maleCount, color: "#3b82f6" },

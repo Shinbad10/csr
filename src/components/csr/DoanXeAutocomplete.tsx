@@ -75,6 +75,69 @@ export default function DoanXeAutocomplete({
   ]);
   const [selectedChangIndex, setSelectedChangIndex] = useState(0);
 
+  // Modal thêm điểm đón / giờ mới vào đoàn xe đã có
+  const [showAddStopModal, setShowAddStopModal] = useState(false);
+  const [targetDoanXe, setTargetDoanXe] = useState<DoanXeItem | null>(null);
+  const [newStopDiem, setNewStopDiem] = useState("");
+  const [newStopGio, setNewStopGio] = useState("06:00");
+  const [savingStop, setSavingStop] = useState(false);
+
+  const handleOpenAddStopModal = (dx: DoanXeItem) => {
+    setTargetDoanXe(dx);
+    setNewStopDiem("");
+    setNewStopGio("06:00");
+    setShowAddStopModal(true);
+  };
+
+  const handleSaveAddStop = async () => {
+    if (!targetDoanXe) return;
+    if (!newStopDiem.trim()) {
+      addToast({ type: "error", message: "Vui lòng nhập tên điểm đón mới" });
+      return;
+    }
+    if (!newStopGio.trim()) {
+      addToast({ type: "error", message: "Vui lòng nhập giờ đón mới" });
+      return;
+    }
+
+    setSavingStop(true);
+    try {
+      const res = await fetch("/api/csr/doan-xe/diem-don", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenDoan: targetDoanXe.tenDoan,
+          ngayDon: targetDoanXe.ngayDon,
+          cacDiem: [{ diemDon: newStopDiem.trim(), gioDon: newStopGio.trim() }],
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok) {
+        addToast({
+          type: "success",
+          message: `✓ Đã thêm mốc đón "${newStopDiem.trim()}" (${newStopGio.trim()}) vào ${targetDoanXe.tenDoan}`,
+        });
+
+        onSelect({
+          diemDon: newStopDiem.trim(),
+          gioDon: newStopGio.trim(),
+          ngayHen: targetDoanXe.ngayDon,
+        });
+
+        loadDoanXe();
+        setShowAddStopModal(false);
+        setOpen(false);
+      } else {
+        addToast({ type: "error", message: json.error || "Không thể thêm điểm đón" });
+      }
+    } catch {
+      addToast({ type: "error", message: "Lỗi kết nối khi lưu điểm đón" });
+    } finally {
+      setSavingStop(false);
+    }
+  };
+
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -258,15 +321,18 @@ export default function DoanXeAutocomplete({
             </span>
 
             {gioDon && (
-              <span
+              <button
+                type="button"
                 onClick={() => !disabled && setIsEditingTime(!isEditingTime)}
-                title="Bấm để đổi giờ đón"
-                className="inline-flex items-center gap-1 font-mono text-[11.5px] font-black px-2 py-0.5 rounded-md bg-white text-[#031da6] border border-blue-300 shadow-2xs hover:border-[#031da6] cursor-pointer shrink-0 transition-all"
+                title="Bấm để đổi giờ xe đón bệnh nhân này"
+                className="inline-flex items-center gap-1 font-mono text-[11.5px] font-black px-2 py-0.5 rounded-md bg-white text-[#031da6] border border-blue-300 shadow-2xs hover:border-[#031da6] hover:bg-blue-50 cursor-pointer shrink-0 transition-all active:scale-95"
               >
                 <Clock className="w-3 h-3 text-[#031da6]" />
                 <span>{gioDon}</span>
-                <Edit3 className="w-2.5 h-2.5 text-slate-400 ml-0.5" />
-              </span>
+                <span className="text-[10px] text-slate-400 font-sans font-medium flex items-center ml-0.5">
+                  <Edit3 className="w-2.5 h-2.5 mr-0.5" />Đổi giờ
+                </span>
+              </button>
             )}
 
             {ngayHen && (
@@ -518,6 +584,21 @@ export default function DoanXeAutocomplete({
                       );
                     })}
                   </div>
+
+                  {/* Nút thêm điểm đón / giờ mới cho tuyến này */}
+                  <div className="p-1.5 bg-slate-50 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenAddStopModal(dx);
+                      }}
+                      className="w-full py-1 text-[11px] font-bold text-[#031da6] hover:bg-blue-50/80 rounded-md border border-dashed border-blue-200 hover:border-[#031da6] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3 stroke-[3]" />
+                      <span>+ Thêm điểm đón / giờ mới vào {dx.tenDoan}</span>
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -669,6 +750,93 @@ export default function DoanXeAutocomplete({
                 <Check className="w-3.5 h-3.5 text-teal-300 stroke-[3]" />
               )}
               <span>Lưu & Chọn đoàn xe này</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 4. MODAL THÊM ĐIỂM ĐÓN / GIỜ MỚI VÀO ĐOÀN XE ĐÃ CÓ */}
+      <Modal
+        open={showAddStopModal}
+        onClose={() => setShowAddStopModal(false)}
+        title={
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#031da6] text-white flex items-center justify-center">
+              <Plus className="w-4 h-4 text-teal-300 stroke-[3]" />
+            </div>
+            <span className="text-[15px] font-bold">Thêm điểm đón / giờ mới vào đoàn xe</span>
+          </div>
+        }
+        subtitle={targetDoanXe ? `${targetDoanXe.tenDoan} • Ngày đón: ${fmtDate(targetDoanXe.ngayDon)}` : ""}
+        maxWidth="max-w-[460px]"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+              Tên vị trí / Điểm đón mới *
+            </label>
+            <input
+              type="text"
+              value={newStopDiem}
+              onChange={(e) => setNewStopDiem(e.target.value)}
+              placeholder="VD: Trụ sở ấp 2, Ngã ba Chợ Xếp, Cầu Hàm Luông..."
+              className="w-full h-10 px-3 text-[13px] border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6]"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+              Khung giờ xe đón tại điểm này *
+            </label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newStopGio}
+                  onChange={(e) => setNewStopGio(e.target.value)}
+                  placeholder="06:00"
+                  maxLength={5}
+                  className="w-24 h-10 px-3 text-[13px] font-mono font-bold border border-slate-300 rounded-xl text-center focus:outline-none focus:border-[#031da6]"
+                />
+                <div className="flex items-center gap-1 flex-wrap">
+                  {COMMON_TIMES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setNewStopGio(t)}
+                      className={`text-[11px] font-mono px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
+                        newStopGio === t
+                          ? "bg-[#031da6] text-white border-[#031da6] font-bold"
+                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Gợi ý: Nếu cùng 1 điểm đón nhưng phát sinh chuyến/giờ khác, chỉ cần nhập lại tên điểm đón và chọn khung giờ mới này.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setShowAddStopModal(false)}
+              className="px-4 py-2 text-[12.5px] font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              disabled={savingStop}
+              onClick={handleSaveAddStop}
+              className="px-4 py-2 text-[12.5px] font-bold bg-[#031da6] hover:bg-[#020f5c] text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+            >
+              {savingStop && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>Lưu & Chọn điểm này</span>
             </button>
           </div>
         </div>

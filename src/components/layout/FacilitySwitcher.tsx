@@ -29,29 +29,55 @@ function readCosoNameCookie(): string {
 interface FacilitySwitcherProps {
   className?: string;
   variant?: "dark" | "light";
+  initialCoSo?: {
+    id?: string;
+    name?: string;
+  };
+  initialRole?: string;
 }
 
 /** Chọn cơ sở làm việc theo chuẩn VISIHUB org-switch */
-export default function FacilitySwitcher({ className = "", variant = "dark" }: FacilitySwitcherProps) {
+export default function FacilitySwitcher({
+  className = "",
+  variant = "dark",
+  initialCoSo,
+  initialRole,
+}: FacilitySwitcherProps) {
   const { data: session } = useSession();
   const [coSos, setCoSos] = useState<CoSo[]>([]);
-  const [selected, setSelected] = useState<string>("");
+  const [selected, setSelected] = useState<string>(() => {
+    if (initialCoSo?.id) return initialCoSo.id;
+    if (typeof window !== "undefined") return readCosoCookie();
+    return "";
+  });
   const [open, setOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [cachedName, setCachedName] = useState<string>("");
+  const [cachedName, setCachedName] = useState<string>(() => {
+    if (initialCoSo?.name) return initialCoSo.name;
+    if (typeof window !== "undefined") return readCosoNameCookie();
+    return "";
+  });
   const ref = useRef<HTMLDivElement>(null);
 
-  const isCorporate = isCorporateRole(session?.user?.role || "");
+  const currentRole = session?.user?.role || initialRole || (() => {
+    if (typeof window !== "undefined") {
+      try {
+        const m = document.cookie.split("; ").find((r) => r.startsWith("user_role="));
+        if (m) return m.split("=")[1];
+        return localStorage.getItem("cached_user_role") || "";
+      } catch {}
+    }
+    return "";
+  })();
+  const isCorporate = isCorporateRole(currentRole);
 
   useEffect(() => {
-    setIsMounted(true);
-    setSelected(readCosoCookie());
-    setCachedName(readCosoNameCookie());
+    setSelected(readCosoCookie() || initialCoSo?.id || "");
+    setCachedName(readCosoNameCookie() || initialCoSo?.name || "");
 
     fetch("/api/csr/coso").then((r) => r.json()).then((data) => {
       if (!Array.isArray(data)) return;
       setCoSos(data);
-      const curId = readCosoCookie() || session?.user?.coSoId || data[0]?.id || "";
+      const curId = readCosoCookie() || initialCoSo?.id || session?.user?.coSoId || data[0]?.id || "";
       setSelected(curId);
       const matched = data.find((c: CoSo) => c.id === curId);
       if (matched) {
@@ -62,7 +88,7 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
         } catch {}
       }
     }).catch(() => {});
-  }, [session]);
+  }, [session, initialCoSo]);
 
   useEffect(() => {
     if (!open) return;
@@ -86,11 +112,11 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
     window.location.reload();
   };
 
-  const facilityName = (coSos.find((c) => c.id === (selected || session?.user?.coSoId))?.ten) || cachedName || "Cơ sở làm việc";
+  const facilityName = (coSos.find((c) => c.id === (selected || session?.user?.coSoId))?.ten) || cachedName || initialCoSo?.name || "Cơ sở làm việc";
   const isDark = variant === "dark";
 
   // Corporate: Có thể chuyển đổi cơ sở
-  if (isCorporate && coSos.length > 0) {
+  if (isCorporate) {
     return (
       <div className={`relative ${className}`} ref={ref} suppressHydrationWarning>
         {/* Trigger Button - VISIHUB Style */}
@@ -102,7 +128,7 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
             type="button"
             suppressHydrationWarning
             onClick={() => setOpen((v) => !v)}
-            className={`w-full flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl border text-[12px] font-bold transition-all cursor-pointer select-none ${
+            className={`h-9 w-full flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl border text-[12px] font-bold transition-all cursor-pointer select-none ${
               open
                 ? "bg-white/20 border-white/35 text-white shadow-inner"
                 : "bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/25"
@@ -149,49 +175,59 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
           </button>
         )}
 
-        {/* Drawer Mobile: Floating Popover (Overlay, không đẩy menu xuống) */}
-        <AnimatePresence>
+        {/* Drawer Mobile: In-Flow Accordion (Đẩy menu xuống tự nhiên, không che khuất nội dung, không cắt chữ) */}
+        <AnimatePresence initial={false}>
           {!isDark && open && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 4 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
               suppressHydrationWarning
-              className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-2xl shadow-2xl p-2 text-[var(--ink)]"
+              className="overflow-hidden mt-2 bg-white dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-xl shadow-xs p-1.5 text-[var(--ink)]"
             >
-              <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1.5 flex items-center justify-between">
-                <span>Đổi cơ sở làm việc</span>
-                <span className="text-[9px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] font-sans">{coSos.length} cơ sở</span>
+              <div className="px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1 flex items-center justify-between">
+                <span>Chọn cơ sở làm việc</span>
+                <span className="text-[9.5px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] font-sans">{coSos.length} cơ sở</span>
               </div>
-              <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                {coSos.map((c) => {
-                  const active = c.id === selected;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => { setOpen(false); onChange(c.id); }}
-                      className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition-all text-left cursor-pointer ${
-                        active
-                          ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
-                          : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div
-                          className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                            active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
-                          }`}
-                        >
-                          <Building2 className="w-3.5 h-3.5" />
+              <div className="max-h-[220px] overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar">
+                {coSos.length === 0 ? (
+                  <div className="py-3 text-center text-[11.5px] text-[var(--mute)]">Đang tải danh sách cơ sở...</div>
+                ) : (
+                  coSos.map((c) => {
+                    const active = c.id === selected;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => { setOpen(false); onChange(c.id); }}
+                        className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[12px] font-bold transition-all text-left cursor-pointer ${
+                          active
+                            ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
+                            : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div
+                            className={`w-5.5 h-5.5 rounded-md flex items-center justify-center shrink-0 ${
+                              active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
+                            }`}
+                          >
+                            <Building2 className="w-3 h-3" />
+                          </div>
+                          <span className="leading-snug break-words flex-1 min-w-0">{c.ten}</span>
                         </div>
-                        <span className="truncate leading-snug">{c.ten}</span>
-                      </div>
-                      {active && <Check className="w-4 h-4 text-[var(--teal)] shrink-0" strokeWidth={3} />}
-                    </button>
-                  );
-                })}
+                        {active ? (
+                          <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" strokeWidth={3} />
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
+                            {c.id}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </motion.div>
           )}
@@ -213,33 +249,43 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
                 <span className="text-[9px] font-bold text-[var(--teal-deep)] font-sans">{coSos.length} cơ sở</span>
               </div>
               <div className="max-h-[240px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                {coSos.map((c) => {
-                  const active = c.id === selected;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => { setOpen(false); onChange(c.id); }}
-                      className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition-all text-left cursor-pointer ${
-                        active
-                          ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
-                          : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                            active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
-                          }`}
-                        >
-                          <Building2 className="w-3.5 h-3.5" />
+                {coSos.length === 0 ? (
+                  <div className="py-4 text-center text-[12px] text-[var(--mute)]">Đang tải danh sách cơ sở...</div>
+                ) : (
+                  coSos.map((c) => {
+                    const active = c.id === selected;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => { setOpen(false); onChange(c.id); }}
+                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition-all text-left cursor-pointer ${
+                          active
+                            ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
+                            : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div
+                            className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                              active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
+                            }`}
+                          >
+                            <Building2 className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="leading-snug break-words flex-1 min-w-0">{c.ten}</span>
                         </div>
-                        <span className="truncate">{c.ten}</span>
-                      </div>
-                      {active && <Check className="w-4 h-4 text-[var(--teal)] shrink-0" strokeWidth={3} />}
-                    </button>
-                  );
-                })}
+                        {active ? (
+                          <Check className="w-4 h-4 text-[var(--teal)] shrink-0" strokeWidth={3} />
+                        ) : (
+                          <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
+                            {c.id}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </motion.div>
           )}
@@ -252,13 +298,13 @@ export default function FacilitySwitcher({ className = "", variant = "dark" }: F
   return isDark ? (
     <div
       suppressHydrationWarning
-      className={`flex items-center gap-2 bg-white/10 text-white border border-white/15 rounded-xl px-3 py-1.5 text-[12.5px] font-bold shadow-xs ${className}`}
+      className={`h-9 flex items-center gap-2 bg-white/10 text-white border border-white/15 rounded-xl px-2.5 py-1 text-[12px] font-bold shadow-xs ${className}`}
       title={facilityName}
     >
-      <div className="w-6 h-6 rounded-lg bg-[var(--teal)]/20 text-[var(--teal)] flex items-center justify-center shrink-0">
-        <Building2 className="w-3.5 h-3.5" />
+      <div className="w-5.5 h-5.5 rounded-lg bg-[var(--teal)]/20 text-[var(--teal)] flex items-center justify-center shrink-0">
+        <Building2 className="w-3 h-3" />
       </div>
-      <span className="truncate text-white" suppressHydrationWarning>{facilityName}</span>
+      <span className="truncate text-white font-bold" suppressHydrationWarning>{facilityName}</span>
     </div>
   ) : (
     <div
