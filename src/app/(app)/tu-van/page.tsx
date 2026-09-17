@@ -33,13 +33,14 @@ import {
   tomorrowISO,
   bhytLevel,
   statusOf,
+  checkSurgeryTiming,
   type HoSo,
 } from "@/lib/csr";
 import { StatusBadge, labelCls, Combobox, SectionHeader, Select, DateField } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 
-type FilterKey = "" | "chuagoi" | "dagoi" | "nhomA" | "nhomB" | "daden" | "damo";
+type FilterKey = "" | "chuagoi" | "dagoi" | "nhomA" | "nhomB" | "daden" | "damo" | "damotruoc";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "", label: "Tất cả" },
@@ -48,6 +49,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "dagoi", label: "Đã gọi" },
   { key: "daden", label: "Đã đến" },
   { key: "damo", label: "Đã mổ" },
+  { key: "damotruoc", label: "Mổ trước" },
 ];
 
 /** Kiểm tra bệnh nhân đã được tư vấn sau khám hay chưa */
@@ -319,20 +321,22 @@ export default function TuVanSessionPage() {
 
   const [callNote, setCallNote] = useState("");
   const [savingCallNote, setSavingCallNote] = useState(false);
+  const currentBkDate = useMemo(() => bks.find((b) => b.id === selBk)?.ngayKham, [bks, selBk]);
 
   const visible = useMemo(() => {
     const filtered = patients.filter((p) => {
       const called = !!(p.nhatKy && p.nhatKy.length > 0);
       const isA = p.nhom === "A" || p.xacNhanDieuTri === true;
-      const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau";
-      const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || isMo;
+      const timing = checkSurgeryTiming(p, currentBkDate);
+      const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || timing.isDaMo;
 
       if (filter === "chuagoi" && called) return false;
       if (filter === "dagoi" && !called) return false;
       if (filter === "nhomA" && !isA) return false;
       if (filter === "nhomB" && isA) return false;
       if (filter === "daden" && !isDaDen) return false;
-      if (filter === "damo" && !isMo) return false;
+      if (filter === "damo" && !timing.isDaMo) return false;
+      if (filter === "damotruoc" && !timing.isDaMoTruoc) return false;
       return true;
     });
 
@@ -344,7 +348,7 @@ export default function TuVanSessionPage() {
       }
       return (a.stt ?? 0) - (b.stt ?? 0);
     });
-  }, [patients, filter, sortBy]);
+  }, [patients, filter, sortBy, currentBkDate]);
 
   // Bộ đếm nhanh trạng thái tư vấn & tiến độ viện
   const counts = useMemo(() => {
@@ -353,10 +357,14 @@ export default function TuVanSessionPage() {
     const uncalled = total - called;
     const nhomA = patients.filter((p) => p.nhom === "A" || p.xacNhanDieuTri === true).length;
     const nhomB = total - nhomA;
-    const daMo = patients.filter((p) => p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau").length;
-    const daDen = patients.filter((p) => Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || (p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe))).length;
-    return { total, called, uncalled, nhomA, nhomB, daDen, daMo };
-  }, [patients]);
+    const daMo = patients.filter((p) => checkSurgeryTiming(p, currentBkDate).isDaMo).length;
+    const daMoTruoc = patients.filter((p) => checkSurgeryTiming(p, currentBkDate).isDaMoTruoc).length;
+    const daDen = patients.filter((p) => {
+      const timing = checkSurgeryTiming(p, currentBkDate);
+      return Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || timing.isDaMo;
+    }).length;
+    return { total, called, uncalled, nhomA, nhomB, daDen, daMo, daMoTruoc };
+  }, [patients, currentBkDate]);
 
   const saveCallLog = async (presetText?: string) => {
     const textToSave = (presetText || callNote).trim();
@@ -654,7 +662,7 @@ export default function TuVanSessionPage() {
                           ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                           : "bg-slate-50 text-slate-500 border-slate-200"
                       }`}
-                      title={`Đã mổ thực tế: ${b.stats?.daMo ?? 0} ca${(b.stats?.nhomA ?? 0) > 0 ? ` trên tổng ${b.stats?.nhomA} ca nhóm A` : ""}`}
+                      title={`Đã mổ thực tế CSR: ${b.stats?.daMo ?? 0} ca${(b.stats?.nhomA ?? 0) > 0 ? ` trên tổng ${b.stats?.nhomA} ca nhóm A` : ""}`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${(b.stats?.daMo ?? 0) > 0 ? "bg-emerald-600" : "bg-slate-400"}`} />
                       <span>
@@ -662,6 +670,15 @@ export default function TuVanSessionPage() {
                         {(b.stats?.nhomA ?? 0) > 0 ? `/${b.stats?.nhomA ?? 0}` : ""}
                       </span>
                     </span>
+
+                    {(b.stats?.daMoTruoc ?? 0) > 0 && (
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs"
+                        title={`Có ${b.stats.daMoTruoc} ca đã mổ trước ngày khám tầm soát`}
+                      >
+                        <span>🟣 {b.stats.daMoTruoc} mổ trước</span>
+                      </span>
+                    )}
 
                     {b.bacSiKham && (
                       <span className="text-[11px] font-medium text-[var(--mute)] ml-auto truncate" title={`Bác sĩ chỉ định / khám: ${b.bacSiKham}`}>
@@ -777,7 +794,9 @@ export default function TuVanSessionPage() {
                               ? counts.daDen
                               : ft.key === "damo"
                                 ? counts.daMo
-                                : counts.total;
+                                : ft.key === "damotruoc"
+                                  ? counts.daMoTruoc
+                                  : counts.total;
                   return (
                     <button
                       key={ft.key}
@@ -848,7 +867,8 @@ export default function TuVanSessionPage() {
                   const hasCallLog = !!(p.nhatKy && p.nhatKy.length > 0);
                   const latestCallLog = hasCallLog ? p.nhatKy![0] : null;
 
-                  const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau";
+                  const timing = checkSurgeryTiming(p, currentBkDate);
+                  const isMo = timing.isDaMo;
                   const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || isMo;
 
                   let cardBgCls = "";
@@ -856,6 +876,8 @@ export default function TuVanSessionPage() {
                     cardBgCls = "bg-indigo-50/75 border-2 border-[#002b7f] shadow-sm ring-2 ring-indigo-500/15";
                   } else if (isMo) {
                     cardBgCls = "bg-emerald-50/20 border border-emerald-300/80 hover:border-emerald-500 hover:shadow-xs shadow-2xs border-l-[3.5px] border-l-emerald-600";
+                  } else if (timing.isDaMoTruoc) {
+                    cardBgCls = "bg-purple-50/20 border border-purple-300/80 hover:border-purple-500 hover:shadow-xs shadow-2xs border-l-[3.5px] border-l-purple-600";
                   } else if (isDaDen) {
                     cardBgCls = "bg-sky-50/20 border border-sky-300/80 hover:border-sky-500 hover:shadow-xs shadow-2xs border-l-[3.5px] border-l-sky-600";
                   } else if (hasCallLog) {
@@ -924,7 +946,7 @@ export default function TuVanSessionPage() {
                       </div>
 
                       {/* Dòng 2.5: Trạng thái Đã đến & Đã mổ chi tiết (kèm ngày) */}
-                      {(isDaDen || isMo) && (
+                      {(isDaDen || isMo || timing.isDaMoTruoc) && (
                         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                           {isDaDen && (
                             <span
@@ -943,12 +965,26 @@ export default function TuVanSessionPage() {
                           {isMo && (
                             <span
                               className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-300 shadow-2xs"
-                              title={p.ngayMoThucTe ? `Đã mổ ngày: ${fmtDate(p.ngayMoThucTe)}` : "Đã phẫu thuật"}
+                              title={p.ngayMoThucTe ? `Đã mổ sau đợt khám ngày: ${fmtDate(p.ngayMoThucTe)}` : "Đã phẫu thuật"}
                             >
                               <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
                               <span>Đã mổ</span>
                               {p.ngayMoThucTe && (
                                 <span className="font-mono text-[10px] text-emerald-700 font-normal">
+                                  ({fmtDate(p.ngayMoThucTe)})
+                                </span>
+                              )}
+                            </span>
+                          )}
+
+                          {timing.isDaMoTruoc && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-300 shadow-2xs"
+                              title={p.ngayMoThucTe ? `Đã từng mổ trước ngày khám tầm soát (${fmtDate(p.ngayMoThucTe)})` : "Mổ trước đây"}
+                            >
+                              <span>🟣 Mổ trước đây</span>
+                              {p.ngayMoThucTe && (
+                                <span className="font-mono text-[10px] text-purple-700 font-normal">
                                   ({fmtDate(p.ngayMoThucTe)})
                                 </span>
                               )}
@@ -1049,13 +1085,27 @@ export default function TuVanSessionPage() {
                             {selected.ngayDenBV && <span className="font-mono text-[11px] text-sky-800 font-normal">({fmtDate(selected.ngayDenBV)})</span>}
                           </span>
                         )}
-                        {(selected.trangThaiDieuTri === "Đã mổ" || Boolean(selected.ngayMoThucTe) || selected.trangThai === "DaMoHauPhau") && (
-                          <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Ngày mổ: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
-                            <span>Đã mổ</span>
-                            {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
-                          </span>
-                        )}
+                        {selected && (() => {
+                          const timing = checkSurgeryTiming(selected, currentBkDate);
+                          if (timing.isDaMo) {
+                            return (
+                              <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Ngày mổ sau đợt khám: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                <span>Đã mổ</span>
+                                {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
+                              </span>
+                            );
+                          }
+                          if (timing.isDaMoTruoc) {
+                            return (
+                              <span className="text-[12px] font-extrabold px-2.5 py-0.5 rounded-lg bg-purple-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Đã từng mổ trước ngày khám tầm soát (${fmtDate(selected.ngayMoThucTe)})` : "Mổ trước đây"}>
+                                <span>🟣 Mổ trước đây</span>
+                                {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-purple-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {/* Bác sĩ khám & Khuyến nghị */}

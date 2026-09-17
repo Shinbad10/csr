@@ -12,7 +12,58 @@ export const THI_LUC = ["", "10/10", "8/10", "6/10", "5/10", "4/10", "3/10", "2/
  * - Có bệnh lý (hasPathology): bệnh nhân có chẩn đoán/khuyến nghị/hướng xử trí/bệnh lý bất thường.
  * - Nhóm A: Có chỉ định và đã đồng ý/chốt mổ (nhom === 'A', xacNhanDieuTri === true, hoặc trạng thái thuộc [NhomA, DaNhacLich, DaDonVien, DaMoHauPhau]).
  * - Nhóm B: Có chỉ định/bệnh lý nhưng chưa đồng ý hoặc theo dõi (hasPathology && !isNhomA).
- * - Đã mổ: Có ngày mổ thực tế (ngayMoThucTe != null).
+/**
+ * Phân định thời điểm phẫu thuật so với ngày khám tầm soát CSR:
+ * - isDaMo: Mổ trong hoặc sau đợt khám tầm soát (tính vào chỉ số hiệu quả CSR)
+ * - isDaMoTruoc: Đã từng mổ trước khi đợt khám tầm soát diễn ra (tách riêng để đánh giá khách quan)
+ * - isDaDenTruoc: Đã từng đến viện trước ngày khám
+ */
+export function checkSurgeryTiming(
+  h: {
+    ngayMoThucTe?: Date | string | null;
+    trangThaiDieuTri?: string | null;
+    trangThai?: string | null;
+    buoiKham?: { ngayKham?: Date | string | null } | null;
+    buoiKhamNgayKham?: Date | string | null;
+  },
+  buoiKhamDateOverride?: Date | string | null
+) {
+  const isPriorMarked =
+    h.trangThaiDieuTri === "Đã mổ trước đây" ||
+    h.trangThai === "DaMoTruocDay";
+
+  const isPriorVisitMarked = h.trangThaiDieuTri === "Đã đến trước đây";
+
+  const khamDateStr = buoiKhamDateOverride || h.buoiKham?.ngayKham || h.buoiKhamNgayKham;
+  let isDatePrior = false;
+  if (h.ngayMoThucTe && khamDateStr) {
+    const moDate = new Date(h.ngayMoThucTe);
+    const khamDate = new Date(khamDateStr);
+    const dMo = new Date(moDate.getFullYear(), moDate.getMonth(), moDate.getDate()).getTime();
+    const dKham = new Date(khamDate.getFullYear(), khamDate.getMonth(), khamDate.getDate()).getTime();
+    if (dMo < dKham) {
+      isDatePrior = true;
+    }
+  }
+
+  const isDaMoTruoc = isPriorMarked || isDatePrior;
+  const hasSurgery = Boolean(h.ngayMoThucTe) || h.trangThaiDieuTri === "Đã mổ" || h.trangThai === "DaMoHauPhau" || isDaMoTruoc;
+  const isDaMo = hasSurgery && !isDaMoTruoc;
+
+  return {
+    hasSurgery,
+    isDaMo,
+    isDaMoTruoc,
+    isDaDenTruoc: isPriorVisitMarked,
+  };
+}
+
+/**
+ * Phân loại Nhóm CSR chuẩn cho bệnh nhân (theo quy tắc nghiệp vụ CSR chuẩn hóa):
+ * - Có bệnh lý (hasPathology): bệnh nhân có chẩn đoán/khuyến nghị/hướng xử trí/bệnh lý bất thường.
+ * - Nhóm A: Có chỉ định và đã đồng ý/chốt mổ (nhom === 'A', xacNhanDieuTri === true, hoặc trạng thái thuộc [NhomA, DaNhacLich, DaDonVien, DaMoHauPhau]).
+ * - Nhóm B: Có chỉ định/bệnh lý nhưng chưa đồng ý hoặc theo dõi (hasPathology && !isNhomA).
+ * - Đã mổ (isDaMo): Mổ sau ngày tầm soát (thuộc hiệu quả CSR). Mổ trước ngày khám được gắn cờ isDaMoTruoc.
  */
 export function classifyCSRNhom(h: {
   nhom?: string | null;
@@ -31,6 +82,8 @@ export function classifyCSRNhom(h: {
   daDon?: boolean | null;
   ngayDenBV?: Date | string | null;
   trangThaiDieuTri?: string | null;
+  buoiKham?: { ngayKham?: Date | string | null } | null;
+  buoiKhamNgayKham?: Date | string | null;
 }) {
   const hasPathology =
     Boolean(h.nhom) ||
@@ -46,22 +99,25 @@ export function classifyCSRNhom(h: {
     h.huongXuTri === "Phẫu thuật" ||
     h.huongXuTri === "Điều trị khác";
 
-  const isDaMo = Boolean(h.ngayMoThucTe) || h.trangThaiDieuTri === "Đã mổ" || h.trangThai === "DaMoHauPhau";
+  const { isDaMo, isDaMoTruoc, isDaDenTruoc } = checkSurgeryTiming(h);
+
   const isDaDen =
     Boolean(h.daDon) ||
     Boolean(h.ngayDenBV) ||
     h.trangThai === "DaDonVien" ||
-    h.trangThaiDieuTri === "Đã đến trước đây" ||
+    isDaDenTruoc ||
     isDaMo;
+
   const isDenKhongMo =
     (Boolean(h.daDon) ||
       Boolean(h.ngayDenBV) ||
       h.trangThai === "DaDonVien" ||
-      h.trangThaiDieuTri === "Đã đến trước đây") &&
-    !isDaMo;
+      isDaDenTruoc) &&
+    !isDaMo &&
+    !isDaMoTruoc;
 
   if (!hasPathology) {
-    return { hasPathology: false, isNhomA: false, isNhomB: false, isDaMo, isDaDen, isDenKhongMo };
+    return { hasPathology: false, isNhomA: false, isNhomB: false, isDaMo, isDaMoTruoc, isDaDen, isDenKhongMo };
   }
 
   const isNhomA =
@@ -74,7 +130,7 @@ export function classifyCSRNhom(h: {
 
   const isNhomB = !isNhomA;
 
-  return { hasPathology: true, isNhomA, isNhomB, isDaMo, isDaDen, isDenKhongMo };
+  return { hasPathology: true, isNhomA, isNhomB, isDaMo, isDaMoTruoc, isDaDen, isDenKhongMo };
 }
 
 export const parseDiag = (raw: string | null): string[] => {
@@ -641,6 +697,8 @@ export const STATUS: Record<string, { label: string; cls: string }> = {
   DaNhacLich:  { label: "Đã nhắc lịch",    cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
   DaDonVien:   { label: "Đã đón",          cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
   DaMoHauPhau: { label: "Đã mổ",           cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
+  DaMoTruocDay: { label: "Mổ trước đây",    cls: "bg-purple-50 text-purple-700 border-purple-300" },
+  DaDenTruocDay: { label: "Đến trước đây",  cls: "bg-indigo-50 text-indigo-700 border-indigo-300" },
   HuyKhongDen: { label: "Hủy / Không đến", cls: "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]" },
 };
 export const statusOf = (t?: string | null) =>

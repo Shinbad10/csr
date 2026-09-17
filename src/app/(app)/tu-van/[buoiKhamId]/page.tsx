@@ -8,7 +8,7 @@ import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCo
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, type HoSo } from "@/lib/csr";
+import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo } from "@/lib/csr";
 import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
@@ -519,6 +519,26 @@ export default function TuVanSessionPage() {
                                 📞 Chưa gọi
                               </span>
                             )}
+
+                            {(() => {
+                              const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
+                              if (timing.isDaMo) {
+                                return (
+                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs flex items-center gap-0.5" title={p.ngayMoThucTe ? `Đã mổ ngày: ${fmtDate(p.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                                    <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
+                                    <span>Đã mổ</span>
+                                  </span>
+                                );
+                              }
+                              if (timing.isDaMoTruoc) {
+                                return (
+                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300 shadow-2xs flex items-center gap-0.5" title={p.ngayMoThucTe ? `Đã mổ trước ngày khám (${fmtDate(p.ngayMoThucTe)})` : "Mổ trước đây"}>
+                                    <span>🟣 Mổ trước</span>
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
 
@@ -595,6 +615,28 @@ export default function TuVanSessionPage() {
                     ) : selected.nhom === "TheoDoi" ? (
                       <span className="text-xs font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300">Theo dõi tại nhà</span>
                     ) : null}
+
+                    {(() => {
+                      const timingSel = selected ? checkSurgeryTiming(selected, buoiKham?.ngayKham) : null;
+                      if (timingSel?.isDaMo) {
+                        return (
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Ngày mổ sau đợt khám: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            <span>Đã mổ</span>
+                            {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
+                          </span>
+                        );
+                      }
+                      if (timingSel?.isDaMoTruoc) {
+                        return (
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-purple-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Đã từng mổ trước ngày khám tầm soát (${fmtDate(selected.ngayMoThucTe)})` : "Mổ trước đây"}>
+                            <span>🟣 Mổ trước đây</span>
+                            {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-purple-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                     <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
                   </div>
                   {getPatientDiags(selected).length > 0 && (

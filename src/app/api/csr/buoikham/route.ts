@@ -6,7 +6,7 @@ import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 
-import { classifyCSRNhom } from "@/lib/csr";
+import { classifyCSRNhom, checkSurgeryTiming } from "@/lib/csr";
 import { fetchPhaco2LanStats } from "@/lib/his";
 
 export async function GET(request: Request) {
@@ -47,12 +47,23 @@ export async function GET(request: Request) {
         _count: { _all: true },
         where: whereCoSo,
       }),
-      prisma.hoSoBenhNhan.groupBy({
-        by: ["buoiKhamId"],
-        _count: { _all: true },
+      prisma.hoSoBenhNhan.findMany({
         where: {
           ...(coSoId ? { coSoId } : {}),
-          ngayMoThucTe: { not: null },
+          OR: [
+            { ngayMoThucTe: { not: null } },
+            { trangThaiDieuTri: "Đã mổ" },
+            { trangThaiDieuTri: "Đã mổ trước đây" },
+            { trangThai: "DaMoHauPhau" },
+            { trangThai: "DaMoTruocDay" },
+          ],
+        },
+        select: {
+          buoiKhamId: true,
+          ngayMoThucTe: true,
+          trangThai: true,
+          trangThaiDieuTri: true,
+          buoiKham: { select: { ngayKham: true } },
         },
       }),
       prisma.hoSoBenhNhan.findMany({
@@ -68,8 +79,15 @@ export async function GET(request: Request) {
     ]);
 
     const daMoMap = new Map<string, number>();
-    for (const g of daMoGroups) {
-      if (g.buoiKhamId) daMoMap.set(g.buoiKhamId, g._count._all);
+    const daMoTruocMap = new Map<string, number>();
+    for (const r of daMoGroups) {
+      if (!r.buoiKhamId) continue;
+      const timing = checkSurgeryTiming(r);
+      if (timing.isDaMo) {
+        daMoMap.set(r.buoiKhamId, (daMoMap.get(r.buoiKhamId) || 0) + 1);
+      } else if (timing.isDaMoTruoc) {
+        daMoTruocMap.set(r.buoiKhamId, (daMoTruocMap.get(r.buoiKhamId) || 0) + 1);
+      }
     }
 
     const docMap = new Map<string, string>();
@@ -95,6 +113,7 @@ export async function GET(request: Request) {
     const result = buoiKhams.map((bk) => {
       const st = statsMap.get(bk.id) || { nhomA: 0, nhomB: 0 };
       const daMo = daMoMap.get(bk.id) || 0;
+      const daMoTruoc = daMoTruocMap.get(bk.id) || 0;
       const chuaMo = Math.max(0, st.nhomA - daMo);
       const phaco2Lan = phaco2LanMap.get(bk.id) || 0;
       const bacSiKham = bk.bacSiKham || docMap.get(bk.id) || null;
@@ -105,6 +124,7 @@ export async function GET(request: Request) {
           nhomA: st.nhomA,
           nhomB: st.nhomB,
           daMo,
+          daMoTruoc,
           chuaMo,
           phaco2Lan,
         },

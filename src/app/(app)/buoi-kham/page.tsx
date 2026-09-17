@@ -29,7 +29,7 @@ interface CoSo { id: string; ten: string }
 interface BuoiKham {
   id: string; coSo: CoSo; coSoId: string; ngayKham: string; xa: string; diaDiem: string;
   bacSiKham?: string | null; ghiChu?: string | null; _count: { hoSo: number };
-  stats?: { nhomA: number; nhomB: number; daMo: number; chuaMo: number; phaco2Lan?: number };
+  stats?: { nhomA: number; nhomB: number; daMo: number; daMoTruoc?: number; chuaMo: number; phaco2Lan?: number };
 }
 
 type StatusFilter = "ALL" | "DangDienRa" | "SapDienRa" | "DaKetThuc";
@@ -458,19 +458,24 @@ function NhomChip({ a, b }: { a: number; b: number }) {
   );
 }
 
-/** Tiến độ mổ dạng "đã mổ / cần mổ" kèm thanh */
-function MoProgress({ done, waiting }: { done: number; waiting: number }) {
+/** Tiến độ mổ dạng "đã mổ / cần mổ" kèm thanh & ca mổ trước nếu có */
+function MoProgress({ done, waiting, daMoTruoc }: { done: number; waiting: number; daMoTruoc?: number }) {
   const need = done + waiting;
-  if (need === 0) return <span className="text-[#94a3b8] font-mono text-xs">—</span>;
-  const pct = Math.round((done / need) * 100);
+  if (need === 0 && (!daMoTruoc || daMoTruoc === 0)) return <span className="text-[#94a3b8] font-mono text-xs">—</span>;
+  const pct = need > 0 ? Math.round((done / need) * 100) : 0;
   return (
-    <div className="inline-flex flex-col items-center gap-1 min-w-[76px]" title={`Đã mổ ${done}/${need} ca chỉ định (${pct}%)`}>
+    <div className="inline-flex flex-col items-center gap-1 min-w-[80px]" title={`Đã mổ CSR: ${done}/${need} ca chỉ định (${pct}%)${daMoTruoc ? ` • Có ${daMoTruoc} ca đã mổ trước ngày khám` : ""}`}>
       <span className="font-mono text-[11.5px] font-bold text-[#0f172a]">
         {done}<span className="text-[#64748b] font-medium">/{need}</span>
       </span>
       <div className="w-full h-1.5 rounded-full bg-[#e2e8f0] overflow-hidden">
         <div className="h-full bg-gradient-to-r from-[#02b8a9] to-[#018a7f] rounded-full transition-all" style={{ width: `${pct}%` }} />
       </div>
+      {Boolean(daMoTruoc && daMoTruoc > 0) && (
+        <span className="text-[9.5px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-md inline-flex items-center gap-0.5 mt-0.5" title={`Có ${daMoTruoc} ca đã mổ trước khi diễn ra đợt khám tầm soát (không tính vào tiến độ đợt này)`}>
+          🟣 {daMoTruoc} mổ trước
+        </span>
+      )}
     </div>
   );
 }
@@ -553,7 +558,7 @@ export default function BuoiKhamPage() {
 
   const [importOpen, setImportOpen] = useState(false);
   const [viewPatientsBuoiKham, setViewPatientsBuoiKham] = useState<BuoiKham | null>(null);
-  const [patientInitialFilter, setPatientInitialFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
+  const [patientInitialFilter, setPatientInitialFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
   const [editModal, setEditModal] = useState<BuoiKham | null>(null);
   const [editXa, setEditXa] = useState("");
   const [editDiaDiem, setEditDiaDiem] = useState("");
@@ -984,7 +989,11 @@ export default function BuoiKhamPage() {
           return need > 0 ? (row.stats?.daMo ?? 0) / need : -1;
         },
         cell: ({ row }) => (
-          <MoProgress done={row.original.stats?.daMo ?? 0} waiting={row.original.stats?.chuaMo ?? 0} />
+          <MoProgress
+            done={row.original.stats?.daMo ?? 0}
+            waiting={row.original.stats?.chuaMo ?? 0}
+            daMoTruoc={row.original.stats?.daMoTruoc ?? 0}
+          />
         ),
       },
       {

@@ -7,7 +7,7 @@ import {
   Stethoscope, Eye, CheckCircle2, Clock, Phone, CreditCard,
   FileSpreadsheet, Sparkles, Filter, X, ChevronDown
 } from "lucide-react";
-import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, type HoSo } from "@/lib/csr";
+import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, checkSurgeryTiming, type HoSo } from "@/lib/csr";
 import { parseDoctorList } from "./DoctorAutocomplete";
 import { useToast } from "@/components/providers/ToastProvider";
 
@@ -26,7 +26,7 @@ interface BuoiKhamPatientsModalProps {
   open: boolean;
   onClose: () => void;
   buoiKham: BuoiKhamSummary | null;
-  initialFilter?: "ALL" | "A" | "B" | "DA_MO" | "CHUA_MO" | "PHACO_2_LAN";
+  initialFilter?: "ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN";
 }
 
 export default function BuoiKhamPatientsModal({
@@ -39,7 +39,7 @@ export default function BuoiKhamPatientsModal({
   const [patients, setPatients] = useState<HoSo[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
+  const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = React.useRef<HTMLDivElement>(null);
@@ -143,22 +143,25 @@ export default function BuoiKhamPatientsModal({
     let nhomA = 0;
     let nhomB = 0;
     let daMo = 0;
+    let daMoTruoc = 0;
     let chuaMo = 0;
     let phaco2Lan = 0;
 
     patients.forEach((p) => {
       if (p.isPhaco2Lan) phaco2Lan++;
+      const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
+      if (timing.isDaMoTruoc) daMoTruoc++;
       if (p.nhom === "A") {
         nhomA++;
-        if (p.trangThai === "DaMo" || p.ngayMoThucTe) daMo++;
-        else chuaMo++;
+        if (timing.isDaMo) daMo++;
+        else if (!timing.hasSurgery) chuaMo++;
       } else if (p.nhom === "B") {
         nhomB++;
       }
     });
 
-    return { total: patients.length, nhomA, nhomB, daMo, chuaMo, phaco2Lan };
-  }, [patients]);
+    return { total: patients.length, nhomA, nhomB, daMo, daMoTruoc, chuaMo, phaco2Lan };
+  }, [patients, buoiKham?.ngayKham]);
 
   // Danh sách lọc
   const filtered = useMemo(() => {
@@ -178,15 +181,17 @@ export default function BuoiKhamPatientsModal({
         if (!match) return false;
       }
 
+      const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
       if (groupFilter === "A") return p.nhom === "A";
       if (groupFilter === "B") return p.nhom === "B";
-      if (groupFilter === "DA_MO") return p.trangThai === "DaMo" || Boolean(p.ngayMoThucTe);
-      if (groupFilter === "CHUA_MO") return p.nhom === "A" && p.trangThai !== "DaMo" && !p.ngayMoThucTe;
+      if (groupFilter === "DA_MO") return timing.isDaMo;
+      if (groupFilter === "DA_MO_TRUOC") return timing.isDaMoTruoc;
+      if (groupFilter === "CHUA_MO") return p.nhom === "A" && !timing.hasSurgery;
       if (groupFilter === "PHACO_2_LAN") return Boolean(p.isPhaco2Lan);
 
       return true;
     });
-  }, [patients, search, groupFilter]);
+  }, [patients, search, groupFilter, buoiKham?.ngayKham]);
 
   if (!buoiKham) return null;
 
@@ -303,6 +308,21 @@ export default function BuoiKhamPatientsModal({
               >
                 <span>Đã mổ</span>
                 <span className="font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.daMo}</span>
+              </button>
+            )}
+            {stats.daMoTruoc > 0 && (
+              <button
+                type="button"
+                onClick={() => setGroupFilter("DA_MO_TRUOC")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  groupFilter === "DA_MO_TRUOC"
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "bg-white text-purple-700 border border-purple-200 hover:bg-purple-50"
+                }`}
+                title="Bệnh nhân đã từng mổ mắt trước khi diễn ra đợt khám tầm soát này"
+              >
+                <span>Mổ trước</span>
+                <span className="font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.daMoTruoc}</span>
               </button>
             )}
             {stats.phaco2Lan > 0 && (
@@ -423,7 +443,9 @@ export default function BuoiKhamPatientsModal({
                 {filtered.map((p, idx) => {
                   const isNhomA = p.nhom === "A";
                   const isNhomB = p.nhom === "B";
-                  const isOperated = p.trangThai === "DaMo" || Boolean(p.ngayMoThucTe);
+                  const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
+                  const isOperated = timing.isDaMo;
+                  const isOperatedPrior = timing.isDaMoTruoc;
 
                   // Chẩn đoán tổng hợp
                   const cdMP = Array.isArray(p.chanDoanMP) ? p.chanDoanMP.join(", ") : (p.chanDoanMP || "");
@@ -575,6 +597,17 @@ export default function BuoiKhamPatientsModal({
                             )}
                             {p.ngayMoThucTe && (
                               <span className="text-[10px] font-mono font-semibold text-slate-500">
+                                {fmtDate(p.ngayMoThucTe)}
+                              </span>
+                            )}
+                          </div>
+                        ) : isOperatedPrior ? (
+                          <div className="inline-flex flex-col items-center gap-1">
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 shadow-2xs" title="Đã từng mổ trước khi diễn ra đợt khám tầm soát">
+                              🟣 Mổ trước
+                            </span>
+                            {p.ngayMoThucTe && (
+                              <span className="text-[10px] font-mono font-semibold text-purple-600">
                                 {fmtDate(p.ngayMoThucTe)}
                               </span>
                             )}
