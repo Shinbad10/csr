@@ -48,15 +48,22 @@ export function DataTable<TData>({
   const isLoading = loading ?? ctxLoading;
 
   const tableState = table.getState();
-  const { columnSizingInfo, columnSizing, columnVisibility, sorting, columnFilters, rowSelection } = tableState;
-  const isResizingAny = !!columnSizingInfo.isResizingColumn;
+  const { columnVisibility, sorting, columnFilters, rowSelection } = tableState;
   const columnFilterCount = columnFilters.length;
 
   const visibleColumns = table.getVisibleLeafColumns();
   const lastColumnId = visibleColumns[visibleColumns.length - 1]?.id;
   const flatHeaders = table.getFlatHeaders();
 
-  // Bộ biến CSS cho layout table cố định — tính lại khi resize / ẩn hiện cột / bật lọc.
+  const totalTableWidth = React.useMemo(() => {
+    let total = 0;
+    for (const col of visibleColumns) {
+      total += col.getSize();
+    }
+    return total;
+  }, [visibleColumns]);
+
+  // Bộ biến CSS cho layout table cố định — tính lại khi ẩn hiện cột / bật lọc.
   const columnSizeVars = React.useMemo(() => {
     const vars: Record<string, number> = {};
     for (const header of flatHeaders) {
@@ -64,8 +71,7 @@ export function DataTable<TData>({
       vars[`--col-${header.column.id}-size`] = header.column.getSize();
     }
     return vars;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flatHeaders, columnSizingInfo, columnSizing, columnVisibility, showFilters]);
+  }, [flatHeaders, columnVisibility, showFilters]);
 
   // Chữ ký state dùng để phá memo của từng dòng (ẩn/hiện cột, sắp xếp, lọc, chọn dòng).
   const rowStateVersion = React.useMemo(
@@ -81,20 +87,28 @@ export function DataTable<TData>({
       className={cn(
         'overflow-x-auto relative bg-[var(--surface)] w-full custom-scrollbar',
         fullHeight ? 'flex-1 overflow-y-auto min-h-0' : 'overflow-y-auto max-h-full',
-        isResizingAny && 'cursor-col-resize select-none',
       )}
     >
       <table
-        className="border-collapse text-left text-[13px] w-full"
-        style={{ ...columnSizeVars, width: '100%', tableLayout: 'fixed' }}
+        className="border-collapse text-left text-[13px] w-full min-w-full"
+        style={{
+          ...columnSizeVars,
+          width: '100%',
+          minWidth: totalTableWidth ? `${totalTableWidth}px` : '100%',
+          tableLayout: 'fixed',
+        }}
       >
         <colgroup>
           {visibleColumns.map((column) => {
             const isFlex = isFlexColumn(column);
+            const size = column.getSize();
             return (
               <col
                 key={column.id}
-                style={{ width: isFlex ? 'auto' : `calc(var(--col-${column.id}-size) * 1px)` }}
+                style={{
+                  width: isFlex ? 'auto' : `${size}px`,
+                  minWidth: `${size}px`,
+                }}
               />
             );
           })}
@@ -110,8 +124,8 @@ export function DataTable<TData>({
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
                   const isLast = header.column.id === lastColumnId;
-                  const isResizing = header.column.getIsResizing();
                   const isFlex = isFlexColumn(header.column);
+                  const size = header.getSize();
                   return (
                     <th
                       key={header.id}
@@ -119,7 +133,8 @@ export function DataTable<TData>({
                       style={{
                         textAlign: align as 'left' | 'right' | 'center',
                         position: 'relative',
-                        width: isFlex ? 'auto' : `calc(var(--header-${header.id}-size) * 1px)`,
+                        width: isFlex ? 'auto' : `${size}px`,
+                        minWidth: `${size}px`,
                       }}
                       className={cn(
                         'bg-[var(--navy)] text-white group transition-colors duration-200',
@@ -127,9 +142,9 @@ export function DataTable<TData>({
                         'font-bold tracking-[0.06em] uppercase',
                         'border-r border-white/10',
                         isLast && 'border-r-0',
-                        canSort && !isResizingAny && 'cursor-pointer select-none hover:bg-[var(--navy-deep)]',
+                        canSort && 'cursor-pointer select-none hover:bg-[var(--navy-deep)]',
                       )}
-                      onClick={isResizingAny ? undefined : header.column.getToggleSortingHandler()}
+                      onClick={header.column.getToggleSortingHandler()}
                     >
                       <div
                         className={cn(
@@ -162,29 +177,6 @@ export function DataTable<TData>({
                           </div>
                         )}
                       </div>
-
-                      {/* Tay kéo chỉnh rộng cột */}
-                      {header.column.getCanResize() && !isLast && (
-                        <div
-                          onDoubleClick={() => header.column.resetSize()}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          onClick={(e) => e.stopPropagation()}
-                          role="separator"
-                          aria-orientation="vertical"
-                          aria-label="Chỉnh độ rộng cột"
-                          className="absolute top-0 -right-1.5 h-full w-3 cursor-col-resize select-none touch-none z-10 group/resizer"
-                        >
-                          <div
-                            className={cn(
-                              'absolute right-1/2 translate-x-1/2 top-1/2 -translate-y-1/2 rounded-full transition-all duration-150',
-                              'w-0.5 h-1/2 bg-white/0',
-                              'group-hover/resizer:bg-[var(--teal)]/60 group-hover/resizer:h-3/4',
-                              isResizing && '!bg-[var(--teal)] !h-full !w-1',
-                            )}
-                          />
-                        </div>
-                      )}
                     </th>
                   );
                 })}
@@ -196,10 +188,14 @@ export function DataTable<TData>({
                   {hg.headers.map((header) => {
                     const isLast = header.column.id === lastColumnId;
                     const isFlex = isFlexColumn(header.column);
+                    const size = header.getSize();
                     return (
                       <th
                         key={`filter-${header.id}`}
-                        style={{ width: isFlex ? 'auto' : `calc(var(--header-${header.id}-size) * 1px)` }}
+                        style={{
+                          width: isFlex ? 'auto' : `${size}px`,
+                          minWidth: `${size}px`,
+                        }}
                         className={cn('px-3 py-2 border-r border-[var(--line-soft)]', isLast && 'border-r-0')}
                       >
                         {header.column.getCanFilter() ? (
@@ -268,7 +264,6 @@ export function DataTable<TData>({
                   onRowClick={onRowClick}
                   rowClassName={rowClassName}
                   lastColumnId={lastColumnId}
-                  isResizingAny={isResizingAny}
                   stateVersion={rowStateVersion}
                 />
               ))}
@@ -310,7 +305,6 @@ interface RowProps<TData> {
   onRowClick?: (row: TData) => void;
   rowClassName?: (row: TData, index: number) => string | undefined;
   lastColumnId?: string;
-  isResizingAny: boolean;
   stateVersion: string;
 }
 
@@ -322,11 +316,10 @@ function DataTableRowInternal<TData>({
   onRowClick,
   rowClassName,
   lastColumnId,
-  isResizingAny,
 }: RowProps<TData>) {
   return (
     <motion.tr
-      layout={!isResizingAny}
+      layout={false}
       onClick={
         onRowClick
           ? (e) => {
@@ -356,12 +349,14 @@ function DataTableRowInternal<TData>({
         const isFlex = isFlexColumn(cell.column);
         const isActions = cell.column.id === 'actions';
         const noTruncate = isActions || (cell.column.columnDef.meta as { noTruncate?: boolean })?.noTruncate;
+        const size = cell.column.getSize();
         return (
           <td
             key={cell.id}
             style={{
               textAlign: align as 'left' | 'right' | 'center',
-              width: isFlex ? 'auto' : `calc(var(--col-${cell.column.id}-size) * 1px)`,
+              width: isFlex ? 'auto' : `${size}px`,
+              minWidth: `${size}px`,
             }}
             className={cn(
               dense ? 'px-3 py-2' : 'px-3 py-3',
@@ -384,7 +379,6 @@ const DataTableRow = React.memo(DataTableRowInternal, (prev, next) => {
     prev.row.original === next.row.original &&
     prev.idx === next.idx &&
     prev.stateVersion === next.stateVersion &&
-    prev.isResizingAny === next.isResizingAny &&
     prev.onRowClick === next.onRowClick &&
     prev.rowClassName === next.rowClassName
   );

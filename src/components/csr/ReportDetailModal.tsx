@@ -650,7 +650,20 @@ export default function ReportDetailModal({
               </div>
             ) : target.type === "kpi_soBuoi" ? (
               /* Bảng danh sách các đợt khám CSR */
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[1050px] table-fixed">
+                <colgroup>
+                  <col className="w-12" />
+                  <col className="w-24" />
+                  <col className="w-36" />
+                  <col className="w-48" />
+                  <col className="w-36" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-24" />
+                </colgroup>
                 <thead className="sticky top-0 bg-[var(--surface-soft)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold z-10">
                   <tr>
                     <th className="py-3 px-3.5 text-center w-12">STT</th>
@@ -747,7 +760,20 @@ export default function ReportDetailModal({
               </table>
             ) : (
               /* Bảng danh sách hồ sơ bệnh nhân */
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[1150px] table-fixed">
+                <colgroup>
+                  <col className="w-12" />
+                  <col className="w-24" />
+                  <col className="w-44" />
+                  <col className="w-44" />
+                  <col className="w-36" />
+                  <col className="w-52" />
+                  <col className="w-16" />
+                  <col className="w-24" />
+                  <col className="w-32" />
+                  <col className="w-32" />
+                  <col className="w-24" />
+                </colgroup>
                 <thead className="sticky top-0 bg-[var(--surface-soft)] border-b border-[var(--line)] text-[var(--ink-soft)] font-bold z-10">
                   <tr>
                     <th className="py-3 px-3 text-center w-12">STT</th>

@@ -653,7 +653,16 @@ export default function ImportExcelModal({
 
                     {/* Data Table */}
                     <div className="max-h-[280px] overflow-auto">
-                      <table className="w-full text-left border-collapse text-[12.5px]">
+                      <table className="w-full text-left border-collapse text-[12.5px] min-w-[780px] table-fixed">
+                        <colgroup>
+                          <col className="w-12" />
+                          <col className="w-40" />
+                          <col className="w-20" />
+                          <col className="w-48" />
+                          <col className="w-36" />
+                          <col className="w-24" />
+                          <col className="w-32" />
+                        </colgroup>
                         <thead className="sticky top-0 bg-[var(--surface-soft)] text-[10.5px] font-bold uppercase tracking-wider text-[var(--mute)] shadow-xs">
                           <tr className="[&>th]:py-2.5 [&>th]:px-3 [&>th]:border-b [&>th]:border-[var(--line)] [&>th]:whitespace-nowrap">
                             <th className="w-[46px] text-center">STT</th>

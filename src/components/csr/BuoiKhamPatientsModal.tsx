@@ -423,19 +423,32 @@ export default function BuoiKhamPatientsModal({
               </div>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse min-w-[1180px]">
+            <table className="w-full text-left border-collapse min-w-[1240px] table-fixed">
+              <colgroup>
+                <col className="w-14" />
+                <col className="w-28" />
+                <col className="w-48" />
+                <col className="w-18" />
+                <col className="w-20" />
+                <col className="w-52" />
+                <col className="w-32" />
+                <col className="w-56" />
+                <col className="w-44" />
+                <col className="w-36" />
+                <col className="w-32" />
+              </colgroup>
               <thead className="bg-slate-100/90 backdrop-blur-xs text-slate-700 text-[11px] font-bold uppercase tracking-wider font-mono sticky top-0 z-10 border-b border-slate-200 select-none shadow-2xs">
                 <tr className="[&>th]:py-2.5 [&>th]:px-3 [&>th]:whitespace-nowrap">
-                  <th className="w-12 text-center text-slate-500">STT</th>
+                  <th className="w-14 text-center text-slate-500">STT</th>
                   <th className="w-28">Mã BN</th>
-                  <th className="min-w-[160px]">Họ và tên</th>
-                  <th className="w-20 text-center">Tuổi</th>
-                  <th className="w-24 text-center">Giới tính</th>
-                  <th className="min-w-[200px]">Thông tin liên hệ</th>
+                  <th className="w-48">Họ và tên</th>
+                  <th className="w-18 text-center">Tuổi</th>
+                  <th className="w-20 text-center">Giới tính</th>
+                  <th className="w-52">Thông tin liên hệ</th>
                   <th className="w-32 text-center">Thị lực</th>
-                  <th className="min-w-[240px]">Chẩn đoán mắt</th>
-                  <th className="min-w-[180px] text-center">Phân nhóm & Hướng xử trí</th>
-                  <th className="min-w-[150px]">Bác sĩ khám</th>
+                  <th className="w-56">Chẩn đoán mắt</th>
+                  <th className="w-44 text-center">Phân nhóm & Hướng xử trí</th>
+                  <th className="w-36">Bác sĩ khám</th>
                   <th className="w-32 text-center pr-4">Trạng thái mổ</th>
                 </tr>
               </thead>

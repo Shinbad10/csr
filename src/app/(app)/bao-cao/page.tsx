@@ -809,7 +809,20 @@ function BaoCaoSkeleton() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[1050px] table-fixed">
+                <colgroup>
+                  <col className="w-24" />
+                  <col className="w-36" />
+                  <col className="w-44" />
+                  <col className="w-36" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-24" />
+                  <col className="w-20" />
+                  <col className="w-20" />
+                  <col className="w-24" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-[var(--line)] bg-[var(--surface-soft)] text-[var(--ink-soft)] font-bold">
                     <th className="py-3 px-4">Ngày khám</th>
