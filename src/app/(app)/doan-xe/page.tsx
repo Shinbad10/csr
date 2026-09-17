@@ -1484,40 +1484,152 @@ export default function DoanXePage() {
       <Modal
         open={Boolean(editingBusPatient)}
         onClose={() => setEditingBusPatient(null)}
-        title={
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#031da6] text-white flex items-center justify-center">
-              <Bus className="w-4 h-4 text-teal-300" />
-            </div>
-            <span className="text-[15px] font-bold">Xếp xe đón bệnh nhân</span>
-          </div>
-        }
+        icon={Bus}
+        title="Xếp xe đón bệnh nhân"
         subtitle={
           editingBusPatient
-            ? `#${editingBusPatient.stt || ""} ${editingBusPatient.hoTen} • Tuyến xã: ${editingBusPatient.buoiKham?.xa || "Chưa có"}`
+            ? `#${editingBusPatient.stt || ""} ${editingBusPatient.hoTen} • Lên lịch điều trị & điểm xe đón`
             : ""
         }
-        maxWidth="max-w-[500px]"
+        maxWidth="max-w-[700px]"
+        footer={
+          editingBusPatient ? (
+            <div className="flex items-center justify-between w-full gap-3 flex-wrap">
+              {/* Thông tin mốc đã chọn tóm tắt */}
+              <div className="flex items-center gap-2 min-w-0 text-[12.5px]">
+                {busFormDiem ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-[#031da6] font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="truncate max-w-[240px] sm:max-w-[320px]">
+                      {busFormDiem}
+                    </span>
+                    <span className="font-mono px-1.5 py-0.5 rounded bg-white border border-blue-200 text-[11.5px]">
+                      ⏰ {busFormGio}
+                    </span>
+                    {busFormDate && (
+                      <span className="font-mono text-[11px] text-slate-500 hidden sm:inline">
+                        📅 {fmtDate(busFormDate)}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-slate-400 font-medium italic text-[12px]">
+                    Chưa chọn điểm đón xe
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingBusPatient(null)}
+                  className="px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  Đóng
+                </button>
+                <button
+                  type="button"
+                  disabled={savingBus || !busFormDiem}
+                  onClick={handleSaveBusAssignment}
+                  className="px-5 py-2 text-[13px] font-bold bg-[#031da6] hover:bg-[#020f5c] text-white rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
+                >
+                  {savingBus ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  ) : (
+                    <Check className="w-4 h-4 text-teal-300 stroke-[3]" />
+                  )}
+                  <span>Lưu thông tin đón</span>
+                </button>
+              </div>
+            </div>
+          ) : undefined
+        }
       >
         {editingBusPatient && (
           <div className="space-y-4">
+            {/* Thẻ tóm tắt thông tin bệnh nhân */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 border border-blue-100/90 shadow-2xs flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-[#031da6] text-white flex items-center justify-center font-bold text-[14px] shrink-0 shadow-xs">
+                  #{editingBusPatient.stt || "—"}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-serif text-[16px] font-bold text-slate-900 leading-tight">
+                      {editingBusPatient.hoTen}
+                    </span>
+                    {editingBusPatient.sdt && (
+                      <a
+                        href={`tel:${editingBusPatient.sdt}`}
+                        className="inline-flex items-center gap-1 text-[11.5px] font-mono font-bold text-indigo-700 bg-white border border-indigo-200 px-2 py-0.5 rounded-lg hover:bg-indigo-50"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>{editingBusPatient.sdt}</span>
+                      </a>
+                    )}
+                  </div>
+                  <div className="text-[12px] text-slate-500 mt-1 flex items-center gap-3 flex-wrap">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Xã: <b>{editingBusPatient.buoiKham?.xa || "Chưa xác định"}</b></span>
+                    </span>
+                    {editingBusPatient.buoiKham?.ngayKham && (
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Khám: {fmtDate(editingBusPatient.buoiKham.ngayKham)}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Trạng thái hiện tại
+                </div>
+                <div className="text-[12.5px] font-bold mt-0.5">
+                  {editingBusPatient.diemDon ? (
+                    <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Đã xếp: {editingBusPatient.diemDon}</span>
+                    </span>
+                  ) : (
+                    <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Chưa xếp xe đón</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bước 1: Ngày hẹn điều trị */}
             <div>
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
-                Ngày hẹn điều trị tại BV
+              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="w-4 h-4 text-[#031da6]" />
+                  <span>1. Ngày hẹn điều trị tại Bệnh viện</span>
+                </span>
+                <span className="text-[11px] text-slate-400 font-normal lowercase">
+                  (tự đồng bộ theo ngày đón của tuyến xe khi chọn bên dưới)
+                </span>
               </label>
               <input
                 type="date"
                 value={busFormDate}
                 onChange={(e) => setBusFormDate(e.target.value)}
-                className="w-full h-10 px-3 text-[13px] border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6]"
+                className="w-full h-10 px-3.5 text-[13px] font-mono font-bold text-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 transition-all bg-white"
               />
             </div>
 
+            {/* Bước 2: Chọn đoàn xe & điểm đón dạng Inline */}
             <div>
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
-                Đoàn xe đón (Điểm đón & Giờ xe đón)
+              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Bus className="w-4 h-4 text-[#031da6]" />
+                <span>2. Chọn tuyến xe đón & Khung giờ đón</span>
               </label>
               <DoanXeAutocomplete
+                variant="inline"
                 diemDon={busFormDiem}
                 gioDon={busFormGio}
                 ngayHen={busFormDate}
@@ -1528,25 +1640,6 @@ export default function DoanXePage() {
                   if (val.ngayHen) setBusFormDate(val.ngayHen);
                 }}
               />
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setEditingBusPatient(null)}
-                className="px-4 py-2 text-[12.5px] font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-              >
-                Đóng
-              </button>
-              <button
-                type="button"
-                disabled={savingBus}
-                onClick={handleSaveBusAssignment}
-                className="px-4 py-2 text-[12.5px] font-bold bg-[#031da6] hover:bg-[#020f5c] text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
-              >
-                {savingBus && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Lưu thông tin đón</span>
-              </button>
             </div>
           </div>
         )}
