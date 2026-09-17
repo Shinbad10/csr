@@ -26,12 +26,6 @@ interface DataTableProps<TData> {
   dense?: boolean;
 }
 
-// Cột có thể khai báo meta.flex = true nếu muốn cột đó nhận toàn bộ khoảng trống còn dư.
-function isFlexColumn(column: { id: string; columnDef: { meta?: unknown } }): boolean {
-  const flag = (column.columnDef.meta as { flex?: boolean } | undefined)?.flex;
-  return typeof flag === 'boolean' ? flag : false;
-}
-
 export function DataTable<TData>({
   loading,
   emptyTitle = 'Không có dữ liệu',
@@ -100,15 +94,11 @@ export function DataTable<TData>({
       >
         <colgroup>
           {visibleColumns.map((column) => {
-            const isFlex = isFlexColumn(column);
             const size = column.getSize();
             return (
               <col
                 key={column.id}
-                style={{
-                  width: isFlex ? 'auto' : `${size}px`,
-                  minWidth: `${size}px`,
-                }}
+                style={{ width: `${size}px` }}
               />
             );
           })}
@@ -124,7 +114,6 @@ export function DataTable<TData>({
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
                   const isLast = header.column.id === lastColumnId;
-                  const isFlex = isFlexColumn(header.column);
                   const size = header.getSize();
                   return (
                     <th
@@ -133,8 +122,7 @@ export function DataTable<TData>({
                       style={{
                         textAlign: align as 'left' | 'right' | 'center',
                         position: 'relative',
-                        width: isFlex ? 'auto' : `${size}px`,
-                        minWidth: `${size}px`,
+                        width: `${size}px`,
                       }}
                       className={cn(
                         'bg-[var(--navy)] text-white group transition-colors duration-200',
@@ -187,15 +175,11 @@ export function DataTable<TData>({
                 <tr className="bg-[var(--surface-soft)] border-b border-[var(--line-soft)]">
                   {hg.headers.map((header) => {
                     const isLast = header.column.id === lastColumnId;
-                    const isFlex = isFlexColumn(header.column);
                     const size = header.getSize();
                     return (
                       <th
                         key={`filter-${header.id}`}
-                        style={{
-                          width: isFlex ? 'auto' : `${size}px`,
-                          minWidth: `${size}px`,
-                        }}
+                        style={{ width: `${size}px` }}
                         className={cn('px-3 py-2 border-r border-[var(--line-soft)]', isLast && 'border-r-0')}
                       >
                         {header.column.getCanFilter() ? (
@@ -346,7 +330,6 @@ function DataTableRowInternal<TData>({
       {row.getVisibleCells().map((cell) => {
         const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left';
         const isLast = cell.column.id === lastColumnId;
-        const isFlex = isFlexColumn(cell.column);
         const isActions = cell.column.id === 'actions';
         const noTruncate = isActions || (cell.column.columnDef.meta as { noTruncate?: boolean })?.noTruncate;
         const size = cell.column.getSize();
@@ -355,8 +338,7 @@ function DataTableRowInternal<TData>({
             key={cell.id}
             style={{
               textAlign: align as 'left' | 'right' | 'center',
-              width: isFlex ? 'auto' : `${size}px`,
-              minWidth: `${size}px`,
+              width: `${size}px`,
             }}
             className={cn(
               dense ? 'px-3 py-2' : 'px-3 py-3',

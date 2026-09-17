@@ -900,7 +900,7 @@ export default function BuoiKhamPage() {
       {
         id: "stt",
         header: "STT",
-        size: 62,
+        size: 54,
         enableSorting: false,
         enableResizing: false,
         meta: { align: "center" },
@@ -914,7 +914,7 @@ export default function BuoiKhamPage() {
       {
         id: "tenBuoiKham",
         header: "Đợt khám",
-        size: 260,
+        size: 320,
         meta: { flex: true },
         accessorFn: (row) => `${fmtBuoiKhamName(row)} ${fmtBuoiKhamCode(row.id)} ${row.bacSiKham || ""}`,
         cell: ({ row }) => {
@@ -942,11 +942,12 @@ export default function BuoiKhamPage() {
         id: "diaDiem",
         accessorKey: "diaDiem",
         header: "Địa điểm",
-        size: 210,
+        size: 280,
+        meta: { flex: true },
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 min-w-0 text-[#334155]">
+          <div className="flex items-center gap-1.5 min-w-0 text-[#334155]" title={row.original.diaDiem}>
             <MapPin className="w-3.5 h-3.5 text-[#64748b] shrink-0" />
-            <span className="text-[12.5px] truncate" title={row.original.diaDiem}>
+            <span className="text-[12.5px] font-medium truncate">
               {row.original.diaDiem}
             </span>
           </div>
@@ -955,7 +956,7 @@ export default function BuoiKhamPage() {
       {
         id: "slBn",
         header: "SL BN",
-        size: 92,
+        size: 84,
         meta: { align: "center" },
         accessorFn: (row) => row._count?.hoSo ?? 0,
         cell: ({ row }) => (
@@ -974,7 +975,7 @@ export default function BuoiKhamPage() {
       {
         id: "phanNhom",
         header: "Phân nhóm",
-        size: 122,
+        size: 116,
         enableSorting: false,
         meta: { align: "center" },
         cell: ({ row }) => <NhomChip a={row.original.stats?.nhomA ?? 0} b={row.original.stats?.nhomB ?? 0} />,
@@ -982,7 +983,7 @@ export default function BuoiKhamPage() {
       {
         id: "tienDoMo",
         header: "Tiến độ mổ",
-        size: 122,
+        size: 136,
         meta: { align: "center" },
         accessorFn: (row) => {
           const need = (row.stats?.daMo ?? 0) + (row.stats?.chuaMo ?? 0);
@@ -999,7 +1000,7 @@ export default function BuoiKhamPage() {
       {
         id: "phaco2Lan",
         header: "Mắt 2",
-        size: 96,
+        size: 88,
         meta: { align: "center" },
         accessorFn: (row) => row.stats?.phaco2Lan ?? 0,
         cell: ({ row }) => (
@@ -1015,10 +1016,11 @@ export default function BuoiKhamPage() {
       {
         id: "ngayKham",
         header: "Ngày khám",
-        size: 126,
+        size: 118,
+        meta: { align: "center" },
         accessorFn: (row) => (row.ngayKham ? new Date(row.ngayKham).getTime() : 0),
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 font-mono text-xs text-[#334155] font-semibold">
+          <div className="flex items-center justify-center gap-1.5 font-mono text-xs text-[#334155] font-semibold">
             <Calendar className="w-3.5 h-3.5 text-[#64748b]" />
             <span>{fmtDate(row.original.ngayKham)}</span>
           </div>
@@ -1027,7 +1029,7 @@ export default function BuoiKhamPage() {
       {
         id: "trangThai",
         header: "Trạng thái",
-        size: 132,
+        size: 126,
         meta: { align: "center" },
         accessorFn: (row) => phaseOf(row.ngayKham).key,
         cell: ({ row }) => {
@@ -1050,7 +1052,7 @@ export default function BuoiKhamPage() {
       {
         id: "actions",
         header: "Thao tác",
-        size: 178,
+        size: 168,
         enableSorting: false,
         enableResizing: false,
         meta: { align: "right" },
