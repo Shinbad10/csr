@@ -60,6 +60,7 @@ interface Stats {
   daDen?: number;
   denKhongMo?: number;
   phaco2Lan?: number;
+  coSoName?: string;
   sessions?: SessionRow[];
 }
 
@@ -620,6 +621,8 @@ export default function Dashboard() {
           dateFilter="all"
           from={range.from}
           to={range.to}
+          coSoName={stats?.coSoName}
+          sessions={stats?.sessions}
         />
       )}
     </>

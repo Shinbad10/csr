@@ -85,6 +85,7 @@ export default function ReportDetailModal({
 }: ReportDetailModalProps) {
   const { addToast } = useToast();
   const [data, setData] = useState<any[]>([]);
+  const [internalSessions, setInternalSessions] = useState<typeof sessions>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "OTHER">("ALL");
@@ -102,6 +103,7 @@ export default function ReportDetailModal({
   useEffect(() => {
     if (!open || !target) {
       setData([]);
+      setInternalSessions([]);
       setSearch("");
       setGroupFilter("ALL");
       setSurgeryFilter("ALL");
@@ -111,8 +113,34 @@ export default function ReportDetailModal({
     }
 
     if (target.type === "kpi_soBuoi") {
-      setLoading(false);
-      return;
+      if (sessions && sessions.length > 0) {
+        setLoading(false);
+        return;
+      }
+      let active = true;
+      setLoading(true);
+      const fetchSessions = async () => {
+        try {
+          const sp = new URLSearchParams();
+          if (from) sp.set("from", from);
+          if (to) sp.set("to", to);
+          const res = await fetch(`/api/csr/reports${sp.toString() ? `?${sp.toString()}` : ""}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (active && json.sessions) {
+              setInternalSessions(json.sessions);
+            }
+          }
+        } catch (e) {
+          console.error("Lỗi nạp đợt khám:", e);
+        } finally {
+          if (active) setLoading(false);
+        }
+      };
+      fetchSessions();
+      return () => {
+        active = false;
+      };
     }
 
     let active = true;
@@ -163,12 +191,14 @@ export default function ReportDetailModal({
     return () => {
       active = false;
     };
-  }, [open, target, dateFilter, from, to]);
+  }, [open, target, dateFilter, from, to, sessions]);
+
+  const allSessions = (sessions && sessions.length > 0 ? sessions : internalSessions) || [];
 
   // Bộ lọc tìm kiếm & nhóm
   const filtered = useMemo(() => {
     if (target?.type === "kpi_soBuoi") {
-      return sessions.filter((s) => {
+      return allSessions.filter((s) => {
         if (!search.trim()) return true;
         const q = search.toLowerCase().trim();
         return (
@@ -242,7 +272,7 @@ export default function ReportDetailModal({
 
       return true;
     });
-  }, [data, sessions, search, groupFilter, surgeryFilter, bhytFilter, target?.type]);
+  }, [data, allSessions, search, groupFilter, surgeryFilter, bhytFilter, target?.type]);
 
   // Thống kê nhanh trong modal
   const stats = useMemo(() => {
@@ -251,14 +281,14 @@ export default function ReportDetailModal({
       let totalNhomA = 0;
       let totalNhomB = 0;
       let totalDaMo = 0;
-      sessions.forEach((s) => {
+      allSessions.forEach((s) => {
         totalTong += s.tong;
         totalNhomA += s.nhomA;
         totalNhomB += s.nhomB;
         totalDaMo += s.daMo;
       });
       return {
-        total: sessions.length,
+        total: allSessions.length,
         totalPatients: totalTong,
         nhomA: totalNhomA,
         nhomB: totalNhomB,
@@ -284,7 +314,7 @@ export default function ReportDetailModal({
     });
 
     return { total: data.length, nhomA, nhomB, daMo, denKhongMo, bhyt: coBhyt };
-  }, [data, sessions, target?.type]);
+  }, [data, allSessions, target?.type]);
 
   // Paging
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
