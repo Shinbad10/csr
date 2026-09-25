@@ -10,6 +10,8 @@ import { usePortalPosition } from '@/components/csr/fields';
 export interface ToolbarSelectOption {
   label: string;
   value: string;
+  /** Số bản ghi khớp lựa chọn này — hiện dạng số mono bên phải. */
+  count?: number;
 }
 
 interface ToolbarSelectProps {
@@ -107,6 +109,16 @@ export function ToolbarSelect({
       >
         {Icon && <Icon className={cn('w-3.5 h-3.5 shrink-0', active ? 'text-[var(--navy)]' : 'text-[var(--mute)]')} />}
         <span className="truncate flex-1 text-left">{selected?.label ?? placeholder}</span>
+        {selected?.count !== undefined && (
+          <span
+            className={cn(
+              'shrink-0 font-mono text-[10.5px] font-bold tabular-nums px-1.5 rounded-md leading-[18px]',
+              active ? 'bg-[var(--navy)] text-white' : 'bg-[var(--surface)] border border-[var(--line)] text-[var(--mute)]',
+            )}
+          >
+            {selected.count.toLocaleString('vi-VN')}
+          </span>
+        )}
         <ChevronDown
           className={cn('w-3.5 h-3.5 shrink-0 transition-transform duration-200', active ? 'text-[var(--navy)]' : 'text-[var(--mute)]', open && 'rotate-180')}
         />
@@ -161,7 +173,17 @@ export function ToolbarSelect({
                             : 'text-[var(--ink-soft)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]',
                         )}
                       >
-                        <span className="truncate">{o.label}</span>
+                        <span className="truncate flex-1">{o.label}</span>
+                        {o.count !== undefined && (
+                          <span
+                            className={cn(
+                              'shrink-0 font-mono text-[11px] font-bold tabular-nums',
+                              on ? 'text-white/85' : o.count === 0 ? 'text-[var(--mute-soft)]' : 'text-[var(--mute)]',
+                            )}
+                          >
+                            {o.count.toLocaleString('vi-VN')}
+                          </span>
+                        )}
                         {on && <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={3} />}
                       </button>
                     );

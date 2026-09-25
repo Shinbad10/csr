@@ -823,8 +823,8 @@ function BaoCaoSkeleton() {
                   <col className="w-20" />
                   <col className="w-24" />
                 </colgroup>
-                <thead>
-                  <tr className="border-b border-[var(--line)] bg-[var(--surface-soft)] text-[var(--ink-soft)] font-bold">
+                <thead className="sticky top-0 bg-[var(--surface-soft)] border-b border-[var(--line-strong)] text-[var(--ink-soft)] font-mono text-[10.5px] uppercase font-bold tracking-[0.06em]">
+                  <tr>
                     <th className="py-3 px-4">Ngày khám</th>
                     <th className="py-3 px-4">Địa bàn / Xã</th>
                     <th className="py-3 px-4">Điểm khám</th>
@@ -860,7 +860,7 @@ function BaoCaoSkeleton() {
                               icon: CalendarHeart,
                             })
                           }
-                          className="hover:bg-[var(--surface-hover)] transition-colors cursor-pointer group"
+                          className="hover:bg-[var(--teal-softer)] even:bg-[var(--surface-soft)]/50 transition-colors cursor-pointer group"
                         >
                           <td className="py-3 px-4 font-mono font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
                             {s.ngayKham ? new Date(s.ngayKham).toLocaleDateString("vi-VN") : "—"}

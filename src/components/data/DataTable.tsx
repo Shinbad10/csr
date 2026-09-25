@@ -24,6 +24,8 @@ interface DataTableProps<TData> {
   striped?: boolean;
   stickyHeader?: boolean;
   dense?: boolean;
+  /** Biến thể giao diện cho thead: 'subtle' (Visihub chuẩn) hoặc 'navy' (nền tối). Mặc định là 'subtle'. */
+  headerVariant?: 'subtle' | 'navy';
 }
 
 export function DataTable<TData>({
@@ -36,6 +38,7 @@ export function DataTable<TData>({
   striped = true,
   stickyHeader: propsStickyHeader,
   dense = false,
+  headerVariant = 'subtle',
 }: DataTableProps<TData>) {
   const { table, viewMode, fullHeight, showFilters, isLoading: ctxLoading } = useDataContext<TData>();
   const stickyHeader = propsStickyHeader ?? fullHeight;
@@ -95,10 +98,17 @@ export function DataTable<TData>({
         <colgroup>
           {visibleColumns.map((column) => {
             const size = column.getSize();
+            const meta = column.columnDef.meta as { flex?: boolean; width?: string } | undefined;
             return (
               <col
                 key={column.id}
-                style={{ width: `${size}px` }}
+                style={
+                  meta?.width
+                    ? { width: meta.width }
+                    : meta?.flex
+                    ? { minWidth: `${size}px` }
+                    : { width: `${size}px` }
+                }
               />
             );
           })}
@@ -108,9 +118,10 @@ export function DataTable<TData>({
         <thead className={cn(stickyHeader && 'sticky top-0 z-[10] shadow-[0_1px_6px_rgba(0,0,0,0.08)]')}>
           {table.getHeaderGroups().map((hg) => (
             <React.Fragment key={hg.id}>
-              <tr className="border-b border-white/10">
+              <tr className={cn('border-b', headerVariant === 'navy' ? 'border-white/10' : 'border-[var(--line-strong)]')}>
                 {hg.headers.map((header) => {
-                  const align = (header.column.columnDef.meta as { align?: string })?.align ?? 'left';
+                  const meta = header.column.columnDef.meta as { align?: string; flex?: boolean; width?: string } | undefined;
+                  const align = meta?.align ?? 'left';
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
                   const isLast = header.column.id === lastColumnId;
@@ -122,15 +133,21 @@ export function DataTable<TData>({
                       style={{
                         textAlign: align as 'left' | 'right' | 'center',
                         position: 'relative',
-                        width: `${size}px`,
+                        width: meta?.width ?? (meta?.flex ? undefined : `${size}px`),
+                        minWidth: `${size}px`,
                       }}
                       className={cn(
-                        'bg-[var(--navy)] text-white group transition-colors duration-200',
-                        dense ? 'px-3 py-2 text-[10px]' : 'px-3 py-3 text-[10.5px]',
+                        headerVariant === 'navy'
+                          ? 'bg-[var(--navy)] text-white border-r border-white/10'
+                          : 'bg-[var(--surface-soft)] text-[var(--ink-soft)] font-mono border-r border-[var(--line-soft)]',
+                        'group transition-colors duration-200',
+                        dense ? 'px-3 py-2 text-[10.5px]' : 'px-3 py-2.5 text-[11px]',
                         'font-bold tracking-[0.06em] uppercase',
-                        'border-r border-white/10',
                         isLast && 'border-r-0',
-                        canSort && 'cursor-pointer select-none hover:bg-[var(--navy-deep)]',
+                        canSort && (headerVariant === 'navy'
+                          ? 'cursor-pointer select-none hover:bg-[var(--navy-deep)]'
+                          : 'cursor-pointer select-none hover:bg-[var(--surface-hover)] hover:text-[var(--navy)]'
+                        ),
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -151,15 +168,25 @@ export function DataTable<TData>({
                           <div
                             className={cn(
                               'flex flex-col items-center justify-center -space-y-1.5 transition-all duration-200 shrink-0',
-                              sorted ? 'opacity-100' : 'opacity-25 group-hover:opacity-60',
+                              sorted ? 'opacity-100' : 'opacity-30 group-hover:opacity-75',
                             )}
                           >
                             <ChevronUp
-                              className={cn('w-3 h-3', sorted === 'asc' ? 'text-[var(--teal)] scale-125' : 'text-white')}
+                              className={cn(
+                                'w-3 h-3',
+                                headerVariant === 'navy'
+                                  ? (sorted === 'asc' ? 'text-[var(--teal)] scale-125' : 'text-white')
+                                  : (sorted === 'asc' ? 'text-[var(--navy)] scale-125' : 'text-[var(--mute)]'),
+                              )}
                               strokeWidth={3}
                             />
                             <ChevronDown
-                              className={cn('w-3 h-3', sorted === 'desc' ? 'text-[var(--teal)] scale-125' : 'text-white')}
+                              className={cn(
+                                'w-3 h-3',
+                                headerVariant === 'navy'
+                                  ? (sorted === 'desc' ? 'text-[var(--teal)] scale-125' : 'text-white')
+                                  : (sorted === 'desc' ? 'text-[var(--navy)] scale-125' : 'text-[var(--mute)]'),
+                              )}
                               strokeWidth={3}
                             />
                           </div>
@@ -176,10 +203,14 @@ export function DataTable<TData>({
                   {hg.headers.map((header) => {
                     const isLast = header.column.id === lastColumnId;
                     const size = header.getSize();
+                    const filterMeta = header.column.columnDef.meta as { width?: string; flex?: boolean } | undefined;
                     return (
                       <th
                         key={`filter-${header.id}`}
-                        style={{ width: `${size}px` }}
+                        style={{
+                          width: filterMeta?.width ?? (filterMeta?.flex ? undefined : `${size}px`),
+                          minWidth: `${size}px`,
+                        }}
                         className={cn('px-3 py-2 border-r border-[var(--line-soft)]', isLast && 'border-r-0')}
                       >
                         {header.column.getCanFilter() ? (
@@ -328,17 +359,19 @@ function DataTableRowInternal<TData>({
       )}
     >
       {row.getVisibleCells().map((cell) => {
-        const align = (cell.column.columnDef.meta as { align?: string })?.align ?? 'left';
+        const meta = cell.column.columnDef.meta as { align?: string; flex?: boolean; width?: string; noTruncate?: boolean } | undefined;
+        const align = meta?.align ?? 'left';
         const isLast = cell.column.id === lastColumnId;
         const isActions = cell.column.id === 'actions';
-        const noTruncate = isActions || (cell.column.columnDef.meta as { noTruncate?: boolean })?.noTruncate;
+        const noTruncate = isActions || meta?.noTruncate;
         const size = cell.column.getSize();
         return (
           <td
             key={cell.id}
             style={{
               textAlign: align as 'left' | 'right' | 'center',
-              width: `${size}px`,
+              width: meta?.width ?? (meta?.flex ? undefined : `${size}px`),
+              minWidth: `${size}px`,
             }}
             className={cn(
               dense ? 'px-3 py-2' : 'px-3 py-3',

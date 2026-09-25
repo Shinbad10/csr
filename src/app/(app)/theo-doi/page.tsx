@@ -23,6 +23,7 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle2,
+  History,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -44,6 +45,8 @@ import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/compone
 import { SkeletonList } from "@/components/layout/Skeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
+import { Badge, Fact, FIELD_LABEL, INPUT_CLS, BTN_SOFT, TONE_SOLID, WorkCard, type Tone } from "@/components/csr/ui";
+import { useHisReconcile, DoiChieuHistoryModal, fmtRelative, type DoiChieuLog } from "@/components/csr/HisReconcile";
 
 const FOLLOW = ["", "Đang follow-up", "Quá 28 ngày–chuyển CSKH", "Đã chốt", "Ngừng"];
 /** Các trạng thái thuộc luồng mổ (nhóm A). Gồm cả CoChiDinhMo — ca chưa chốt ngày, cần nhắc lịch. */
@@ -477,61 +480,6 @@ export default function TheoDoiPage() {
     message: "",
   });
 
-  const [batchChecking, setBatchChecking] = useState(false);
-
-  const runBatchCheckHIS = async () => {
-    if (!selBk) {
-      addToast({ type: "error", message: "Vui lòng chọn Đợt khám để đối chiếu hàng loạt" });
-      return;
-    }
-    setBatchChecking(true);
-    setProgressModal({
-      open: true,
-      type: "check",
-      status: "running",
-      title: "Đang đối chiếu HIS đợt khám...",
-      message: "Hệ thống đang kết nối CSDL HIS bệnh viện và tự động rà soát danh sách bệnh nhân Nhóm A...",
-      summary: null,
-    });
-    try {
-      const res = await fetch("/api/his/batch-check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buoiKhamId: selBk }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const s = data.summary;
-        setProgressModal({
-          open: true,
-          type: "check",
-          status: "success",
-          title: "Đối chiếu HIS hoàn tất!",
-          message: `Đã rà soát ${s.total} bệnh nhân Nhóm A: Tìm thấy ${s.found} ca trên HIS (${s.surgery} ca mổ) & tự động cập nhật thực thu!`,
-          summary: s,
-        });
-        await load(sel?.id);
-      } else {
-        setProgressModal({
-          open: true,
-          type: "check",
-          status: "error",
-          title: "Lỗi đối chiếu HIS",
-          message: data.error || "Không thể thực hiện đối chiếu hàng loạt",
-        });
-      }
-    } catch {
-      setProgressModal({
-        open: true,
-        type: "check",
-        status: "error",
-        title: "Lỗi kết nối máy chủ HIS",
-        message: "Mất kết nối hoặc không thể truy vấn CSDL HIS bệnh viện.",
-      });
-    } finally {
-      setBatchChecking(false);
-    }
-  };
 
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -598,163 +546,171 @@ export default function TheoDoiPage() {
     });
   };
 
-  const [batchUnlinking, setBatchUnlinking] = useState(false);
 
-  const runBatchUnlinkHIS = async () => {
-    if (!selBk) {
-      addToast({ type: "error", message: "Vui lòng chọn đợt khám để hủy liên kết hàng loạt" });
-      return;
-    }
-
-    setConfirmModal({
-      open: true,
-      title: "Hủy liên kết HIS hàng loạt đợt khám",
-      message: "Bạn có chắc chắn muốn HỦY LƯU & HỦY LIÊN KẾT HIS HÀNG LOẠT cho tất cả bệnh nhân trong đợt khám này? Tất cả trạng thái Đã mổ, Đã đến, Số tiền thực thu và Mã HIS sẽ được khôi phục về trạng thái sạch ban đầu.",
-      confirmText: "Đồng ý hủy hàng loạt",
-      variant: "danger",
-      onConfirm: async () => {
-        setBatchUnlinking(true);
-        setProgressModal({
-          open: true,
-          type: "unlink",
-          status: "running",
-          title: "Đang hủy liên kết HIS hàng loạt...",
-          message: "Đang làm sạch dữ liệu, khôi phục trạng thái ban đầu cho tất cả bệnh nhân trong đợt khám...",
-        });
-        try {
-          const res = await fetch("/api/his/batch-unlink", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ buoiKhamId: selBk }),
-          });
-          const data = await res.json();
-          if (res.ok && data.success) {
-            setProgressModal({
-              open: true,
-              type: "unlink",
-              status: "success",
-              title: "Hủy liên kết HIS hoàn tất!",
-              message: data.message || `Đã hủy liên kết HIS thành công cho ${data.unlinkedCount || 0} bệnh nhân!`,
-              unlinkedCount: data.unlinkedCount,
-            });
-            setF({
-              daDon: false,
-              ngayDenBV: "",
-              ngayMoThucTe: "",
-              soTienThucThu: "",
-              trangThaiDieuTri: "",
-              ngayTaiKham: "",
-              ghiChuMat2: "",
-            });
-            await load(sel?.id);
-          } else {
-            setProgressModal({
-              open: true,
-              type: "unlink",
-              status: "error",
-              title: "Lỗi hủy liên kết hàng loạt",
-              message: data.error || "Không thể hủy liên kết hàng loạt",
-            });
-          }
-        } catch {
-          setProgressModal({
-            open: true,
-            type: "unlink",
-            status: "error",
-            title: "Lỗi kết nối máy chủ",
-            message: "Không thể kết nối đến máy chủ để hủy liên kết hàng loạt.",
-          });
-        } finally {
-          setBatchUnlinking(false);
-        }
-      },
-    });
+  // ── Đối chiếu HIS cả đợt: dùng chung API ghi lịch sử với trang Đợt khám / Tư vấn ──
+  const curBk = bks.find((b) => b.id === selBk) || null;
+  const [lastDoiChieu, setLastDoiChieu] = useState<{ bkId: string; log: DoiChieuLog } | null>(null);
+  const curLog: DoiChieuLog | null =
+    lastDoiChieu && lastDoiChieu.bkId === selBk ? lastDoiChieu.log : (curBk?.lastDoiChieu as DoiChieuLog | null) ?? null;
+  const [showHisHistory, setShowHisHistory] = useState(false);
+  const his = useHisReconcile({
+    onLog: (bkId, log) => setLastDoiChieu({ bkId, log }),
+    onFinish: () => load(sel?.id),
+  });
+  const reconciling = !!selBk && his.runningIds.has(selBk);
+  const reconcileCurrent = () => {
+    if (!curBk) return;
+    const soCa = (curBk.stats?.nhomA ?? 0) + (curBk.stats?.nhomB ?? 0);
+    his.runOne({ id: curBk.id, name: fmtBuoiKhamName(curBk), soCa: soCa || stats.chiDinh });
   };
 
+  // ── Phân loại từng ca cho danh sách (A: tiến trình mổ, B: follow-up) ──
+  const rowState = (p: HoSo) => {
+    const truocDay = p.trangThaiDieuTri === "Đã mổ trước đây" || p.trangThaiDieuTri === "Đã đến trước đây";
+    const isMo = !truocDay && (p.trangThaiDieuTri === "Đã mổ" || !!p.ngayMoThucTe);
+    const isHuy = p.trangThaiDieuTri === "Hủy" || p.trangThaiDieuTri === "Không đến";
+    const isOverdue = isOverdue28Days(p);
+    const isDaDen = !!p.daDon;
+    let tone: Tone;
+    let label: string;
+    if (tab === "A") {
+      if (truocDay) [tone, label] = ["violet", p.trangThaiDieuTri === "Đã mổ trước đây" ? "Mổ trước đây" : "Đến trước đây"];
+      else if (isMo) [tone, label] = ["teal", "Đã mổ"];
+      else if (isHuy) [tone, label] = ["rose", p.trangThaiDieuTri || "Hủy"];
+      else if (isOverdue) [tone, label] = ["rose", "Quá 28 ngày"];
+      else if (isDaDen) [tone, label] = ["navy", "Đã đến BV"];
+      else [tone, label] = ["amber", "Chờ mổ"];
+    } else {
+      if (isOverdue) [tone, label] = ["rose", "Quá 28 ngày"];
+      else if (p.followUpStatus === "Đã chốt") [tone, label] = ["teal", "Đã chốt"];
+      else if (p.followUpStatus === "Ngừng" || p.followUpStatus === "Ngưng") [tone, label] = ["gray", "Ngừng"];
+      else [tone, label] = ["navy", "Đang follow-up"];
+    }
+    return { truocDay, isMo, isHuy, isOverdue, isDaDen, tone, label };
+  };
+
+  const subFilters: { k: typeof subFilter; label: string; n: number }[] =
+    tab === "A"
+      ? [
+          { k: "all", label: "Tất cả", n: rows.length },
+          { k: "choMo", label: "Chờ mổ", n: rows.filter((p) => { const s = rowState(p); return !s.isMo && !s.truocDay && !s.isHuy && !s.isOverdue; }).length },
+          { k: "daDen", label: "Đã đến", n: rows.filter((p) => !!p.daDon).length },
+          { k: "daMo", label: "Đã mổ", n: rows.filter((p) => rowState(p).isMo).length },
+          { k: "daMoTruoc", label: "Đến/Mổ trước", n: rows.filter((p) => rowState(p).truocDay).length },
+          { k: "quaHan", label: "Quá 28 ngày", n: rows.filter(isOverdue28Days).length },
+          { k: "huy", label: "Hủy / Vắng", n: rows.filter((p) => rowState(p).isHuy).length },
+        ]
+      : [
+          { k: "all", label: "Tất cả", n: rows.length },
+          { k: "followUp", label: "Follow-up", n: rows.filter((p) => (!p.followUpStatus || p.followUpStatus === "Đang follow-up") && !isOverdue28Days(p)).length },
+          { k: "quaHan", label: "Quá 28 ngày", n: rows.filter(isOverdue28Days).length },
+          { k: "daChot", label: "Đã chốt", n: rows.filter((p) => p.followUpStatus === "Đã chốt").length },
+          { k: "ngung", label: "Ngừng", n: rows.filter((p) => p.followUpStatus === "Ngưng" || p.followUpStatus === "Ngừng").length },
+        ];
+
+  const listRows = rows.filter((p) => {
+    if (subFilter === "all") return true;
+    const s = rowState(p);
+    if (tab === "A") {
+      if (subFilter === "daMo") return s.isMo;
+      if (subFilter === "daMoTruoc") return s.truocDay;
+      if (subFilter === "choMo") return !s.isMo && !s.truocDay && !s.isHuy && !s.isOverdue;
+      if (subFilter === "daDen") return s.isDaDen;
+      if (subFilter === "quaHan") return s.isOverdue;
+      if (subFilter === "huy") return s.isHuy;
+    } else {
+      if (subFilter === "followUp") return (!p.followUpStatus || p.followUpStatus === "Đang follow-up") && !s.isOverdue;
+      if (subFilter === "quaHan") return s.isOverdue;
+      if (subFilter === "daChot") return p.followUpStatus === "Đã chốt";
+      if (subFilter === "ngung") return p.followUpStatus === "Ngưng" || p.followUpStatus === "Ngừng";
+    }
+    return true;
+  });
+
+  const TREAT_OPTIONS: { key: string; tone: Tone }[] = [
+    { key: "Đã mổ", tone: "teal" },
+    { key: "Đã mổ trước đây", tone: "violet" },
+    { key: "Đã đến trước đây", tone: "violet" },
+    { key: "Hủy", tone: "rose" },
+    { key: "Không đến", tone: "amber" },
+  ];
+  const TONE_ACTIVE: Record<Tone, string> = {
+    teal: "bg-[var(--teal)] border-[var(--teal)] text-white",
+    violet: "bg-[#7c3aed] border-[#7c3aed] text-white",
+    rose: "bg-[var(--rose)] border-[var(--rose)] text-white",
+    amber: "bg-[var(--amber)] border-[var(--amber)] text-white",
+    navy: "bg-[var(--navy)] border-[var(--navy)] text-white",
+    gray: "bg-[var(--mute)] border-[var(--mute)] text-white",
+  };
+
+  const hisIdx = f.ghiChuMat2 ? f.ghiChuMat2.indexOf("[HIS]") : -1;
+  const hisNote = hisIdx >= 0 ? f.ghiChuMat2.substring(hisIdx).replace(/^\[HIS\]:\s*/, "").trim() : "";
+  const userNote = hisIdx >= 0 ? f.ghiChuMat2.substring(0, hisIdx).trim() : f.ghiChuMat2 || "";
+
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface-bg)] overflow-hidden h-full">
+    <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg)] overflow-hidden h-full">
       <PageHeader
         title="Theo dõi & Chăm sóc A/B"
         description="Theo dõi nhóm B (chăm sóc) và nhóm A (nhắc lịch & cập nhật điều trị tại BV)."
         actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            {hasHisConfig && (
-              <>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {hasHisConfig && selBk && (
+              <div className="inline-flex">
                 <button
                   type="button"
-                  disabled={batchChecking || !selBk}
-                  onClick={runBatchCheckHIS}
-                  className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-bold h-[34px] rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50 disabled:pointer-events-none"
-                  title="Tự động kiểm tra lịch sử mổ & thực thu tiền từ hệ thống HIS cho tất cả bệnh nhân đợt khám này"
+                  onClick={reconcileCurrent}
+                  disabled={reconciling}
+                  title={
+                    curLog
+                      ? `Đối chiếu HIS gần nhất: ${fmtRelative(curLog.thoiDiem)} — ${curLog.found ?? 0}/${curLog.total ?? 0} khớp`
+                      : "Đối chiếu toàn bộ BN Nhóm A/B của đợt với HIS (tự cập nhật đã đến, đã mổ, thực thu)"
+                  }
+                  className={`${BTN_SOFT.navy} rounded-r-none`}
                 >
-                  {batchChecking ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
-                  ) : (
-                    <span className="text-amber-600 font-black">⚡</span>
-                  )}
-                  <span>{batchChecking ? "Đang đối chiếu HIS..." : "Đối chiếu HIS hàng loạt đợt khám"}</span>
+                  {reconciling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {reconciling ? "Đang đối chiếu…" : "Đối chiếu HIS"}
+                  {!reconciling && curLog && <span className="hidden sm:inline font-normal text-[11px] opacity-75">· {fmtRelative(curLog.thoiDiem)}</span>}
                 </button>
-                {isManager && (
-                  <button
-                    type="button"
-                    disabled={batchUnlinking || !selBk}
-                    onClick={runBatchUnlinkHIS}
-                    className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-bold h-[34px] rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50 disabled:pointer-events-none"
-                    title="Hủy liên kết mã HIS hàng loạt cho tất cả bệnh nhân trong đợt khám này để chọn đối chiếu lại từ đầu"
-                  >
-                    {batchUnlinking ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-700" />
-                    ) : (
-                      <X className="w-3.5 h-3.5 text-rose-600 font-black" />
-                    )}
-                    <span>{batchUnlinking ? "Đang hủy liên kết..." : "Hủy liên kết HIS hàng loạt"}</span>
-                  </button>
-                )}
-                <Link
-                  href="/doi-chieu-his"
-                  className="btn btn-secondary px-2.5 sm:px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-semibold h-[34px] rounded-lg border border-teal-200 hover:bg-teal-50 transition-colors flex items-center gap-1.5 text-teal-800 bg-teal-50/50 shadow-2xs"
+                <button
+                  type="button"
+                  onClick={() => setShowHisHistory(true)}
+                  title="Lịch sử đối chiếu HIS của đợt"
+                  className={`${BTN_SOFT.navy} rounded-l-none border-l-0 px-2.5`}
                 >
-                  Tra cứu HIS
-                </Link>
-              </>
+                  <History className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
-            <button
-              data-tour="td-bk"
-              onClick={() => setShowBkModal(true)}
-              className="btn btn-secondary px-3 py-1.5 text-[11.5px] sm:text-[12.5px] font-semibold h-[34px] rounded-lg border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)] cursor-pointer shadow-2xs"
-            >
-              <CalendarDays className="w-4 h-4 text-[var(--teal-deep)]" />
-              <span className="truncate max-w-[160px] sm:max-w-none">
-                {selBk ? bkLabels[selBk] : "Chọn đợt khám..."}
-              </span>
+            {hasHisConfig && (
+              <Link href="/doi-chieu-his" className={BTN_SOFT.ghost}>
+                <Search className="w-3.5 h-3.5" />
+                Tra cứu HIS
+              </Link>
+            )}
+            <button data-tour="td-bk" onClick={() => setShowBkModal(true)} className={BTN_SOFT.ghost}>
+              <CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
+              <span className="truncate max-w-[160px] sm:max-w-[260px] text-[var(--ink)]">{selBk ? bkLabels[selBk] : "Chọn đợt khám…"}</span>
             </button>
           </div>
         }
       />
 
-      {/* Dải chỉ số thống kê */}
-      <div className="px-3 sm:px-5 py-2.5 border-b border-[var(--line)] bg-[var(--surface-soft)] shrink-0 overflow-x-auto">
-        <div className="flex items-stretch gap-2.5 min-w-[600px] sm:min-w-0 flex-nowrap sm:flex-wrap">
+      {/* Dải chỉ số */}
+      <div className="px-3 sm:px-5 py-3 border-b border-[var(--line)] shrink-0 overflow-x-auto no-scrollbar">
+        <div className="grid grid-cols-5 gap-2.5 min-w-[640px]">
           {[
-            { k: "Tổng BN", v: stats.tong, accent: "var(--navy)", tone: "text-[var(--navy)]" },
-            { k: "Chỉ định A/B", v: stats.chiDinh, sub: `/ ${stats.tong}`, accent: "var(--teal)", tone: "text-[var(--teal-deep)]" },
-            { k: "Nhóm A · đã đến BV", v: stats.daDen, accent: "var(--green)", tone: "text-[var(--green)]" },
-            { k: "Nhóm A · chưa đến", v: stats.chuaDen, accent: "var(--amber)", tone: "text-[var(--amber-deep)]" },
-            { k: "Nhóm A · quá hạn", v: stats.quaHan, accent: "var(--rose)", tone: "text-[var(--rose)]", alert: stats.quaHan > 0 },
+            { k: "Tổng bệnh nhân", v: stats.tong, tone: "text-[var(--ink)]", bar: "var(--navy)" },
+            { k: "Chỉ định A/B", v: stats.chiDinh, sub: `/ ${stats.tong}`, tone: "text-[var(--navy)]", bar: "var(--navy)" },
+            { k: "Nhóm A · đã đến BV", v: stats.daDen, tone: "text-[var(--teal-deep)]", bar: "var(--teal)" },
+            { k: "Nhóm A · chưa đến", v: stats.chuaDen, tone: "text-[var(--amber-deep)]", bar: "var(--amber)" },
+            { k: "Nhóm A · quá hạn", v: stats.quaHan, tone: stats.quaHan ? "text-[var(--rose)]" : "text-[var(--mute-soft)]", bar: "var(--rose)" },
           ].map((s) => (
-            <div
-              key={s.k}
-              className={`relative flex-1 min-w-[120px] pl-3 pr-2.5 py-1.5 rounded-lg bg-white border transition-colors shadow-2xs ${
-                s.alert ? "border-[var(--rose)]/40" : "border-[var(--line)]"
-              }`}
-            >
-              <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style={{ background: s.accent }} />
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">
-                {s.k}
-              </div>
+            <div key={s.k} className="relative pl-3.5 pr-3 py-2 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-xs)] overflow-hidden">
+              <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: s.bar }} />
+              <div className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">{s.k}</div>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className={`font-mono text-[17px] font-bold leading-tight ${s.tone}`}>{s.v}</span>
-                {s.sub && <span className="font-mono text-[10.5px] text-[var(--mute-soft)]">{s.sub}</span>}
+                <span className={`font-mono text-[19px] font-bold leading-tight tabular-nums ${s.tone}`}>{s.v}</span>
+                {s.sub && <span className="font-mono text-[11px] text-[var(--mute)]">{s.sub}</span>}
               </div>
             </div>
           ))}
@@ -762,279 +718,135 @@ export default function TheoDoiPage() {
       </div>
 
       {!selBk ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[var(--surface-bg)] animate-fade-in border-t border-[var(--line)]">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)] flex items-center justify-center shadow-xs mb-4">
-            <CalendarDays className="w-8 h-8 text-[var(--teal-deep)]" />
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-8 animate-fade-in">
+          <div className="w-14 h-14 rounded-[14px] bg-[var(--navy-50)] flex items-center justify-center mb-4">
+            <CalendarDays className="w-7 h-7 text-[var(--teal-deep)]" />
           </div>
-          <h3 className="font-serif font-bold text-[18px] text-[var(--ink)]">Chưa chọn đợt khám</h3>
+          <h3 className="font-serif font-semibold text-[18px] text-[var(--ink)]">Chưa chọn đợt khám</h3>
           <p className="text-[13px] text-[var(--mute)] max-w-md mt-1.5 leading-relaxed">
-            Vui lòng chọn một đợt khám tầm soát để tải danh sách bệnh nhân và thực hiện theo dõi & chăm sóc.
+            Chọn một đợt khám tầm soát để tải danh sách bệnh nhân và theo dõi, chăm sóc.
           </p>
-          <button
-            type="button"
-            onClick={() => setShowBkModal(true)}
-            className="btn btn-primary px-6 py-2.5 font-bold rounded-xl shadow-md flex items-center gap-2 mt-5 cursor-pointer active:scale-95 text-[13.5px]"
-          >
+          <button type="button" onClick={() => setShowBkModal(true)} className="btn-primary inline-flex items-center gap-2 h-10 px-5 rounded-[10px] text-[13px] font-semibold mt-5">
             <CalendarDays className="w-4 h-4 text-[var(--teal)]" />
-            <span>Chọn đợt khám ngay</span>
+            Chọn đợt khám
           </button>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-t border-[var(--line)] overflow-hidden relative">
-          {/* Backdrop */}
-          {showList && (
-            <div
-              className="fixed inset-0 bg-black/30 z-40 backdrop-blur-[2px] transition-opacity xl:hidden"
-              onClick={() => setShowList(false)}
-            />
-          )}
+        <div className="flex-1 flex flex-col xl:flex-row min-h-0 overflow-hidden relative">
+          {showList && <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-[2px] xl:hidden" onClick={() => setShowList(false)} />}
 
-          {/* COL 1 — List Sidebar */}
+          {/* COL 1 — Danh sách */}
           <aside
-            className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${
+            className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[380px] bg-[var(--surface)] shadow-2xl flex flex-col transition-transform duration-300 ${
               showList ? "translate-x-0" : "translate-x-full"
-            } xl:static xl:translate-x-0 xl:w-[350px] xl:shrink-0 xl:border-r xl:border-[var(--line)] xl:shadow-none xl:z-0`}
+            } xl:static xl:translate-x-0 xl:w-[372px] xl:shrink-0 xl:border-r xl:border-[var(--line)] xl:shadow-none xl:z-0`}
           >
-          {/* Segmented Control Tabs */}
-          <div data-tour="td-tabs" className="p-2.5 border-b border-[var(--line)] bg-[var(--surface-bg)]">
-            <div className="flex gap-1 p-1 rounded-xl bg-[var(--surface-hover)] border border-[var(--line)] relative">
-              {[
-                { k: "A" as const, icon: CalendarClock, label: "Nhóm A (Mổ)", n: stats.soA },
-                { k: "B" as const, icon: PhoneCall, label: "Nhóm B (K/N)", n: stats.soB },
-              ].map(({ k, icon: Icon, label, n }) => {
-                const on = tab === k;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => {
-                      setTab(k);
-                      setSel(null);
-                    }}
-                    className={`relative flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer z-10 ${
-                      on
-                        ? "text-white"
-                        : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
-                    }`}
-                  >
-                    {on && (
-                      <motion.div
-                        layoutId="theo-doi-tab-pill"
-                        transition={{ type: "spring", stiffness: 450, damping: 30 }}
-                        className="absolute inset-0 bg-[var(--navy)] rounded-lg shadow-sm -z-10"
-                      />
-                    )}
-                    <Icon className={`w-3.5 h-3.5 transition-colors ${on ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
-                    <span className="truncate">{label}</span>
-                    <span
-                      className={`font-mono text-[10.5px] font-bold px-1.5 rounded-full transition-colors ${
-                        on ? "bg-white/20 text-white" : "bg-[var(--surface-bg)] text-[var(--mute)] border border-[var(--line)]"
+            {/* Tab A / B */}
+            <div data-tour="td-tabs" className="px-4 pt-3.5 pb-2.5 flex items-center gap-2">
+              <div className="flex-1 flex gap-0.5 p-[3px] rounded-xl bg-[var(--surface-soft)] border border-[var(--line)]">
+                {[
+                  { k: "A" as const, icon: CalendarClock, label: "Nhóm A · Mổ", n: stats.soA },
+                  { k: "B" as const, icon: PhoneCall, label: "Nhóm B · Chăm sóc", n: stats.soB },
+                ].map(({ k, icon: Icon, label, n }) => {
+                  const on = tab === k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        setTab(k);
+                        setSubFilter("all");
+                        setSel(null);
+                      }}
+                      className={`relative flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-[12px] font-semibold transition-colors cursor-pointer ${
+                        on ? "text-white" : "text-[var(--mute)] hover:text-[var(--ink)]"
                       }`}
                     >
-                      {n}
-                    </span>
-                  </button>
-                );
-              })}
+                      {on && (
+                        <motion.span
+                          layoutId="theo-doi-tab-pill"
+                          transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                          className="absolute inset-0 bg-[var(--navy)] rounded-lg shadow-[var(--navy-shadow)]"
+                        />
+                      )}
+                      <Icon className={`relative w-3.5 h-3.5 ${on ? "text-[var(--teal)]" : ""}`} />
+                      <span className="relative truncate">{label}</span>
+                      <span className={`relative font-mono text-[10px] font-bold px-1.5 rounded-md tabular-nums ${on ? "bg-white/20 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"}`}>{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button onClick={() => setShowList(false)} className="xl:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--surface-hover)] text-[var(--mute)] cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
 
-          <div className="px-4 py-2.5 flex items-center justify-between border-b border-[var(--line-soft)] xl:hidden">
-            <h2 className="text-[12.5px] font-extrabold uppercase tracking-[0.1em] text-[var(--navy)] flex items-center gap-2">
-              <Users className="w-4 h-4 text-[var(--teal-deep)]" />
-              <span>Danh sách bệnh nhân</span>
-            </h2>
-            <button
-              onClick={() => setShowList(false)}
-              className="p-1.5 rounded-full hover:bg-[var(--line-soft)] text-[var(--mute)] active:scale-90 transition-transform cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+            {/* Tìm kiếm */}
+            <div className="px-4 pb-2.5">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--mute)] pointer-events-none" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm tên, mã, SĐT, BHYT, CCCD…" className={`${INPUT_CLS} h-9 pl-8 pr-8`} />
+                {search && (
+                  <button type="button" onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer" title="Xóa tìm kiếm">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {/* Sub-Filter Toolbar (Nhóm A & Nhóm B) */}
-          <div className="p-2 border-b border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-slate-900/60">
-            <div className="flex flex-wrap items-center gap-1 text-[11px]">
-              {(tab === "A"
-                ? [
-                    { k: "all" as const, label: "Tất cả", n: rows.length },
-                    {
-                      k: "daMo" as const,
-                      label: "Đã mổ",
-                      n: rows.filter((p) => p.trangThaiDieuTri === "Đã mổ" || (!!p.ngayMoThucTe && p.trangThaiDieuTri !== "Đã mổ trước đây" && p.trangThaiDieuTri !== "Đã đến trước đây")).length,
-                    },
-                    {
-                      k: "choMo" as const,
-                      label: "Chờ mổ",
-                      n: rows.filter(
-                        (p) =>
-                          p.trangThaiDieuTri !== "Đã mổ" &&
-                          p.trangThaiDieuTri !== "Đã mổ trước đây" &&
-                          p.trangThaiDieuTri !== "Đã đến trước đây" &&
-                          p.trangThaiDieuTri !== "Hủy" &&
-                          p.trangThaiDieuTri !== "Không đến" &&
-                          !p.ngayMoThucTe &&
-                          !isOverdue28Days(p)
-                      ).length,
-                    },
-                    {
-                      k: "daDen" as const,
-                      label: "Đã đến",
-                      n: rows.filter((p) => p.daDon).length,
-                    },
-                    {
-                      k: "daMoTruoc" as const,
-                      label: "Đến/Mổ trước",
-                      n: rows.filter((p) => p.trangThaiDieuTri === "Đã mổ trước đây" || p.trangThaiDieuTri === "Đã đến trước đây").length,
-                    },
-                    {
-                      k: "quaHan" as const,
-                      label: "Quá 28 ngày",
-                      n: rows.filter(isOverdue28Days).length,
-                    },
-                    {
-                      k: "huy" as const,
-                      label: "Hủy / Vắng",
-                      n: rows.filter((p) => p.trangThaiDieuTri === "Hủy" || p.trangThaiDieuTri === "Không đến").length,
-                    },
-                  ]
-                : [
-                    { k: "all" as const, label: "Tất cả", n: rows.length },
-                    {
-                      k: "followUp" as const,
-                      label: "Follow-up",
-                      n: rows.filter((p) => (!p.followUpStatus || p.followUpStatus === "Đang follow-up") && !isOverdue28Days(p)).length,
-                    },
-                    {
-                      k: "quaHan" as const,
-                      label: "Quá 28 ngày",
-                      n: rows.filter(isOverdue28Days).length,
-                    },
-                    {
-                      k: "daChot" as const,
-                      label: "Đã chốt",
-                      n: rows.filter((p) => p.followUpStatus === "Đã chốt").length,
-                    },
-                    {
-                      k: "ngung" as const,
-                      label: "Ngưng",
-                      n: rows.filter((p) => p.followUpStatus === "Ngưng").length,
-                    },
-                  ]
-              ).map((sf) => {
+            {/* Lọc nhanh */}
+            <div className="px-4 pb-3 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-[var(--line)] shrink-0">
+              {subFilters.map((sf) => {
                 const on = subFilter === sf.k;
+                if (sf.k !== "all" && sf.n === 0 && !on) return null;
                 return (
                   <button
                     key={sf.k}
                     type="button"
                     onClick={() => setSubFilter(sf.k)}
-                    className={`h-6.5 px-2 rounded-md text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 shrink-0 border select-none ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[11.5px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                       on
-                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-2xs font-bold"
-                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900"
+                        ? "bg-[var(--navy)] border-[var(--navy)] text-white"
+                        : "bg-[var(--surface)] border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--navy)]/40 hover:text-[var(--navy)]"
                     }`}
                   >
-                    <span>{sf.label}</span>
-                    <span
-                      className={`font-mono text-[9.5px] font-bold px-1 py-0.2 rounded-full ${
-                        on
-                          ? "bg-white/20 dark:bg-black/15 text-white dark:text-slate-900"
-                          : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
-                      }`}
-                    >
-                      {sf.n}
-                    </span>
+                    {sf.label}
+                    <span className={`font-mono text-[10px] font-bold tabular-nums ${on ? "text-white/80" : "text-[var(--mute)]"}`}>{sf.n}</span>
                   </button>
                 );
               })}
             </div>
-          </div>
 
-          {/* Search */}
-          <div className="p-2.5 flex items-center gap-2 border-b border-[var(--line-soft)]">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tên, mã, SĐT, BHYT, CCCD…"
-                className="w-full h-9 rounded-lg border border-[var(--line)] bg-white pl-9 pr-8 text-[13px] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)]"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer p-0.5"
-                  title="Xóa tìm kiếm"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Patient Cards List */}
-          <div data-tour="td-list" className="flex-1 overflow-y-auto p-2 space-y-2">
-            {loading && rows.length === 0 ? (
-              <SkeletonList items={6} />
-            ) : rows.length === 0 ? (
-              <div className="flex flex-col items-center text-center gap-2 py-14 px-6">
-                <Users className="w-8 h-8 text-[var(--mute-soft)]" />
-                <p className="text-[12.5px] text-[var(--mute)] leading-relaxed">
-                  {search ? (
-                    <>
-                      Không có bệnh nhân nào khớp <b className="text-[var(--ink-soft)]">“{search}”</b>.
-                    </>
-                  ) : tab === "A" ? (
-                    "Chưa có bệnh nhân nhóm A trong đợt khám này."
-                  ) : (
-                    "Chưa có bệnh nhân nhóm B trong đợt khám này."
+            {/* Danh sách ca */}
+            <div data-tour="td-list" className="flex-1 overflow-y-auto divide-y divide-[var(--line-soft)]">
+              {loading && rows.length === 0 ? (
+                <div className="p-3"><SkeletonList items={6} /></div>
+              ) : rows.length === 0 ? (
+                <div className="flex flex-col items-center text-center gap-2 py-14 px-6">
+                  <Users className="w-8 h-8 text-[var(--mute-soft)]" />
+                  <p className="text-[12.5px] text-[var(--mute)] leading-relaxed">
+                    {search ? <>Không có bệnh nhân nào khớp <b className="text-[var(--ink-soft)]">“{search}”</b>.</> : `Chưa có bệnh nhân nhóm ${tab} trong đợt khám này.`}
+                  </p>
+                  {!search && (tab === "A" ? stats.soB : stats.soA) > 0 && (
+                    <button
+                      onClick={() => {
+                        setTab(tab === "A" ? "B" : "A");
+                        setSubFilter("all");
+                        setSel(null);
+                      }}
+                      className="text-[12px] font-semibold text-[var(--navy)] hover:underline cursor-pointer mt-1"
+                    >
+                      Nhóm {tab === "A" ? "B" : "A"} đang có {tab === "A" ? stats.soB : stats.soA} bệnh nhân →
+                    </button>
                   )}
-                </p>
-                {!search && (tab === "A" ? stats.soB : stats.soA) > 0 && (
-                  <button
-                    onClick={() => {
-                      setTab(tab === "A" ? "B" : "A");
-                      setSubFilter("all");
-                      setSel(null);
-                    }}
-                    className="text-[12px] font-bold text-[var(--navy)] hover:underline cursor-pointer mt-2"
-                  >
-                    Nhóm {tab === "A" ? "B" : "A"} đang có {tab === "A" ? stats.soB : stats.soA} bệnh nhân →
-                  </button>
-                )}
-              </div>
-            ) : (
-              rows
-                .filter((p) => {
-                  if (subFilter === "all") return true;
-                  const isMo = p.trangThaiDieuTri === "Đã mổ" || !!p.ngayMoThucTe;
-                  const isHuy = p.trangThaiDieuTri === "Hủy" || p.trangThaiDieuTri === "Không đến";
-                  const isOverdue = isOverdue28Days(p);
-
-                  if (tab === "A") {
-                    if (subFilter === "daMo") return isMo && p.trangThaiDieuTri !== "Đã mổ trước đây" && p.trangThaiDieuTri !== "Đã đến trước đây";
-                    if (subFilter === "daMoTruoc") return p.trangThaiDieuTri === "Đã mổ trước đây" || p.trangThaiDieuTri === "Đã đến trước đây";
-                    if (subFilter === "choMo") return !isMo && p.trangThaiDieuTri !== "Đã mổ trước đây" && p.trangThaiDieuTri !== "Đã đến trước đây" && !isHuy && !isOverdue;
-                    if (subFilter === "daDen") return !!p.daDon;
-                    if (subFilter === "quaHan") return isOverdue;
-                    if (subFilter === "huy") return isHuy;
-                  } else {
-                    if (subFilter === "followUp") return (!p.followUpStatus || p.followUpStatus === "Đang follow-up") && !isOverdue;
-                    if (subFilter === "quaHan") return isOverdue;
-                    if (subFilter === "daChot") return p.followUpStatus === "Đã chốt";
-                    if (subFilter === "ngung") return p.followUpStatus === "Ngưng";
-                  }
-                  return true;
-                })
-                .map((p, idx) => {
+                </div>
+              ) : listRows.length === 0 ? (
+                <div className="text-center text-[var(--mute)] text-[12.5px] py-14 px-6">Không có bệnh nhân khớp bộ lọc.</div>
+              ) : (
+                listRows.map((p, idx) => {
                   const active = sel?.id === p.id;
                   const diags = parseDiag(p.chanDoan);
-                  const isMo = p.trangThaiDieuTri === "Đã mổ" || !!p.ngayMoThucTe;
-                  const isHuy = p.trangThaiDieuTri === "Hủy" || p.trangThaiDieuTri === "Không đến";
-                  const isDaDen = !!p.daDon;
-                  const isOverdue = isOverdue28Days(p);
-
+                  const s = rowState(p);
                   return (
                     <button
                       key={p.id}
@@ -1043,344 +855,176 @@ export default function TheoDoiPage() {
                         openDetail(p);
                         if (window.innerWidth < 1280) setShowList(false);
                       }}
-                      className={`w-full text-left rounded-xl border p-3 transition-all duration-150 cursor-pointer relative ${
-                        active
-                          ? "border-indigo-600 bg-indigo-50/90 shadow-md ring-2 ring-indigo-500/20"
-                          : p.trangThaiDieuTri === "Đã mổ trước đây" || p.trangThaiDieuTri === "Đã đến trước đây"
-                          ? "border-purple-200 bg-purple-50/40 hover:bg-purple-50/80 hover:border-purple-300"
-                          : isMo
-                          ? "border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50/80 hover:border-emerald-300"
-                          : isHuy
-                          ? "border-rose-200 bg-rose-50/40 hover:bg-rose-50/80"
-                          : isOverdue
-                          ? "border-rose-200 bg-rose-50/30 hover:bg-rose-50/60"
-                          : isDaDen
-                          ? "border-sky-200 bg-sky-50/40 hover:bg-sky-50/80"
-                          : "border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300"
-                      }`}
+                      className={`relative w-full text-left px-4 py-3 transition-colors cursor-pointer ${active ? "bg-[var(--navy-50)]" : "hover:bg-[var(--surface-soft)]"}`}
                     >
+                      <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: TONE_SOLID[s.tone] }} />
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-[11px] font-extrabold opacity-60">#{p.stt || idx + 1}</span>
-                            <span className={`text-[14px] font-extrabold truncate ${active ? "text-indigo-950" : "text-slate-900"}`}>
-                              {p.hoTen}
-                            </span>
-                            {p.namSinh && (
-                              <span className="text-[11.5px] text-slate-500 font-semibold">({p.namSinh})</span>
-                            )}
-                          </div>
+                        <div className="min-w-0 flex items-baseline gap-2">
+                          <span className="font-mono text-[11px] text-[var(--mute)] tabular-nums shrink-0">{String(p.stt || idx + 1).padStart(2, "0")}</span>
+                          <span className={`text-[13.5px] font-semibold truncate ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>{p.hoTen}</span>
+                          {p.namSinh && <span className="text-[11.5px] text-[var(--mute)] shrink-0">{p.namSinh}</span>}
                         </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className="font-mono text-[11px] font-extrabold text-teal-800 bg-white px-2 py-0.5 rounded-md border border-teal-200 shadow-2xs">
-                            {p.maBN?.split("-").pop() || p.maBN}
-                          </span>
-                        </div>
+                        <span className="font-mono text-[11px] font-bold text-[var(--navy)] shrink-0">{p.maBN?.split("-").pop() || p.maBN}</span>
                       </div>
-
-                      {diags.length > 0 && (
-                        <div className="text-[11.5px] font-semibold text-slate-600 mt-1 truncate">
-                          🩺 {diags.join(", ")}
-                        </div>
-                      )}
-
-                      {/* Dynamic Status Badges Row (MKT & CSKH) */}
-                      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-200/60 flex-wrap">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {p.trangThaiDieuTri === "Đã mổ trước đây" ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-0.5 rounded-full bg-purple-600 text-white shadow-2xs">
-                              🟣 ĐÃ MỔ TRƯỚC ĐÂY
-                            </span>
-                          ) : p.trangThaiDieuTri === "Đã đến trước đây" ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-2xs">
-                              🟣 ĐÃ ĐẾN TRƯỚC ĐÂY
-                            </span>
-                          ) : isMo ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
-                              ✓ ĐÃ MỔ
-                            </span>
-                          ) : isHuy ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-0.5 rounded-full bg-rose-600 text-white shadow-2xs">
-                              ❌ {p.trangThaiDieuTri || "HỦY"}
-                            </span>
-                          ) : isOverdue ? (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs">
-                              ⚠️ QUÁ 28 NGÀY
-                            </span>
-                          ) : tab === "A" ? (
-                            isDaDen ? (
-                              <span className="inline-flex items-center gap-1 text-[10.5px] font-black px-2 py-0.5 rounded-full bg-sky-600 text-white shadow-2xs">
-                                🏥 ĐÃ ĐẾN BV
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                                ⏳ CHỜ MỔ
-                              </span>
-                            )
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">
-                              📞 {p.followUpStatus || "Đang follow-up"}
-                            </span>
-                          )}
-
+                      {diags.length > 0 && <div className="mt-0.5 pl-[26px] text-[11.5px] text-[var(--ink-soft)] truncate">{diags.join(", ")}</div>}
+                      <div className="mt-1.5 pl-[26px] flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Badge tone={s.tone}>{s.label}</Badge>
                           {p.maBNHIS && (
-                            <span className="text-[10px] font-extrabold font-mono px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
-                              ⚡ HIS
-                            </span>
+                            <Badge tone="gray" dot={false} title={`Mã HIS: ${p.maBNHIS}`}>
+                              <Zap className="w-3 h-3" />HIS
+                            </Badge>
                           )}
                         </div>
-
-                        <div className="text-[11px] font-mono font-bold text-slate-600 shrink-0">
+                        <span className="text-[11px] font-mono tabular-nums shrink-0">
                           {p.ngayMoThucTe ? (
-                            <span className="text-emerald-700 font-extrabold">📆 Mổ: {fmtDate(p.ngayMoThucTe)}</span>
+                            <span className="text-[var(--teal-deep)]">Mổ {fmtDate(p.ngayMoThucTe)}</span>
                           ) : p.ngayDieuTri ? (
-                            <span className="text-teal-800 font-semibold">📅 Hẹn: {fmtDate(p.ngayDieuTri)}</span>
+                            <span className="text-[var(--ink-soft)]">Hẹn {fmtDate(p.ngayDieuTri)}</span>
                           ) : (
-                            <span className="text-slate-400 font-normal">Chưa hẹn</span>
+                            <span className="text-[var(--mute-soft)]">Chưa hẹn</span>
                           )}
-                        </div>
+                        </span>
                       </div>
                     </button>
                   );
                 })
-            )}
-          </div>
-        </aside>
+              )}
+            </div>
+          </aside>
 
-        {/* COL 2 — Details Workspace */}
-        <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-white overflow-hidden">
-          {sel ? (
-            <>
-              <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-                {/* COMPACT PATIENT HEADER STRIP (FULL INFO - NO TRUNCATION) */}
-                <div className="bg-[var(--surface-soft)] border-b border-[var(--line)] px-4 sm:px-5 py-3 shrink-0 flex flex-col gap-2 shadow-2xs">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="font-serif font-bold text-[18px] sm:text-[19px] text-[var(--ink)] uppercase tracking-tight">
-                        {sel.hoTen}
-                      </h2>
-                      <span className="font-mono font-bold text-[var(--navy)] bg-white px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">
-                        {sel.maBN}
-                      </span>
-                      {sel.maBNHIS && (
-                        <span className="font-mono font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-0.5 rounded-[var(--r-sm)] border border-[var(--teal)] text-xs shadow-2xs">
-                          HIS: {sel.maBNHIS}
-                        </span>
-                      )}
-                      {sel.nhom && (
-                        <span
-                          className={`font-mono text-xs font-bold px-2.5 py-0.5 rounded border shadow-2xs ${
-                            sel.nhom === "A"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                              : "bg-amber-50 text-amber-800 border-amber-300"
-                          }`}
-                        >
-                          Nhóm {sel.nhom}
-                        </span>
-                      )}
-                      <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">
-                        {sel.gioiTinh} · {ageOf(sel)} tuổi
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <button
-                        onClick={() => checkHisPatient(sel)}
-                        disabled={checkingHis}
-                        title="Đối chiếu HIS tự động"
-                        className="px-2.5 sm:px-3 py-1 h-7 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white transition-all flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <>⚡ Đối chiếu HIS</>}
-                      </button>
-                      <button
-                        onClick={() => openHisSearch(sel)}
-                        title="Tìm & chọn ca mổ trong HIS thủ công"
-                        className="px-2.5 sm:px-3 py-1 h-7 text-xs font-bold rounded-lg bg-white hover:bg-slate-50 active:scale-95 border border-slate-300 text-slate-700 hover:text-slate-900 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        <Search className="w-3.5 h-3.5 text-slate-500" /> Tìm HIS
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-x-5 gap-y-1.5 flex-wrap text-xs text-[var(--ink-soft)] pt-1.5 border-t border-[var(--line-soft)]/80">
-                    {sel.cccd && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[var(--mute)] font-semibold">CCCD:</span>
-                        <span className="font-mono font-bold text-[var(--ink)]">{sel.cccd}</span>
+          {/* COL 2 — Vùng làm việc */}
+          <main className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
+            {sel ? (
+              <>
+                <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+                  {/* Thẻ hồ sơ */}
+                  <div className="bg-[var(--surface)] border-b border-[var(--line)] px-4 sm:px-6 py-3.5 shrink-0">
+                    <div className="flex items-start justify-between gap-x-6 gap-y-2 flex-wrap">
+                      <div className="min-w-0 flex items-center gap-x-2.5 gap-y-1.5 flex-wrap">
+                        <h2 className="font-serif text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{sel.hoTen}</h2>
+                        <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--navy-50)] text-[var(--navy)]">{sel.maBN}</span>
+                        {sel.maBNHIS && <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--teal-soft)] text-[var(--teal-deep)]">HIS {sel.maBNHIS}</span>}
+                        <span className="text-[12.5px] text-[var(--mute)]">{sel.gioiTinh} · {ageOf(sel)} tuổi</span>
+                        {sel.nhom && <Badge tone={sel.nhom === "A" ? "rose" : "amber"}>Nhóm {sel.nhom}</Badge>}
                       </div>
-                    )}
-                    {sel.bhyt && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[var(--mute)] font-semibold">BHYT:</span>
-                        <span className="font-mono font-bold text-[var(--teal-deep)] bg-white px-1.5 py-0.5 rounded border border-[var(--line)]">
-                          {sel.bhyt} <span className="text-[10px] text-[var(--teal)]">({bhytLevel(sel.bhyt)})</span>
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <span className="text-[var(--mute)] font-semibold">Điện thoại:</span>
-                      {sel.sdt ? (
-                        <a
-                          href={`tel:${sel.sdt}`}
-                          className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-[var(--line)]"
-                        >
-                          <Phone className="w-3 h-3 text-[var(--teal)]" /> {sel.sdt}
-                        </a>
-                      ) : (
-                        <span className="font-mono text-[var(--mute)]">—</span>
-                      )}
-                    </div>
-                    <div className="flex items-start sm:items-center gap-1.5 flex-1 min-w-[280px]">
-                      <span className="text-[var(--mute)] font-semibold shrink-0">Địa chỉ:</span>
-                      <span className="font-medium text-[var(--ink)] leading-relaxed break-words">
-                        {sel.diaChi || "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-b border-[var(--line)] overflow-y-auto">
-                  {/* NHẬT KÝ LIÊN HỆ */}
-                  <div
-                    data-tour="td-note"
-                    className={`p-4 sm:p-6 xl:border-r border-[var(--line)] flex flex-col min-h-0 ${
-                      tab === "A" ? "xl:w-[400px] shrink-0 bg-[var(--surface-bg)]" : "w-full"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-4">
-                      <PhoneCall className="w-4 h-4 text-[var(--navy)]" />
-                      <h3 className="font-bold text-[13px] uppercase tracking-wide">Nhật ký liên hệ</h3>
-                    </div>
-                    <div className="space-y-3.5">
-                      {tab === "B" && (
-                        <div>
-                          <label className="text-[12.5px] font-bold text-[var(--ink-soft)] block mb-1">
-                            Cập nhật trạng thái follow-up
-                          </label>
-                          <Dropdown
-                            value={fstatus}
-                            placeholder="Giữ nguyên trạng thái hiện tại"
-                            mono={false}
-                            options={FOLLOW}
-                            onChange={setFstatus}
-                          />
+                      {hasHisConfig && (
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => checkHisPatient(sel)} disabled={checkingHis} title="Đối chiếu HIS riêng bệnh nhân này" className={`${BTN_SOFT.navy} h-8`}>
+                            {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                            Đối chiếu BN này
+                          </button>
+                          <button onClick={() => openHisSearch(sel)} title="Tìm & chọn ca mổ trong HIS thủ công" className={`${BTN_SOFT.ghost} h-8`}>
+                            <Search className="w-3.5 h-3.5" /> Tìm HIS
+                          </button>
                         </div>
                       )}
-                      <div>
-                        <label className="text-[12.5px] font-bold text-[var(--ink-soft)] block mb-1">
-                          Thêm nhật ký mới
-                        </label>
+                    </div>
+                    <div className="mt-2.5 pt-2.5 border-t border-[var(--line-soft)] flex items-center gap-x-5 gap-y-1.5 flex-wrap">
+                      <Fact label="SĐT">
+                        {sel.sdt ? (
+                          <a href={`tel:${sel.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
+                            <Phone className="w-3 h-3" /> {sel.sdt}
+                          </a>
+                        ) : (
+                          <span className="text-[var(--mute-soft)]">—</span>
+                        )}
+                      </Fact>
+                      {sel.bhyt && (
+                        <Fact label="BHYT">
+                          <span className="font-mono">{sel.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(sel.bhyt)})</span>
+                        </Fact>
+                      )}
+                      {sel.cccd && <Fact label="CCCD"><span className="font-mono">{sel.cccd}</span></Fact>}
+                      {sel.ngayDieuTri && <Fact label="Hẹn mổ (tư vấn)"><span className="font-mono">{fmtDate(sel.ngayDieuTri)}</span></Fact>}
+                      {sel.diaChi && <Fact label="Địa chỉ"><span title={sel.diaChi}>{sel.diaChi}</span></Fact>}
+                    </div>
+                  </div>
+
+                  {/* Hai cột: nhật ký | điều trị */}
+                  <div className={`p-4 sm:p-5 flex-1 min-h-0 grid gap-4 items-start ${tab === "A" ? "grid-cols-1 xl:grid-cols-[380px_1fr]" : "grid-cols-1 max-w-[760px]"}`}>
+                    {/* Nhật ký liên hệ */}
+                    <WorkCard
+                      title="Nhật ký liên hệ"
+                      desc="Kết quả gọi điện, ý kiến bệnh nhân"
+                      aside={
+                        <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--line-soft)] text-[var(--ink-soft)] tabular-nums shrink-0">
+                          {(sel.nhatKy || []).length} lần
+                        </span>
+                      }
+                    >
+                      <div data-tour="td-note" className="p-4 space-y-2.5 border-b border-[var(--line-soft)]">
+                        {tab === "B" && (
+                          <div>
+                            <label className={FIELD_LABEL}>Trạng thái follow-up</label>
+                            <Dropdown value={fstatus} placeholder="Giữ nguyên trạng thái hiện tại" mono={false} options={FOLLOW} onChange={setFstatus} />
+                          </div>
+                        )}
                         <textarea
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
                           rows={3}
-                          className="input-field resize-none"
-                          placeholder="Nhập kết quả gọi điện, ý kiến bệnh nhân…"
+                          className={`${INPUT_CLS} p-3 resize-none`}
+                          placeholder="Kết quả gọi điện, ý kiến bệnh nhân…"
                         />
-                      </div>
-                      <button
-                        onClick={addNote}
-                        disabled={savingNote || !note.trim()}
-                        className="btn btn-secondary w-full py-2.5 font-bold border border-[var(--line-strong)] shadow-xs bg-white hover:bg-[var(--surface-hover)] cursor-pointer disabled:opacity-50"
-                      >
-                        {savingNote ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--navy)]" />}
-                        <span>Ghi nhận liên hệ</span>
-                      </button>
-                      <div className="pt-4 mt-4 border-t border-[var(--line)] flex-1 flex flex-col min-h-0">
-                        <h4 className="text-[11.5px] font-extrabold uppercase tracking-wider text-[var(--mute)] mb-2.5 shrink-0">
-                          Lịch sử liên hệ
-                        </h4>
-                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                          {(sel.nhatKy || []).length === 0 ? (
-                            <div className="text-[12.5px] text-[var(--mute)] py-4 text-center">Chưa có lịch sử liên hệ.</div>
-                          ) : (
-                            sel.nhatKy!.map((n) => (
-                              <div
-                                key={n.id}
-                                className="text-[13px] bg-white border border-[var(--line-soft)] rounded-lg p-3 shadow-2xs"
-                              >
-                                <div className="text-[var(--ink)] leading-snug">{n.noiDung}</div>
-                                <div className="text-[11px] text-[var(--mute)] mt-1.5 flex items-center justify-between">
-                                  <span className="font-semibold text-[var(--navy)]">{n.nguoiGoi?.hoTen}</span>
-                                  <span className="font-mono">{fmtTime(n.ngay)}</span>
-                                </div>
-                              </div>
-                            ))
-                          )}
+                        <div className="flex justify-end">
+                          <button onClick={addNote} disabled={savingNote || !note.trim()} className={`${BTN_SOFT.teal} h-8`}>
+                            {savingNote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            Ghi nhận liên hệ
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* TIẾP NHẬN & ĐIỀU TRỊ (CHỈ NHÓM A) */}
-                  {tab === "A" && (
-                    <div data-tour="td-treat" className="flex-1 p-4 sm:p-6 relative flex flex-col min-h-0">
-                      <div className="flex items-center gap-2 mb-4 shrink-0">
-                        <ClipboardList className="w-4 h-4 text-[var(--teal-deep)]" />
-                        <h3 className="font-bold text-[13px] uppercase tracking-wide">Tiếp nhận & Điều trị tại BV</h3>
+                      <div className="p-4">
+                        {(sel.nhatKy || []).length === 0 ? (
+                          <div className="flex flex-col items-center text-center py-6 gap-1.5 text-[12.5px] text-[var(--mute)]">
+                            <PhoneCall className="w-5 h-5 text-[var(--mute-soft)]" />
+                            Chưa có lịch sử liên hệ.
+                          </div>
+                        ) : (
+                          <ol className="relative space-y-3.5 before:absolute before:left-[5px] before:top-2 before:bottom-2 before:w-px before:bg-[var(--line)]">
+                            {sel.nhatKy!.map((n, i) => (
+                              <li key={n.id} className="relative pl-6">
+                                <span className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full border-2 border-[var(--surface)] ${i === 0 ? "bg-[var(--teal)]" : "bg-[var(--mute-soft)]"}`} />
+                                <div className="flex items-center justify-between gap-2 text-[11.5px]">
+                                  <span className="font-semibold text-[var(--ink)] truncate">{n.nguoiGoi?.hoTen || "Nhân viên"}</span>
+                                  <span className="font-mono text-[var(--mute)] tabular-nums shrink-0">{fmtTime(n.ngay)} · {fmtDate(n.ngay)}</span>
+                                </div>
+                                <p className="mt-0.5 text-[12.5px] text-[var(--ink-soft)] leading-relaxed whitespace-pre-wrap">{n.noiDung}</p>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
                       </div>
+                    </WorkCard>
 
-                      <div className="space-y-5">
-                        <div
-                          className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${
-                            f.daDon
-                              ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-500/20 text-emerald-950 shadow-2xs"
-                              : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-white"
-                          }`}
+                    {/* Tiếp nhận & điều trị tại BV (nhóm A) */}
+                    {tab === "A" && (
+                      <WorkCard title="Tiếp nhận & điều trị tại bệnh viện" desc="Cập nhật khi bệnh nhân đến viện, mổ, tái khám" bodyClassName="p-5 space-y-5">
+                        <div data-tour="td-treat" className="contents" />
+                        {/* Đã đến BV */}
+                        <button
+                          type="button"
                           onClick={() =>
                             setF((s) => {
-                              const nextDaDon = !s.daDon;
-                              return {
-                                ...s,
-                                daDon: nextDaDon,
-                                ngayDenBV: nextDaDon ? (s.ngayDenBV || new Date().toISOString().slice(0, 10)) : s.ngayDenBV,
-                              };
+                              const next = !s.daDon;
+                              return { ...s, daDon: next, ngayDenBV: next ? s.ngayDenBV || new Date().toISOString().slice(0, 10) : s.ngayDenBV };
                             })
                           }
+                          className={`w-full flex items-center gap-3 p-3.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                            f.daDon ? "border-[var(--teal)]/50 bg-[var(--teal-softer)] shadow-[0_0_0_3px_var(--teal-soft)]" : "border-[var(--line)] bg-[var(--surface-soft)] hover:border-[var(--line-strong)]"
+                          }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={f.daDon}
-                              onChange={(e) => {
-                                const checked = e.target.checked;
-                                setF((s) => ({
-                                  ...s,
-                                  daDon: checked,
-                                  ngayDenBV: checked ? (s.ngayDenBV || new Date().toISOString().slice(0, 10)) : s.ngayDenBV,
-                                }));
-                              }}
-                              className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                            />
-                            <div className="flex flex-col">
-                              <label className="font-extrabold text-[14.5px] cursor-pointer select-none">
-                                Bệnh nhân ĐÃ ĐẾN BỆNH VIỆN
-                              </label>
-                              <span className="text-[12px] opacity-75 font-medium">
-                                {f.daDon ? "✓ Đã xác nhận đến BV điều trị" : "Tích chọn khi bệnh nhân có mặt tại viện"}
-                              </span>
-                            </div>
+                          <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${f.daDon ? "bg-[var(--teal)] border-[var(--teal)]" : "border-[var(--line-strong)] bg-[var(--surface)]"}`}>
+                            {f.daDon && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                          </span>
+                          <div className="min-w-0">
+                            <div className={`text-[13.5px] font-semibold ${f.daDon ? "text-[var(--teal-deep)]" : "text-[var(--ink)]"}`}>Bệnh nhân đã đến bệnh viện</div>
+                            <div className="text-[11.5px] text-[var(--mute)]">{f.daDon ? "Đã xác nhận có mặt tại viện" : "Đánh dấu khi bệnh nhân có mặt tại viện"}</div>
                           </div>
+                        </button>
 
-                          {sel?.ngayDieuTri ? (
-                            <div className="text-[11.5px] font-semibold text-teal-800 bg-teal-100/80 px-2.5 py-1 rounded-lg border border-teal-300/80 shrink-0">
-                              📅 Lịch hẹn mổ (Tư vấn): <span className="font-mono font-bold">{fmtDate(sel.ngayDieuTri)}</span>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
-                          <DateField
-                            label="Ngày đến bệnh viện"
-                            value={f.ngayDenBV}
-                            onChange={(v) =>
-                              setF((s) => ({
-                                ...s,
-                                ngayDenBV: v,
-                                daDon: v ? true : s.daDon,
-                              }))
-                            }
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <DateField label="Ngày đến bệnh viện" value={f.ngayDenBV} onChange={(v) => setF((s) => ({ ...s, ngayDenBV: v, daDon: v ? true : s.daDon }))} />
                           <DateField
                             label="Ngày mổ thực tế"
                             value={f.ngayMoThucTe}
@@ -1389,41 +1033,32 @@ export default function TheoDoiPage() {
                                 ...s,
                                 ngayMoThucTe: v,
                                 daDon: v ? true : s.daDon,
-                                ngayDenBV: v ? (s.ngayDenBV || v) : s.ngayDenBV,
-                                trangThaiDieuTri: v ? (s.trangThaiDieuTri || "Đã mổ") : s.trangThaiDieuTri,
+                                ngayDenBV: v ? s.ngayDenBV || v : s.ngayDenBV,
+                                trangThaiDieuTri: v ? s.trangThaiDieuTri || "Đã mổ" : s.trangThaiDieuTri,
                               }))
                             }
                           />
                           <div>
-                            <label className={labelCls}>Số tiền thực thu (VNĐ)</label>
+                            <label className={FIELD_LABEL}>Số tiền thực thu</label>
                             <div className="relative">
                               <input
                                 type="text"
                                 inputMode="numeric"
-                                placeholder="VD: 5.000.000"
+                                placeholder="0"
                                 value={f.soTienThucThu ? new Intl.NumberFormat("vi-VN").format(Number(f.soTienThucThu)) : ""}
-                                onChange={(e) => {
-                                  const raw = e.target.value.replace(/[^\d]/g, "");
-                                  setF((s) => ({ ...s, soTienThucThu: raw }));
-                                }}
-                                className="w-full h-10 px-3 font-mono font-bold text-teal-800 bg-white border border-slate-300 rounded-xl text-[14px] outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs pr-12"
+                                onChange={(e) => setF((s) => ({ ...s, soTienThucThu: e.target.value.replace(/[^\d]/g, "") }))}
+                                className={`${INPUT_CLS} h-10 px-3 pr-9 font-mono font-semibold tabular-nums`}
                               />
-                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] font-bold uppercase">
-                                VNĐ
-                              </span>
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--mute)] text-[13px] font-semibold">₫</span>
                             </div>
                           </div>
+                        </div>
 
-                          <div className="md:col-span-2 space-y-1.5">
-                            <label className={labelCls}>Trạng thái điều trị</label>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {[
-                                { key: "Đã mổ", label: "Đã mổ", color: "bg-emerald-600 text-white border-emerald-600 shadow-xs font-extrabold" },
-                                { key: "Đã mổ trước đây", label: "Đã mổ trước đây", color: "bg-purple-600 text-white border-purple-600 shadow-xs font-extrabold" },
-                                { key: "Đã đến trước đây", label: "Đã đến trước đây", color: "bg-indigo-600 text-white border-indigo-600 shadow-xs font-extrabold" },
-                                { key: "Hủy", label: "Hủy", color: "bg-rose-600 text-white border-rose-600 shadow-xs font-extrabold" },
-                                { key: "Không đến", label: "Không đến", color: "bg-amber-600 text-white border-amber-600 shadow-xs font-extrabold" },
-                              ].map((opt) => {
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-2">
+                            <label className={FIELD_LABEL}>Trạng thái điều trị</label>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {TREAT_OPTIONS.map((opt) => {
                                 const active = f.trangThaiDieuTri === opt.key;
                                 return (
                                   <button
@@ -1432,248 +1067,185 @@ export default function TheoDoiPage() {
                                     onClick={() =>
                                       setF((s) => {
                                         const isMo = opt.key === "Đã mổ";
-                                        const nextVal = active ? "" : opt.key;
                                         return {
                                           ...s,
-                                          trangThaiDieuTri: nextVal,
+                                          trangThaiDieuTri: active ? "" : opt.key,
                                           daDon: isMo && !active ? true : s.daDon,
                                           ngayMoThucTe: isMo && !active && !s.ngayMoThucTe ? new Date().toISOString().slice(0, 10) : s.ngayMoThucTe,
                                         };
                                       })
                                     }
-                                    className={`px-4 py-2 rounded-xl text-[13px] font-bold border transition-all cursor-pointer active:scale-95 ${
-                                      active
-                                        ? opt.color
-                                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
+                                    className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border text-[12.5px] font-semibold transition-colors cursor-pointer ${
+                                      active ? TONE_ACTIVE[opt.tone] : "bg-[var(--surface)] border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:text-[var(--ink)]"
                                     }`}
                                   >
-                                    {opt.label}
+                                    {active && <Check className="w-3 h-3 stroke-[3]" />}
+                                    {opt.key}
                                   </button>
                                 );
                               })}
                             </div>
                           </div>
-
-                          <DateField
-                            label="Hẹn tái khám"
-                            value={f.ngayTaiKham}
-                            onChange={(v) => setF((s) => ({ ...s, ngayTaiKham: v }))}
-                          />
-                          <div className="md:col-span-2 space-y-2">
-                            {f.ghiChuMat2 && f.ghiChuMat2.includes("[HIS]") && (
-                              <div className="rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50/90 via-emerald-50/60 to-sky-50/40 p-3.5 shadow-2xs space-y-2 mb-2">
-                                <div className="flex items-center justify-between gap-2 border-b border-teal-200/80 pb-2 flex-wrap">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <Zap className="w-4 h-4 text-teal-600 fill-teal-600" />
-                                    <span className="font-extrabold text-teal-950 text-[13px]">
-                                      HỒ SƠ ĐỐI CHIẾU HIS BỆNH VIỆN
-                                    </span>
-                                    {sel?.maBNHIS && (
-                                      <span className="font-mono text-xs font-extrabold bg-white text-teal-800 px-2 py-0.5 rounded border border-teal-200 shadow-2xs">
-                                        Mã HIS: {sel.maBNHIS}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <button
-                                      type="button"
-                                      onClick={() => sel && checkHisPatient(sel)}
-                                      disabled={checkingHis}
-                                      className="text-[11px] font-bold text-teal-800 bg-white hover:bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-300 shadow-2xs cursor-pointer flex items-center gap-1 active:scale-95"
-                                      title="Kiểm tra lại hồ sơ này với HIS bằng thuật toán lọc chuẩn"
-                                    >
-                                      <RefreshCw className={`w-3 h-3 ${checkingHis ? "animate-spin" : ""}`} />
-                                      <span>Rà soát lại</span>
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => { setHisQuery(sel?.hoTen || ""); setHisSearchOpen(true); }}
-                                      className="text-[11px] font-bold text-indigo-800 bg-white hover:bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-300 shadow-2xs cursor-pointer flex items-center gap-1 active:scale-95"
-                                      title="Tìm kiếm mã HIS khác để liên kết lại"
-                                    >
-                                      <Search className="w-3 h-3" />
-                                      <span>Đổi mã HIS</span>
-                                    </button>
-
-                                    {isManager && (
-                                      <button
-                                        type="button"
-                                        onClick={unlinkHis}
-                                        className="text-[11px] font-bold text-rose-700 bg-white hover:bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-300 shadow-2xs cursor-pointer flex items-center gap-1 active:scale-95"
-                                        title="Hủy liên kết mã HIS nếu sai hồ sơ bệnh nhân"
-                                      >
-                                        <X className="w-3 h-3" />
-                                        <span>Hủy liên kết</span>
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="text-[12.5px] text-slate-800 font-medium whitespace-pre-wrap leading-relaxed font-sans">
-                                  {f.ghiChuMat2.substring(f.ghiChuMat2.indexOf("[HIS]")).replace(/^\[HIS\]:\s*/, "").trim()}
-                                </div>
-                              </div>
-                            )}
-
-                            <label className={labelCls}>Ghi chú (nhóm tài liệu mặt 2)</label>
-                            <textarea
-                              rows={3}
-                              placeholder="Sức khỏe, thuốc, dặn dò..."
-                              value={
-                                f.ghiChuMat2 && f.ghiChuMat2.includes("[HIS]")
-                                  ? f.ghiChuMat2.substring(0, f.ghiChuMat2.indexOf("[HIS]")).trim()
-                                  : f.ghiChuMat2 || ""
-                              }
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setF((s) => {
-                                  const full = s.ghiChuMat2 || "";
-                                  const idx = full.indexOf("[HIS]");
-                                  const hisPart = idx !== -1 ? full.substring(idx).trim() : "";
-                                  const nextVal = val.trim()
-                                    ? (hisPart ? `${val.trim()}\n\n${hisPart}` : val.trim())
-                                    : hisPart;
-                                  return { ...s, ghiChuMat2: nextVal };
-                                });
-                              }}
-                              className="w-full p-3 font-medium text-slate-800 bg-white border border-slate-300 rounded-xl text-[13.5px] outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs min-h-[80px] leading-relaxed resize-y"
-                            />
-                          </div>
+                          <DateField label="Hẹn tái khám" value={f.ngayTaiKham} onChange={(v) => setF((s) => ({ ...s, ngayTaiKham: v }))} />
                         </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Bottom Unified Action Bar */}
-              <div className="px-2 sm:px-4 py-1.5 sm:py-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] border-t border-[var(--line)] bg-white/95 backdrop-blur-sm sticky bottom-0 z-30 flex items-center justify-between gap-1.5 sm:gap-2 shadow-lg shrink-0">
-                <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
-                  {/* Nút mở danh sách bệnh nhân trên mobile chuẩn theo style DS */}
-                  <button
-                    type="button"
-                    onClick={() => setShowList(true)}
-                    className="xl:hidden h-8 px-2.5 rounded-lg bg-[#002b7f] hover:bg-[var(--navy-deep)] text-white font-bold text-[12px] flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer active:scale-95"
-                  >
-                    <Users className="w-3.5 h-3.5 text-[#00d2d3]" />
-                    <span className="font-extrabold text-[12px] text-white">DS</span>
-                    <span className="min-w-[18px] h-[18px] px-1 bg-[#e11d48] text-white font-mono text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
-                      {rows.length}
-                    </span>
-                  </button>
+                        {/* Hồ sơ đối chiếu HIS */}
+                        {hisNote && (
+                          <div className="rounded-[12px] border border-[var(--line)] border-l-[3px] border-l-[var(--teal)] bg-[var(--surface)] overflow-hidden">
+                            <div className="flex items-center justify-between gap-2 flex-wrap px-3.5 py-2.5 bg-[var(--surface-soft)] border-b border-[var(--line-soft)]">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Zap className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
+                                <span className="text-[13px] font-semibold text-[var(--ink)]">Kết quả đối chiếu HIS</span>
+                                {sel.maBNHIS && <span className="font-mono text-[11px] font-bold px-1.5 py-px rounded-md bg-[var(--teal-soft)] text-[var(--teal-deep)]">{sel.maBNHIS}</span>}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <button type="button" onClick={() => checkHisPatient(sel)} disabled={checkingHis} className={`${BTN_SOFT.ghost} h-7 px-2.5 text-[11.5px]`} title="Kiểm tra lại hồ sơ này với HIS">
+                                  <RefreshCw className={`w-3 h-3 ${checkingHis ? "animate-spin" : ""}`} /> Rà soát lại
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setHisQuery(sel.hoTen || "");
+                                    setHisSearchOpen(true);
+                                  }}
+                                  className={`${BTN_SOFT.ghost} h-7 px-2.5 text-[11.5px]`}
+                                  title="Tìm mã HIS khác để liên kết lại"
+                                >
+                                  <Search className="w-3 h-3" /> Đổi mã HIS
+                                </button>
+                                {isManager && (
+                                  <button type="button" onClick={unlinkHis} className={`${BTN_SOFT.rose} h-7 px-2.5 text-[11.5px]`} title="Hủy liên kết nếu sai hồ sơ">
+                                    <X className="w-3 h-3" /> Hủy liên kết
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="px-3.5 py-3 text-[12.5px] text-[var(--ink-soft)] whitespace-pre-wrap leading-relaxed">{hisNote}</div>
+                          </div>
+                        )}
 
-                  {/* Bộ phím chuyển ca Trước / Sau nhanh cho Mobile */}
-                  <div className="xl:hidden flex items-center gap-0.5 border border-[var(--line)] rounded-lg p-0.5 bg-[var(--surface-soft)] shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => prevPatient && openDetail(prevPatient)}
-                      disabled={!prevPatient}
-                      className="p-1 rounded text-[var(--ink-soft)] hover:bg-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
-                      title="Ca trước"
-                    >
-                      <ChevronLeft className="w-3 h-3" />
-                    </button>
-                    <span className="text-[9.5px] sm:text-[10px] font-mono font-bold px-0.5 text-[var(--mute)]">
-                      {curPatientIndex >= 0 ? `${curPatientIndex + 1}/${rows.length}` : "—"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => nextPatient && openDetail(nextPatient)}
-                      disabled={!nextPatient}
-                      className="p-1 rounded text-[var(--ink-soft)] hover:bg-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
-                      title="Ca tiếp"
-                    >
-                      <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  <span className="hidden md:inline-flex text-[11px] sm:text-[12px] items-center gap-1 min-w-0 truncate">
-                    {tab === "A" && dirtyDieuTri ? (
-                      <span className="inline-flex items-center gap-1 font-semibold text-[var(--amber)] truncate">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse shrink-0" /> Chưa lưu điều trị
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[var(--mute)] truncate">
-                        <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" /> Đã lưu
-                      </span>
+                        <div>
+                          <label className={FIELD_LABEL}>Ghi chú (tài liệu mặt 2)</label>
+                          <textarea
+                            rows={3}
+                            placeholder="Sức khỏe, thuốc, dặn dò…"
+                            value={userNote}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setF((s) => {
+                                const full = s.ghiChuMat2 || "";
+                                const idx = full.indexOf("[HIS]");
+                                const hisPart = idx !== -1 ? full.substring(idx).trim() : "";
+                                const nextVal = val.trim() ? (hisPart ? `${val.trim()}\n\n${hisPart}` : val.trim()) : hisPart;
+                                return { ...s, ghiChuMat2: nextVal };
+                              });
+                            }}
+                            className={`${INPUT_CLS} p-3 min-h-[80px] leading-relaxed resize-y`}
+                          />
+                        </div>
+                      </WorkCard>
                     )}
-                  </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                {/* Thanh thao tác dưới */}
+                <div className="px-3 sm:px-5 py-2.5 pb-[calc(env(safe-area-inset-bottom,0px)+0.625rem)] border-t border-[var(--line)] bg-[var(--surface)] sticky bottom-0 z-30 flex items-center justify-between gap-2 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowList(true)}
+                      className="xl:hidden inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] shrink-0 cursor-pointer"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      DS
+                      <span className="font-mono text-[10.5px] font-bold px-1.5 rounded-[5px] bg-[var(--navy)] text-white tabular-nums">{rows.length}</span>
+                    </button>
+                    <div className="flex items-center gap-0.5 p-[2px] rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => prevPatient && openDetail(prevPatient)}
+                        disabled={!prevPatient}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--ink-soft)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                        title="Ca trước"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-[11px] font-mono font-semibold px-1 text-[var(--mute)] tabular-nums">
+                        {curPatientIndex >= 0 ? `${curPatientIndex + 1}/${rows.length}` : "—"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => nextPatient && openDetail(nextPatient)}
+                        disabled={!nextPatient}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--ink-soft)] hover:bg-[var(--surface)] disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                        title="Ca tiếp"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <span className="hidden md:inline-flex items-center gap-1.5 text-[12px] font-medium min-w-0 truncate">
+                      {tab === "A" && dirtyDieuTri ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse shrink-0" />
+                          <span className="text-[var(--amber-deep)]">Có thay đổi điều trị chưa lưu</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />
+                          <span className="text-[var(--mute)]">Đã lưu</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
                   {tab === "A" && (
                     <button
                       type="button"
                       onClick={saveDieuTri}
                       disabled={savingDieuTri || !dirtyDieuTri}
-                      className="btn btn-primary px-3 sm:px-6 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                      className="btn-primary inline-flex items-center gap-1.5 h-9 px-5 rounded-[10px] text-[13px] font-semibold shrink-0 disabled:opacity-40 disabled:pointer-events-none"
                     >
                       {savingDieuTri ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
-                      <span>Lưu điều trị</span>
+                      Lưu điều trị
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col justify-between min-h-0">
+                <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12 gap-3">
+                  <div className="w-14 h-14 rounded-[14px] bg-[var(--navy-50)] flex items-center justify-center">
+                    <PhoneCall className="w-7 h-7 text-[var(--teal-deep)]" />
+                  </div>
+                  <div className="space-y-1 max-w-sm">
+                    <div className="font-semibold text-[15px] text-[var(--ink)]">{rows.length > 0 ? "Chưa chọn bệnh nhân" : `Chưa có ca nhóm ${tab}`}</div>
+                    <div className="text-[12.5px] text-[var(--mute)] leading-relaxed">
+                      {rows.length > 0 ? `Đợt khám có ${rows.length} bệnh nhân nhóm ${tab}. Chọn một ca trong danh sách để bắt đầu.` : `Đợt khám này chưa có bệnh nhân nào thuộc nhóm ${tab}.`}
+                    </div>
+                  </div>
+                  {rows.length > 0 ? (
+                    <button type="button" onClick={() => setShowList(true)} className="xl:hidden btn-primary inline-flex items-center gap-2 h-10 px-5 rounded-[10px] text-[13px] font-semibold mt-2">
+                      <Users className="w-4 h-4 text-[var(--teal)]" />
+                      Mở danh sách ({rows.length})
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setShowBkModal(true)} className={`${BTN_SOFT.ghost} mt-2`}>
+                      <CalendarDays className="w-4 h-4 text-[var(--navy)]" />
+                      Chọn đợt khám khác
                     </button>
                   )}
                 </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col justify-between min-h-0">
-              <div className="flex-1 flex flex-col items-center justify-center text-[var(--mute)] text-center px-6 py-12 gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center border border-[var(--navy-100)] shadow-2xs">
-                  <PhoneCall className="w-7 h-7 text-[var(--teal-deep)]" />
-                </div>
-                <div className="space-y-1 max-w-sm">
-                  <div className="font-bold text-[15px] text-[var(--ink)]">
-                    {rows.length > 0 ? "Chưa chọn bệnh nhân" : `Chưa có ca nhóm ${tab}`}
-                  </div>
-                  <div className="text-[12.5px] text-[var(--mute)] leading-relaxed">
-                    {rows.length > 0
-                      ? `Đợt khám có ${rows.length} bệnh nhân nhóm ${tab}. Bấm nút bên dưới để mở danh sách chọn ca.`
-                      : `Đợt khám này chưa có bệnh nhân nào thuộc nhóm ${tab}.`}
-                  </div>
-                </div>
-                {rows.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowList(true)}
-                    className="btn btn-primary px-5 py-2.5 font-bold rounded-xl shadow-md flex items-center gap-2 mt-2 cursor-pointer active:scale-95"
-                  >
-                    <Users className="w-4 h-4 text-[var(--teal)]" />
-                    <span>Mở danh sách bệnh nhân ({rows.length})</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowBkModal(true)}
-                    className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl border border-[var(--line-strong)] flex items-center gap-2 mt-2 cursor-pointer"
-                  >
-                    <CalendarDays className="w-4 h-4 text-[var(--navy)]" />
-                    <span>Chọn đợt khám khác</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Thanh đáy dự phòng trên Mobile khi chưa chọn bệnh nhân */}
-              <div className="xl:hidden px-3 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+0.375rem)] border-t border-[var(--line)] bg-white/95 backdrop-blur-sm sticky bottom-0 z-30 flex items-center justify-between shadow-lg shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowList(true)}
-                  className="h-8 px-2.5 rounded-lg bg-[#002b7f] hover:bg-[var(--navy-deep)] text-white font-bold text-[12px] flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-                >
-                  <Users className="w-3.5 h-3.5 text-[#00d2d3]" />
-                  <span className="font-extrabold text-[12px] text-white">DS</span>
-                  <span className="min-w-[18px] h-[18px] px-1 bg-[#e11d48] text-white font-mono text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
-                    {rows.length}
-                  </span>
-                </button>
-                <span className="text-[11.5px] text-[var(--mute)] font-medium">Chưa chọn ca</span>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
+            )}
+          </main>
+        </div>
       )}
+
+      <DoiChieuHistoryModal
+        target={showHisHistory && curBk ? { id: curBk.id, name: fmtBuoiKhamName(curBk) } : null}
+        onClose={() => setShowHisHistory(false)}
+        running={reconciling}
+        onRerun={reconcileCurrent}
+      />
 
       {/* Modal Chọn Đợt Khám */}
       <Modal
@@ -1871,32 +1443,28 @@ export default function TheoDoiPage() {
               hisResults.map((item, idx) => (
                 <div
                   key={idx}
-                  className={`p-4 border rounded-xl transition-all flex items-center justify-between gap-4 ${
+                  className={`p-3.5 border rounded-[12px] transition-colors flex items-center justify-between gap-4 ${
                     item.hasSurgery
-                      ? "border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 shadow-2xs"
-                      : "border-slate-200 bg-white hover:bg-slate-50 shadow-2xs"
+                      ? "border-[var(--teal)]/40 border-l-[3px] border-l-[var(--teal)] bg-[var(--surface)] hover:bg-[var(--teal-softer)]"
+                      : "border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
                   }`}
                 >
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="font-bold text-[14.5px] text-slate-900 flex items-center gap-2 flex-wrap">
-                      <span className="font-extrabold">{item.hoTen}</span>
-                      <span className="font-mono text-[11.5px] font-extrabold text-teal-800 bg-teal-100 px-2 py-0.5 rounded border border-teal-200">
+                    <div className="text-[14px] text-[var(--ink)] flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{item.hoTen}</span>
+                      <span className="font-mono text-[11px] font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-1.5 py-px rounded-md">
                         Mã HIS: {item.maHIS}
                       </span>
                       {item.namSinh && <span className="text-[12px] text-slate-500 font-medium">({item.namSinh})</span>}
 
                       {item.hasSurgery ? (
-                        <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
-                          ✓ {item.ngayMo ? `ĐÃ MỔ/NHẬP VIỆN (${fmtDate(item.ngayMo)})` : "GHI NHẬN MỔ/NỘI TRÚ"}
-                        </span>
+                        <Badge tone="teal">{item.ngayMo ? <>Đã mổ / nhập viện <span className="font-mono font-medium">{fmtDate(item.ngayMo)}</span></> : "Ghi nhận mổ / nội trú"}</Badge>
                       ) : (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
-                          ℹ️ KHÁM NGOẠI TRÚ
-                        </span>
+                        <Badge tone="gray">Khám ngoại trú</Badge>
                       )}
                     </div>
 
-                    <div className="text-[12.5px] text-slate-600 flex items-center gap-3 flex-wrap font-medium">
+                    <div className="text-[12px] text-[var(--mute)] flex items-center gap-3 flex-wrap">
                       {item.cccd && <span>CCCD: <b className="text-slate-900 font-mono">{item.cccd}</b></span>}
                       {item.bhyt && <span>BHYT: <b className="text-indigo-700 font-mono">{item.bhyt}</b></span>}
                       {item.sdt && <span>SĐT: <b className="text-slate-800 font-mono">{item.sdt}</b></span>}
@@ -1908,28 +1476,28 @@ export default function TheoDoiPage() {
                     </div>
 
                     {item.loaiPhauThuat && (
-                      <div className="text-[12px] font-extrabold text-teal-900 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 inline-block">
-                        👁️ Phẫu thuật: <span className="text-teal-700">{item.loaiPhauThuat}</span>
+                      <div className="text-[12px] text-[var(--ink-soft)]">
+                        <span className="text-[var(--mute)]">Phẫu thuật:</span> <b className="font-semibold text-[var(--teal-deep)]">{item.loaiPhauThuat}</b>
                         {item.tenDichVu ? ` — ${item.tenDichVu}` : ""}
                       </div>
                     )}
 
                     {item.chanDoan && (
-                      <div className="text-[12.5px] font-semibold text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200/80 inline-block">
-                        🩺 Chẩn đoán: {item.chanDoan}
+                      <div className="text-[12px] text-[var(--ink-soft)]">
+                        <span className="text-[var(--mute)]">Chẩn đoán:</span> {item.chanDoan}
                       </div>
                     )}
 
                     {item.soTienThucThu != null && item.soTienThucThu > 0 && (
-                      <div className="text-[12px] font-extrabold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-md inline-flex items-center gap-1 border border-emerald-300">
-                        💰 Thực thu HIS: {new Intl.NumberFormat("vi-VN").format(item.soTienThucThu)} VNĐ
+                      <div className="text-[12px] text-[var(--ink-soft)]">
+                        <span className="text-[var(--mute)]">Thực thu HIS:</span> <b className="font-mono font-semibold text-[var(--ink)]">{new Intl.NumberFormat("vi-VN").format(item.soTienThucThu)} ₫</b>
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => confirmHisSurgery(item)}
                     disabled={hisLinking === item.maHIS}
-                    className="btn btn-primary px-3 py-1.5 text-xs font-bold shrink-0 cursor-pointer"
+                    className="btn-primary inline-flex items-center h-8 px-3.5 rounded-[10px] text-[12px] font-semibold shrink-0"
                   >
                     {hisLinking === item.maHIS ? <Loader2 className="w-3 h-3 animate-spin" /> : "Xác nhận"}
                   </button>
@@ -1952,7 +1520,7 @@ export default function TheoDoiPage() {
             <button
               type="button"
               onClick={() => setConfirmModal((s) => ({ ...s, open: false }))}
-              className="px-4 py-2 rounded-xl text-[13px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 cursor-pointer active:scale-95 transition-all"
+              className={BTN_SOFT.ghost}
             >
               Hủy bỏ
             </button>
@@ -1962,12 +1530,12 @@ export default function TheoDoiPage() {
                 setConfirmModal((s) => ({ ...s, open: false }));
                 confirmModal.onConfirm();
               }}
-              className={`px-4.5 py-2 rounded-xl text-[13px] font-extrabold text-white shadow-sm cursor-pointer active:scale-95 transition-all ${
+              className={`inline-flex items-center h-[34px] px-4 rounded-[10px] text-[12.5px] font-semibold text-white cursor-pointer transition-colors ${
                 confirmModal.variant === "danger"
-                  ? "bg-rose-600 hover:bg-rose-700 border border-rose-600"
+                  ? "bg-[var(--rose)] hover:bg-rose-700"
                   : confirmModal.variant === "warning"
-                  ? "bg-amber-600 hover:bg-amber-700 border border-amber-600"
-                  : "bg-indigo-600 hover:bg-indigo-700 border border-indigo-600"
+                  ? "bg-[var(--amber)] hover:bg-[var(--amber-deep)]"
+                  : "bg-[var(--navy)] hover:bg-[var(--navy-deep)]"
               }`}
             >
               {confirmModal.confirmText || "Xác nhận"}
@@ -1975,7 +1543,7 @@ export default function TheoDoiPage() {
           </>
         }
       >
-        <p className="text-[13.5px] text-slate-700 leading-relaxed font-medium">
+        <p className="text-[13px] text-[var(--ink-soft)] leading-relaxed">
           {confirmModal.message}
         </p>
       </Modal>
@@ -1996,7 +1564,7 @@ export default function TheoDoiPage() {
             <button
               type="button"
               onClick={() => setProgressModal((s) => ({ ...s, open: false }))}
-              className="w-full py-2.5 rounded-xl text-[13.5px] font-extrabold text-white bg-teal-800 hover:bg-teal-900 shadow-xs cursor-pointer active:scale-95 transition-all"
+              className="btn-primary w-full h-10 rounded-[10px] text-[13px] font-semibold"
             >
               Đóng & Hoàn tất
             </button>
@@ -2007,27 +1575,27 @@ export default function TheoDoiPage() {
           {progressModal.status === "running" ? (
             <div className="flex flex-col items-center justify-center space-y-4 py-4">
               <div className="relative flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full border-4 border-teal-200 border-t-teal-700 animate-spin" />
-                <Zap className="w-7 h-7 text-teal-800 absolute animate-pulse" />
+                <div className="w-14 h-14 rounded-full border-[3px] border-[var(--line)] border-t-[var(--navy)] animate-spin" />
+                <Zap className="w-6 h-6 text-[var(--teal)] absolute" />
               </div>
               <div className="space-y-1">
-                <p className="text-[14px] font-extrabold text-slate-800">
+                <p className="text-[13.5px] font-semibold text-[var(--ink)]">
                   {progressModal.message}
                 </p>
-                <p className="text-[12px] text-slate-500 font-medium">
-                  Vui lòng không đóng trình duyệt trong quá trình xử lý...
+                <p className="text-[12px] text-[var(--mute)]">
+                  Vui lòng không đóng trình duyệt trong quá trình xử lý…
                 </p>
               </div>
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200 mt-2">
-                <div className="h-full bg-gradient-to-r from-teal-500 via-indigo-500 to-purple-600 animate-pulse w-full rounded-full" />
+              <div className="w-full bg-[var(--line)] h-1 rounded-full overflow-hidden mt-2">
+                <div className="h-full bg-gradient-to-r from-[var(--navy)] to-[var(--teal)] animate-pulse w-full rounded-full" />
               </div>
             </div>
           ) : progressModal.status === "success" ? (
             <div className="space-y-4 py-2">
-              <div className="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-300 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+              <div className="w-14 h-14 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <p className="text-[14px] font-extrabold text-emerald-950 leading-relaxed">
+              <p className="text-[13.5px] font-semibold text-[var(--ink)] leading-relaxed">
                 {progressModal.message}
               </p>
 
@@ -2050,10 +1618,10 @@ export default function TheoDoiPage() {
             </div>
           ) : (
             <div className="space-y-3 py-2">
-              <div className="w-14 h-14 rounded-full bg-rose-100 border-2 border-rose-300 text-rose-700 flex items-center justify-center mx-auto shadow-xs">
+              <div className="w-14 h-14 rounded-full bg-[var(--rose-soft)] text-[var(--rose)] flex items-center justify-center mx-auto">
                 <AlertTriangle className="w-8 h-8" />
               </div>
-              <p className="text-[14px] font-extrabold text-rose-900 leading-relaxed">
+              <p className="text-[13.5px] font-semibold text-[var(--rose)] leading-relaxed">
                 {progressModal.message}
               </p>
             </div>

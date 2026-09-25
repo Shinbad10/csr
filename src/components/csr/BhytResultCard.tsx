@@ -174,7 +174,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
           title="Lịch sử Khám Chữa Bệnh & Kiểm tra Thẻ BHYT"
           subtitle={`Thẻ: ${the.maThe} · Bệnh nhân: ${the.hoTen || "—"}`}
           icon={History}
-          maxWidth="w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh]"
+          maxWidth="w-[95%] max-w-[95%] min-w-[95%] h-[92vh] max-h-[92vh]"
           noPadding
         >
           <div className="p-4 sm:p-6 space-y-4 bg-[var(--surface-bg)]">

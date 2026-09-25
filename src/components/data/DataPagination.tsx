@@ -31,8 +31,8 @@ export function DataPagination({ className, pageSizeOptions = [20, 50, 100, 200,
         className,
       )}
     >
-      <span className="text-[var(--mute)] font-medium hidden sm:inline">
-        Hiển thị <span className="font-bold text-[var(--ink)]">{from.toLocaleString('vi-VN')}–{to.toLocaleString('vi-VN')}</span> / {total.toLocaleString('vi-VN')} bản ghi
+      <span className="text-[var(--mute)] font-medium hidden sm:inline font-mono text-[11.5px]">
+        Hiển thị <span className="font-bold text-[var(--ink)] tabular-nums">{from.toLocaleString('vi-VN')}–{to.toLocaleString('vi-VN')}</span> / <span className="font-bold text-[var(--ink)] tabular-nums">{total.toLocaleString('vi-VN')}</span> bản ghi
       </span>
 
       <div className="flex items-center gap-1">
@@ -42,7 +42,7 @@ export function DataPagination({ className, pageSizeOptions = [20, 50, 100, 200,
 
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`ellipsis-${i}`} className="px-1.5 text-[var(--mute)]">
+            <span key={`ellipsis-${i}`} className="px-1.5 text-[var(--mute)] font-mono text-[12px]">
               …
             </span>
           ) : (
@@ -57,8 +57,8 @@ export function DataPagination({ className, pageSizeOptions = [20, 50, 100, 200,
         </PageBtn>
       </div>
 
-      <div className="flex items-center gap-2 text-[var(--mute)]">
-        <span className="hidden sm:inline">Hiển thị:</span>
+      <div className="flex items-center gap-2 text-[var(--mute)] font-mono text-[11.5px]">
+        <span className="hidden sm:inline font-sans font-medium">Hiển thị:</span>
         <ToolbarSelect
           size="sm"
           searchable={false}
@@ -86,11 +86,11 @@ function PageBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'inline-flex items-center justify-center min-w-[30px] h-7 px-2 rounded-md text-[11px] font-semibold transition-colors duration-100',
+        'inline-flex items-center justify-center min-w-[30px] h-7 px-2 rounded-lg font-mono text-[11.5px] font-bold transition-all duration-150 cursor-pointer',
         active
-          ? 'bg-[var(--navy)] text-white shadow-sm'
-          : 'text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] hover:text-[var(--ink)]',
-        disabled && 'opacity-40 pointer-events-none',
+          ? 'bg-[var(--navy)] text-white shadow-xs'
+          : 'text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]',
+        disabled && 'opacity-40 pointer-events-none cursor-default',
       )}
       {...props}
     >

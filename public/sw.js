@@ -1,7 +1,7 @@
 /// VISI CSR — Manual Service Worker
 /// Compatible with Next.js 16 Turbopack (no webpack plugin needed)
 
-const CACHE_NAME = "visi-csr-v1";
+const CACHE_NAME = "visi-csr-v2";
 
 // Core shell files to precache
 const PRECACHE_URLS = [
@@ -10,7 +10,10 @@ const PRECACHE_URLS = [
   "/logo.png",
   "/icon-192.png",
   "/icon-512.png",
+  "/icon-maskable-192.png",
+  "/icon-maskable-512.png",
   "/apple-touch-icon.png",
+  "/favicon.ico",
 ];
 
 // ─── Install: precache core assets ───────────────────────

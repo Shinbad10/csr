@@ -3,13 +3,17 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Modal from "@/components/layout/Modal";
 import {
-  Users, Search, Calendar, MapPin, UserCheck, Loader2,
-  Stethoscope, Eye, CheckCircle2, Clock, Phone, CreditCard,
-  FileSpreadsheet, Sparkles, Filter, X, ChevronDown
+  Users, Calendar, MapPin, UserCheck, Loader2, CheckCircle2, Clock, Phone,
+  FileSpreadsheet, Download, ChevronDown, FileText,
 } from "lucide-react";
-import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, checkSurgeryTiming, type HoSo } from "@/lib/csr";
-import { parseDoctorList } from "./DoctorAutocomplete";
+import {
+  fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, checkSurgeryTiming, classifyCSRNhom, bhytLevel, type HoSo,
+} from "@/lib/csr";
 import { useToast } from "@/components/providers/ToastProvider";
+import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
+import { type ColumnDef } from "@tanstack/react-table";
+import { PatientInfoModal } from "@/components/csr/PatientModals";
+import { cn } from "@/lib/utils";
 
 interface BuoiKhamSummary {
   id: string;
@@ -22,11 +26,30 @@ interface BuoiKhamSummary {
   _count?: { hoSo: number };
 }
 
+type PatientFilter = "ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN";
+
 interface BuoiKhamPatientsModalProps {
   open: boolean;
   onClose: () => void;
   buoiKham: BuoiKhamSummary | null;
-  initialFilter?: "ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN";
+  initialFilter?: PatientFilter;
+}
+
+/** SĐT hợp lệ tối thiểu — dữ liệu nhập cũ có nhiều giá trị "0" / "-" thay cho "không có". */
+const validPhone = (s?: string | null) => (s && s.replace(/\D/g, "").length >= 8 ? s : "");
+
+/** Danh sách chẩn đoán của một mắt: mảng JSON + ô "khác" → mảng chuỗi sạch. */
+const diagOf = (raw?: string | null, other?: string | null) =>
+  [...parseDiag(raw ?? null), ...(other ? [other] : [])].map((d) => String(d).trim()).filter(Boolean);
+
+function EyeLine({ eye, items }: { eye: "MP" | "MT"; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="flex items-baseline gap-1.5 min-w-0">
+      <span className="shrink-0 font-mono text-[9.5px] font-bold px-1 rounded-[4px] bg-[var(--line-soft)] text-[var(--mute)]">{eye}</span>
+      <span className="text-[12px] text-[var(--ink)] truncate" title={items.join(", ")}>{items.join(", ")}</span>
+    </div>
+  );
 }
 
 export default function BuoiKhamPatientsModal({
@@ -36,10 +59,7 @@ export default function BuoiKhamPatientsModal({
   initialFilter = "ALL",
 }: BuoiKhamPatientsModalProps) {
   const { addToast } = useToast();
-  const [patients, setPatients] = useState<HoSo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [groupFilter, setGroupFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
+  const [selectedHoSoId, setSelectedHoSoId] = useState<string | null>(null);
   const [exportingFormat, setExportingFormat] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = React.useRef<HTMLDivElement>(null);
@@ -79,10 +99,8 @@ export default function BuoiKhamPatientsModal({
       }
       if (!filename) {
         const dateStr = buoiKham.ngayKham ? new Date(buoiKham.ngayKham).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-        const cleanXa = (buoiKham.xa || "KhamMat").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
-        filename = format === "khamSucKhoe"
-          ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx`
-          : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+        const cleanXa = (buoiKham.xa || "KhamMat").replace(/[^a-zA-Z0-9_À-ɏḀ-ỿ]/g, "_");
+        filename = format === "khamSucKhoe" ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx` : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
       }
       a.download = filename;
       document.body.appendChild(a);
@@ -92,573 +110,470 @@ export default function BuoiKhamPatientsModal({
       addToast({
         type: "success",
         title: "Xuất Excel thành công",
-        message: format === "khamSucKhoe"
-          ? `Đã tải file khám sức khỏe ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu 101 cột)`
-          : `Đã tải file danh sách bệnh nhân ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu Google Sheet)`,
+        message:
+          format === "khamSucKhoe"
+            ? `Đã tải file khám sức khỏe ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu 101 cột)`
+            : `Đã tải file danh sách bệnh nhân ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu Google Sheet)`,
       });
     } catch (err) {
-      addToast({
-        type: "error",
-        title: "Lỗi xuất file",
-        message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel",
-      });
+      addToast({ type: "error", title: "Lỗi xuất file", message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel" });
     } finally {
       setExportingFormat(null);
     }
   };
 
+  /* Dữ liệu gắn với id đợt đã nạp: đổi đợt / mở lại thì tự coi như đang tải — khỏi reset state trong effect. */
+  const bkId = open ? buoiKham?.id ?? null : null;
+  const [loaded, setLoaded] = useState<{ id: string; data: HoSo[] } | null>(null);
+  const patients = useMemo(() => (bkId && loaded?.id === bkId ? loaded.data : []), [bkId, loaded]);
+  const loading = !!bkId && loaded?.id !== bkId;
+
   useEffect(() => {
-    if (!open || !buoiKham?.id) {
-      setPatients([]);
-      setSearch("");
-      setGroupFilter("ALL");
-      return;
-    }
-    setGroupFilter(initialFilter || "ALL");
-
-    let isCancelled = false;
-    const fetchPatients = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(buoiKham.id)}`);
-        if (res.ok) {
-          const data: HoSo[] = await res.json();
-          if (!isCancelled) setPatients(data);
-        }
-      } catch (err) {
+    if (!bkId) return;
+    let cancelled = false;
+    fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(bkId)}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .catch((err) => {
         console.error("Lỗi lấy danh sách bệnh nhân đợt khám:", err);
-      } finally {
-        if (!isCancelled) setLoading(false);
-      }
-    };
-
-    fetchPatients();
+        return [];
+      })
+      .then((data: HoSo[]) => {
+        if (!cancelled) setLoaded({ id: bkId, data });
+      });
     return () => {
-      isCancelled = true;
+      cancelled = true;
     };
-  }, [open, buoiKham?.id]);
+  }, [bkId]);
 
-  // Thống kê nhanh
-  const stats = useMemo(() => {
-    let nhomA = 0;
-    let nhomB = 0;
-    let daMo = 0;
-    let daMoTruoc = 0;
-    let chuaMo = 0;
-    let phaco2Lan = 0;
+  /* Bộ lọc nhóm: mỗi lần mở (đợt / bộ lọc ban đầu khác) bắt đầu lại từ `initialFilter`. */
+  const filterKey = `${bkId}|${initialFilter}`;
+  const [filterState, setFilterState] = useState<{ key: string; f: PatientFilter }>({ key: "", f: "ALL" });
+  const groupFilter: PatientFilter = filterState.key === filterKey ? filterState.f : initialFilter || "ALL";
+  const setGroupFilter = (f: PatientFilter) => setFilterState({ key: filterKey, f });
 
-    patients.forEach((p) => {
-      if (p.isPhaco2Lan) phaco2Lan++;
-      const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
-      if (timing.isDaMoTruoc) daMoTruoc++;
-      if (p.nhom === "A") {
-        nhomA++;
-        if (timing.isDaMo) daMo++;
-        else if (!timing.hasSurgery) chuaMo++;
-      } else if (p.nhom === "B") {
-        nhomB++;
-      }
-    });
+  /* Phân loại mỗi hồ sơ một lần — dùng CHUNG hàm của hệ thống (classifyCSRNhom / checkSurgeryTiming)
+     để số đếm ở đây khớp với cột "Phân nhóm" & "Tiến độ mổ" trên danh sách đợt khám. */
+  const classified = useMemo(
+    () =>
+      patients.map((p) => {
+        const nhom = classifyCSRNhom(p);
+        const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
+        return { p, nhom, timing };
+      }),
+    [patients, buoiKham?.ngayKham],
+  );
 
-    return { total: patients.length, nhomA, nhomB, daMo, daMoTruoc, chuaMo, phaco2Lan };
-  }, [patients, buoiKham?.ngayKham]);
+  const match = (x: (typeof classified)[number], f: PatientFilter) => {
+    switch (f) {
+      case "A": return x.nhom.isNhomA;
+      case "B": return x.nhom.isNhomB;
+      case "DA_MO": return x.timing.isDaMo;
+      case "DA_MO_TRUOC": return x.timing.isDaMoTruoc;
+      case "CHUA_MO": return x.nhom.isNhomA && !x.timing.hasSurgery;
+      case "PHACO_2_LAN": return Boolean(x.p.isPhaco2Lan);
+      default: return true;
+    }
+  };
 
-  // Danh sách lọc
-  const filtered = useMemo(() => {
-    return patients.filter((p) => {
-      if (search.trim()) {
-        const q = search.toLowerCase().trim();
-        const match = [
-          p.hoTen,
-          p.maBN,
-          p.maBNHIS,
-          p.cccd,
-          p.sdt,
-          p.diaChi,
-          p.bacSiChiDinh,
-          String(p.stt),
-        ].some((s) => (s || "").toLowerCase().includes(q));
-        if (!match) return false;
-      }
+  const tabs: { key: PatientFilter; label: string; tone: string }[] = [
+    { key: "ALL", label: "Tất cả", tone: "" },
+    { key: "A", label: "Nhóm A", tone: "text-[var(--rose)]" },
+    { key: "B", label: "Nhóm B", tone: "text-[var(--amber-deep)]" },
+    { key: "CHUA_MO", label: "Chờ mổ", tone: "text-[var(--amber-deep)]" },
+    { key: "DA_MO", label: "Đã mổ", tone: "text-[var(--teal-deep)]" },
+    { key: "DA_MO_TRUOC", label: "Mổ trước", tone: "text-[#7c3aed]" },
+    { key: "PHACO_2_LAN", label: "Mắt 2", tone: "text-[#7c3aed]" },
+  ];
+  const counts = Object.fromEntries(tabs.map((t) => [t.key, classified.filter((x) => match(x, t.key)).length])) as Record<PatientFilter, number>;
 
-      const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
-      if (groupFilter === "A") return p.nhom === "A";
-      if (groupFilter === "B") return p.nhom === "B";
-      if (groupFilter === "DA_MO") return timing.isDaMo;
-      if (groupFilter === "DA_MO_TRUOC") return timing.isDaMoTruoc;
-      if (groupFilter === "CHUA_MO") return p.nhom === "A" && !timing.hasSurgery;
-      if (groupFilter === "PHACO_2_LAN") return Boolean(p.isPhaco2Lan);
+  const filtered = useMemo(
+    () => classified.filter((x) => match(x, groupFilter)).map((x) => x.p),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [classified, groupFilter],
+  );
 
-      return true;
-    });
-  }, [patients, search, groupFilter, buoiKham?.ngayKham]);
-
-  if (!buoiKham) return null;
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={
-        <div className="flex items-center gap-2 flex-wrap">
-          <span>Hồ sơ bệnh nhân</span>
-          <span className="font-mono text-xs font-bold text-[#031da6] bg-[#eef2ff] px-2 py-0.5 rounded border border-[#c7d2fe]">
-            {fmtBuoiKhamCode(buoiKham.id)}
+  const columns = useMemo<ColumnDef<HoSo>[]>(() => [
+    {
+      id: "stt",
+      header: "STT",
+      size: 56,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { align: "center" },
+      accessorFn: (p) => p.stt ?? 0,
+      cell: ({ row, table }) => {
+        const { pageIndex = 0, pageSize = 15 } = table.getState().pagination || {};
+        return (
+          <span className="font-mono text-[12px] text-[var(--mute)] tabular-nums">
+            {row.original.stt ? row.original.stt : pageIndex * pageSize + row.index + 1}
           </span>
-          <span className="text-sm font-normal text-[#64748b]">({fmtBuoiKhamName(buoiKham)})</span>
-        </div>
-      }
-      subtitle={
-        <div className="flex items-center gap-3 text-xs text-[#64748b] flex-wrap mt-0.5">
-          <span className="inline-flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5 text-[#031da6]" />
-            <b className="text-[#334155]">{fmtDate(buoiKham.ngayKham)}</b>
-          </span>
-          <span>•</span>
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-[#64748b]" />
-            <span>{buoiKham.diaDiem}</span>
-          </span>
-          {buoiKham.bacSiKham && (
-            <>
-              <span>•</span>
-              <span className="inline-flex items-center gap-1 text-[#047857] font-semibold bg-[#ecfdf5] px-1.5 py-0.5 rounded border border-[#a7f3d0]">
-                <UserCheck className="w-3.5 h-3.5 text-[#047857]" />
-                <span>{buoiKham.bacSiKham}</span>
-              </span>
-            </>
-          )}
-        </div>
-      }
-      icon={Users}
-      maxWidth="w-[98vw] max-w-[98vw] 2xl:max-w-[1860px] h-[95vh] max-h-[95vh]"
-      noPadding
-      bodyClassName="flex-1 min-h-0 flex flex-col overflow-hidden"
-    >
-      <div className="flex-1 min-h-0 flex flex-col bg-white overflow-hidden">
-        {/* Toolbar & Filter Tabs */}
-        <div className="p-3 sm:p-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between gap-3 flex-wrap shrink-0">
-          {/* Search box */}
-          <div className="relative flex-1 min-w-[240px] max-w-[380px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm theo họ tên, SĐT, CCCD, mã BN..."
-              className="w-full h-9 pl-9 pr-8 text-[13px] bg-white border border-slate-300 rounded-xl outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-900 shadow-2xs"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Group Filter Chips */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setGroupFilter("ALL")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                groupFilter === "ALL"
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-100"
-              }`}
-            >
-              Tất cả ({stats.total})
-            </button>
-            <button
-              type="button"
-              onClick={() => setGroupFilter("A")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                groupFilter === "A"
-                  ? "bg-rose-600 text-white shadow-xs"
-                  : "bg-white text-rose-700 border border-rose-200 hover:bg-rose-50"
-              }`}
-            >
-              <span>Nhóm A (Chỉ định mổ)</span>
-              <span className="font-mono bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.nhomA}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setGroupFilter("B")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                groupFilter === "B"
-                  ? "bg-amber-600 text-white shadow-xs"
-                  : "bg-white text-amber-700 border border-amber-200 hover:bg-amber-50"
-              }`}
-            >
-              <span>Nhóm B (Theo dõi)</span>
-              <span className="font-mono bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.nhomB}</span>
-            </button>
-            {stats.daMo > 0 && (
-              <button
-                type="button"
-                onClick={() => setGroupFilter("DA_MO")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  groupFilter === "DA_MO"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50"
-                }`}
-              >
-                <span>Đã mổ</span>
-                <span className="font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.daMo}</span>
-              </button>
-            )}
-            {stats.daMoTruoc > 0 && (
-              <button
-                type="button"
-                onClick={() => setGroupFilter("DA_MO_TRUOC")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  groupFilter === "DA_MO_TRUOC"
-                    ? "bg-purple-600 text-white shadow-xs"
-                    : "bg-white text-purple-700 border border-purple-200 hover:bg-purple-50"
-                }`}
-                title="Bệnh nhân đã từng mổ mắt trước khi diễn ra đợt khám tầm soát này"
-              >
-                <span>Mổ trước</span>
-                <span className="font-mono bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.daMoTruoc}</span>
-              </button>
-            )}
-            {stats.phaco2Lan > 0 && (
-              <button
-                type="button"
-                onClick={() => setGroupFilter("PHACO_2_LAN")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  groupFilter === "PHACO_2_LAN"
-                    ? "bg-[#7c3aed] text-white shadow-xs"
-                    : "bg-white text-[#7c3aed] border border-[#ddd6fe] hover:bg-[#f5f3ff]"
-                }`}
-                title="Xem danh sách bệnh nhân mổ Phaco 2 lần (Mắt 2)"
-              >
-                <span>Mắt 2</span>
-                <span className="font-mono bg-[#ede9fe] text-[#6d28d9] px-1.5 py-0.5 rounded text-[11px] font-bold">{stats.phaco2Lan}</span>
-              </button>
-            )}
-
-            {/* Nút Xuất Excel với Menu chọn 2 mẫu */}
-            <div className="relative ml-auto" ref={exportMenuRef}>
-              <div className="inline-flex rounded-lg shadow-xs overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => handleExport("khamSucKhoe")}
-                  disabled={!!exportingFormat || patients.length === 0}
-                  className="px-3 py-1.5 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-[#018a7f] hover:bg-[#016e65] text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Xuất file Excel theo mẫu Khám Sức Khỏe (101 cột chuẩn HIS)"
-                >
-                  {exportingFormat === "khamSucKhoe" ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#e6faf7]" />
-                  )}
-                  <span>Xuất Excel (Khám SK 101 cột)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setExportMenuOpen((o) => !o)}
-                  disabled={!!exportingFormat || patients.length === 0}
-                  className="px-1.5 py-1.5 text-xs font-bold transition-all flex items-center justify-center cursor-pointer bg-[#017a70] hover:bg-[#01635b] text-white border-l border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Tùy chọn mẫu xuất Excel"
-                >
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {exportMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 z-50 animate-dropdown text-[#0f172a]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExportMenuOpen(false);
-                      handleExport("khamSucKhoe");
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#018a7f] hover:bg-[#e6faf7] transition-colors text-left cursor-pointer"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-[#02b8a9] shrink-0" />
-                    <div>
-                      <div className="font-bold">Mẫu Khám Sức Khỏe (101 cột)</div>
-                      <div className="text-[10.5px] text-[#64748b] font-normal">Mẫu chuẩn nộp HIS & trạm y tế</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExportMenuOpen(false);
-                      handleExport("default");
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#334155] hover:bg-[#f1f5f9] transition-colors text-left cursor-pointer"
-                  >
-                    <FileSpreadsheet className="w-4 h-4 text-[#64748b] shrink-0" />
-                    <div>
-                      <div className="font-bold">Mẫu Google Sheet (25 cột)</div>
-                      <div className="text-[10.5px] text-[#94a3b8] font-normal">Mẫu danh sách khám sàng lọc</div>
-                    </div>
-                  </button>
-                </div>
+        );
+      },
+    },
+    {
+      id: "benhNhan",
+      header: "Bệnh nhân",
+      size: 250,
+      accessorFn: (p) => [p.hoTen, p.maBN, p.maBNHIS, p.cccd].filter(Boolean).join(" "),
+      sortingFn: (a, b) => a.original.hoTen.localeCompare(b.original.hoTen, "vi"),
+      meta: { noTruncate: true },
+      cell: ({ row }) => {
+        const p = row.original;
+        const age = ageOf(p) || (p.namSinh ? new Date().getFullYear() - p.namSinh : null);
+        return (
+          <div className="min-w-0">
+            <div className="font-semibold text-[13px] text-[var(--ink)] truncate" title={p.hoTen}>{p.hoTen}</div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--mute)] whitespace-nowrap min-w-0">
+              <span className="font-mono font-bold text-[var(--navy)]">{p.maBN || p.id.slice(-6)}</span>
+              <span className="text-[var(--mute-soft)]">·</span>
+              <span>{[p.gioiTinh, age ? `${age} tuổi` : null].filter(Boolean).join(" · ") || "—"}</span>
+              {p.maBNHIS && (
+                <>
+                  <span className="text-[var(--mute-soft)]">·</span>
+                  <span className="font-mono truncate" title="Mã bệnh nhân HIS">HIS {p.maBNHIS}</span>
+                </>
               )}
             </div>
           </div>
-        </div>
-
-        {/* Table Content — Single Scroll Container */}
-        <div className="flex-1 min-h-0 overflow-auto">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              <div className="text-sm font-bold text-slate-800">Đang tải danh sách hồ sơ bệnh nhân...</div>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-2.5">
-              <Users className="w-10 h-10 text-slate-300" />
-              <div className="font-bold text-[14px] text-slate-800">
-                {patients.length === 0 ? "Chưa có bệnh nhân nào trong đợt khám này" : "Không tìm thấy bệnh nhân phù hợp"}
+        );
+      },
+    },
+    {
+      id: "lienHe",
+      header: "Liên hệ",
+      size: 210,
+      accessorFn: (p) => [p.sdt, p.sdtNguoiNha, p.diaChi].filter(Boolean).join(" "),
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { noTruncate: true },
+      cell: ({ row }) => {
+        const p = row.original;
+        const phone = validPhone(p.sdt) || validPhone(p.sdtNguoiNha);
+        return (
+          <div className="min-w-0">
+            {phone ? (
+              <div className="flex items-center gap-1.5 font-mono text-[12px] text-[var(--ink)] tabular-nums">
+                <Phone className="w-3 h-3 text-[var(--mute)] shrink-0" />
+                {phone}
+                {!validPhone(p.sdt) && <span className="font-sans text-[10px] text-[var(--mute)]">(người nhà)</span>}
               </div>
-              <div className="text-xs text-slate-400">
-                {patients.length === 0 ? "Bệnh nhân sẽ xuất hiện tại đây khi được tiếp nhận vào đợt khám." : "Thử đổi từ khóa tìm kiếm hoặc bấm tab Tất cả."}
-              </div>
-            </div>
-          ) : (
-            <table className="w-full text-left border-collapse min-w-[1240px] table-fixed">
-              <colgroup>
-                <col className="w-14" />
-                <col className="w-28" />
-                <col className="w-48" />
-                <col className="w-18" />
-                <col className="w-20" />
-                <col className="w-52" />
-                <col className="w-32" />
-                <col className="w-56" />
-                <col className="w-44" />
-                <col className="w-36" />
-                <col className="w-32" />
-              </colgroup>
-              <thead className="bg-slate-100/90 backdrop-blur-xs text-slate-700 text-[11px] font-bold uppercase tracking-wider font-mono sticky top-0 z-10 border-b border-slate-200 select-none shadow-2xs">
-                <tr className="[&>th]:py-2.5 [&>th]:px-3 [&>th]:whitespace-nowrap">
-                  <th className="w-14 text-center text-slate-500">STT</th>
-                  <th className="w-28">Mã BN</th>
-                  <th className="w-48">Họ và tên</th>
-                  <th className="w-18 text-center">Tuổi</th>
-                  <th className="w-20 text-center">Giới tính</th>
-                  <th className="w-52">Thông tin liên hệ</th>
-                  <th className="w-32 text-center">Thị lực</th>
-                  <th className="w-56">Chẩn đoán mắt</th>
-                  <th className="w-44 text-center">Phân nhóm & Hướng xử trí</th>
-                  <th className="w-36">Bác sĩ khám</th>
-                  <th className="w-32 text-center pr-4">Trạng thái mổ</th>
-                </tr>
-              </thead>
-              <tbody className="text-[12.5px] text-slate-700 divide-y divide-slate-200/70 bg-white">
-                {filtered.map((p, idx) => {
-                  const isNhomA = p.nhom === "A";
-                  const isNhomB = p.nhom === "B";
-                  const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
-                  const isOperated = timing.isDaMo;
-                  const isOperatedPrior = timing.isDaMoTruoc;
-
-                  // Chẩn đoán tổng hợp
-                  const cdMP = Array.isArray(p.chanDoanMP) ? p.chanDoanMP.join(", ") : (p.chanDoanMP || "");
-                  const cdMT = Array.isArray(p.chanDoanMT) ? p.chanDoanMT.join(", ") : (p.chanDoanMT || "");
-                  const cdAll = parseDiag(p.chanDoan).join(", ") || p.chanDoanKhac || "";
-
-                  return (
-                    <tr key={p.id} className="hover:bg-indigo-50/40 even:bg-slate-50/50 transition-colors">
-                      {/* STT */}
-                      <td className="py-2.5 px-3 text-center align-middle font-mono font-bold text-indigo-700 text-xs">
-                        {p.stt ? `#${p.stt}` : String(idx + 1).padStart(2, "0")}
-                      </td>
-
-                      {/* Mã BN */}
-                      <td className="py-2.5 px-3 align-middle whitespace-nowrap">
-                        <div className="font-mono font-bold text-[12px] text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-300 inline-block shadow-2xs">
-                          {p.maBN || p.id.slice(-6)}
-                        </div>
-                        {p.maBNHIS && (
-                          <div className="font-mono text-[10px] text-emerald-700 font-bold mt-0.5">
-                            HIS: {p.maBNHIS}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Họ tên */}
-                      <td className="py-2.5 px-3 align-middle whitespace-nowrap">
-                        <div className={`font-bold text-[13.5px] ${
-                          (p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0)
-                            ? "text-emerald-800 font-extrabold"
-                            : "text-slate-900"
-                        }`}>
-                          {p.hoTen}
-                        </div>
-                        {p.bhyt && (
-                          <span className="inline-block mt-0.5 text-[10px] bg-emerald-100 text-emerald-800 font-mono font-bold px-1.5 py-0.2 rounded border border-emerald-200">
-                            BHYT
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Tuổi */}
-                      <td className="py-2.5 px-3 align-middle text-center whitespace-nowrap font-mono font-bold text-slate-900 text-[13px]">
-                        {ageOf(p) ? ageOf(p) : p.namSinh ? (new Date().getFullYear() - p.namSinh) : "—"}
-                      </td>
-
-                      {/* Giới tính */}
-                      <td className="py-2.5 px-3 align-middle text-center whitespace-nowrap text-[12px] font-semibold text-slate-700">
-                        {p.gioiTinh || "—"}
-                      </td>
-
-                      {/* Liên hệ & Địa chỉ */}
-                      <td className="py-2.5 px-3 align-middle">
-                        <div className="text-[12px] flex items-center gap-1 text-slate-700">
-                          {p.sdt ? (
-                            <span className="font-mono font-bold text-indigo-700 flex items-center gap-1 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
-                              <Phone className="w-3 h-3 text-indigo-600" /> {p.sdt}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 italic text-[11px]">Chưa có SĐT</span>
-                          )}
-                        </div>
-                        <div className="text-[11.5px] text-slate-500 mt-0.5 truncate max-w-[240px]" title={p.diaChi || ""}>
-                          {p.diaChi || "—"}
-                        </div>
-                      </td>
-
-                      {/* Thị lực */}
-                      <td className="py-2.5 px-3 align-middle text-center whitespace-nowrap">
-                        <div className="inline-flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 text-[11.5px] font-mono shadow-2xs">
-                          <span title="Thị lực mắt phải">MP: <b className="text-slate-900 font-bold">{p.thiLucMP || "—"}</b></span>
-                          <span className="text-slate-300">|</span>
-                          <span title="Thị lực mắt trái">MT: <b className="text-slate-900 font-bold">{p.thiLucMT || "—"}</b></span>
-                        </div>
-                      </td>
-
-                      {/* Chẩn đoán */}
-                      <td className="py-2.5 px-3 align-middle">
-                        {cdMP || cdMT ? (
-                          <div className="space-y-1 text-[11.5px]">
-                            {cdMP && (
-                              <div className="flex items-start gap-1">
-                                <span className="font-bold text-indigo-700 shrink-0 text-[10.5px] bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200">MP</span>
-                                <span className="text-slate-900 font-medium leading-snug">{cdMP}</span>
-                              </div>
-                            )}
-                            {cdMT && (
-                              <div className="flex items-start gap-1">
-                                <span className="font-bold text-slate-600 shrink-0 text-[10.5px] bg-slate-100 px-1 py-0.2 rounded border border-slate-300">MT</span>
-                                <span className="text-slate-900 font-medium leading-snug">{cdMT}</span>
-                              </div>
-                            )}
-                          </div>
-                        ) : cdAll ? (
-                          <div className="text-[11.5px] text-slate-900 font-medium leading-snug">
-                            {cdAll}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic text-[11.5px]">Chưa chẩn đoán</span>
-                        )}
-                      </td>
-
-                      {/* Phân nhóm & Hướng xử trí */}
-                      <td className="py-2.5 px-3 align-middle text-center whitespace-nowrap">
-                        {isNhomA ? (
-                          <div className="inline-flex flex-col items-center">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs">
-                              Nhóm A · Chỉ định mổ
-                            </span>
-                            <span className="text-[10.5px] text-slate-500 font-medium mt-0.5">{p.huongXuTri || "Phẫu thuật"}</span>
-                          </div>
-                        ) : isNhomB ? (
-                          <div className="inline-flex flex-col items-center">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 shadow-2xs">
-                              Nhóm B · Theo dõi
-                            </span>
-                            <span className="text-[10.5px] text-slate-500 font-medium mt-0.5">{p.huongXuTri || "Khám định kỳ"}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[11.5px] text-slate-600 font-medium">
-                            {p.huongXuTri || p.khuyenNghi || "—"}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Bác sĩ khám */}
-                      <td className="py-2.5 px-3 align-middle whitespace-nowrap">
-                        {p.bacSiChiDinh ? (
-                          <span className="text-[11.5px] text-emerald-800 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            <UserCheck className="w-3 h-3 text-emerald-600" />
-                            <span>{p.bacSiChiDinh}</span>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic text-[11.5px]">—</span>
-                        )}
-                      </td>
-
-                      {/* Trạng thái mổ */}
-                      <td className="py-2.5 px-3 pr-4 align-middle text-center whitespace-nowrap">
-                        {isOperated ? (
-                          <div className="inline-flex flex-col items-center gap-1">
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã mổ
-                            </span>
-                            {p.isPhaco2Lan && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7c3aed] bg-[#f5f3ff] px-1.5 py-0.5 rounded border border-[#ddd6fe] shadow-2xs" title="Bệnh nhân đã mổ Phẫu thuật Phaco 2 lần (Mắt 2) trên HIS">
-                                ★ Mắt 2
-                              </span>
-                            )}
-                            {p.ngayMoThucTe && (
-                              <span className="text-[10px] font-mono font-semibold text-slate-500">
-                                {fmtDate(p.ngayMoThucTe)}
-                              </span>
-                            )}
-                          </div>
-                        ) : isOperatedPrior ? (
-                          <div className="inline-flex flex-col items-center gap-1">
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 shadow-2xs" title="Đã từng mổ trước khi diễn ra đợt khám tầm soát">
-                              🟣 Mổ trước
-                            </span>
-                            {p.ngayMoThucTe && (
-                              <span className="text-[10px] font-mono font-semibold text-purple-600">
-                                {fmtDate(p.ngayMoThucTe)}
-                              </span>
-                            )}
-                          </div>
-                        ) : isNhomA ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                            <Clock className="w-3 h-3 text-amber-500" /> Chờ mổ
-                          </span>
-                        ) : (
-                          <span className="text-slate-300 font-mono text-xs">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Footer Bar */}
-        <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600 font-medium shrink-0">
-          <div>
-            Hiển thị <b className="text-slate-900">{filtered.length}</b> / <b className="text-indigo-700">{patients.length}</b> bệnh nhân
-            {stats.nhomA > 0 && <span className="ml-2 text-rose-700 font-bold">• Nhóm A: {stats.nhomA}</span>}
-            {stats.nhomB > 0 && <span className="ml-2 text-amber-700 font-bold">• Nhóm B: {stats.nhomB}</span>}
-            {stats.daMo > 0 && <span className="ml-2 text-emerald-700 font-bold">• Đã mổ: {stats.daMo}</span>}
-            {stats.phaco2Lan > 0 && <span className="ml-2 text-[#7c3aed] font-bold">• Mắt 2: {stats.phaco2Lan}</span>}
+            ) : (
+              <span className="text-[11.5px] text-[var(--mute-soft)]">Chưa có SĐT</span>
+            )}
+            <div className="text-[11px] text-[var(--mute)] truncate mt-0.5" title={p.diaChi || ""}>{p.diaChi || "—"}</div>
           </div>
+        );
+      },
+    },
+    {
+      id: "bhyt",
+      header: "Thẻ BHYT",
+      size: 150,
+      accessorFn: (p) => p.bhyt || "",
+      enableSorting: false,
+      meta: { noTruncate: true },
+      cell: ({ row }) => {
+        const p = row.original;
+        if (!p.bhyt) return <span className="text-[11.5px] text-[var(--mute-soft)]">Không có</span>;
+        return (
+          <div className="min-w-0">
+            <div className="font-mono text-[11.5px] font-semibold text-indigo-700 truncate" title={p.bhyt}>{p.bhyt}</div>
+            <div className="text-[10.5px] text-[var(--mute)]">
+              Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "thiLuc",
+      header: "Thị lực",
+      size: 100,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { noTruncate: true },
+      cell: ({ row }) => {
+        const p = row.original;
+        if (!p.thiLucMP && !p.thiLucMT) return <span className="text-[var(--mute-soft)] text-[12px]">—</span>;
+        return (
+          <div className="font-mono text-[11.5px] tabular-nums leading-[1.5]">
+            <div><span className="text-[var(--mute)]">MP</span> <b className="text-[var(--ink)]">{p.thiLucMP || "—"}</b></div>
+            <div><span className="text-[var(--mute)]">MT</span> <b className="text-[var(--ink)]">{p.thiLucMT || "—"}</b></div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "chanDoan",
+      header: "Chẩn đoán",
+      size: 240,
+      meta: { flex: true, noTruncate: true },
+      enableSorting: false,
+      accessorFn: (p) =>
+        [...diagOf(p.chanDoanMP, p.chanDoanKhacMP), ...diagOf(p.chanDoanMT, p.chanDoanKhacMT), ...diagOf(p.chanDoan, p.chanDoanKhac)].join(" "),
+      cell: ({ row }) => {
+        const p = row.original;
+        const mp = diagOf(p.chanDoanMP, p.chanDoanKhacMP);
+        const mt = diagOf(p.chanDoanMT, p.chanDoanKhacMT);
+        if (mp.length || mt.length) {
+          return (
+            <div className="space-y-0.5 min-w-0">
+              <EyeLine eye="MP" items={mp} />
+              <EyeLine eye="MT" items={mt} />
+            </div>
+          );
+        }
+        const all = diagOf(p.chanDoan, p.chanDoanKhac);
+        return all.length ? (
+          <div className="text-[12px] text-[var(--ink)] truncate" title={all.join(", ")}>{all.join(", ")}</div>
+        ) : (
+          <span className="text-[11.5px] text-[var(--mute-soft)]">Chưa chẩn đoán</span>
+        );
+      },
+    },
+    {
+      id: "nhom",
+      header: "Phân nhóm",
+      size: 132,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { noTruncate: true },
+      cell: ({ row }) => {
+        const p = row.original;
+        const { isNhomA, isNhomB } = classifyCSRNhom(p);
+        const sub = p.huongXuTri || p.khuyenNghi;
+        if (!isNhomA && !isNhomB) return <span className="text-[11.5px] text-[var(--mute-soft)]">Chưa phân nhóm</span>;
+        return (
+          <div className="min-w-0">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap",
+                isNhomA ? "bg-[var(--rose-soft)] text-[var(--rose)]" : "bg-[var(--amber-soft)] text-[var(--amber-deep)]",
+              )}
+            >
+              <span className="w-[5px] h-[5px] rounded-full bg-current" />
+              {isNhomA ? "Nhóm A" : "Nhóm B"}
+            </span>
+            {sub && <div className="text-[10.5px] text-[var(--mute)] mt-0.5 truncate">{sub}</div>}
+          </div>
+        );
+      },
+    },
+    {
+      id: "bacSi",
+      header: "Bác sĩ khám",
+      size: 160,
+      accessorFn: (p) => p.bacSiChiDinh || "",
+      cell: ({ row }) =>
+        row.original.bacSiChiDinh ? (
+          <span className="text-[12.5px] text-[var(--ink-soft)] truncate block" title={row.original.bacSiChiDinh}>{row.original.bacSiChiDinh}</span>
+        ) : (
+          <span className="text-[var(--mute-soft)] text-[12px]">—</span>
+        ),
+    },
+    {
+      id: "trangThaiMo",
+      header: "Trạng thái mổ",
+      size: 140,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { noTruncate: true },
+      cell: ({ row }) => {
+        const p = row.original;
+        const { isNhomA } = classifyCSRNhom(p);
+        const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
+        const badge = (cls: string, icon: React.ReactNode, label: string) => (
+          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap", cls)}>
+            {icon}
+            {label}
+          </span>
+        );
+        if (timing.isDaMo || timing.isDaMoTruoc) {
+          return (
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 flex-wrap">
+                {timing.isDaMo
+                  ? badge("bg-[var(--teal-soft)] text-[var(--teal-deep)]", <CheckCircle2 className="w-3 h-3" />, "Đã mổ")
+                  : badge("bg-[#f3eaf8] text-[#7c3aed]", null, "Mổ trước")}
+                {p.isPhaco2Lan && (
+                  <span className="px-1.5 py-0.5 rounded-md text-[10.5px] font-semibold bg-[#f3eaf8] text-[#7c3aed]" title="Đã mổ Phaco 2 lần (mắt 2)">Mắt 2</span>
+                )}
+              </div>
+              {p.ngayMoThucTe && <div className="mt-0.5 font-mono text-[10.5px] text-[var(--mute)] tabular-nums">{fmtDate(p.ngayMoThucTe)}</div>}
+            </div>
+          );
+        }
+        if (isNhomA) return badge("bg-[var(--amber-soft)] text-[var(--amber-deep)]", <Clock className="w-3 h-3" />, "Chờ mổ");
+        return <span className="text-[var(--mute-soft)] text-[12px]">—</span>;
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      size: 56,
+      enableSorting: false,
+      enableColumnFilter: false,
+      enableHiding: false,
+      meta: { align: "center", noTruncate: true },
+      cell: ({ row }) => (
+        <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
-            onClick={onClose}
-            className="btn btn-secondary py-1.5 px-4 text-xs font-semibold cursor-pointer"
+            onClick={() => setSelectedHoSoId(row.original.id)}
+            title="Xem chi tiết hồ sơ"
+            aria-label="Xem chi tiết hồ sơ"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/30 hover:bg-[var(--navy-50)] transition-colors cursor-pointer"
           >
-            Đóng
+            <FileText className="w-3.5 h-3.5" />
           </button>
         </div>
-      </div>
-    </Modal>
+      ),
+    },
+  ], [buoiKham?.ngayKham]);
+
+  if (!buoiKham) return null;
+
+  const exportDisabled = !!exportingFormat || patients.length === 0;
+  const exportBtn =
+    "inline-flex items-center gap-1.5 h-9 px-3 border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+
+  return (
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
+        title={
+          <span className="flex items-center gap-2.5 min-w-0">
+            <span className="truncate">{fmtBuoiKhamName(buoiKham)}</span>
+            <span className="shrink-0 font-mono text-[11.5px] font-bold px-2 py-0.5 rounded-md bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy)]/10">
+              {fmtBuoiKhamCode(buoiKham.id)}
+            </span>
+          </span>
+        }
+        subtitle={
+          <span className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+            <span className="inline-flex items-center gap-1 font-mono text-[11.5px] text-[var(--ink-soft)]">
+              <Calendar className="w-3 h-3 text-[var(--teal-deep)]" />
+              {fmtDate(buoiKham.ngayKham)}
+            </span>
+            {buoiKham.diaDiem && (
+              <span className="inline-flex items-center gap-1 min-w-0">
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate">{buoiKham.diaDiem}</span>
+              </span>
+            )}
+            {buoiKham.bacSiKham && (
+              <span className="inline-flex items-center gap-1">
+                <UserCheck className="w-3 h-3" />
+                {buoiKham.bacSiKham}
+              </span>
+            )}
+          </span>
+        }
+        icon={Users}
+        maxWidth="w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh]!"
+        noPadding
+        bodyClassName="flex-1 min-h-0 flex flex-col overflow-hidden"
+      >
+        <DataView<HoSo, unknown> key={buoiKham.id} columns={columns} data={filtered} pageSize={15} isLoading={loading} fullHeight>
+          <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface)] overflow-hidden">
+            {/* Tab lọc nhanh (gạch chân + số đếm) */}
+            <div className="shrink-0 flex gap-1 px-3 sm:px-5 border-b border-[var(--line)] overflow-x-auto no-scrollbar">
+              {tabs
+                .filter((t) => t.key === "ALL" || t.key === "A" || t.key === "B" || counts[t.key] > 0 || groupFilter === t.key)
+                .map((t) => {
+                  const active = groupFilter === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setGroupFilter(t.key)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2.5 -mb-px border-b-2 text-[12.5px] font-semibold whitespace-nowrap transition-colors cursor-pointer",
+                        active ? "border-[var(--navy)] text-[var(--navy)]" : cn("border-transparent hover:text-[var(--ink)]", t.tone || "text-[var(--mute)]"),
+                      )}
+                    >
+                      {t.label}
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded-md",
+                          active ? "bg-[var(--navy-50)] text-[var(--navy)]" : "bg-[var(--line)] text-[var(--mute)]",
+                        )}
+                      >
+                        {counts[t.key]}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+
+            <DataToolbar
+              searchPlaceholder="Tìm họ tên, SĐT, CCCD, mã BN, chẩn đoán…"
+              primaryAction={
+                <div className="relative" ref={exportMenuRef}>
+                  <div className="inline-flex">
+                    <button
+                      type="button"
+                      onClick={() => handleExport("khamSucKhoe")}
+                      disabled={exportDisabled}
+                      className={cn(exportBtn, "rounded-l-xl")}
+                      title="Xuất Excel theo mẫu Khám Sức Khỏe (101 cột chuẩn HIS)"
+                    >
+                      {exportingFormat === "khamSucKhoe" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                      Xuất Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExportMenuOpen((o) => !o)}
+                      disabled={exportDisabled}
+                      className={cn(exportBtn, "rounded-r-xl border-l-0 px-2", exportMenuOpen && "bg-[var(--teal)] text-white")}
+                      title="Chọn mẫu xuất Excel"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {exportMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
+                      {[
+                        { f: "khamSucKhoe" as const, label: "Mẫu Khám Sức Khỏe (101 cột)", hint: "Mẫu chuẩn nộp HIS & trạm y tế", icon: "text-[var(--teal-deep)]" },
+                        { f: "default" as const, label: "Mẫu Google Sheet (25 cột)", hint: "Danh sách khám sàng lọc", icon: "text-[var(--mute)]" },
+                      ].map((o) => (
+                        <button
+                          key={o.f}
+                          type="button"
+                          onClick={() => { setExportMenuOpen(false); handleExport(o.f); }}
+                          className="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-[8px] text-left hover:bg-[var(--navy-50)] transition-colors cursor-pointer"
+                        >
+                          <FileSpreadsheet className={cn("w-4 h-4 mt-px shrink-0", o.icon)} />
+                          <div>
+                            <div className="text-[12.5px] font-semibold text-[var(--ink)] leading-tight">{o.label}</div>
+                            <div className="text-[10.5px] text-[var(--mute)] mt-0.5">{o.hint}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              }
+            />
+
+            <DataTable
+              dense
+              emptyIcon={Users}
+              emptyTitle={patients.length === 0 ? "Chưa có bệnh nhân nào trong đợt khám này" : "Không tìm thấy bệnh nhân phù hợp"}
+              emptyDesc={
+                patients.length === 0
+                  ? "Bệnh nhân sẽ xuất hiện tại đây khi được tiếp nhận vào đợt khám."
+                  : "Thử đổi từ khóa tìm kiếm hoặc chọn nhóm khác."
+              }
+              onRowClick={(row: HoSo) => setSelectedHoSoId(row.id)}
+            />
+            <DataPagination pageSizeOptions={[15, 30, 50, 100]} />
+          </div>
+        </DataView>
+      </Modal>
+
+      {selectedHoSoId && <PatientInfoModal hoSoId={selectedHoSoId} onClose={() => setSelectedHoSoId(null)} />}
+    </>
   );
 }

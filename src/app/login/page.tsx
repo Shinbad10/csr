@@ -5,21 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import {
-  OutlinedInput,
-  Button,
-  Checkbox,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Alert,
-  CircularProgress,
-  IconButton,
-  InputAdornment,
-  Box,
-  Typography,
-  Chip,
-} from "@mui/material";
-import {
   Lock,
   User,
   Eye,
@@ -31,6 +16,7 @@ import {
   Building2,
   Activity,
   ShieldCheck,
+  Check,
 } from "lucide-react";
 import { getActiveFacilities, setSelectedFacilityCookie, finalizeLogin } from "./actions";
 
@@ -219,14 +205,13 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Key Medical Values */}
-          <div className="grid grid-cols-3 gap-6 pt-4 border-t border-[var(--line)] dark:border-white/10 max-w-lg">
+          <div suppressHydrationWarning className="grid grid-cols-3 gap-6 pt-4 border-t border-[var(--line)] max-w-lg">
             <div>
-              <div className="text-2xl font-black text-[var(--navy)] dark:text-[var(--teal)] font-serif">Tận tâm</div>
-              <div className="text-xs font-semibold text-[var(--mute)] mt-1">Đồng hành người bệnh</div>
+              <div className="text-2xl font-black text-[var(--navy)] dark:text-white font-serif">100%</div>
+              <div className="text-xs font-semibold text-[var(--mute)] mt-1">Dữ liệu số hóa</div>
             </div>
             <div>
-              <div className="text-2xl font-black text-[var(--navy)] dark:text-[var(--teal)] font-serif">Chính xác</div>
+              <div className="text-2xl font-black text-[var(--teal)] font-serif">Chuyên sâu</div>
               <div className="text-xs font-semibold text-[var(--mute)] mt-1">Chẩn đoán &amp; Tư vấn</div>
             </div>
             <div>
@@ -236,7 +221,7 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        {/* Right: Login Card with MUI Component Integration */}
+        {/* Right: Login Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -288,74 +273,42 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <Alert
-                  severity="error"
-                  sx={{
-                    mb: 3,
-                    borderRadius: "16px",
-                    fontWeight: 600,
-                    fontSize: "0.8125rem",
-                    border: "1px solid rgba(225, 29, 72, 0.2)",
-                  }}
-                >
-                  {error}
-                </Alert>
+                <div className="mb-4 p-3.5 rounded-[14px] bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs sm:text-sm font-semibold flex items-center gap-2.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
 
-              <Box component="form" onSubmit={handleLogin} sx={{ display: "flex", flexDirection: "column", gap: { xs: 2.5, sm: 3 } }}>
-                {/* Username Input using MUI OutlinedInput */}
+              <form onSubmit={handleLogin} className="flex flex-col gap-4 sm:gap-5">
+                {/* Username Input */}
                 <div className="space-y-2">
                   <label className="text-[10px] items-center gap-2 flex font-black uppercase tracking-[0.2em] text-[var(--mute)] dark:text-slate-400 ml-1 transition-colors font-mono">
                     <User size={13} className="text-[var(--teal)]" /> Tên đăng nhập / Mã cán bộ
                   </label>
-                  <OutlinedInput
-                    fullWidth
-                    autoComplete="username"
-                    value={username}
-                    onChange={(e) => {
-                      setUsername(e.target.value);
-                      if (fieldErrors.username) setFieldErrors({ ...fieldErrors, username: undefined });
-                    }}
-                    error={!!fieldErrors.username}
-                    placeholder="VD: admin, mkt01, tvv01..."
-                    startAdornment={
-                      <InputAdornment position="start" sx={{ ml: 1, mr: 1.5 }}>
-                        <User size={18} className="text-[var(--mute)]" />
-                      </InputAdornment>
-                    }
-                    sx={{
-                      borderRadius: { xs: "16px", sm: "20px" },
-                      backgroundColor: "var(--surface-soft)",
-                      fontWeight: 700,
-                      fontSize: { xs: "0.875rem", sm: "1rem" },
-                      transition: "all 0.3s ease",
-                      "& .MuiOutlinedInput-input": {
-                        py: { xs: "14px", sm: "16px" },
-                        pl: 0,
-                      },
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--line-strong)",
-                        transition: "border-color 0.2s, box-shadow 0.2s",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--teal)",
-                      },
-                      "&.Mui-focused": {
-                        backgroundColor: "var(--surface)",
-                        boxShadow: "0 0 0 4px rgba(2, 184, 169, 0.1)",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--teal)",
-                        borderWidth: "1.5px",
-                      },
-                    }}
-                  />
+                  <div className="relative">
+                    <User size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--mute)] pointer-events-none" />
+                    <input
+                      type="text"
+                      autoComplete="username"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        if (fieldErrors.username) setFieldErrors({ ...fieldErrors, username: undefined });
+                      }}
+                      placeholder="VD: admin, mkt01, tvv01..."
+                      className={`w-full h-12 pl-10 pr-3.5 rounded-[16px] border bg-[var(--surface-soft)] font-sans font-bold text-sm text-[var(--ink)] placeholder:text-[var(--mute)] outline-none transition-all ${
+                        fieldErrors.username
+                          ? "border-rose-500 focus:ring-3 focus:ring-rose-500/20"
+                          : "border-[var(--line-strong)] focus:border-[var(--teal)] focus:ring-3 focus:ring-[var(--teal)]/15"
+                      }`}
+                    />
+                  </div>
                   {fieldErrors.username && (
                     <p className="text-[11px] text-rose-500 font-bold pl-2 mt-1">{fieldErrors.username}</p>
                   )}
                 </div>
 
-                {/* Password Input using MUI OutlinedInput */}
+                {/* Password Input */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between ml-1 pr-1">
                     <label className="text-[10px] items-center gap-2 flex font-black uppercase tracking-[0.2em] text-[var(--mute)] dark:text-slate-400 ml-1 transition-colors font-mono">
@@ -370,85 +323,56 @@ export default function LoginPage() {
                       Quên mật khẩu?
                     </button>
                   </div>
-                  <OutlinedInput
-                    fullWidth
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
-                    }}
-                    error={!!fieldErrors.password}
-                    placeholder="••••••••"
-                    startAdornment={
-                      <InputAdornment position="start" sx={{ ml: 1, mr: 1.5 }}>
-                        <Lock size={18} className="text-[var(--mute)]" />
-                      </InputAdornment>
-                    }
-                    endAdornment={
-                      <InputAdornment position="end" sx={{ mr: 1 }}>
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                          size="small"
-                          tabIndex={-1}
-                          sx={{ color: "var(--mute)", "&:hover": { color: "var(--teal)" } }}
-                        >
-                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </IconButton>
-                      </InputAdornment>
-                    }
-                    sx={{
-                      borderRadius: { xs: "16px", sm: "20px" },
-                      backgroundColor: "var(--surface-soft)",
-                      fontWeight: 700,
-                      letterSpacing: "0.2em",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: { xs: "0.875rem", sm: "1rem" },
-                      transition: "all 0.3s ease",
-                      "& .MuiOutlinedInput-input": {
-                        py: { xs: "14px", sm: "16px" },
-                        pl: 0,
-                      },
-                      "& .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--line-strong)",
-                        transition: "border-color 0.2s, box-shadow 0.2s",
-                      },
-                      "&:hover .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--teal)",
-                      },
-                      "&.Mui-focused": {
-                        backgroundColor: "var(--surface)",
-                        boxShadow: "0 0 0 4px rgba(2, 184, 169, 0.1)",
-                      },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                        borderColor: "var(--teal)",
-                        borderWidth: "1.5px",
-                      },
-                    }}
-                  />
+                  <div className="relative">
+                    <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--mute)] pointer-events-none" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined });
+                      }}
+                      placeholder="••••••••"
+                      className={`w-full h-12 pl-10 pr-10 rounded-[16px] border bg-[var(--surface-soft)] font-mono font-bold text-sm text-[var(--ink)] tracking-[0.15em] placeholder:text-[var(--mute)] outline-none transition-all ${
+                        fieldErrors.password
+                          ? "border-rose-500 focus:ring-3 focus:ring-rose-500/20"
+                          : "border-[var(--line-strong)] focus:border-[var(--teal)] focus:ring-3 focus:ring-[var(--teal)]/15"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--teal)] transition-colors p-1.5 rounded cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                   {fieldErrors.password && (
                     <p className="text-[11px] text-rose-500 font-bold pl-2 mt-1">{fieldErrors.password}</p>
                   )}
                 </div>
 
-                {/* Checkbox using MUI Checkbox */}
+                {/* Checkbox */}
                 <div className="flex items-center gap-2 ml-1 py-1">
                   <label className="relative flex items-center cursor-pointer group select-none">
-                    <Checkbox
+                    <input
+                      type="checkbox"
+                      className="sr-only"
                       checked={remember}
                       onChange={(e) => setRemember(e.target.checked)}
-                      icon={
-                        <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[var(--line-strong)] dark:border-white/20 rounded-lg sm:rounded-xl group-hover:border-[var(--teal)] transition-all" />
-                      }
-                      checkedIcon={
-                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-[var(--teal)] border-2 border-[var(--teal)] rounded-lg sm:rounded-xl flex items-center justify-center transition-all">
-                          <ShieldCheck size={14} className="text-white" strokeWidth={3.5} />
-                        </div>
-                      }
-                      sx={{ p: 0 }}
                     />
+                    <div
+                      className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${
+                        remember
+                          ? "bg-[var(--teal)] border-[var(--teal)] text-white shadow-xs"
+                          : "border-[var(--line-strong)] dark:border-white/20 group-hover:border-[var(--teal)]"
+                      }`}
+                    >
+                      {remember && <Check size={13} strokeWidth={3.5} />}
+                    </div>
                     <span
                       className={`ml-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-colors font-mono ${
                         remember
@@ -461,50 +385,22 @@ export default function LoginPage() {
                   </label>
                 </div>
 
-                {/* Submit Button using MUI Button */}
-                <Button
+                {/* Submit Button */}
+                <button
                   type="submit"
-                  variant="contained"
                   disabled={isLoading}
-                  fullWidth
-                  size="large"
-                  endIcon={
-                    !isLoading ? (
-                      <ChevronRight
-                        size={18}
-                        className="transition-transform duration-300"
-                        strokeWidth={3}
-                      />
-                    ) : undefined
-                  }
-                  sx={{
-                    py: { xs: 1.8, sm: 2 },
-                    borderRadius: { xs: "16px", sm: "20px" },
-                    fontSize: { xs: "0.75rem", sm: "0.8125rem" },
-                    fontWeight: 900,
-                    letterSpacing: "0.2em",
-                    textTransform: "uppercase",
-                    fontFamily: "var(--font-sans)",
-                    background: "linear-gradient(90deg, var(--teal) 0%, var(--navy) 50%, var(--navy) 100%)",
-                    boxShadow: "0 20px 40px -10px rgba(3, 29, 166, 0.4)",
-                    color: "#ffffff",
-                    position: "relative",
-                    overflow: "hidden",
-                    "&:hover": {
-                      background: "linear-gradient(90deg, var(--teal-deep) 0%, var(--navy-deep) 50%, var(--navy-ink) 100%)",
-                      boxShadow: "0 28px 56px -10px rgba(3, 29, 166, 0.6)",
-                      "& .MuiButton-endIcon": {
-                        transform: "translateX(4px)",
-                      },
-                    },
-                    "&:active": {
-                      transform: "scale(0.98)",
-                    },
-                  }}
+                  className="w-full py-4 rounded-[16px] text-xs sm:text-[13px] font-black uppercase tracking-[0.2em] font-sans text-white bg-gradient-to-r from-[var(--teal)] via-[var(--navy)] to-[var(--navy)] hover:opacity-95 shadow-[0_20px_40px_-10px_rgba(3,29,166,0.35)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  {isLoading ? <CircularProgress size={22} color="inherit" /> : "XÁC THỰC TRUY CẬP"}
-                </Button>
-              </Box>
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Xác thực truy cập</span>
+                      <ChevronRight size={18} strokeWidth={3} />
+                    </>
+                  )}
+                </button>
+              </form>
 
               <div className="mt-8 sm:mt-10 pt-5 border-t border-[var(--line)] dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p className="text-[9px] sm:text-[10px] font-black text-[var(--mute)] dark:text-slate-500 uppercase tracking-widest font-mono">
@@ -522,173 +418,133 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Unit / Facility Selector Modal with MUI Dialog */}
-      <Dialog
-        open={showFacilityModal}
-        onClose={() => {}}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: { xs: "22px", sm: "32px" },
-              p: { xs: "16px 14px", sm: 4 },
-              m: { xs: 1.5, sm: 2 },
-              width: { xs: "calc(100% - 24px)", sm: "auto" },
-              border: "1px solid var(--line-strong)",
-              boxShadow: { xs: "0 20px 40px rgba(3,29,166,0.18)", sm: "0 30px 60px rgba(3,29,166,0.2)" },
-              backgroundColor: "var(--surface)",
-            },
-          },
-        }}
-      >
-        <DialogTitle sx={{ textAlign: "center", pt: { xs: 0.5, sm: 1 }, pb: { xs: 0.5, sm: 1 }, px: { xs: 0.5, sm: 3 } }}>
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Box
-              sx={{
-                width: { xs: 44, sm: 62 },
-                height: { xs: 44, sm: 62 },
-                borderRadius: { xs: "13px", sm: "18px" },
-                backgroundColor: "var(--teal-soft)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mb: { xs: 1, sm: 2 },
-                border: "1px solid rgba(2, 184, 169, 0.25)",
-              }}
+      {/* Unit / Facility Selector Modal */}
+      <AnimatePresence>
+        {showFacilityModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-[560px] p-8 rounded-[32px] border shadow-2xl transition-all duration-500 bg-white dark:bg-slate-900 border-white/40 dark:border-white/10 shadow-[0_30px_60px_rgba(3,29,166,0.2)] max-h-[92vh] flex flex-col"
             >
-              <Building2 className="w-5 h-5 sm:w-7 sm:h-7 text-[var(--teal)]" />
-            </Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "-0.02em",
-                fontFamily: "var(--font-serif)",
-                fontSize: { xs: "1.05rem", sm: "1.35rem" },
-                lineHeight: 1.25,
-              }}
-            >
-              Xác định cơ sở làm việc
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "var(--ink-soft)",
-                mt: { xs: 0.5, sm: 1 },
-                maxWidth: 380,
-                fontWeight: 600,
-                fontSize: { xs: "0.75rem", sm: "0.85rem" },
-                lineHeight: 1.35,
-              }}
-            >
-              Tài khoản có quyền tại nhiều cơ sở, vui lòng chọn đơn vị làm việc cho phiên này.
-            </Typography>
-          </Box>
-        </DialogTitle>
+              {isRedirecting ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="w-10 h-10 border-4 border-[var(--teal)]/30 border-t-[var(--teal)] rounded-full animate-spin" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--teal)] animate-pulse font-mono">
+                    Đang nạp phiên làm việc...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center text-center mb-6 shrink-0">
+                    <div className="w-16 h-16 rounded-2xl bg-[var(--teal)]/10 flex items-center justify-center mb-3 ring-1 ring-[var(--teal)]/20">
+                      <Building2 size={32} className="text-[var(--teal)]" />
+                    </div>
+                    <h2 className="text-2xl font-black text-[var(--ink)] uppercase tracking-tight font-serif">
+                      Xác định đơn vị
+                    </h2>
+                    <p className="text-[var(--ink-soft)] text-sm font-bold mt-1.5 opacity-70">
+                      Tài khoản của bạn đang kiêm nhiệm nhiều cơ sở,<br />vui lòng chọn đơn vị làm việc cho phiên này.
+                    </p>
+                    <div className="w-full mt-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[var(--teal)] text-center font-mono">
+                        Vui lòng chọn cơ sở bên dưới
+                      </p>
+                    </div>
+                  </div>
 
-        <DialogContent sx={{ px: { xs: 0.25, sm: 1 }, py: { xs: 1, sm: 2 } }}>
-          {isRedirecting ? (
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: { xs: 3, sm: 5 }, gap: 1.5 }}>
-              <CircularProgress size={32} sx={{ color: "var(--teal)" }} />
-              <Typography
-                sx={{
-                  fontSize: "0.6875rem",
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.15em",
-                  color: "var(--teal)",
-                  fontFamily: "var(--font-mono)",
-                }}
-              >
-                Đang nạp phiên làm việc...
-              </Typography>
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: { xs: 0.85, sm: 1.5 },
-                maxHeight: { xs: "48vh", sm: 340 },
-                overflowY: "auto",
-                pr: { xs: 0.25, sm: 1 },
-              }}
-            >
-              {facilities.map((f) => (
-                <Button
-                  key={f.id}
-                  onClick={() => handleConfirmFacility(f.id)}
-                  disabled={isRedirecting}
-                  variant="outlined"
-                  fullWidth
-                  sx={{
-                    justifyContent: "flex-start",
-                    p: { xs: "8px 10px", sm: "12px 16px" },
-                    borderRadius: { xs: "14px", sm: "20px" },
-                    borderColor: "var(--line-strong)",
-                    backgroundColor: "var(--surface-soft)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: { xs: 1.25, sm: 2 },
-                    textAlign: "left",
-                    minHeight: { xs: 46, sm: 58 },
-                    "&:hover": {
-                      borderColor: "var(--teal)",
-                      backgroundColor: "var(--surface)",
-                      boxShadow: "var(--shadow-sm)",
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: { xs: 32, sm: 42 },
-                      height: { xs: 32, sm: 42 },
-                      borderRadius: { xs: "10px", sm: "14px" },
-                      backgroundColor: "var(--teal-soft)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      border: "1px solid rgba(2, 184, 169, 0.2)",
-                    }}
-                  >
-                    <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--teal)]" />
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      sx={{
-                        fontWeight: 800,
-                        fontSize: { xs: "0.78rem", sm: "0.875rem" },
-                        color: "var(--ink)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.01em",
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {f.ten}
-                    </Typography>
-                    <Box sx={{ mt: { xs: 0.25, sm: 0.5 } }}>
-                      <Chip
-                        label={`Cơ sở: ${f.id}`}
-                        size="small"
-                        color="secondary"
-                        sx={{
-                          fontSize: { xs: "0.58rem", sm: "0.625rem" },
-                          height: { xs: 17, sm: 20 },
-                          "& .MuiChip-label": { px: { xs: 0.75, sm: 1 } },
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                  <ChevronRight className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 text-[var(--teal)] shrink-0" />
-                </Button>
-              ))}
-            </Box>
-          )}
-        </DialogContent>
-      </Dialog>
+                  <div className="space-y-2.5 max-h-[540px] overflow-y-auto custom-scrollbar pr-2 flex-1">
+                    {facilities.map((f) => {
+                      const isGroup =
+                        (f.id || "").toUpperCase().includes("GROUP") ||
+                        (f.ten || "").toLowerCase().includes("tập đoàn");
+
+                      const cardStyle = isGroup
+                        ? {
+                            icon: (
+                              <Building2
+                                size={20}
+                                className="text-amber-500 dark:text-amber-400 group-hover:text-white transition-colors"
+                              />
+                            ),
+                            iconBg:
+                              "bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 group-hover:from-amber-500 group-hover:to-orange-500 group-hover:border-transparent",
+                            badge:
+                              "bg-amber-500/10 text-amber-600 border border-amber-500/20 dark:bg-amber-500/15 dark:text-amber-400",
+                            badgeText: "Tập đoàn",
+                            hoverClass:
+                              "hover:border-amber-500/40 hover:bg-amber-500/[0.02] hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)]",
+                            titleHover: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
+                            arrowColor: "text-amber-500",
+                          }
+                        : {
+                            icon: (
+                              <Activity
+                                size={20}
+                                className="text-[var(--teal)] group-hover:text-white transition-colors"
+                              />
+                            ),
+                            iconBg:
+                              "bg-gradient-to-br from-[var(--teal)]/10 to-[var(--teal-deep)]/10 border border-[var(--teal)]/20 group-hover:from-[var(--teal)] group-hover:to-[var(--teal-deep)] group-hover:border-transparent",
+                            badge:
+                              "bg-[var(--teal)]/10 text-[var(--teal-deep)] border border-[var(--teal)]/20 dark:bg-[var(--teal)]/15 dark:text-[var(--teal)]",
+                            badgeText: "Bệnh viện",
+                            hoverClass:
+                              "hover:border-[var(--teal)]/40 hover:bg-[var(--teal)]/[0.02] hover:shadow-[0_20px_40px_-15px_rgba(2,184,169,0.15)]",
+                            titleHover: "group-hover:text-[var(--teal-deep)] dark:group-hover:text-[var(--teal)]",
+                            arrowColor: "text-[var(--teal)]",
+                          };
+
+                      return (
+                        <button
+                          type="button"
+                          key={f.id}
+                          disabled={isRedirecting}
+                          onClick={() => handleConfirmFacility(f.id)}
+                          className={`w-full group flex items-center gap-5 p-5 rounded-[28px] border transition-all duration-300 disabled:opacity-50 cursor-pointer
+                             bg-white/50 dark:bg-slate-900/30 border-slate-100 dark:border-white/5 ${cardStyle.hoverClass}`}
+                        >
+                          <div
+                            className={`w-12 h-12 rounded-[20px] flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm ${cardStyle.iconBg}`}
+                          >
+                            {cardStyle.icon}
+                          </div>
+                          <div className="text-left flex-1 min-w-0">
+                            <p
+                              className={`text-[13px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 transition-colors duration-300 ${cardStyle.titleHover}`}
+                            >
+                              {f.ten}
+                            </p>
+                            <div className="mt-2 flex items-center gap-2">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase tracking-[0.12em] ${cardStyle.badge}`}
+                              >
+                                {cardStyle.badgeText}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight
+                            size={18}
+                            className={`text-[var(--mute)] opacity-0 group-hover:opacity-100 group-hover:translate-x-1.5 transition-all duration-300 shrink-0 ${cardStyle.arrowColor}`}
+                            strokeWidth={3}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

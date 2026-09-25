@@ -8,6 +8,7 @@ import { broadcastEvent } from "@/lib/events";
 
 import { classifyCSRNhom, checkSurgeryTiming } from "@/lib/csr";
 import { fetchPhaco2LanStats } from "@/lib/his";
+import { latestDoiChieuMap } from "@/lib/hisReconcile";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -78,6 +79,8 @@ export async function GET(request: Request) {
       fetchPhaco2LanStats(coSoId || undefined),
     ]);
 
+    const doiChieuMap = await latestDoiChieuMap(buoiKhams.map((b) => b.id)).catch(() => new Map());
+
     const daMoMap = new Map<string, number>();
     const daMoTruocMap = new Map<string, number>();
     for (const r of daMoGroups) {
@@ -120,6 +123,7 @@ export async function GET(request: Request) {
       return {
         ...bk,
         bacSiKham,
+        lastDoiChieu: doiChieuMap.get(bk.id) ?? null,
         stats: {
           nhomA: st.nhomA,
           nhomB: st.nhomB,

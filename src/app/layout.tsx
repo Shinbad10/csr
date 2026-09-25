@@ -5,7 +5,6 @@ import ToastProvider from "@/components/providers/ToastProvider";
 import ConfirmProvider from "@/components/providers/ConfirmProvider";
 import { RealtimeProvider } from "@/components/providers/RealtimeProvider";
 import PWARegister from "@/components/providers/PWARegister";
-import MUIThemeProvider from "@/components/providers/MUIThemeProvider";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -39,6 +38,18 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "VISI CSR · Khám tầm soát cộng đồng",
   description: "Hệ thống Quản lý Khám tầm soát cộng đồng & Tư vấn phẫu thuật — VISI Medical Group",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -53,16 +64,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi" className={`${manrope.variable} ${fraunces.variable} ${jetbrains.variable} antialiased h-full`} suppressHydrationWarning>
       <body className="min-h-full font-sans bg-[var(--surface-bg)] text-[var(--ink)]" suppressHydrationWarning>
-        <MUIThemeProvider>
-          <PWARegister />
-          <SessionProvider>
-            <RealtimeProvider>
-              <ToastProvider>
-                <ConfirmProvider>{children}</ConfirmProvider>
-              </ToastProvider>
-            </RealtimeProvider>
-          </SessionProvider>
-        </MUIThemeProvider>
+        <PWARegister />
+        <SessionProvider>
+          <RealtimeProvider>
+            <ToastProvider>
+              <ConfirmProvider>{children}</ConfirmProvider>
+            </ToastProvider>
+          </RealtimeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

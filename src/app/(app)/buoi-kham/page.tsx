@@ -10,19 +10,27 @@ import {
   Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X,
   Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet, UserCheck,
   RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical,
-  ClipboardList
+  ClipboardList, Clock, RefreshCw, History, Download, Layers
 } from "lucide-react";
 import { can } from "@/lib/permissions";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
 import { Field, DateField } from "@/components/csr/fields";
 import { DoctorMultiSelect, parseDoctorList, formatDoctorList } from "@/components/csr/DoctorAutocomplete";
 import BuoiKhamPatientsModal from "@/components/csr/BuoiKhamPatientsModal";
 import { SkeletonTable } from "@/components/layout/Skeleton";
-import ImportExcelModal from "@/components/csr/ImportExcelModal";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { motion, AnimatePresence } from "framer-motion";
-import { DataView, DataTable, DataPagination } from "@/components/data";
+import { DataView, DataToolbar, DataTable, DataPagination, ToolbarSelect, useDataContext } from "@/components/data";
+import {
+  useHisReconcile,
+  HisReconcilePanel,
+  DoiChieuCell,
+  DoiChieuHistoryModal,
+  fmtRelative,
+  type DoiChieuLog,
+} from "@/components/csr/HisReconcile";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface CoSo { id: string; ten: string }
@@ -30,6 +38,8 @@ interface BuoiKham {
   id: string; coSo: CoSo; coSoId: string; ngayKham: string; xa: string; diaDiem: string;
   bacSiKham?: string | null; ghiChu?: string | null; _count: { hoSo: number };
   stats?: { nhomA: number; nhomB: number; daMo: number; daMoTruoc?: number; chuaMo: number; phaco2Lan?: number };
+  /** Lần đối chiếu HIS gần nhất (từ AuditLog) */
+  lastDoiChieu?: DoiChieuLog | null;
 }
 
 type StatusFilter = "ALL" | "DangDienRa" | "SapDienRa" | "DaKetThuc";
@@ -40,106 +50,17 @@ interface Option<T = string> {
   label: string;
 }
 
-/** Dropdown gọn gàng chuẩn VISIHUB với bo góc, bóng mờ và checkmark */
-function VISISelect<T extends string>({
-  value,
-  onChange,
-  options,
-  placeholder,
-  className = "",
-  icon: Icon,
-}: {
-  value: T;
-  onChange: (val: T) => void;
-  options: Option<T>[];
-  placeholder?: string;
-  className?: string;
-  icon?: React.ElementType;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("mousedown", h);
-    window.addEventListener("keydown", esc);
-    return () => {
-      window.removeEventListener("mousedown", h);
-      window.removeEventListener("keydown", esc);
-    };
-  }, [open]);
-
-  const selectedOpt = options.find((o) => o.value === value);
-  const isFiltered = value !== "ALL" && value !== "";
-
-  return (
-    <div className={`relative w-full ${className}`} ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`h-8 px-2 sm:px-2.5 w-full rounded-lg border text-[11px] sm:text-[11.5px] font-bold transition-all cursor-pointer select-none flex items-center justify-between gap-1 text-left ${
-          open
-            ? "bg-white border-[#02b8a9] text-[#0f172a] shadow-xs ring-2 ring-[#02b8a9]/15"
-            : isFiltered
-            ? "bg-[#e6faf7] border-[#02b8a9]/40 text-[#018a7f] shadow-2xs"
-            : "bg-white border-[#cbd5e1] text-[#334155] hover:border-[#94a3b8] hover:bg-[#f8fafc] shadow-2xs"
-        }`}
-      >
-        <div className="flex items-center gap-1 min-w-0 flex-1">
-          {Icon && <Icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isFiltered ? "text-[#018a7f]" : "text-[#64748b]"}`} />}
-          <span className="truncate">{selectedOpt?.label || placeholder}</span>
-        </div>
-        <ChevronDown
-          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 transition-transform duration-200 ${
-            isFiltered ? "text-[#018a7f]" : "text-[#64748b]"
-          } ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 4 }}
-            transition={{ type: "spring", stiffness: 450, damping: 28 }}
-            className="absolute left-0 sm:left-auto top-full mt-1.5 z-50 min-w-[190px] max-w-[260px] bg-white dark:bg-slate-900 border border-[var(--line-strong)] rounded-xl shadow-xl p-1 text-[var(--ink)] dark:text-slate-200"
-          >
-            <div className="max-h-[220px] overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
-              {options.map((opt) => {
-                const active = opt.value === value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      onChange(opt.value);
-                      setOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-[12px] font-semibold transition-colors text-left cursor-pointer ${
-                      active
-                        ? "bg-[var(--navy)] text-white shadow-2xs font-bold"
-                        : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    <span className="truncate">{opt.label}</span>
-                    {active && <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" strokeWidth={3} />}
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+/* ── Nút & menu dùng chung (chuẩn UI công ty: token màu, bo 10px, font mono cho số) ── */
+const BTN_SECONDARY =
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 hover:bg-[var(--navy-50)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+/** Xuất dữ liệu — tông teal (thành công / dữ liệu sạch) */
+const BTN_TEAL_SOFT =
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+/** Đồng bộ / đối chiếu hệ thống — tông navy nhạt */
+const BTN_NAVY_SOFT =
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:border-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+const BTN_PRIMARY =
+  "btn-primary inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[12px] font-semibold whitespace-nowrap";
 
 /** Nút vào đợt khám theo pha ngày khám. */
 function JoinAction({
@@ -156,116 +77,131 @@ function JoinAction({
   onViewPatients?: (b: BuoiKham) => void;
 }) {
   const p = phaseOf(b.ngayKham);
-  const size = block ? "py-2 px-3 text-[13px] flex-1 justify-center" : "h-7.5 px-3 text-[11.5px] font-bold";
+  const w = block ? "flex-1 justify-center" : "";
 
-  // Khi là vai trò hành chính / quản lý không khám lâm sàng (như HCNS), ưu tiên nút Xem DS tầm soát
+  // Vai trò hành chính / quản lý không khám lâm sàng (như HCNS): ưu tiên xem DS tầm soát
   if (!canClinical && canViewTamSoat) {
     return (
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => onViewPatients?.(b)}
-          className={`btn ${size} inline-flex items-center gap-1.5 border border-[#031da6]/25 bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white font-bold cursor-pointer shadow-2xs transition-all active:scale-95`}
-          title="Xem danh sách bệnh nhân tầm soát trong đợt khám này"
-        >
-          <ClipboardList className="w-3.5 h-3.5 shrink-0" />
-          <span>DS tầm soát</span>
-        </button>
-        <Link
-          href={`/kham/${b.id}`}
-          className={`btn ${size} inline-flex items-center gap-1.5 border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#475569] font-semibold cursor-pointer shadow-2xs`}
-          title="Xem chi tiết hồ sơ bệnh nhân đợt khám"
-        >
-          <Eye className="w-3.5 h-3.5 text-[#031da6]" />
-          <span>Hồ sơ</span>
-        </Link>
-      </div>
+      <button type="button" onClick={() => onViewPatients?.(b)} className={`${BTN_SECONDARY} ${w}`} title="Xem danh sách bệnh nhân tầm soát của đợt khám">
+        <ClipboardList className="w-3.5 h-3.5 text-[var(--navy)]" />
+        DS tầm soát
+      </button>
     );
   }
 
   if (p.key === "DaKetThuc") {
     return (
-      <Link
-        href={`/kham/${b.id}`}
-        className={`btn ${size} inline-flex items-center gap-1.5 border border-[#cbd5e1] bg-white hover:bg-[#f1f5f9] text-[#334155] font-semibold cursor-pointer shadow-2xs`}
-      >
-        <Eye className="w-3.5 h-3.5 text-[#031da6]" />
-        <span>Xem hồ sơ</span>
+      <Link href={`/kham/${b.id}`} className={`${BTN_SECONDARY} ${w}`}>
+        <Eye className="w-3.5 h-3.5 text-[var(--navy)]" />
+        Xem hồ sơ
       </Link>
     );
   }
   if (p.key === "SapDienRa") {
     return (
-      <span title={p.hint} className={`btn ${size} font-semibold inline-flex border border-[#cbd5e1] bg-[#f8fafc] text-[#94a3b8] cursor-not-allowed`}>
+      <span title={p.hint} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-dashed border-[var(--line-strong)] bg-[var(--surface-soft)] text-[12px] font-semibold text-[var(--mute)] cursor-not-allowed whitespace-nowrap ${w}`}>
+        <Clock className="w-3.5 h-3.5" />
         Chưa tới ngày
       </span>
     );
   }
   return (
-    <Link
-      href={`/kham/${b.id}`}
-      className={`btn btn-primary ${size} inline-flex items-center gap-1.5 bg-[#031da6] hover:bg-[#020f5c] text-white shadow-2xs font-bold cursor-pointer active:scale-95`}
-    >
-      <Stethoscope className="w-3.5 h-3.5 text-[#02b8a9]" />
-      <span>Tham gia khám</span>
+    <Link href={`/kham/${b.id}`} className={`${BTN_PRIMARY} ${w}`}>
+      <Stethoscope className="w-3.5 h-3.5 text-[var(--teal)]" />
+      Tham gia khám
     </Link>
   );
 }
 
-/** Cụm thao tác đợt khám tinh gọn, chuẩn UI hiện đại */
+function MenuItem({
+  icon: Icon,
+  label,
+  hint,
+  tone = "default",
+  disabled,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  hint?: string;
+  tone?: "default" | "navy" | "teal" | "amber";
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const iconCls = {
+    default: "text-[var(--mute)]",
+    navy: "text-[var(--navy)]",
+    teal: "text-[var(--teal-deep)]",
+    amber: "text-[var(--amber)]",
+  }[tone];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-[8px] text-left hover:bg-[var(--navy-50)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <Icon className={`w-4 h-4 mt-px shrink-0 ${iconCls}`} />
+      <div className="flex-1 min-w-0">
+        <div className={`text-[12.5px] font-semibold leading-tight ${tone === "amber" ? "text-[var(--amber-deep)]" : "text-[var(--ink)]"}`}>{label}</div>
+        {hint && <div className="text-[10.5px] text-[var(--mute)] mt-0.5 truncate">{hint}</div>}
+      </div>
+    </button>
+  );
+}
+
+function MenuGroup({ label }: { label: string }) {
+  return <div className="px-2.5 pt-2 pb-1 text-[9.5px] font-mono font-bold uppercase tracking-[0.14em] text-[var(--mute-soft)]">{label}</div>;
+}
+
+/** Cụm thao tác của một đợt khám: menu ⋮ + nút chính theo pha. */
 function BuoiKhamRowActions({
   b,
   canManage,
   canViewTamSoat,
   canClinical,
+  canReconcile,
+  reconciling,
   exportingId,
   onExport,
   onEdit,
   onComplete,
   onViewPatients,
+  onReconcile,
+  onHistory,
 }: {
   b: BuoiKham;
   canManage: boolean;
   canViewTamSoat?: boolean;
   canClinical?: boolean;
+  canReconcile?: boolean;
+  reconciling?: boolean;
   exportingId: string | null;
   onExport: (b: BuoiKham, format?: "khamSucKhoe" | "default") => void;
   onEdit: (b: BuoiKham) => void;
   onComplete: (b: BuoiKham) => void;
   onViewPatients?: (b: BuoiKham) => void;
+  onReconcile?: (b: BuoiKham) => void;
+  onHistory?: (b: BuoiKham) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const isEnded = phaseOf(b.ngayKham).key === "DaKetThuc";
+  const soCa = (b.stats?.nhomA ?? 0) + (b.stats?.nhomB ?? 0);
+  const busy = exportingId === b.id || reconciling;
 
+  const MENU_W = 264;
   const updatePosition = useCallback(() => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const menuWidth = 240;
-    const menuHeight = 260;
+    const menuHeight = 380;
     const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const openUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-
-    let left = rect.right - menuWidth;
-    if (left < 8) left = 8;
-    if (left + menuWidth > window.innerWidth - 8) {
-      left = Math.max(8, window.innerWidth - menuWidth - 8);
-    }
-
-    if (openUp) {
-      setCoords({
-        bottom: Math.round(window.innerHeight - rect.top + 4),
-        left: Math.round(left),
-      });
-    } else {
-      setCoords({
-        top: Math.round(rect.bottom + 4),
-        left: Math.round(left),
-      });
-    }
+    const openUp = spaceBelow < menuHeight && rect.top > spaceBelow;
+    let left = rect.right - MENU_W;
+    left = Math.max(8, Math.min(left, window.innerWidth - MENU_W - 8));
+    setCoords(openUp ? { bottom: Math.round(window.innerHeight - rect.top + 4), left: Math.round(left) } : { top: Math.round(rect.bottom + 4), left: Math.round(left) });
   }, []);
 
   const toggleMenu = (e: React.MouseEvent) => {
@@ -273,177 +209,113 @@ function BuoiKhamRowActions({
     if (!menuOpen) {
       updatePosition();
       setMenuOpen(true);
-    } else {
-      setMenuOpen(false);
-    }
+    } else setMenuOpen(false);
   };
 
   useEffect(() => {
     if (!menuOpen) return;
     updatePosition();
-
-    const handleMouseDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        menuRef.current && !menuRef.current.contains(target) &&
-        buttonRef.current && !buttonRef.current.contains(target)
-      ) {
-        setMenuOpen(false);
-      }
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (menuRef.current && !menuRef.current.contains(t) && buttonRef.current && !buttonRef.current.contains(t)) setMenuOpen(false);
     };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-
-    const handleScrollOrResize = (e: Event) => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    const onScroll = (e: Event) => {
       if (menuRef.current && menuRef.current.contains(e.target as Node)) return;
       setMenuOpen(false);
     };
-
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
-
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
     };
   }, [menuOpen, updatePosition]);
 
+  const pick = (fn: () => void) => () => {
+    setMenuOpen(false);
+    fn();
+  };
+
   return (
     <div className="flex items-center justify-end gap-1.5">
-      {/* Menu thao tác tùy chọn (Xuất Excel, Sửa, Kết thúc đợt) */}
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={toggleMenu}
-          className={`h-7.5 w-7.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
-            menuOpen
-              ? "bg-[#031da6] text-white border-[#031da6] shadow-xs"
-              : "bg-white border-[#cbd5e1] text-[#475569] hover:bg-[#f1f5f9] hover:border-[#94a3b8] shadow-2xs"
-          }`}
-          title="Tùy chọn thao tác"
-        >
-          {exportingId === b.id ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#02b8a9]" />
-          ) : (
-            <MoreVertical className="w-4 h-4" />
-          )}
-        </button>
+      <JoinAction b={b} canClinical={canClinical} canViewTamSoat={canViewTamSoat} onViewPatients={onViewPatients} />
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleMenu}
+        className={`w-8 h-8 rounded-[10px] border flex items-center justify-center transition-colors cursor-pointer ${
+          menuOpen
+            ? "bg-[var(--navy)] text-white border-[var(--navy)]"
+            : "bg-[var(--surface)] border-[var(--line-strong)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40"
+        }`}
+        title="Thao tác khác"
+      >
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal)]" /> : <MoreVertical className="w-4 h-4" />}
+      </button>
 
-        {menuOpen && coords && typeof document !== "undefined" && createPortal(
+      {menuOpen && coords && typeof document !== "undefined" &&
+        createPortal(
           <div
             ref={menuRef}
             style={{
               position: "fixed",
-              top: coords.top !== undefined ? `${coords.top}px` : undefined,
-              bottom: coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
-              left: `${coords.left}px`,
-              width: "240px",
-              maxHeight: "min(320px, calc(100vh - 32px))",
+              top: coords.top,
+              bottom: coords.bottom,
+              left: coords.left,
+              width: MENU_W,
+              maxHeight: "min(420px, calc(100vh - 32px))",
               zIndex: 99999,
             }}
-            className="overflow-y-auto bg-white border border-[#cbd5e1] rounded-xl shadow-2xl p-1 animate-dropdown text-[#0f172a]"
+            className="overflow-y-auto bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 animate-dropdown"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Xem danh sách tầm soát (Cho HCNS / Quản trị) */}
             {canViewTamSoat && onViewPatients && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onViewPatients(b);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#031da6] hover:bg-[#eef2ff] transition-colors text-left cursor-pointer"
-              >
-                <ClipboardList className="w-4 h-4 text-[#031da6] shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="leading-tight">Xem danh sách tầm soát</div>
-                  <div className="text-[10px] text-[#64748b] font-normal">Xem {b._count?.hoSo ?? 0} bệnh nhân & kết quả khám</div>
-                </div>
-              </button>
+              <MenuItem icon={ClipboardList} tone="navy" label="Xem danh sách tầm soát" hint={`${b._count?.hoSo ?? 0} bệnh nhân & kết quả khám`} onClick={pick(() => onViewPatients(b))} />
             )}
 
-            {/* Xuất Excel Mẫu Khám Sức Khỏe (101 cột) */}
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onExport(b, "khamSucKhoe");
-              }}
-              disabled={exportingId === b.id}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#018a7f] hover:bg-[#e6faf7] transition-colors text-left cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-[#02b8a9] shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="leading-tight">Xuất Excel (Khám Sức Khỏe)</div>
-                <div className="text-[10px] text-[#64748b] font-normal">Mẫu 101 cột nộp HIS / cơ quan</div>
-              </div>
-            </button>
-
-            {/* Xuất Excel Mẫu Google Sheet (25 cột) */}
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onExport(b, "default");
-              }}
-              disabled={exportingId === b.id}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-medium text-[#334155] hover:bg-[#f1f5f9] transition-colors text-left cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-[#64748b] shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="leading-tight">Xuất Excel (Google Sheet)</div>
-                <div className="text-[10px] text-[#94a3b8] font-normal">Mẫu 25 cột danh sách sàng lọc</div>
-              </div>
-            </button>
-
-            <div className="border-t border-[#f1f5f9] my-1" />
-
-            {canManage && !isEnded && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onComplete(b);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#b45309] hover:bg-[#fffbeb] transition-colors text-left cursor-pointer"
-              >
-                <CheckCheck className="w-4 h-4 text-[#d97706] shrink-0" />
-                <span>Kết thúc đợt khám</span>
-              </button>
+            {(canReconcile || onHistory) && (
+              <>
+                <MenuGroup label="Đối chiếu HIS" />
+                {canReconcile && onReconcile && (
+                  <MenuItem
+                    icon={RefreshCw}
+                    tone="teal"
+                    label={reconciling ? "Đang đối chiếu HIS…" : "Đối chiếu HIS đợt này"}
+                    hint={soCa > 0 ? `Tra ${soCa} ca Nhóm A + B trên HIS` : "Không có BN Nhóm A/B"}
+                    disabled={reconciling || soCa === 0}
+                    onClick={pick(() => onReconcile(b))}
+                  />
+                )}
+                {onHistory && (
+                  <MenuItem
+                    icon={History}
+                    label="Lịch sử đối chiếu"
+                    hint={b.lastDoiChieu ? `Gần nhất ${fmtRelative(b.lastDoiChieu.thoiDiem)}` : "Chưa đối chiếu lần nào"}
+                    onClick={pick(() => onHistory(b))}
+                  />
+                )}
+              </>
             )}
+
+            <MenuGroup label="Xuất dữ liệu" />
+            <MenuItem icon={FileSpreadsheet} tone="teal" label="Excel khám sức khỏe" hint="Mẫu 101 cột nộp HIS / cơ quan" disabled={exportingId === b.id} onClick={pick(() => onExport(b, "khamSucKhoe"))} />
+            <MenuItem icon={FileSpreadsheet} label="Excel Google Sheet" hint="Mẫu 25 cột danh sách sàng lọc" disabled={exportingId === b.id} onClick={pick(() => onExport(b, "default"))} />
 
             {canManage && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(b);
-                }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-[#334155] hover:bg-[#f1f5f9] transition-colors text-left cursor-pointer"
-              >
-                <Pencil className="w-4 h-4 text-[#64748b] shrink-0" />
-                <span>Chỉnh sửa đợt khám</span>
-              </button>
+              <>
+                <div className="my-1 border-t border-[var(--line-soft)]" />
+                {!isEnded && <MenuItem icon={CheckCheck} tone="amber" label="Kết thúc đợt khám" onClick={pick(() => onComplete(b))} />}
+                <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" onClick={pick(() => onEdit(b))} />
+              </>
             )}
           </div>,
-          document.body
+          document.body,
         )}
-      </div>
-
-      {/* Nút hành động chính (Tham gia khám / Xem hồ sơ / DS tầm soát cho HCNS) */}
-      <JoinAction
-        b={b}
-        canClinical={canClinical}
-        canViewTamSoat={canViewTamSoat}
-        onViewPatients={onViewPatients}
-      />
     </div>
   );
 }
@@ -451,47 +323,119 @@ function BuoiKhamRowActions({
 /** A/B liền khối */
 function NhomChip({ a, b }: { a: number; b: number }) {
   return (
-    <div className="inline-flex rounded-lg overflow-hidden border border-[#cbd5e1] font-mono text-[11px] font-bold shadow-2xs">
-      <span className="px-2 py-0.5 bg-[#fef1f4] text-[#e11d48] border-r border-[#e11d48]/20" title="Nhóm A — đã chỉ định mổ">A {a}</span>
-      <span className="px-2 py-0.5 bg-[#fef6eb] text-[#d97706]" title="Nhóm B — theo dõi / suy nghĩ / chưa chốt">B {b}</span>
+    <div className="inline-flex rounded-[6px] overflow-hidden border border-[var(--line)] font-mono text-[11px] font-bold tabular-nums">
+      <span className={`px-2 py-0.5 border-r border-[var(--line)] ${a ? "bg-[var(--rose-soft)] text-[var(--rose)]" : "text-[var(--mute-soft)]"}`} title="Nhóm A — đã chỉ định mổ">
+        A {a}
+      </span>
+      <span className={`px-2 py-0.5 ${b ? "bg-[var(--amber-soft)] text-[var(--amber-deep)]" : "text-[var(--mute-soft)]"}`} title="Nhóm B — theo dõi / chưa chốt">
+        B {b}
+      </span>
     </div>
   );
 }
 
-/** Tiến độ mổ dạng "đã mổ / cần mổ" kèm thanh & ca mổ trước nếu có */
+/** Tiến độ mổ "đã mổ / cần mổ" kèm thanh & ca mổ trước nếu có */
 function MoProgress({ done, waiting, daMoTruoc }: { done: number; waiting: number; daMoTruoc?: number }) {
   const need = done + waiting;
-  if (need === 0 && (!daMoTruoc || daMoTruoc === 0)) return <span className="text-[#94a3b8] font-mono text-xs">—</span>;
+  if (need === 0 && !daMoTruoc) return <span className="text-[var(--mute-soft)] font-mono text-xs">—</span>;
   const pct = need > 0 ? Math.round((done / need) * 100) : 0;
   return (
-    <div className="inline-flex flex-col items-center gap-1 min-w-[80px]" title={`Đã mổ CSR: ${done}/${need} ca chỉ định (${pct}%)${daMoTruoc ? ` • Có ${daMoTruoc} ca đã mổ trước ngày khám` : ""}`}>
-      <span className="font-mono text-[11.5px] font-bold text-[#0f172a]">
-        {done}<span className="text-[#64748b] font-medium">/{need}</span>
-      </span>
-      <div className="w-full h-1.5 rounded-full bg-[#e2e8f0] overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-[#02b8a9] to-[#018a7f] rounded-full transition-all" style={{ width: `${pct}%` }} />
-      </div>
-      {Boolean(daMoTruoc && daMoTruoc > 0) && (
-        <span className="text-[9.5px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.2 rounded-md inline-flex items-center gap-0.5 mt-0.5" title={`Có ${daMoTruoc} ca đã mổ trước khi diễn ra đợt khám tầm soát (không tính vào tiến độ đợt này)`}>
-          🟣 {daMoTruoc} mổ trước
+    <div
+      className="w-full max-w-[124px]"
+      title={`Đã mổ CSR: ${done}/${need} ca chỉ định (${pct}%)${daMoTruoc ? ` • ${daMoTruoc} ca đã mổ trước ngày khám` : ""}`}
+    >
+      <div className="flex items-baseline justify-between gap-1 font-mono text-[11.5px] tabular-nums whitespace-nowrap">
+        <span>
+          <b className={done ? "text-[var(--teal-deep)]" : "text-[var(--ink)]"}>{done}</b>
+          <span className="text-[var(--mute)]">/{need}</span>
+          {Boolean(daMoTruoc) && <span className="ml-1 text-[10px] font-semibold text-[#7c3aed]">+{daMoTruoc} trước</span>}
         </span>
-      )}
+        <span className="text-[10px] text-[var(--mute)]">{pct}%</span>
+      </div>
+      <div className="mt-1 h-1 rounded-full bg-[var(--line)] overflow-hidden">
+        <div className="h-full rounded-full bg-[var(--teal)] transition-all" style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
 
-/** Chip hiển thị số ca mổ mắt 2 (Phaco 2 lần) chuẩn VISIHUB */
+/** Số ca mổ mắt 2 (Phaco 2 lần) */
 function Mat2Badge({ count, onClick }: { count: number; onClick?: () => void }) {
-  if (count <= 0) return <span className="text-[#cbd5e1] font-mono text-xs">—</span>;
+  if (count <= 0) return <span className="text-[var(--mute-soft)] font-mono text-xs">—</span>;
   return (
     <button
       type="button"
+      data-no-row-click
       onClick={onClick}
-      className="inline-flex items-center gap-1 font-mono font-bold text-[11.5px] bg-[#f5f3ff] hover:bg-[#6d28d9] text-[#6d28d9] hover:text-white px-2.5 py-0.5 rounded-full border border-[#ddd6fe] hover:border-[#6d28d9] transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 group/mat2"
-      title={`Đợt khám có ${count} bệnh nhân mổ Phaco 2 lần (Mắt 2). Bấm để xem danh sách.`}
+      className="inline-flex items-center gap-1 font-mono font-bold text-[11px] tabular-nums bg-[#f3eaf8] text-[#7c3aed] px-2 py-0.5 rounded-[6px] hover:bg-[#7c3aed] hover:text-white transition-colors cursor-pointer"
+      title={`${count} bệnh nhân mổ Phaco 2 lần (mắt 2). Bấm để xem danh sách.`}
     >
-      <Eye className="w-3 h-3 text-[#7c3aed] group-hover/mat2:text-white transition-colors" />
-      <span>{count} ca</span>
+      <Eye className="w-3 h-3" />
+      {count}
+    </button>
+  );
+}
+
+/** Badge trạng thái đợt: đang diễn ra = teal (sống), sắp tới = amber, đã xong = xám. */
+function PhaseBadge({ ngayKham }: { ngayKham: string }) {
+  const p = phaseOf(ngayKham);
+  const cls =
+    p.key === "DangDienRa"
+      ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]"
+      : p.key === "SapDienRa"
+      ? "bg-[var(--amber-soft)] text-[var(--amber-deep)]"
+      : "bg-[var(--line-soft)] text-[var(--mute)]";
+  return (
+    <span title={p.hint} className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap ${cls}`}>
+      <span className={`w-[5px] h-[5px] rounded-full bg-current ${p.key === "DangDienRa" ? "animate-pulse" : ""}`} />
+      {p.label}
+    </span>
+  );
+}
+
+/** "An Định" → "Xã An Định"; giữ nguyên nếu dữ liệu đã có tiền tố xã / phường / thị trấn. */
+function xaLabel(xa?: string | null): string {
+  const v = (xa || "").trim();
+  if (!v) return "";
+  return /^(xã|phường|thị trấn|tt\.?)\s/i.test(v) ? v.charAt(0).toUpperCase() + v.slice(1) : `Xã ${v}`;
+}
+
+/** Trao các dòng của trang hiện tại (đã qua tìm kiếm / lọc / sắp xếp) cho render-prop — dùng cho thẻ mobile. */
+function PageRows<T>({ children }: { children: (rows: T[]) => React.ReactNode }) {
+  const { table } = useDataContext<T>();
+  return <>{children(table.getRowModel().rows.map((r) => r.original))}</>;
+}
+
+/** Nút đối chiếu HIS hàng loạt — lấy đúng các đợt đang hiển thị (mọi trang, sau tìm kiếm & bộ lọc). */
+function ReconcileAllButton({
+  his,
+  toTarget,
+  compact,
+}: {
+  his: ReturnType<typeof useHisReconcile>;
+  compact?: boolean;
+  toTarget: (b: BuoiKham) => { id: string; name: string; soCa: number };
+}) {
+  const { table } = useDataContext<BuoiKham>();
+  const visible = table.getPrePaginationRowModel().rows.map((r) => r.original);
+  const eligible = visible.filter((b) => (b.stats?.nhomA ?? 0) + (b.stats?.nhomB ?? 0) > 0).length;
+  return (
+    <button
+      type="button"
+      onClick={() => his.runBulk(visible.map(toTarget))}
+      disabled={his.bulkActive || eligible === 0}
+      className={cn("group", BTN_NAVY_SOFT, compact && "h-9 px-2.5 rounded-xl")}
+      title={eligible === 0 ? "Không có đợt nào đang hiển thị có BN Nhóm A/B" : `Đối chiếu HIS cho ${eligible} đợt đang hiển thị (chạy nền, song song)`}
+    >
+      {his.bulkActive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+      {his.bulkActive && his.progress ? (
+        <span className="font-mono tabular-nums">Đang đối chiếu {his.progress.finished}/{his.progress.total}</span>
+      ) : (
+        <>
+          {compact ? "HIS" : "Đối chiếu HIS"}
+          <span className="font-mono text-[10.5px] font-bold px-1.5 rounded-[5px] bg-[var(--navy)] text-white group-hover:bg-white group-hover:text-[var(--navy)] tabular-nums transition-colors">{eligible}</span>
+        </>
+      )}
     </button>
   );
 }
@@ -516,13 +460,13 @@ export default function BuoiKhamPage() {
   const canViewTamSoat = can(session?.user?.role, "tamsoat.view");
   const canClinical = can(session?.user?.role, "hoso.clinical");
   const canExport = can(session?.user?.role, "report.export");
+  const canReconcile = can(session?.user?.role, "hoso.treatment");
 
   const [list, setList] = useState<BuoiKham[]>([]);
   const [cosos, setCosos] = useState<CoSo[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Bộ lọc
-  const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [doctorFilter, setDoctorFilter] = useState<string>("ALL");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("ALL");
@@ -556,7 +500,6 @@ export default function BuoiKhamPage() {
   const [bacSiKham, setBacSiKham] = useState("");
   const [ghiChu, setGhiChu] = useState("");
 
-  const [importOpen, setImportOpen] = useState(false);
   const [viewPatientsBuoiKham, setViewPatientsBuoiKham] = useState<BuoiKham | null>(null);
   const [patientInitialFilter, setPatientInitialFilter] = useState<"ALL" | "A" | "B" | "DA_MO" | "DA_MO_TRUOC" | "CHUA_MO" | "PHACO_2_LAN">("ALL");
   const [editModal, setEditModal] = useState<BuoiKham | null>(null);
@@ -572,6 +515,7 @@ export default function BuoiKhamPage() {
   const topExportRef = useRef<HTMLDivElement>(null);
   const [confirmCompleteModal, setConfirmCompleteModal] = useState<BuoiKham | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [historyTarget, setHistoryTarget] = useState<BuoiKham | null>(null);
 
   useEffect(() => {
     if (!topExportOpen) return;
@@ -769,9 +713,12 @@ export default function BuoiKhamPage() {
 
   useEffect(() => { (async () => { await load(); })(); }, [load]);
 
-  // Cập nhật danh sách đợt khám & số liệu bệnh nhân thời gian thực (SSE)
+  // Cập nhật danh sách đợt khám & số liệu bệnh nhân thời gian thực (SSE).
+  // Gom các sự kiện dồn dập (đối chiếu HIS hàng loạt bắn nhiều sự kiện liên tiếp) thành một lần nạp.
+  const reloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useRealtimeEvent(["buoikham_change", "hoso_change"], () => {
-    load();
+    if (reloadTimer.current) clearTimeout(reloadTimer.current);
+    reloadTimer.current = setTimeout(() => load(), 1200);
   }, [load]);
 
   const create = async (e: React.FormEvent) => {
@@ -853,11 +800,6 @@ export default function BuoiKhamPage() {
   // Lọc dữ liệu
   const filtered = useMemo(() => {
     return list.filter((b) => {
-      if (q.trim()) {
-        const matchText = [b.xa, b.diaDiem, b.ghiChu, b.bacSiKham, b.coSo?.ten, fmtBuoiKhamCode(b.id)]
-          .some((s) => (s || "").toLowerCase().includes(q.toLowerCase()));
-        if (!matchText) return false;
-      }
       if (statusFilter !== "ALL") {
         if (phaseOf(b.ngayKham).key !== statusFilter) return false;
       }
@@ -883,54 +825,63 @@ export default function BuoiKhamPage() {
       }
       return true;
     });
-  }, [list, q, statusFilter, doctorFilter, groupFilter, monthFilter]);
+  }, [list, statusFilter, doctorFilter, groupFilter, monthFilter]);
 
-  const hasActiveFilters = q || statusFilter !== "ALL" || doctorFilter !== "ALL" || groupFilter !== "ALL" || monthFilter !== getCurrentMonthKey();
+  const hasActiveFilters = statusFilter !== "ALL" || doctorFilter !== "ALL" || groupFilter !== "ALL" || monthFilter !== getCurrentMonthKey();
 
   const resetFilters = () => {
-    setQ("");
     setStatusFilter("ALL");
     setDoctorFilter("ALL");
     setGroupFilter("ALL");
     setMonthFilter(getCurrentMonthKey());
   };
 
+  // ── Đối chiếu HIS: chạy nền, cập nhật "đối chiếu gần nhất" ngay trên từng dòng ──
+  const his = useHisReconcile({
+    onLog: (id, log) => setList((prev) => prev.map((b) => (b.id === id ? { ...b, lastDoiChieu: log } : b))),
+    onFinish: () => load(),
+  });
+
+  /** Các đợt ĐANG HIỂN THỊ (sau bộ lọc) có BN Nhóm A — đích của nút đối chiếu hàng loạt. */
+  const toTarget = (b: BuoiKham) => ({ id: b.id, name: fmtBuoiKhamName(b), soCa: (b.stats?.nhomA ?? 0) + (b.stats?.nhomB ?? 0) });
+  const reconcileOne = (b: BuoiKham) => his.runOne(toTarget(b));
+
   const columns = useMemo<ColumnDef<BuoiKham>[]>(
     () => [
       {
         id: "stt",
         header: "STT",
-        size: 54,
+        size: 48,
         enableSorting: false,
-        enableResizing: false,
+        enableColumnFilter: false,
         meta: { align: "center" },
-        cell: ({ row }) => (
-          <span className="font-mono font-bold text-[#031da6] text-[12px]">
-            <span className="text-[#94a3b8] font-normal">#</span>
-            {String(row.index + 1).padStart(2, "0")}
-          </span>
-        ),
+        cell: ({ row, table }) => {
+          const { pageIndex = 0, pageSize = 50 } = table.getState().pagination || {};
+          return <span className="font-mono text-[12px] text-[var(--mute)] tabular-nums">{pageIndex * pageSize + row.index + 1}</span>;
+        },
       },
       {
         id: "tenBuoiKham",
         header: "Đợt khám",
         size: 320,
         meta: { flex: true },
-        accessorFn: (row) => `${fmtBuoiKhamName(row)} ${fmtBuoiKhamCode(row.id)} ${row.bacSiKham || ""}`,
+        accessorFn: (row) => `${fmtBuoiKhamName(row)} ${fmtBuoiKhamCode(row.id)} ${row.xa || ""} ${row.diaDiem || ""}`,
+        sortingFn: (a, b) => fmtBuoiKhamName(a.original).localeCompare(fmtBuoiKhamName(b.original), "vi"),
         cell: ({ row }) => {
           const b = row.original;
+          const name = fmtBuoiKhamName(b);
+          const place = b.diaDiem && b.diaDiem.trim() !== name ? b.diaDiem : xaLabel(b.xa);
           return (
-            <div className="py-1 min-w-0">
-              <div className="font-bold text-[#0f172a] text-[13px] leading-snug truncate" title={fmtBuoiKhamName(b)}>
-                {fmtBuoiKhamName(b)}
+            <div className="min-w-0">
+              <div className="font-semibold text-[var(--ink)] text-[13px] leading-snug truncate" title={name}>
+                {name}
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="font-mono text-[10.5px] font-bold text-[#031da6] bg-[#eef2ff] px-1.5 py-0.5 rounded border border-[#c7d2fe]">
-                  {fmtBuoiKhamCode(b.id)}
-                </span>
-                {b.bacSiKham && (
-                  <span className="text-[10.5px] text-[#047857] font-semibold flex items-center gap-1 bg-[#ecfdf5] px-1.5 py-0.5 rounded border border-[#a7f3d0] truncate">
-                    <UserCheck className="w-3 h-3 text-[#047857] shrink-0" /> {cleanDoctorName(b.bacSiKham)}
+              <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                <span className="font-mono text-[10.5px] font-bold text-[var(--navy)] shrink-0">{fmtBuoiKhamCode(b.id)}</span>
+                {place && (
+                  <span className="flex items-center gap-1 text-[11px] text-[var(--mute)] min-w-0" title={place}>
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{place}</span>
                   </span>
                 )}
               </div>
@@ -939,68 +890,77 @@ export default function BuoiKhamPage() {
         },
       },
       {
-        id: "diaDiem",
-        accessorKey: "diaDiem",
-        header: "Địa điểm",
-        size: 280,
-        meta: { flex: true },
+        id: "ngayKham",
+        header: "Ngày khám",
+        size: 104,
+        enableColumnFilter: false,
+        accessorFn: (row) => (row.ngayKham ? new Date(row.ngayKham).getTime() : 0),
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 min-w-0 text-[#334155]" title={row.original.diaDiem}>
-            <MapPin className="w-3.5 h-3.5 text-[#64748b] shrink-0" />
-            <span className="text-[12.5px] font-medium truncate">
-              {row.original.diaDiem}
-            </span>
-          </div>
+          <span className="font-mono text-[12px] text-[var(--ink)] font-semibold tabular-nums">{fmtDate(row.original.ngayKham)}</span>
         ),
       },
       {
+        id: "bacSi",
+        header: "Bác sĩ",
+        size: 170,
+        accessorFn: (row) => row.bacSiKham || "",
+        cell: ({ row }) => {
+          const docs = parseDoctorList(row.original.bacSiKham);
+          if (docs.length === 0) return <span className="text-[var(--mute-soft)] text-[12px]">—</span>;
+          return (
+            <div className="min-w-0" title={docs.map(cleanDoctorName).join(", ")}>
+              <div className="text-[12.5px] text-[var(--ink-soft)] font-medium truncate">{cleanDoctorName(docs[0])}</div>
+              {docs.length > 1 && <div className="text-[10.5px] text-[var(--mute)]">+{docs.length - 1} bác sĩ khác</div>}
+            </div>
+          );
+        },
+      },
+      {
         id: "slBn",
-        header: "SL BN",
-        size: 84,
-        meta: { align: "center" },
+        header: "Số BN",
+        size: 88,
+        enableColumnFilter: false,
+        meta: { align: "right" },
         accessorFn: (row) => row._count?.hoSo ?? 0,
         cell: ({ row }) => (
           <button
             type="button"
             data-no-row-click
             onClick={() => setViewPatientsBuoiKham(row.original)}
-            className="inline-flex items-center gap-1.5 font-mono font-black text-[13px] text-[#031da6] bg-[#eef2ff] hover:bg-[#031da6] hover:text-white px-2.5 py-1 rounded-lg border border-[#c7d2fe] hover:border-[#031da6] transition-all hover:scale-105 cursor-pointer shadow-2xs group/btn"
-            title="Bấm để xem danh sách bệnh nhân và kết quả khám"
+            className="font-mono font-bold text-[13px] tabular-nums text-[var(--navy)] hover:underline underline-offset-2 cursor-pointer"
+            title="Xem danh sách bệnh nhân và kết quả khám"
           >
-            <span>{row.original._count?.hoSo ?? 0}</span>
-            <Eye className="w-3.5 h-3.5 text-[#031da6] group-hover/btn:text-white opacity-70 group-hover/btn:opacity-100 transition-colors" />
+            {(row.original._count?.hoSo ?? 0).toLocaleString("vi-VN")}
           </button>
         ),
       },
       {
         id: "phanNhom",
         header: "Phân nhóm",
-        size: 116,
+        size: 108,
         enableSorting: false,
+        enableColumnFilter: false,
         meta: { align: "center" },
         cell: ({ row }) => <NhomChip a={row.original.stats?.nhomA ?? 0} b={row.original.stats?.nhomB ?? 0} />,
       },
       {
         id: "tienDoMo",
         header: "Tiến độ mổ",
-        size: 136,
-        meta: { align: "center" },
+        size: 150,
+        enableColumnFilter: false,
         accessorFn: (row) => {
           const need = (row.stats?.daMo ?? 0) + (row.stats?.chuaMo ?? 0);
           return need > 0 ? (row.stats?.daMo ?? 0) / need : -1;
         },
         cell: ({ row }) => (
-          <MoProgress
-            done={row.original.stats?.daMo ?? 0}
-            waiting={row.original.stats?.chuaMo ?? 0}
-            daMoTruoc={row.original.stats?.daMoTruoc ?? 0}
-          />
+          <MoProgress done={row.original.stats?.daMo ?? 0} waiting={row.original.stats?.chuaMo ?? 0} daMoTruoc={row.original.stats?.daMoTruoc ?? 0} />
         ),
       },
       {
         id: "phaco2Lan",
         header: "Mắt 2",
-        size: 88,
+        size: 76,
+        enableColumnFilter: false,
         meta: { align: "center" },
         accessorFn: (row) => row.stats?.phaco2Lan ?? 0,
         cell: ({ row }) => (
@@ -1014,423 +974,319 @@ export default function BuoiKhamPage() {
         ),
       },
       {
-        id: "ngayKham",
-        header: "Ngày khám",
-        size: 118,
-        meta: { align: "center" },
-        accessorFn: (row) => (row.ngayKham ? new Date(row.ngayKham).getTime() : 0),
+        id: "doiChieuHis",
+        header: "Đối chiếu HIS",
+        size: 196,
+        enableColumnFilter: false,
+        meta: { noTruncate: true },
+        accessorFn: (row) => (row.lastDoiChieu ? new Date(row.lastDoiChieu.thoiDiem).getTime() : 0),
         cell: ({ row }) => (
-          <div className="flex items-center justify-center gap-1.5 font-mono text-xs text-[#334155] font-semibold">
-            <Calendar className="w-3.5 h-3.5 text-[#64748b]" />
-            <span>{fmtDate(row.original.ngayKham)}</span>
-          </div>
+          <DoiChieuCell
+            log={row.original.lastDoiChieu}
+            running={his.runningIds.has(row.original.id)}
+            onOpenHistory={() => setHistoryTarget(row.original)}
+          />
         ),
       },
       {
         id: "trangThai",
         header: "Trạng thái",
-        size: 126,
-        meta: { align: "center" },
+        size: 128,
+        enableColumnFilter: false,
         accessorFn: (row) => phaseOf(row.ngayKham).key,
-        cell: ({ row }) => {
-          const p = phaseOf(row.original.ngayKham);
-          const isOngoing = p.key === "DangDienRa";
-          return (
-            <span title={p.hint} className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11.5px] font-bold border ${
-              p.key === "DaKetThuc"
-                ? "bg-[#f1f5f9] text-[#475569] border-[#cbd5e1]"
-                : isOngoing
-                ? "bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]"
-                : "bg-[#fffbeb] text-[#b45309] border-[#fde68a]"
-            }`}>
-              {isOngoing && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
-              {p.label}
-            </span>
-          );
-        },
+        cell: ({ row }) => <PhaseBadge ngayKham={row.original.ngayKham} />,
       },
       {
         id: "actions",
-        header: "Thao tác",
-        size: 168,
+        header: "",
+        size: 188,
         enableSorting: false,
-        enableResizing: false,
-        meta: { align: "right" },
+        enableColumnFilter: false,
+        enableHiding: false,
+        meta: { align: "right", noTruncate: true },
         cell: ({ row }) => (
           <BuoiKhamRowActions
             b={row.original}
             canManage={canManage}
             canViewTamSoat={canViewTamSoat}
             canClinical={canClinical}
+            canReconcile={canReconcile}
+            reconciling={his.runningIds.has(row.original.id)}
             exportingId={exportingId}
             onExport={handleExportBuoiKham}
             onEdit={openEditModal}
             onComplete={setConfirmCompleteModal}
             onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
+            onReconcile={reconcileOne}
+            onHistory={setHistoryTarget}
           />
         ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canManage, canViewTamSoat, canClinical, exportingId]
+    [canManage, canViewTamSoat, canClinical, canReconcile, exportingId, his.runningIds]
   );
 
+  const statusTabs: { key: StatusFilter; label: string; dot?: boolean }[] = [
+    { key: "ALL", label: "Tất cả" },
+    { key: "DangDienRa", label: "Đang khám", dot: true },
+    { key: "SapDienRa", label: "Sắp tới" },
+    { key: "DaKetThuc", label: "Đã xong" },
+  ];
+
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-2 sm:gap-3 h-full">
-      {/* Main Container: Filter Toolbar + Table với Fixed Height */}
-      <DataView<BuoiKham, unknown> fullHeight columns={columns} data={filtered} isLoading={loading}>
-        <div className="flex-1 flex flex-col min-h-0 card p-0 overflow-hidden shadow-xs border-[#cbd5e1]">
-          {/* Toolbar Lọc: Tinh giản, thông minh, không rối */}
-        <div className="shrink-0 p-2.5 sm:px-3.5 sm:py-2.5 border-b border-[#cbd5e1] bg-[#f8fafc] space-y-2">
-          {/* Hàng 1: Ô tìm kiếm & Các nút thao tác */}
-          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-            <div data-tour="bk-search" className="relative flex-1 max-w-full sm:max-w-[280px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#64748b]" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Tìm xã, điểm khám, mã đợt…"
-                className="input-field pl-8 pr-7 bg-white h-8 text-[12px] border-[#cbd5e1] text-[#0f172a] focus:border-[#031da6]"
-              />
-              {q && (
-                <button
-                  type="button"
-                  onClick={() => setQ("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#64748b] hover:text-[#0f172a] cursor-pointer p-0.5"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {/* Các nút hành động: Nhập Excel, Xuất Excel (Google Sheet), Tổ chức đợt khám */}
-            <div className="flex items-center gap-2 shrink-0 ml-auto flex-wrap">
-              {hasActiveFilters && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#e11d48] hover:underline cursor-pointer mr-1"
-                  title="Xóa tất cả bộ lọc"
-                >
-                  <RotateCcw className="w-3 h-3" /> Đặt lại
-                </button>
-              )}
-
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={() => setImportOpen(true)}
-                  title="Nhập danh sách bệnh nhân các đợt khám cũ từ file Excel"
-                  className="btn btn-secondary h-8 px-2.5 font-bold text-[12px] flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5 text-[#02b8a9]" />
-                  <span>Nhập Excel</span>
-                </button>
-              )}
-
-              <div className="relative" ref={topExportRef}>
-                <div className="inline-flex rounded-lg shadow-2xs overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => handleExportPageExcel("khamSucKhoe")}
-                    disabled={exportingPage}
-                    title="Xuất file Excel toàn bộ bệnh nhân theo mẫu Khám Sức Khỏe (101 cột)"
-                    className="btn bg-[#018a7f] hover:bg-[#016e65] text-white h-8 px-2.5 font-bold text-[12px] flex items-center gap-1.5 cursor-pointer rounded-r-none disabled:opacity-50"
-                  >
-                    {exportingPage ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                    ) : (
-                      <FileSpreadsheet className="w-3.5 h-3.5 text-[#e6faf7]" />
-                    )}
-                    <span>Xuất Excel</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTopExportOpen((o) => !o)}
-                    disabled={exportingPage}
-                    title="Tùy chọn mẫu xuất file Excel"
-                    className="btn bg-[#017a70] hover:bg-[#01635b] text-white h-8 px-1.5 flex items-center justify-center cursor-pointer rounded-l-none border-l border-white/20 disabled:opacity-50"
-                  >
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {topExportOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#cbd5e1] rounded-xl shadow-xl p-1 z-50 animate-dropdown text-[#0f172a]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTopExportOpen(false);
-                        handleExportPageExcel("khamSucKhoe");
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#018a7f] hover:bg-[#e6faf7] transition-colors text-left cursor-pointer"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-[#02b8a9] shrink-0" />
-                      <div>
-                        <div className="font-bold">Mẫu Khám Sức Khỏe (101 cột)</div>
-                        <div className="text-[10.5px] text-[#64748b] font-normal">Mẫu chuẩn nộp HIS / cơ quan</div>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTopExportOpen(false);
-                        handleExportPageExcel("default");
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#334155] hover:bg-[#f1f5f9] transition-colors text-left cursor-pointer"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-[#64748b] shrink-0" />
-                      <div>
-                        <div className="font-bold">Mẫu Google Sheet (25 cột)</div>
-                        <div className="text-[10.5px] text-[#94a3b8] font-normal">Mẫu danh sách khám sàng lọc</div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {canManage && (
-                <button
-                  data-tour="bk-create"
-                  type="button"
-                  onClick={openCreateModal}
-                  className="btn btn-primary h-8 px-3 font-bold text-[12px] flex items-center gap-1.5 cursor-pointer shadow-2xs bg-[#031da6] hover:bg-[#020f5c] text-white"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tổ chức đợt khám</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Hàng 2: Status Pills Tabs & Filter Dropdowns (Chia layout không bị cuộn ngang) */}
-          <div className="space-y-1.5 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
-            {/* 4 Tabs trạng thái: Mobile chia 4 cột vừa khít màn hình */}
-            <div className="grid grid-cols-4 sm:flex items-center gap-0.5 bg-white p-0.5 rounded-lg border border-[#cbd5e1] shadow-2xs">
-              <button
-                type="button"
-                onClick={() => setStatusFilter("ALL")}
-                className={`px-1 sm:px-2.5 py-1 rounded-md text-[10.5px] sm:text-[11.5px] font-bold transition-all cursor-pointer select-none flex items-center justify-center gap-1 ${
-                  statusFilter === "ALL"
-                    ? "bg-[#031da6] text-white shadow-2xs"
-                    : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#031da6]"
-                }`}
-              >
-                <span>Tất cả</span>
-                <span className={`text-[9px] sm:text-[10px] px-1 rounded-full font-mono font-bold ${
-                  statusFilter === "ALL" ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
-                }`}>
-                  {countsByStatus.ALL}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStatusFilter("DangDienRa")}
-                className={`px-1 sm:px-2.5 py-1 rounded-md text-[10.5px] sm:text-[11.5px] font-bold transition-all cursor-pointer select-none flex items-center justify-center gap-1 ${
-                  statusFilter === "DangDienRa"
-                    ? "bg-[#059669] text-white shadow-2xs"
-                    : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#059669]"
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse hidden xs:inline-block" />
-                <span className="truncate">Đang khám</span>
-                <span className={`text-[9px] sm:text-[10px] px-1 rounded-full font-mono font-bold ${
-                  statusFilter === "DangDienRa" ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
-                }`}>
-                  {countsByStatus.DangDienRa}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStatusFilter("SapDienRa")}
-                className={`px-1 sm:px-2.5 py-1 rounded-md text-[10.5px] sm:text-[11.5px] font-bold transition-all cursor-pointer select-none flex items-center justify-center gap-1 ${
-                  statusFilter === "SapDienRa"
-                    ? "bg-[#d97706] text-white shadow-2xs"
-                    : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#d97706]"
-                }`}
-              >
-                <span className="truncate">Sắp tới</span>
-                <span className={`text-[9px] sm:text-[10px] px-1 rounded-full font-mono font-bold ${
-                  statusFilter === "SapDienRa" ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
-                }`}>
-                  {countsByStatus.SapDienRa}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStatusFilter("DaKetThuc")}
-                className={`px-1 sm:px-2.5 py-1 rounded-md text-[10.5px] sm:text-[11.5px] font-bold transition-all cursor-pointer select-none flex items-center justify-center gap-1 ${
-                  statusFilter === "DaKetThuc"
-                    ? "bg-[#020f5c] text-white shadow-2xs"
-                    : "text-[#475569] hover:bg-[#f1f5f9] hover:text-[#031da6]"
-                }`}
-              >
-                <span className="truncate">Đã xong</span>
-                <span className={`text-[9px] sm:text-[10px] px-1 rounded-full font-mono font-bold ${
-                  statusFilter === "DaKetThuc" ? "bg-white/20 text-white" : "bg-[#f1f5f9] text-[#64748b]"
-                }`}>
-                  {countsByStatus.DaKetThuc}
-                </span>
-              </button>
-            </div>
-
-            {/* 3 Dropdowns (Tháng, Bác sĩ, Phân nhóm): Mobile chia 3 cột vừa khít */}
-            <div className="grid grid-cols-3 sm:flex items-center gap-1.5 shrink-0">
-              <VISISelect
-                value={monthFilter}
-                onChange={setMonthFilter}
-                options={monthOptions}
-                icon={Calendar}
-                placeholder="Tháng"
-              />
-
-              <VISISelect
-                value={doctorFilter}
-                onChange={setDoctorFilter}
-                options={doctorOptions}
-                icon={UserCheck}
-                placeholder="Bác sĩ"
-              />
-
-              <VISISelect
-                value={groupFilter}
-                onChange={setGroupFilter}
-                options={groupOptions}
-                placeholder="Phân nhóm"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Danh sách kết quả — bảng dữ liệu chuẩn VISIHUB */}
-        <div data-tour="bk-table" className="flex-1 min-h-0 flex flex-col">
-          {/* Mobile View: Cards Tinh Gọn với Màu Xen Kẽ (Zebra) */}
-          <div className="md:hidden flex-1 min-h-0 overflow-auto divide-y divide-[#e2e8f0]">
-            {loading && filtered.length === 0 ? (
-              <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[#031da6]" /></div>
-            ) : filtered.length === 0 ? (
-              <div className="py-16 text-center text-[#64748b] text-[13px] space-y-2 bg-white">
-                <div>Không tìm thấy đợt khám nào phù hợp bộ lọc.</div>
-                {hasActiveFilters && (
-                  <button onClick={resetFilters} className="btn btn-outline text-xs px-3 py-1.5">
-                    Xóa bộ lọc
-                  </button>
-                )}
-              </div>
-            ) : filtered.map((b, i) => {
-              const isOngoing = phaseOf(b.ngayKham).key === "DangDienRa";
+    <div className="flex-1 min-h-0 flex flex-col h-full">
+      <DataView<BuoiKham, unknown> fullHeight columns={columns} data={filtered} isLoading={loading} pageSize={50}>
+        {/* ── Tab trạng thái (pill — chuẩn Tabs VISIHUB) + thao tác cấp trang ── */}
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-3">
+          <div className="inline-flex gap-0.5 p-[3px] rounded-xl bg-[var(--surface)] border border-[var(--line)] shadow-xs overflow-x-auto no-scrollbar max-w-full">
+            {statusTabs.map((t) => {
+              const active = statusFilter === t.key;
               return (
-                <div
-                  key={b.id}
-                  className={`p-3.5 space-y-2 transition-colors border-b border-[#e2e8f0] last:border-b-0 ${
-                    isOngoing
-                      ? "bg-[#ecfdf5] border-l-[3.5px] border-l-[#059669] shadow-2xs"
-                      : i % 2 === 0
-                      ? "bg-white hover:bg-[#f1f5f9] border-l-[3.5px] border-l-transparent"
-                      : "bg-[#f8fafc] hover:bg-[#f1f5f9] border-l-[3.5px] border-l-slate-300"
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setStatusFilter(t.key)}
+                  className={`relative flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                    active ? "text-white" : "text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface-soft)]"
                   }`}
                 >
-                  {/* Hàng 1: Tên đợt khám + Trạng thái */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="font-bold text-[13.5px] text-[#0f172a] leading-snug truncate">{fmtBuoiKhamName(b)}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="font-mono text-[10px] font-bold text-[#031da6] bg-[#eef2ff] px-1.5 py-0.5 rounded border border-[#c7d2fe]">
-                          {fmtBuoiKhamCode(b.id)}
-                        </span>
-                        {b.bacSiKham && (
-                          <span className="text-[10.5px] text-[#047857] font-semibold flex items-center gap-1 bg-[#ecfdf5] px-1.5 py-0.5 rounded border border-[#a7f3d0]">
-                            <UserCheck className="w-3 h-3 text-[#047857]" /> {cleanDoctorName(b.bacSiKham)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="shrink-0 flex flex-col items-end gap-1">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                        phaseOf(b.ngayKham).key === "DaKetThuc"
-                          ? "bg-[#f1f5f9] text-[#475569] border-[#cbd5e1]"
-                          : phaseOf(b.ngayKham).key === "DangDienRa"
-                          ? "bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]"
-                          : "bg-[#fffbeb] text-[#b45309] border-[#fde68a]"
-                      }`}>
-                        {isOngoing && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block mr-1" />}
-                        {phaseOf(b.ngayKham).label}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-[10.5px] font-mono font-medium text-[#64748b]">
-                        <Calendar className="w-3 h-3 text-[#94a3b8]" /> {fmtDate(b.ngayKham)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Hàng 2: Địa điểm khám (Thoáng, không lồng ô xám) */}
-                  <div className="flex items-center gap-1.5 text-[11.5px] text-[#475569]">
-                    <MapPin className="w-3.5 h-3.5 text-[#94a3b8] shrink-0" />
-                    <span className="truncate">{b.diaDiem}</span>
-                  </div>
-
-                  {/* Hàng 3: Thống kê & Thao tác */}
-                  <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-[#cbd5e1]/40">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setViewPatientsBuoiKham(b)}
-                        className="px-2 py-0.5 font-mono text-[11.5px] font-bold bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white rounded-md border border-[#c7d2fe] hover:border-[#031da6] transition-all flex items-center gap-1 cursor-pointer shadow-2xs group/btn"
-                        title="Bấm để xem danh sách bệnh nhân và kết quả khám"
-                      >
-                        <span>{b._count?.hoSo ?? 0} BN</span>
-                        <Eye className="w-3 h-3 opacity-70 group-hover/btn:opacity-100" />
-                      </button>
-                      <NhomChip a={b.stats?.nhomA ?? 0} b={b.stats?.nhomB ?? 0} />
-                      <MoProgress done={b.stats?.daMo ?? 0} waiting={b.stats?.chuaMo ?? 0} />
-                      {(b.stats?.phaco2Lan ?? 0) > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPatientInitialFilter("PHACO_2_LAN");
-                            setViewPatientsBuoiKham(b);
-                          }}
-                          className="px-2 py-0.5 font-mono text-[11px] font-bold bg-[#f5f3ff] hover:bg-[#7c3aed] text-[#7c3aed] hover:text-white rounded-md border border-[#ddd6fe] hover:border-[#7c3aed] transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
-                          title={`Có ${b.stats?.phaco2Lan} bệnh nhân mổ Phaco 2 lần (Mắt 2)`}
-                        >
-                          <span>Mắt 2: {b.stats?.phaco2Lan}</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <BuoiKhamRowActions
-                      b={b}
-                      canManage={canManage}
-                      canViewTamSoat={canViewTamSoat}
-                      canClinical={canClinical}
-                      exportingId={exportingId}
-                      onExport={handleExportBuoiKham}
-                      onEdit={openEditModal}
-                      onComplete={setConfirmCompleteModal}
-                      onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
+                  {active && (
+                    <motion.span
+                      layoutId="bk-status-pill"
+                      className="absolute inset-0 rounded-lg bg-[var(--navy)] shadow-[var(--navy-shadow)]"
+                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
                     />
-                  </div>
-                </div>
+                  )}
+                  {t.dot && <span className={`relative w-1.5 h-1.5 rounded-full bg-[var(--teal)] ${active ? "" : "animate-pulse"}`} />}
+                  <span className="relative">{t.label}</span>
+                  <span
+                    className={`relative text-[10px] font-bold font-mono tabular-nums px-1.5 py-px rounded-md ${
+                      active ? "bg-white/20 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"
+                    }`}
+                  >
+                    {countsByStatus[t.key]}
+                  </span>
+                </button>
               );
             })}
           </div>
 
-          {/* Desktop View: TanStack DataTable chuẩn VISIHUB */}
-          <div className="hidden md:flex flex-col flex-1 min-h-0">
-            <DataTable<BuoiKham>
-              emptyIcon={CalendarDays}
-              emptyTitle="Không tìm thấy đợt khám nào phù hợp bộ lọc"
-            />
+          <div className="hidden md:flex items-center gap-2 flex-wrap">
+            <div className="relative" ref={topExportRef}>
+              <div className="inline-flex">
+                <button
+                  type="button"
+                  onClick={() => handleExportPageExcel("khamSucKhoe")}
+                  disabled={exportingPage}
+                  title="Xuất Excel toàn bộ bệnh nhân theo mẫu Khám Sức Khỏe (101 cột)"
+                  className={cn(BTN_TEAL_SOFT, "rounded-r-none")}
+                >
+                  {exportingPage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  Xuất Excel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTopExportOpen((o) => !o)}
+                  disabled={exportingPage}
+                  title="Chọn mẫu xuất Excel"
+                  className={cn(BTN_TEAL_SOFT, "rounded-l-none border-l-0 px-2", topExportOpen && "bg-[var(--teal)] text-white")}
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {topExportOpen && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
+                  <MenuItem icon={FileSpreadsheet} tone="teal" label="Mẫu Khám Sức Khỏe (101 cột)" hint="Mẫu chuẩn nộp HIS / cơ quan" onClick={() => { setTopExportOpen(false); handleExportPageExcel("khamSucKhoe"); }} />
+                  <MenuItem icon={FileSpreadsheet} label="Mẫu Google Sheet (25 cột)" hint="Danh sách khám sàng lọc" onClick={() => { setTopExportOpen(false); handleExportPageExcel("default"); }} />
+                </div>
+              )}
+            </div>
+
+            {canReconcile && <ReconcileAllButton his={his} toTarget={toTarget} />}
           </div>
-
-          <DataPagination pageSizeOptions={[10, 25, 50, 100]} />
         </div>
-      </div>
-    </DataView>
 
-      <ImportExcelModal open={importOpen} onClose={() => setImportOpen(false)} onDone={() => { setImportOpen(false); load(); }} />
+        {/* ── Card danh sách: DataToolbar + bảng + phân trang ── */}
+        <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface)] border border-[var(--line-soft)] rounded-2xl shadow-xs overflow-hidden">
+          <DataToolbar
+            searchPlaceholder="Tìm xã, điểm khám, mã đợt, bác sĩ…"
+            filters={
+              <>
+                <ToolbarSelect icon={Calendar} className="w-[150px]" ariaLabel="Lọc theo tháng" value={monthFilter} onChange={setMonthFilter} options={monthOptions} active={monthFilter !== "ALL"} />
+                <ToolbarSelect icon={UserCheck} className="w-[190px]" ariaLabel="Lọc theo bác sĩ" value={doctorFilter} onChange={setDoctorFilter} options={doctorOptions} active={doctorFilter !== "ALL"} />
+                <ToolbarSelect icon={Layers} className="w-[190px]" ariaLabel="Lọc theo phân nhóm" value={groupFilter} onChange={(v) => setGroupFilter(v as GroupFilter)} options={groupOptions} active={groupFilter !== "ALL"} />
+                {hasActiveFilters && (
+                  <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1 h-9 px-2 text-[11.5px] font-semibold text-[var(--rose)] hover:underline cursor-pointer shrink-0" title="Đưa bộ lọc về mặc định">
+                    <RotateCcw className="w-3 h-3" /> Đặt lại
+                  </button>
+                )}
+              </>
+            }
+            mobileActions={
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleExportPageExcel("khamSucKhoe")}
+                  disabled={exportingPage}
+                  className="w-9 h-9 rounded-xl border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] flex items-center justify-center disabled:opacity-50"
+                  title="Xuất Excel (mẫu Khám Sức Khỏe)"
+                >
+                  {exportingPage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-4 h-4" />}
+                </button>
+                {canReconcile && <ReconcileAllButton his={his} toTarget={toTarget} compact />}
+              </>
+            }
+            primaryAction={
+              canManage ? (
+                <button data-tour="bk-create" type="button" onClick={openCreateModal} className="btn-primary inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-[12px] font-semibold whitespace-nowrap">
+                  <Plus className="w-3.5 h-3.5 text-[var(--teal)]" />
+                  <span className="md:hidden">Tạo đợt</span>
+                  <span className="hidden md:inline">Tổ chức đợt khám</span>
+                </button>
+              ) : null
+            }
+          />
+
+          <div data-tour="bk-table" className="flex-1 min-h-0 flex flex-col">
+            {/* Mobile: thẻ gọn — lấy đúng các dòng của trang hiện tại (đã qua tìm kiếm) */}
+            <div className="md:hidden flex-1 min-h-0 overflow-auto divide-y divide-[var(--line-soft)]">
+              <PageRows<BuoiKham>>
+                {(rows) =>
+                  loading && rows.length === 0 ? (
+                    <div className="py-16 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" /></div>
+                  ) : rows.length === 0 ? (
+                    <div className="py-16 text-center text-[var(--mute)] text-[13px]">Không tìm thấy đợt khám nào phù hợp bộ lọc.</div>
+                  ) : (
+                    rows.map((b) => {
+                      const isOngoing = phaseOf(b.ngayKham).key === "DangDienRa";
+                      const name = fmtBuoiKhamName(b);
+                      const place = b.diaDiem && b.diaDiem.trim() !== name ? b.diaDiem : "";
+                      const docs = parseDoctorList(b.bacSiKham);
+                      const daMo = b.stats?.daMo ?? 0;
+                      const need = daMo + (b.stats?.chuaMo ?? 0);
+                      const pct = need ? Math.round((daMo / need) * 100) : 0;
+                      const mat2 = b.stats?.phaco2Lan ?? 0;
+                      return (
+                        <div
+                          key={b.id}
+                          className={`px-4 py-3.5 border-l-[3px] ${isOngoing ? "border-l-[var(--teal)] bg-[var(--teal-softer)]" : "border-l-transparent"}`}
+                        >
+                          {/* Tên + trạng thái */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-semibold text-[14px] text-[var(--ink)] leading-snug line-clamp-2">{name}</div>
+                              <div className="mt-0.5 flex items-center gap-1.5 flex-wrap text-[11px] text-[var(--mute)]">
+                                <span className="font-mono font-bold text-[var(--navy)]">{fmtBuoiKhamCode(b.id)}</span>
+                                <span className="text-[var(--mute-soft)]">·</span>
+                                <span className="font-mono tabular-nums">{fmtDate(b.ngayKham)}</span>
+                                {docs.length > 0 && (
+                                  <>
+                                    <span className="text-[var(--mute-soft)]">·</span>
+                                    <span className="truncate max-w-[160px]">{cleanDoctorName(docs[0])}{docs.length > 1 ? ` +${docs.length - 1}` : ""}</span>
+                                  </>
+                                )}
+                              </div>
+                              {place && (
+                                <div className="mt-0.5 flex items-center gap-1 text-[11px] text-[var(--mute)] min-w-0">
+                                  <MapPin className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{place}</span>
+                                </div>
+                              )}
+                            </div>
+                            <PhaseBadge ngayKham={b.ngayKham} />
+                          </div>
+
+                          {/* Dải số liệu */}
+                          <div className={`mt-2.5 grid ${mat2 ? "grid-cols-4" : "grid-cols-3"} rounded-[10px] border border-[var(--line)] bg-[var(--surface)] divide-x divide-[var(--line-soft)] overflow-hidden`}>
+                            <button type="button" onClick={() => setViewPatientsBuoiKham(b)} className="px-2.5 py-2 text-left cursor-pointer active:bg-[var(--navy-50)]">
+                              <div className="font-mono text-[15px] font-bold text-[var(--navy)] tabular-nums leading-tight">{(b._count?.hoSo ?? 0).toLocaleString("vi-VN")}</div>
+                              <div className="text-[10.5px] text-[var(--mute)]">Bệnh nhân</div>
+                            </button>
+                            <div className="px-2.5 py-2">
+                              <div className="font-mono text-[13px] font-bold tabular-nums leading-tight whitespace-nowrap">
+                                <span className="text-[var(--rose)]">A {b.stats?.nhomA ?? 0}</span>
+                                <span className="text-[var(--mute-soft)]"> · </span>
+                                <span className="text-[var(--amber-deep)]">B {b.stats?.nhomB ?? 0}</span>
+                              </div>
+                              <div className="text-[10.5px] text-[var(--mute)] mt-px">Phân nhóm</div>
+                            </div>
+                            <div className="px-2.5 py-2 min-w-0">
+                              <div className="font-mono text-[13px] tabular-nums leading-tight whitespace-nowrap">
+                                <b className={daMo ? "text-[var(--teal-deep)]" : "text-[var(--ink)]"}>{daMo}</b>
+                                <span className="text-[var(--mute)]">/{need}</span>
+                              </div>
+                              <div className="mt-1 h-1 rounded-full bg-[var(--line)] overflow-hidden">
+                                <div className="h-full bg-[var(--teal)] rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              {(b.stats?.daMoTruoc ?? 0) > 0 && (
+                                <div className="text-[10px] font-semibold text-[#7c3aed] mt-0.5 whitespace-nowrap">+{b.stats?.daMoTruoc} mổ trước</div>
+                              )}
+                            </div>
+                            {mat2 > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => { setPatientInitialFilter("PHACO_2_LAN"); setViewPatientsBuoiKham(b); }}
+                                className="px-2.5 py-2 text-left cursor-pointer active:bg-[#f3eaf8]"
+                              >
+                                <div className="font-mono text-[15px] font-bold text-[#7c3aed] tabular-nums leading-tight">{mat2}</div>
+                                <div className="text-[10.5px] text-[var(--mute)]">Mắt 2</div>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Đối chiếu HIS + thao tác */}
+                          <div className="mt-2.5 flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <DoiChieuCell log={b.lastDoiChieu} running={his.runningIds.has(b.id)} onOpenHistory={() => setHistoryTarget(b)} />
+                            </div>
+                            <BuoiKhamRowActions
+                              b={b}
+                              canManage={canManage}
+                              canViewTamSoat={canViewTamSoat}
+                              canClinical={canClinical}
+                              canReconcile={canReconcile}
+                              reconciling={his.runningIds.has(b.id)}
+                              exportingId={exportingId}
+                              onExport={handleExportBuoiKham}
+                              onEdit={openEditModal}
+                              onComplete={setConfirmCompleteModal}
+                              onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
+                              onReconcile={reconcileOne}
+                              onHistory={setHistoryTarget}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )
+                }
+              </PageRows>
+            </div>
+
+            {/* Desktop: DataTable */}
+            <div className="hidden md:flex flex-col flex-1 min-h-0">
+              <DataTable<BuoiKham>
+                rowClassName={(b) => (phaseOf(b.ngayKham).key === "DangDienRa" ? "shadow-[inset_3px_0_0_var(--teal)]" : undefined)}
+                emptyIcon={CalendarDays}
+                emptyTitle="Không tìm thấy đợt khám nào phù hợp bộ lọc"
+              />
+            </div>
+
+            <DataPagination pageSizeOptions={[10, 25, 50, 100]} />
+          </div>
+        </div>
+      </DataView>
+
+      <HisReconcilePanel bulk={his.bulk} progress={his.progress} onCancel={his.cancel} onDismiss={his.dismiss} />
+
+      <DoiChieuHistoryModal
+        target={historyTarget ? { id: historyTarget.id, name: fmtBuoiKhamName(historyTarget) } : null}
+        onClose={() => setHistoryTarget(null)}
+        running={historyTarget ? his.runningIds.has(historyTarget.id) : false}
+        onRerun={canReconcile && historyTarget && (historyTarget.stats?.nhomA ?? 0) + (historyTarget.stats?.nhomB ?? 0) > 0 ? () => reconcileOne(historyTarget) : undefined}
+      />
+
 
       {/* Modal Xem danh sách bệnh nhân và thông tin khám */}
       <BuoiKhamPatientsModal

@@ -10,6 +10,8 @@ interface DataToolbarProps {
   searchPlaceholder?: string;
   filters?: React.ReactNode;
   primaryAction?: React.ReactNode;
+  /** Nút phụ cho hàng 2 trên mobile — khi có, thay chỗ nút lọc cột (mobile hiển thị dạng thẻ, không có bảng để lọc cột). */
+  mobileActions?: React.ReactNode;
   className?: string;
 }
 
@@ -17,6 +19,7 @@ export function DataToolbar({
   searchPlaceholder = 'Tìm kiếm dữ liệu...',
   filters,
   primaryAction,
+  mobileActions,
   className,
 }: DataToolbarProps) {
   const {
@@ -112,6 +115,7 @@ export function DataToolbar({
               ))}
             </div>
           )}
+          {mobileActions ?? (
           <button
             type="button"
             onClick={() => setShowFilters(!showFilters)}
@@ -127,6 +131,7 @@ export function DataToolbar({
           >
             <Filter className="w-3.5 h-3.5" />
           </button>
+          )}
         </div>
         {primaryAction && <div className="flex items-center gap-1.5 shrink-0">{primaryAction}</div>}
       </div>

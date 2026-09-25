@@ -1,6 +1,7 @@
 import sql from "mssql";
 import { getPrisma } from "./prisma";
 import { triggerSync } from "./syncWorker";
+import { checkSurgeryTiming } from "./csr";
 
 export interface HISCheckResult {
   found: boolean;
@@ -543,6 +544,27 @@ export async function checkHISForPatient(
   }
 }
 
+/**
+ * Chạy `fn` trên từng phần tử với tối đa `limit` tác vụ song song, giữ nguyên thứ tự kết quả.
+ * Dùng cho đối chiếu HIS: tuần tự từng BN thì một đợt 100 ca mất vài phút, chạy song song
+ * trên cùng một pool kết nối thì nhanh hơn nhiều mà không dội tải lên máy chủ HIS.
+ */
+export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+/** Số BN tra cứu song song trong một lần đối chiếu (mỗi BN = 3 truy vấn HIS). */
+const HIS_CHECK_CONCURRENCY = 6;
+
 export async function batchCheckHISForPatients(
   coSoId: string,
   patients: Array<{
@@ -571,10 +593,11 @@ export async function batchCheckHISForPatients(
     options: { encrypt: true, trustServerCertificate: true },
     connectionTimeout: 5000,
     requestTimeout: 30000,
+    pool: { max: HIS_CHECK_CONCURRENCY + 2, min: 0 },
   };
 
   let pool: sql.ConnectionPool | null = null;
-  const results = [];
+  let results: any[] = [];
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
     const prisma = getPrisma();
@@ -584,7 +607,7 @@ export async function batchCheckHISForPatients(
     const bhytSelect = bhytCol ? `c.[${bhytCol}] as Sothe,` : `NULL as Sothe,`;
     const sdtSelect = sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`;
 
-    for (const p of patients) {
+    const checkOne = async (p: (typeof patients)[number]): Promise<any> => {
       try {
         const hoTenClean = (p.hoTen || "").trim();
         const namSinhStr = String(p.namSinh || "").trim();
@@ -620,7 +643,7 @@ export async function batchCheckHISForPatients(
           WHERE ${whereSql}
           ORDER BY hsba.Ngayvao DESC, bm.Ngay DESC
         `;
-        const req = pool.request();
+        const req = pool!.request();
         req.input("cccd", sql.NVarChar, cccdClean);
         req.input("cccdDigits", sql.NVarChar, cccdDigits);
         req.input("bhyt", sql.NVarChar, bhytClean);
@@ -632,8 +655,7 @@ export async function batchCheckHISForPatients(
         const rows = res.recordset;
 
         if (!rows || rows.length === 0) {
-          results.push({ id: p.id, hoTen: p.hoTen, found: false });
-          continue;
+          return { id: p.id, hoTen: p.hoTen, found: false };
         }
 
         // Lọc qua danh sách ứng viên từ HIS để chọn người khớp chuẩn nhất & KHÔNG XUNG ĐỘT CCCD / BHYT
@@ -697,8 +719,7 @@ export async function batchCheckHISForPatients(
         }
 
         if (!matchedRow) {
-          results.push({ id: p.id, hoTen: p.hoTen, found: false });
-          continue;
+          return { id: p.id, hoTen: p.hoTen, found: false };
         }
 
         const maHIS = String(matchedRow.maHIS || "").trim();
@@ -707,10 +728,11 @@ export async function batchCheckHISForPatients(
         const hisCccd = String(matchedRow.CMND || "").trim();
         const hisBhyt = String(matchedRow.Sothe || "").trim();
 
-        // Lấy tổng số tiền thực thu & tạm ứng từ HIS (bỏ qua phiếu hủy)
-        const soTienThucThu = await fetchHisRevenue(pool, maHIS);
-        // Lấy chi tiết phẫu thuật từ BN_CTDichvu + DMDichvuCM
-        const surgDetail = await fetchHisSurgeryDetail(pool, maHIS);
+        // Thực thu (bỏ phiếu hủy) và chi tiết phẫu thuật — hai truy vấn độc lập, chạy song song
+        const [soTienThucThu, surgDetail] = await Promise.all([
+          fetchHisRevenue(pool!, maHIS),
+          fetchHisSurgeryDetail(pool!, maHIS),
+        ]);
 
         const targetRow = matchedRow;
         const ngayMoRaw = surgDetail?.ngayMo || targetRow.ngayVao || targetRow.ngayRa || targetRow.ngayKham;
@@ -786,11 +808,24 @@ export async function batchCheckHISForPatients(
           await prisma.syncQueue.create({ data: { hoSoId: p.id } });
         } catch {}
 
-        results.push({ id: p.id, hoTen: p.hoTen, found: true, matchType, matchReason, maHIS, cccdHIS: hisCccd, bhytHIS: hisBhyt, hasSurgery, chiTiet });
+        // Tách ca mổ SAU ngày khám tầm soát (tính vào tiến độ CSR) khỏi ca đã mổ TRƯỚC đó — cùng quy tắc với danh sách đợt khám
+        const timing = checkSurgeryTiming({
+          ngayMoThucTe: updateData.ngayMoThucTe ?? p.ngayMoThucTe,
+          trangThaiDieuTri: updateData.trangThaiDieuTri ?? p.trangThaiDieuTri,
+          trangThai: updateData.trangThai,
+          buoiKham: p.buoiKham,
+        });
+
+        return {
+          id: p.id, hoTen: p.hoTen, found: true, matchType, matchReason, maHIS, cccdHIS: hisCccd, bhytHIS: hisBhyt,
+          hasSurgery, isDaMo: hasSurgery && timing.isDaMo, isDaMoTruoc: hasSurgery && timing.isDaMoTruoc, chiTiet,
+        };
       } catch (e: any) {
-        results.push({ id: p.id, hoTen: p.hoTen, found: false, error: e?.message || "Lỗi khi tra cứu BN này" });
+        return { id: p.id, hoTen: p.hoTen, found: false, error: e?.message || "Lỗi khi tra cứu BN này" };
       }
-    }
+    };
+
+    results = await mapLimit(patients, HIS_CHECK_CONCURRENCY, checkOne);
     triggerSync();
   } catch (err: any) {
     console.error("Batch HIS Connection Error:", err);

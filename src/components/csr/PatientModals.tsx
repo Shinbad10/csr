@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -32,7 +32,53 @@ import { fmtDate, parseDiag, statusOf, bhytLevel, ageOf } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Modal Xem Thông Tin Chi Tiết Hồ Sơ - Chuẩn Company UI
+/* ── Khối trình bày dùng chung cho modal hồ sơ (chuẩn Visihub: thẻ trắng, nhãn trái – giá trị phải) ── */
+function InfoSection({ icon: Icon, title, aside, children }: { icon: any; title: string; aside?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="h-full flex flex-col bg-[var(--surface)] border border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow-xs)] overflow-hidden">
+      <header className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-6 h-6 rounded-md bg-[var(--navy-soft)] text-[var(--navy)] flex items-center justify-center shrink-0">
+            <Icon className="w-3.5 h-3.5" />
+          </span>
+          <h3 className="text-[13px] font-bold text-[var(--ink)] truncate">{title}</h3>
+        </div>
+        {aside}
+      </header>
+      <dl className="flex-1 px-3.5 py-0.5 divide-y divide-[var(--line-soft)]">{children}</dl>
+    </section>
+  );
+}
+
+function InfoRow({ label, children, mono }: { label: string; children?: React.ReactNode; mono?: boolean }) {
+  const empty = children === null || children === undefined || children === "" || children === "—";
+  return (
+    <div className="grid grid-cols-[108px_1fr] gap-2.5 py-1.5 items-baseline">
+      <dt className="text-[11.5px] text-[var(--mute)]">{label}</dt>
+      <dd className={`text-[12.5px] min-w-0 break-words ${mono ? "font-mono tabular-nums" : ""} ${empty ? "text-[var(--mute-soft)]" : "text-[var(--ink)] font-semibold"}`}>
+        {empty ? "—" : children}
+      </dd>
+    </div>
+  );
+}
+
+function DiagChips({ items, other }: { items: string[]; other?: string | null }) {
+  const all = [...items, ...(other ? [other] : [])];
+  if (all.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {all.map((d, i) => (
+        <span key={i} className="px-1.5 py-px rounded-md text-[11.5px] font-semibold bg-[var(--surface-soft)] text-[var(--ink)] border border-[var(--line)]">
+          {d}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const fmtMoney = (n?: number | null) => (n != null ? `${n.toLocaleString("vi-VN")} ₫` : null);
+
+// Modal xem thông tin chi tiết hồ sơ — chuẩn Visihub
 export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose: () => void }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +105,17 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
     return () => { active = false; };
   }, [hoSoId]);
 
+  /* Esc chỉ đóng modal này — chặn ở pha capture để modal danh sách phía dưới không đóng theo. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      onClose();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onClose]);
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -66,228 +123,262 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
   const root = typeof document !== "undefined" ? document.getElementById("modal-root") : null;
   const target = root || document.body;
 
+  const st = data ? statusOf(data.trangThai) : null;
+  const age = data ? ageOf(data) : null;
+  const diagMP = data ? parseDiag(data.chanDoanMP) : [];
+  const diagMT = data ? parseDiag(data.chanDoanMT) : [];
+  const diagAll = data ? parseDiag(data.chanDoan) : [];
+  const hasEyeDiag = diagMP.length > 0 || diagMT.length > 0 || !!data?.chanDoanKhacMP || !!data?.chanDoanKhacMT;
+  const benhLy = data ? parseDiag(data.loaiBenhLy) : [];
+  const tvv = data?.tuVanVien?.hoTen || data?.nhanVienTuVan;
+  const huyMo = data?.trangThaiDieuTri === "Hủy" || data?.trangThaiDieuTri === "Không đến";
+
+  /* Hành trình CSR: khám → phân nhóm → đến viện → phẫu thuật */
+  const steps: { label: string; done: boolean; fail?: boolean; sub: string }[] = data
+    ? [
+        { label: "Khám sàng lọc", done: !!data.buoiKham, sub: data.buoiKham ? fmtDate(data.buoiKham.ngayKham) : "—" },
+        { label: "Phân nhóm", done: !!data.nhom, sub: data.nhom ? `Nhóm ${data.nhom}` : "Chưa phân" },
+        {
+          label: "Đến viện",
+          done: !!data.daDon,
+          sub: data.daDon
+            ? data.ngayDenBV ? fmtDate(data.ngayDenBV) : "Đã đón"
+            : data.ngayDieuTri ? `Hẹn ${fmtDate(data.ngayDieuTri)}` : "Chưa đến",
+        },
+        {
+          label: "Phẫu thuật",
+          done: !!data.ngayMoThucTe || data.trangThaiDieuTri === "Đã mổ",
+          fail: huyMo,
+          sub: data.ngayMoThucTe ? fmtDate(data.ngayMoThucTe) : data.trangThaiDieuTri || "Chưa mổ",
+        },
+      ]
+    : [];
+
   return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-3 sm:p-6 pointer-events-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(1,8,51,0.45)] backdrop-blur-sm p-2 sm:p-5 pointer-events-auto"
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 6 }}
+        initial={{ opacity: 0, scale: 0.97, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 6 }}
-        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
+        exit={{ opacity: 0, scale: 0.97, y: 8 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-[var(--surface)] rounded-[var(--r-xl)] shadow-2xl w-full max-w-[1320px] max-h-[94vh] flex flex-col overflow-hidden border border-[var(--line-strong)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header - Editorial Navy Gradient & Teal Glow */}
-        <div 
-          className="py-3 px-5 text-white flex items-center justify-between border-b border-[var(--line)] relative overflow-hidden shrink-0"
-          style={{ background: 'radial-gradient(circle at 100% 0%, rgba(2, 184, 169, 0.35) 0%, transparent 60%), linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%)' }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-white/10 flex items-center justify-center text-base font-bold border border-white/20 shadow-inner shrink-0 font-serif">
-              {data?.hoTen ? data.hoTen.charAt(0).toUpperCase() : <User className="w-4.5 h-4.5 text-[var(--teal)]" />}
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h2 className="font-serif text-[20px] font-bold tracking-[-0.02em] text-white">
-                  {data?.hoTen || "Đang tải thông tin..."}
-                </h2>
-                {data && <StatusBadge label={statusOf(data.trangThai).label} cls={statusOf(data.trangThai).cls} sm />}
+        {/* Header */}
+        <div className="px-5 pt-4 pb-3.5 border-b border-[var(--line)] shrink-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center font-serif text-[20px] font-bold shadow-[var(--navy-shadow)] shrink-0">
+                {data?.hoTen ? String(data.hoTen).trim().split(/\s+/).pop()!.charAt(0).toUpperCase() : <User className="w-5 h-5 text-[var(--teal)]" />}
               </div>
-              <p className="text-[12px] text-white/80 font-mono mt-[3px] flex items-center gap-2">
-                <span>Mã BN: <strong className="text-white font-semibold">{data?.maBN || "—"}</strong></span>
-                {data?.maBNHIS ? <span className="bg-white/15 px-1.5 py-0.5 rounded text-[10.5px] text-[var(--teal-soft)]">HIS: {data.maBNHIS}</span> : null}
-                <span>· {data?.gioiTinh || ""} {data ? `${ageOf(data)} tuổi` : ""}</span>
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-serif text-[20px] font-bold tracking-[-0.01em] text-[var(--ink)] leading-tight">
+                    {data?.hoTen || (loading ? "Đang tải hồ sơ…" : "Hồ sơ bệnh nhân")}
+                  </h2>
+                  {data?.nhom && (
+                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${data.nhom === "A" ? "bg-[var(--rose-soft)] text-[var(--rose)] border-rose-200/70" : "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-amber-200/70"}`}>
+                      Nhóm {data.nhom}
+                    </span>
+                  )}
+                  {st && <StatusBadge label={st.label} cls={st.cls} sm />}
+                </div>
+                {data && (
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5 text-[11.5px]">
+                    <span className="font-mono font-bold text-[var(--navy)] px-1.5 py-px rounded bg-[var(--surface-soft)] border border-[var(--line)]">{data.maBN || "—"}</span>
+                    {data.maBNHIS && (
+                      <span className="font-mono text-[var(--ink-soft)] px-1.5 py-px rounded bg-[var(--surface-soft)] border border-[var(--line)]">HIS {data.maBNHIS}</span>
+                    )}
+                    <span className="text-[var(--mute)]">
+                      {[
+                        data.gioiTinh,
+                        age ? `${age} tuổi` : null,
+                        data.ngaySinh ? `Sinh ${fmtDate(data.ngaySinh)}` : data.namSinh ? `NS ${data.namSinh}` : null,
+                      ].filter(Boolean).join(" · ")}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              title="Đóng (Esc)"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-4.5 h-4.5" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 rounded-[10px] hover:bg-white/10 text-white/80 hover:text-white transition border border-transparent hover:border-white/15">
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Hành trình — thanh bước mảnh, nối bằng đường kẻ */}
+          {data && (
+            <ol className="mt-3 flex items-start">
+              {steps.map((s, i) => {
+                const dot = s.fail
+                  ? "bg-[var(--rose)] text-white border-[var(--rose)]"
+                  : s.done
+                  ? "bg-[var(--teal)] text-white border-[var(--teal)]"
+                  : "bg-[var(--surface)] text-[var(--mute)] border-[var(--line-strong)]";
+                const next = steps[i + 1];
+                return (
+                  <li key={s.label} className={`${next ? "flex-1" : "shrink-0"} min-w-0 flex items-start`}>
+                    <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-full">
+                      <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${dot}`}>
+                        {s.fail ? <X className="w-3 h-3" /> : s.done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
+                      </span>
+                      <div className="min-w-0 leading-tight">
+                        <div className="text-[9.5px] font-mono font-bold uppercase tracking-[0.08em] text-[var(--mute)] whitespace-nowrap">{s.label}</div>
+                        <div className={`text-[12px] font-semibold truncate ${s.fail ? "text-[var(--rose)]" : s.done ? "text-[var(--ink)]" : "text-[var(--mute)]"}`}>
+                          {s.sub}
+                        </div>
+                      </div>
+                    </div>
+                    {next && (
+                      <span className={`flex-1 h-px mt-2.5 mx-3 min-w-4 ${next.done || next.fail ? "bg-[var(--teal)]" : "[background:repeating-linear-gradient(90deg,var(--line-strong)_0_4px,transparent_4px_8px)]"}`} />
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5 bg-[var(--surface-bg)]">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 bg-[var(--bg)]">
           {loading ? (
             <div className="py-16 flex flex-col items-center justify-center text-[var(--mute)]">
               <Loader2 className="w-7 h-7 animate-spin text-[var(--navy)] mb-2" />
-              <p className="text-[13px] font-medium font-sans">Đang truy xuất chi tiết hồ sơ bệnh nhân...</p>
+              <p className="text-[13px] font-medium">Đang tải chi tiết hồ sơ…</p>
             </div>
           ) : error ? (
             <div className="p-3.5 bg-[var(--rose-soft)] text-[var(--rose)] rounded-[var(--r-lg)] text-center font-medium border border-[var(--rose)]/20 text-[13px]">
               {error}
             </div>
           ) : data ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {/* Section 1: Hành chính & Liên hệ */}
-              <div className="bg-[var(--surface)] p-3.5 rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] transition-all duration-200 space-y-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--navy)] flex items-center gap-2 border-b border-[var(--line-soft)] pb-1.5">
-                  <User className="w-[14px] h-[14px] text-[var(--teal)]" /> Hành chính &amp; liên hệ
-                </h3>
-                <div className="space-y-1.5 text-[12.5px] font-sans">
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">SĐT cá nhân:</span>
-                    <span className="font-mono font-bold text-[var(--ink)]">{data.sdt || "—"}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">SĐT người nhà:</span>
-                    <span className="font-mono font-bold text-[var(--ink)]">{data.sdtNguoiNha || "—"}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Số CCCD / Định danh:</span>
-                    <span className="font-mono font-semibold text-[var(--ink)]">{data.cccd || "—"}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Địa chỉ cư trú:</span>
-                    <span className="font-medium text-[var(--ink)] text-right max-w-[200px] truncate" title={data.diaChi || ""}>{data.diaChi || "—"}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5">
-                    <span className="text-[var(--mute)]">Buổi khám tầm soát:</span>
-                    <span className="font-medium text-[var(--navy)]">Xã {data.buoiKham?.xa || "—"} (<span className="font-mono">{fmtDate(data.buoiKham?.ngayKham)}</span>)</span>
-                  </div>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              <InfoSection icon={User} title="Hành chính & liên hệ">
+                <InfoRow label="SĐT cá nhân" mono>{data.sdt}</InfoRow>
+                <InfoRow label="SĐT người nhà" mono>{data.sdtNguoiNha}</InfoRow>
+                <InfoRow label="CCCD / Định danh" mono>{data.cccd}</InfoRow>
+                <InfoRow label="Địa chỉ">{data.diaChi || [data.khuPho, data.xaPhuong].filter(Boolean).join(", ")}</InfoRow>
+              </InfoSection>
 
-              {/* Section 2: Khám lâm sàng & Khuyến nghị */}
-              <div className="bg-[var(--surface)] p-3.5 rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] transition-all duration-200 space-y-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--navy)] flex items-center gap-2 border-b border-[var(--line-soft)] pb-1.5">
-                  <Stethoscope className="w-[14px] h-[14px] text-[var(--teal)]" /> Khám lâm sàng &amp; chẩn đoán
-                </h3>
-                <div className="space-y-1.5 text-[12.5px] font-sans">
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Thị lực mắt phải (MP):</span>
-                    <span className="font-mono font-bold text-[var(--teal-deep)]">{data.thiLucMP || "—"}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Thị lực mắt trái (MT):</span>
-                    <span className="font-mono font-bold text-[var(--teal-deep)]">{data.thiLucMT || "—"}</span>
-                  </div>
-                  {data.matKham && (
-                    <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                      <span className="text-[var(--mute)]">Chỉ định mắt:</span>
-                      <span className="font-bold text-[var(--navy)]">{data.matKham}</span>
-                    </div>
+              <InfoSection
+                icon={Stethoscope}
+                title="Khám sàng lọc & chẩn đoán"
+                aside={
+                  data.buoiKham ? (
+                    <span className="text-[11.5px] text-[var(--mute)] truncate">
+                      <span className="font-semibold text-[var(--navy)]">{data.buoiKham.xa}</span>
+                      <span className="font-mono"> · {fmtDate(data.buoiKham.ngayKham)}</span>
+                    </span>
+                  ) : null
+                }
+              >
+                <InfoRow label="Thị lực">
+                  {data.thiLucMP || data.thiLucMT ? (
+                    <span className="inline-flex gap-1.5 font-mono">
+                      <span className="px-1.5 py-px rounded-md bg-[var(--surface-soft)] border border-[var(--line)] text-[12px]">
+                        <span className="text-[var(--mute)] font-medium">MP</span> {data.thiLucMP || "—"}
+                      </span>
+                      <span className="px-1.5 py-px rounded-md bg-[var(--surface-soft)] border border-[var(--line)] text-[12px]">
+                        <span className="text-[var(--mute)] font-medium">MT</span> {data.thiLucMT || "—"}
+                      </span>
+                    </span>
+                  ) : null}
+                </InfoRow>
+                <InfoRow label="Mắt chỉ định">{data.matKham}</InfoRow>
+                {hasEyeDiag ? (
+                  <>
+                    <InfoRow label="Chẩn đoán MP">
+                      {diagMP.length || data.chanDoanKhacMP ? <DiagChips items={diagMP} other={data.chanDoanKhacMP} /> : null}
+                    </InfoRow>
+                    <InfoRow label="Chẩn đoán MT">
+                      {diagMT.length || data.chanDoanKhacMT ? <DiagChips items={diagMT} other={data.chanDoanKhacMT} /> : null}
+                    </InfoRow>
+                  </>
+                ) : (
+                  <InfoRow label="Chẩn đoán">
+                    {diagAll.length || data.chanDoanKhac ? <DiagChips items={diagAll} other={data.chanDoanKhac} /> : null}
+                  </InfoRow>
+                )}
+                {benhLy.length > 0 && (
+                  <InfoRow label="Bệnh lý (ICD)">
+                    <DiagChips items={benhLy} other={data.loaiBenhLyKhac} />
+                  </InfoRow>
+                )}
+                <InfoRow label="Khuyến nghị">
+                  {data.khuyenNghi ? (
+                    <span className={data.khuyenNghi === "Phẫu thuật" ? "text-[var(--rose)]" : "text-[var(--amber-deep)]"}>{data.khuyenNghi}</span>
+                  ) : null}
+                </InfoRow>
+                <InfoRow label="Bác sĩ chỉ định">{data.bacSiChiDinh || data.buoiKham?.bacSiKham}</InfoRow>
+              </InfoSection>
+
+              <InfoSection icon={ShieldCheck} title="Tư vấn & BHYT">
+                <InfoRow label="Thẻ BHYT">
+                  {data.bhyt ? (
+                    <span className="inline-flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-indigo-700">{data.bhyt}</span>
+                      <span className="px-1.5 py-px rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                        {data.mucHuongBHYT ? `${data.mucHuongBHYT}%` : bhytLevel(data.bhyt)}
+                      </span>
+                    </span>
+                  ) : null}
+                </InfoRow>
+                <InfoRow label="Tư vấn viên">{tvv}</InfoRow>
+                <InfoRow label="Chi phí báo BN" mono>{fmtMoney(data.soTienBao)}</InfoRow>
+                <InfoRow label="Ngày hẹn mổ" mono>{data.ngayDieuTri ? fmtDate(data.ngayDieuTri) : null}</InfoRow>
+                <InfoRow label="Điểm / giờ đón">{data.diemDon ? `${data.diemDon}${data.gioDon ? ` · ${data.gioDon}` : ""}` : null}</InfoRow>
+                {data.ghiChuTuVan && <InfoRow label="Ghi chú tư vấn">{data.ghiChuTuVan}</InfoRow>}
+              </InfoSection>
+
+              <InfoSection icon={Building2} title="Điều trị tại bệnh viện (HIS)">
+                <InfoRow label="Mã BN HIS" mono>{data.maBNHIS}</InfoRow>
+                <InfoRow label="Đến viện">
+                  {data.daDon ? (
+                    <span className="inline-flex items-center gap-1 text-[var(--teal-deep)]">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Đã đến
+                      {data.ngayDenBV ? <span className="font-mono"> · {fmtDate(data.ngayDenBV)}</span> : null}
+                    </span>
+                  ) : (
+                    <span className="text-[var(--mute)] font-medium">Chưa đến viện</span>
                   )}
-                  <div className="py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)] block mb-1">Chẩn đoán bác sĩ:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {parseDiag(data.chanDoan).map((d, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-[var(--teal-soft)] text-[var(--teal-deep)] rounded-[6px] text-[11px] font-semibold border border-[var(--teal)]/20">
-                          {d}
-                        </span>
-                      ))}
-                      {data.chanDoanKhac && (
-                        <span className="px-1.5 py-0.5 bg-[var(--navy-50)] text-[var(--navy)] rounded-[6px] text-[11px] font-semibold border border-[var(--navy)]/20">
-                          {data.chanDoanKhac}
-                        </span>
-                      )}
-                      {parseDiag(data.chanDoan).length === 0 && !data.chanDoanKhac && <span className="text-[var(--mute)]">—</span>}
-                    </div>
-                  </div>
-                  <div className="flex justify-between py-0.5">
-                    <span className="text-[var(--mute)]">Khuyến nghị điều trị:</span>
-                    <span className="font-bold text-[var(--navy)]">{data.khuyenNghi || "—"}</span>
-                  </div>
-                </div>
-              </div>
+                </InfoRow>
+                <InfoRow label="Kết quả">
+                  {data.trangThaiDieuTri ? (
+                    <span className={huyMo ? "text-[var(--rose)]" : "text-[var(--teal-deep)]"}>{data.trangThaiDieuTri}</span>
+                  ) : null}
+                </InfoRow>
+                <InfoRow label="Ngày mổ" mono>{data.ngayMoThucTe ? fmtDate(data.ngayMoThucTe) : null}</InfoRow>
+                <InfoRow label="Chi phí thực thu" mono>{fmtMoney(data.soTienThucThu)}</InfoRow>
+                {data.ngayTaiKham && <InfoRow label="Ngày tái khám" mono>{fmtDate(data.ngayTaiKham)}</InfoRow>}
+              </InfoSection>
 
-              {/* Section 3: Tư vấn BHYT & Chi phí */}
-              <div className="bg-[var(--surface)] p-3.5 rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] transition-all duration-200 space-y-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--navy)] flex items-center gap-2 border-b border-[var(--line-soft)] pb-1.5">
-                  <ShieldCheck className="w-[14px] h-[14px] text-[var(--teal)]" /> Tư vấn BHYT &amp; phân nhóm
-                </h3>
-                <div className="space-y-1.5 text-[12.5px] font-sans">
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Mức hưởng BHYT:</span>
-                    <span className="font-mono font-bold text-[var(--teal-deep)]">
-                      {data.bhyt || "—"} {bhytLevel(data.bhyt) ? `(${bhytLevel(data.bhyt)})` : ""}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Phân nhóm điều trị:</span>
-                    <span className="font-bold">
-                      {data.nhom ? (
-                        <span className={`px-2 py-0.5 rounded-[6px] text-[10.5px] font-bold uppercase tracking-wide border ${data.nhom === "A" ? "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]/20" : "bg-[var(--amber-soft)] text-[var(--amber)] border-[var(--amber)]/20"}`}>
-                          Nhóm {data.nhom}
-                        </span>
-                      ) : "—"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Chi phí báo bệnh nhân:</span>
-                    <span className="font-mono font-bold text-[var(--navy)]">
-                      {data.soTienBao != null ? data.soTienBao.toLocaleString("vi-VN") + " ₫" : "—"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Ngày hẹn phẫu thuật:</span>
-                    <span className="font-mono font-medium text-[var(--ink)]">{fmtDate(data.ngayDieuTri)}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5">
-                    <span className="text-[var(--mute)]">Điểm đón / Giờ đón:</span>
-                    <span className="font-medium text-[var(--ink)]">{data.diemDon ? `${data.diemDon} (${data.gioDon || ""})` : "—"}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 4: Điều trị HIS */}
-              <div className="bg-[var(--surface)] p-3.5 rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] transition-all duration-200 space-y-2">
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--navy)] flex items-center gap-2 border-b border-[var(--line-soft)] pb-1.5">
-                  <Building2 className="w-[14px] h-[14px] text-[var(--teal)]" /> Điều trị tại Bệnh viện (HIS)
-                </h3>
-                <div className="space-y-1.5 text-[12.5px] font-sans">
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Mã bệnh nhân HIS:</span>
-                    <span className="font-mono font-bold text-[#7c3aed] bg-[#f3eaf8] px-2 py-0.5 rounded-[6px] border border-[#e9d5ff] text-[11.5px]">
-                      {data.maBNHIS || "Chưa liên kết HIS"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Trạng thái đón viện:</span>
-                    <span className="font-medium text-[var(--ink)]">
-                      {data.daDon ? <span className="text-[var(--teal-deep)] font-bold flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 inline text-[var(--teal)]" /> Đã đón viện</span> : "Chưa đến viện"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Kết quả điều trị:</span>
-                    <span className="font-bold text-[var(--navy)]">{data.trangThaiDieuTri || "—"}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5 border-b border-[var(--line-soft)]">
-                    <span className="text-[var(--mute)]">Ngày mổ thực tế:</span>
-                    <span className="font-mono font-bold text-[var(--teal-deep)]">{fmtDate(data.ngayMoThucTe)}</span>
-                  </div>
-                  <div className="flex justify-between py-0.5">
-                    <span className="text-[var(--mute)]">Chi phí thực thu:</span>
-                    <span className="font-mono font-bold text-[var(--teal-deep)]">
-                      {data.soTienThucThu != null ? data.soTienThucThu.toLocaleString("vi-VN") + " ₫" : "—"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ghi chú nội bộ / HIS */}
               {data.ghiChuMat2 && (
-                <div className="col-span-1 md:col-span-2 bg-[var(--amber-soft)] p-3.5 border border-[var(--amber)]/20 rounded-[var(--r-lg)] shadow-[var(--shadow-xs)]">
-                  <h4 className="text-[11px] font-bold text-[var(--amber)] uppercase tracking-[0.14em] mb-1.5 flex items-center gap-1.5">
-                    <FileText className="w-[14px] h-[14px] text-[var(--amber)]" /> Ghi chú nội bộ &amp; kết quả HIS
-                  </h4>
-                  <pre className="text-[12px] text-[var(--ink)] whitespace-pre-wrap font-sans bg-[var(--surface)] p-3 rounded-[10px] border border-[var(--line)] shadow-2xs leading-[1.5]">
-                    {data.ghiChuMat2}
-                  </pre>
-                </div>
+                <section className="md:col-span-2 xl:col-span-2 bg-[var(--surface)] border border-[var(--line)] border-l-[3px] border-l-[var(--amber)] rounded-[var(--r-lg)] shadow-[var(--shadow-xs)] px-4 py-3 overflow-y-auto">
+                  <h3 className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-2 mb-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[var(--amber)]" /> Ghi chú nội bộ & kết quả HIS
+                  </h3>
+                  <p className="text-[12px] text-[var(--ink-soft)] whitespace-pre-wrap leading-[1.6]">{data.ghiChuMat2}</p>
+                </section>
               )}
             </div>
           ) : null}
         </div>
 
         {/* Footer */}
-        <div className="bg-[var(--surface)] p-[16px] px-[24px] border-t border-[var(--line)] flex justify-end">
-          <button onClick={onClose} className="btn-secondary px-[24px] py-[8px] text-[13px] font-semibold rounded-[var(--r-md)] cursor-pointer">
+        <div className="px-5 py-3 border-t border-[var(--line)] bg-[var(--surface)] flex items-center justify-between gap-3 shrink-0">
+          <span className="text-[11px] text-[var(--mute)] font-mono">
+            {data?.updatedAt ? `Cập nhật ${new Date(data.updatedAt).toLocaleString("vi-VN")}` : ""}
+          </span>
+          <button onClick={onClose} className="btn-secondary h-9 px-5 text-[13px] rounded-[var(--r-md)] cursor-pointer">
             Đóng
           </button>
         </div>
@@ -379,7 +470,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 6 }}
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[95%] max-w-[95%] min-w-[95%] max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Editorial Navy Gradient & Teal Glow */}
