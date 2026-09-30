@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { classifyCSRNhom } from "@/lib/csr";
-import { fetchPhaco2LanStats } from "@/lib/his";
+import { classifyCSRFunnel } from "@/lib/csr";
+import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +49,7 @@ export async function GET(request: Request) {
       coSo,
       daMo,
       allHoSos,
+      phaco2Ids,
     ] = await Promise.all([
       prisma.hoSoBenhNhan.count({ where }),
       prisma.hoSoBenhNhan.groupBy({ by: ["trangThai"], where, _count: { _all: true } }),
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
           daDon: true,
           ngayDenBV: true,
           trangThaiDieuTri: true,
+          ghiChuMat2: true,
           buoiKhamId: true,
           buoiKham: {
             select: {
@@ -100,6 +102,9 @@ export async function GET(request: Request) {
           },
         },
       }),
+      /* BN mổ Phaco 2 lần (Mắt 2) nằm bên HIS. Hàm tự nuốt lỗi và trả Set rỗng
+         nếu đơn vị chưa cấu hình HIS — khi đó chỉ còn nguồn ghi chú "Mắt 2". */
+      fetchPhaco2LanPatientIds(undefined, coSoId || undefined).catch(() => new Set<string>()),
     ]);
 
     const byStatus: Record<string, number> = {};
@@ -109,7 +114,6 @@ export async function GET(request: Request) {
     let nhomB = 0;
     let coBhytCount = 0;
     let daKhamCount = 0;
-    let daChotTuVanCount = 0;
 
     // Phân tích bệnh lý
     let ducThuyTinhThe = 0;
@@ -159,10 +163,25 @@ export async function GET(request: Request) {
     let daDenCount = 0;
     let denKhongMoCount = 0;
 
+    // Phễu "Số liệu quan trọng thống kê"
+    let chiDinhCount = 0;
+    let duKienCount = 0;
+    let daLenCount = 0;
+    let nguoiDaMoCount = 0;
+    let mat2Count = 0;
+
     const currentYear = new Date().getFullYear();
 
     for (const h of allHoSos) {
-      const { isNhomA, isNhomB, isDaMo, isDaDen, isDenKhongMo } = classifyCSRNhom(h);
+      const isPhaco2Lan = phaco2Ids.has(h.id);
+      const { isNhomA, isNhomB, isDaMo, isDaDen, isDenKhongMo, isChiDinh, isDuKien, isDaLen, isMat2 } =
+        classifyCSRFunnel(h, isPhaco2Lan);
+
+      if (isChiDinh) chiDinhCount++;
+      if (isDuKien) duKienCount++;
+      if (isDaLen) daLenCount++;
+      if (isDaMo) nguoiDaMoCount++;
+      if (isMat2) mat2Count++;
 
       if (isDaDen) {
         daDenCount++;
@@ -179,9 +198,6 @@ export async function GET(request: Request) {
 
       if (h.trangThai !== "TiepNhan") {
         daKhamCount++;
-      }
-      if (isNhomA || h.trangThai === "DaNhacLich" || h.trangThai === "DaDonVien" || h.trangThai === "DaMoHauPhau") {
-        daChotTuVanCount++;
       }
 
       // BHYT
@@ -285,23 +301,12 @@ export async function GET(request: Request) {
         if (isNhomB) sessionMap[h.buoiKhamId].nhomB++;
         if (isDaMo) sessionMap[h.buoiKhamId].daMo++;
         if (isDenKhongMo) sessionMap[h.buoiKhamId].denKhongMo++;
+        if (isPhaco2Lan) sessionMap[h.buoiKhamId].phaco2Lan++;
       }
     }
 
-    /* Số ca mổ Phaco 2 lần (Mắt 2) lấy từ HIS theo từng đợt khám.
-       Hàm này tự nuốt lỗi và trả Map rỗng nếu đơn vị chưa cấu hình HIS. */
-    let phaco2LanMap = new Map<string, number>();
-    try {
-      phaco2LanMap = await fetchPhaco2LanStats(coSoId || undefined);
-    } catch {
-      // bỏ qua — cột Mắt 2 sẽ hiển thị 0
-    }
-
     let phaco2LanTong = 0;
-    for (const s of Object.values(sessionMap)) {
-      s.phaco2Lan = phaco2LanMap.get(s.id) || 0;
-      phaco2LanTong += s.phaco2Lan;
-    }
+    for (const s of Object.values(sessionMap)) phaco2LanTong += s.phaco2Lan;
 
     const sessionsList = Object.values(sessionMap).sort((a, b) => (b.ngayKham > a.ngayKham ? 1 : -1));
 
@@ -338,12 +343,15 @@ export async function GET(request: Request) {
       bhytPct,
       sheetUrl,
       coSoName: coSo?.ten || "Tất cả cơ sở",
-      funnel: [
-        { key: "funnel_tiepNhan", stage: "Tiếp nhận", count: tong, pct: 100 },
-        { key: "funnel_chiDinhMo", stage: "Nhóm A (Đồng ý phẫu thuật)", count: nhomA, pct: tong > 0 ? Math.round((nhomA / tong) * 100) : 0 },
-        { key: "funnel_chotMo", stage: "Đã chốt mổ / Đón viện", count: daChotTuVanCount, pct: nhomA > 0 ? Math.round((daChotTuVanCount / nhomA) * 100) : 0 },
-        { key: "funnel_daMo", stage: "Đã phẫu thuật (HIS)", count: daMo, pct: nhomA > 0 ? Math.round((daMo / nhomA) * 100) : 0 },
-      ],
+      funnel: buildFunnel({
+        diemKham: soBuoi,
+        tongKham: tong,
+        chiDinh: chiDinhCount,
+        duKien: duKienCount,
+        daLen: daLenCount,
+        nguoiDaMo: nguoiDaMoCount,
+        mat2: mat2Count,
+      }),
       diseases: [
         { label: "Đục thủy tinh thể", value: ducThuyTinhThe, color: "#3452d8" },
         { label: "Mộng thịt", value: mongThit, color: "#0d9488" },
@@ -381,3 +389,69 @@ export async function GET(request: Request) {
   }
 }
 
+
+type FunnelRatio = { label: string; value: number; unit: "%" | "avg" };
+
+const ratio = (num: number, den: number, label: string, unit: FunnelRatio["unit"] = "%"): FunnelRatio => ({
+  label,
+  unit,
+  value: den > 0 ? Math.round((num / den) * (unit === "%" ? 1000 : 10)) / 10 : 0,
+});
+
+/**
+ * 8 chỉ số "Số liệu quan trọng thống kê". Tỷ lệ "/điểm khám" là số bình quân mỗi điểm
+ * (1 đợt khám = 1 điểm khám), không phải phần trăm.
+ */
+function buildFunnel(n: {
+  diemKham: number;
+  tongKham: number;
+  chiDinh: number;
+  duKien: number;
+  daLen: number;
+  nguoiDaMo: number;
+  mat2: number;
+}) {
+  const caMo = n.nguoiDaMo + n.mat2;
+  return [
+    { key: "kpi_soBuoi", stage: "Điểm khám", count: n.diemKham, ratios: [] },
+    { key: "funnel_tiepNhan", stage: "Tổng khám", count: n.tongKham, ratios: [] },
+    {
+      key: "funnel_chiDinh",
+      stage: "Chỉ định",
+      count: n.chiDinh,
+      ratios: [ratio(n.chiDinh, n.tongKham, "tổng khám")],
+    },
+    {
+      key: "funnel_duKien",
+      stage: "Dự kiến",
+      note: "Người đồng ý lên BV mổ",
+      count: n.duKien,
+      ratios: [ratio(n.duKien, n.tongKham, "tổng khám"), ratio(n.duKien, n.chiDinh, "chỉ định")],
+    },
+    {
+      key: "funnel_daLen",
+      stage: "Đã lên",
+      count: n.daLen,
+      ratios: [ratio(n.daLen, n.duKien, "dự kiến"), ratio(n.daLen, n.chiDinh, "chỉ định")],
+    },
+    {
+      key: "funnel_daMo",
+      stage: "Người đã mổ",
+      count: n.nguoiDaMo,
+      ratios: [ratio(n.nguoiDaMo, n.tongKham, "tổng khám"), ratio(n.nguoiDaMo, n.diemKham, "người / điểm khám", "avg")],
+    },
+    {
+      key: "funnel_mat2",
+      stage: "Số mắt 2",
+      count: n.mat2,
+      ratios: [ratio(n.mat2, n.nguoiDaMo, "người đã mổ")],
+    },
+    {
+      key: "funnel_caMo",
+      stage: "Số ca mổ",
+      note: "Người đã mổ + mắt 2",
+      count: caMo,
+      ratios: [ratio(caMo, n.tongKham, "tổng khám"), ratio(caMo, n.diemKham, "ca / điểm khám", "avg")],
+    },
+  ];
+}

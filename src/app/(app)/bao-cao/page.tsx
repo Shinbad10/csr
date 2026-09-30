@@ -26,6 +26,8 @@ import {
   Sparkles,
   RefreshCw,
   UserX,
+  Building2,
+  Scissors,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { STATUS, statusOf, fmtDate } from "@/lib/csr";
@@ -48,7 +50,13 @@ interface StatsData {
   bhytPct: number;
   sheetUrl: string | null;
   coSoName: string;
-  funnel: Array<{ key?: string; stage: string; count: number; pct: number }>;
+  funnel: Array<{
+    key: string;
+    stage: string;
+    note?: string;
+    count: number;
+    ratios: Array<{ label: string; value: number; unit: "%" | "avg" }>;
+  }>;
   diseases: Array<{ label: string; value: number; color: string }>;
   demographics: {
     age: Array<{ key?: string; label: string; value: number; color: string }>;
@@ -72,6 +80,24 @@ interface StatsData {
 }
 
 const STATUS_ORDER = Object.keys(STATUS);
+
+// Icon từng dòng phễu "Số liệu quan trọng thống kê" (dùng cho modal chi tiết).
+const FUNNEL_ICON: Record<string, typeof Users> = {
+  kpi_soBuoi: MapPin,
+  funnel_tiepNhan: Users,
+  funnel_chiDinh: Stethoscope,
+  funnel_duKien: HeartHandshake,
+  funnel_daLen: Building2,
+  funnel_daMo: CheckCircle2,
+  funnel_mat2: Eye,
+  funnel_caMo: Scissors,
+};
+
+const fmtRatio = (r: { value: number; unit: "%" | "avg" }) =>
+  r.unit === "%"
+    ? `${r.value.toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+    : r.value.toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 const statusColor = (key: string) => CHART_COLORS[Math.max(0, STATUS_ORDER.indexOf(key)) % CHART_COLORS.length];
 
 export default function BaoCaoPage() {
@@ -531,92 +557,100 @@ function BaoCaoSkeleton() {
 
           {/* Hàng 2: Phễu chuyển đổi CSR & Cơ cấu Bệnh lý */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Phễu chuyển đổi CSR */}
-            <div className="card lg:col-span-6 p-5">
-              <div className="flex items-center justify-between mb-4">
+            {/* Phễu chuyển đổi CSR — Số liệu quan trọng thống kê */}
+            <div className="card lg:col-span-7 p-5">
+              <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                 <div>
                   <h2 className="font-serif text-base font-bold text-[var(--ink)]">
                     Phễu chuyển đổi Khám ➔ Phẫu thuật
                   </h2>
                   <p className="text-[11.5px] text-[var(--mute)]">
-                    Hiệu quả từng bước trong quy trình CSR (Bấm vào từng bước để xem chi tiết)
+                    Số liệu quan trọng thống kê trong kỳ lọc (Bấm vào từng dòng để xem danh sách)
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openDetail({
-                        type: "kpi_denKhongMo",
-                        title: "Danh sách Bệnh nhân Có đến nhưng không mổ",
-                        subtitle: "Bệnh nhân đã đón hoặc đến bệnh viện nhưng chưa/không thực hiện phẫu thuật",
-                        icon: UserX,
-                      })
-                    }
-                    className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                    title="Nhấp để xem danh sách chi tiết bệnh nhân có đến nhưng không mổ"
-                  >
-                    <UserX className="w-3.5 h-3.5 text-amber-600" />
-                    Đến không mổ: <AnimatedNumber value={stats.denKhongMo} />
-                  </button>
-                  <span className="text-xs font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-1 rounded-full border border-[var(--teal)]/30">
-                    Tỷ lệ mổ: <AnimatedNumber value={stats.chuyenDoiMoPct} suffix="%" />
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openDetail({
+                      type: "kpi_denKhongMo",
+                      title: "Danh sách Bệnh nhân Có đến nhưng không mổ",
+                      subtitle: "Bệnh nhân đã đón hoặc đến bệnh viện nhưng chưa/không thực hiện phẫu thuật",
+                      icon: UserX,
+                    })
+                  }
+                  className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                  title="Nhấp để xem danh sách chi tiết bệnh nhân có đến nhưng không mổ"
+                >
+                  <UserX className="w-3.5 h-3.5 text-amber-600" />
+                  Đến không mổ: <AnimatedNumber value={stats.denKhongMo} />
+                </button>
               </div>
 
-              <div className="space-y-2 pt-1">
+              <div className="hidden sm:grid grid-cols-[minmax(150px,1.2fr)_64px_minmax(90px,1fr)_minmax(200px,1.3fr)] gap-x-4 px-2 pb-1.5 border-b border-[var(--line)] font-mono text-[10px] uppercase tracking-[0.06em] font-bold text-[var(--mute)]">
+                <span>Chỉ số</span>
+                <span className="text-right">Số lượng</span>
+                <span>So với tổng khám</span>
+                <span className="text-right">Tỷ lệ</span>
+              </div>
+
+              <div className="divide-y divide-[var(--line-soft)]">
                 {stats.funnel.map((item, idx) => {
-                  const colors = [
-                    "from-blue-600 to-indigo-600",
-                    "from-emerald-500 to-teal-500",
-                    "from-amber-500 to-orange-500",
-                    "from-teal-600 to-emerald-600",
-                  ];
-                  const funnelTypes = [
-                    "funnel_tiepNhan",
-                    "funnel_chiDinhMo",
-                    "funnel_chotMo",
-                    "funnel_daMo",
-                  ];
-                  const funnelIcons = [Users, HeartHandshake, UserCheck, CheckCircle2];
-                  const targetType = item.key || funnelTypes[idx] || "kpi_tong";
-                  const TargetIcon = funnelIcons[idx] || Users;
+                  const Icon = FUNNEL_ICON[item.key] || Users;
+                  // Điểm khám không phải số người nên không vẽ thanh.
+                  const showBar = item.key !== "kpi_soBuoi";
+                  const barPct = stats.tong > 0 ? Math.min(100, (item.count / stats.tong) * 100) : 0;
 
                   return (
                     <div
-                      key={item.stage}
+                      key={item.key}
                       onClick={() =>
                         openDetail({
-                          type: targetType,
-                          title: `Phễu CSR: ${item.stage}`,
-                          subtitle: `Danh sách bệnh nhân ở giai đoạn ${item.stage}`,
-                          icon: TargetIcon,
+                          type: item.key,
+                          title: item.key === "kpi_soBuoi" ? "Danh sách Điểm khám CSR" : `Phễu CSR: ${item.stage}`,
+                          subtitle: item.note
+                            ? `${item.stage} — ${item.note}`
+                            : `Danh sách bệnh nhân ở bước ${item.stage}`,
+                          icon: Icon,
                         })
                       }
-                      className="p-2 rounded-xl hover:bg-[var(--surface-hover)] cursor-pointer transition-all space-y-1 group"
+                      className="grid grid-cols-[minmax(0,1fr)_64px] sm:grid-cols-[minmax(150px,1.2fr)_64px_minmax(90px,1fr)_minmax(200px,1.3fr)] items-center gap-x-4 gap-y-1 px-2 py-2 rounded-lg hover:bg-[var(--surface-hover)] cursor-pointer transition-colors group"
                       title={`Xem danh sách: ${item.stage}`}
                     >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-[var(--ink-soft)] group-hover:text-[var(--navy)] flex items-center gap-1.5 transition-colors">
-                          <span className="w-4 h-4 rounded-full bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center text-[10px] font-bold text-[var(--mute)] group-hover:border-[var(--navy)] group-hover:text-[var(--navy)]">
-                            {idx + 1}
-                          </span>
-                          {item.stage}
-                        </span>
-                        <div className="flex items-center gap-2 font-mono">
-                          <span className="font-bold text-[var(--ink)] group-hover:text-[var(--navy)]">
-                            <AnimatedNumber value={item.count} />
-                          </span>
-                          <span className="text-[var(--mute)] text-[11px]">(<AnimatedNumber value={item.pct} suffix="%" />)</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--navy)] group-hover:translate-x-0.5 transition-all" />
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span className="font-mono text-[10.5px] text-[var(--mute)] w-3 shrink-0 text-right">{idx + 1}</span>
+                        <div className="min-w-0">
+                          <div className="text-[12.5px] font-semibold text-[var(--ink)] group-hover:text-[var(--navy)] truncate transition-colors">
+                            {item.stage}
+                          </div>
+                          {item.note && <div className="text-[10.5px] text-[var(--mute)] truncate">{item.note}</div>}
                         </div>
                       </div>
-                      <div className="w-full h-2.5 bg-[var(--surface-soft)] rounded-full overflow-hidden border border-[var(--line-soft)]">
-                        <div
-                          className={`h-full rounded-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all duration-500 group-hover:brightness-110`}
-                          style={{ width: `${Math.max(item.pct, 2)}%` }}
-                        />
+
+                      <div className="text-right font-mono text-[13px] font-bold tabular-nums text-[var(--ink)] group-hover:text-[var(--navy)]">
+                        <AnimatedNumber value={item.count} />
+                      </div>
+
+                      <div className="hidden sm:block">
+                        {showBar && (
+                          <div className="h-1.5 w-full rounded-full bg-[var(--surface-soft)] overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-[var(--navy)] transition-all duration-500"
+                              style={{ width: `${barPct}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="col-span-2 sm:col-span-1 flex flex-wrap justify-start sm:justify-end gap-1.5 pl-5 sm:pl-0">
+                        {item.ratios.map((r) => (
+                          <span
+                            key={r.label}
+                            className="inline-flex items-baseline gap-1 rounded-md bg-[var(--surface-soft)] border border-[var(--line-soft)] px-1.5 py-0.5 text-[10.5px] text-[var(--mute)] whitespace-nowrap"
+                          >
+                            <b className="font-mono text-[11px] tabular-nums text-[var(--ink)]">{fmtRatio(r)}</b>
+                            {r.unit === "%" ? `/ ${r.label}` : r.label}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   );
@@ -625,7 +659,7 @@ function BaoCaoSkeleton() {
             </div>
 
             {/* Cơ cấu Bệnh lý Nhãn khoa */}
-            <div className="card lg:col-span-6 p-5 flex flex-col justify-between">
+            <div className="card lg:col-span-5 p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="font-serif text-base font-bold text-[var(--ink)]">Cơ cấu Bệnh lý Phát hiện</h2>

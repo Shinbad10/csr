@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { classifyCSRNhom } from "@/lib/csr";
+import { classifyCSRFunnel } from "@/lib/csr";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
 export const dynamic = "force-dynamic";
@@ -85,6 +85,7 @@ export async function GET(request: Request) {
         soTienThucThu: true,
         trangThaiDieuTri: true,
         ngayTaiKham: true,
+        ghiChuMat2: true,
         trangThai: true,
         createdAt: true,
         buoiKhamId: true,
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
     /* Danh sách BN mổ Phaco 2 lần (Mắt 2) nằm bên HIS, không có trong CSDL CSR —
        phải nạp trước vì hàm lọc bên dưới chạy đồng bộ. */
     let phaco2Ids: Set<string> | null = null;
-    if (type === "session_phaco2" || type === "kpi_phaco2") {
+    if (type === "session_phaco2" || type === "kpi_phaco2" || type === "funnel_mat2") {
       try {
         phaco2Ids = await fetchPhaco2LanPatientIds(
           type === "session_phaco2" ? val || undefined : undefined,
@@ -118,7 +119,8 @@ export async function GET(request: Request) {
     }
 
     const filtered = allHoSos.filter((h) => {
-      const { isNhomA, isNhomB, isDaMo, isDenKhongMo } = classifyCSRNhom(h);
+      const { isNhomA, isNhomB, isDaMo, isDenKhongMo, isChiDinh, isDuKien, isDaLen, isMat2 } =
+        classifyCSRFunnel(h, Boolean(phaco2Ids?.has(h.id)));
 
       const hasBhyt = Boolean(h.bhyt && h.bhyt.trim().length >= 8);
 
@@ -167,7 +169,20 @@ export async function GET(request: Request) {
 
         case "kpi_daMo":
         case "funnel_daMo":
+        case "funnel_caMo":
           return isDaMo;
+
+        case "funnel_chiDinh":
+          return isChiDinh;
+
+        case "funnel_duKien":
+          return isDuKien;
+
+        case "funnel_daLen":
+          return isDaLen;
+
+        case "funnel_mat2":
+          return isMat2;
 
         case "kpi_bhyt":
           return hasBhyt;

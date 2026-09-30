@@ -133,6 +133,36 @@ export function classifyCSRNhom(h: {
   return { hasPathology: true, isNhomA, isNhomB, isDaMo, isDaMoTruoc, isDaDen, isDenKhongMo };
 }
 
+// Trạng thái chỉ phát sinh khi bác sĩ đã chỉ định phẫu thuật (xem inferNextState).
+const TRANG_THAI_CHI_DINH = ["CoChiDinhMo", "NhomA", "NhomB", "DaNhacLich", "DaDonVien", "DaMoHauPhau", "HuyKhongDen"];
+
+/**
+ * Các bước phễu "Số liệu quan trọng thống kê" (trang Báo cáo). Mỗi bước là tập con của bước trước
+ * để tỷ lệ không vượt 100%:
+ * - Chỉ định: bác sĩ chỉ định phẫu thuật (khuyến nghị/hướng xử trí "Phẫu thuật", đã phân nhóm A/B).
+ * - Dự kiến: người đồng ý lên BV mổ (Nhóm A).
+ * - Đã lên: đã đón / đến viện (= đã mổ + đến không mổ).
+ * - Mắt 2: người đã mổ có ca mổ mắt thứ hai — HIS có ≥2 lần Phaco (`isPhaco2Lan`) hoặc ghi chú "Mắt 2".
+ */
+export function classifyCSRFunnel(
+  h: Parameters<typeof classifyCSRNhom>[0] & { ghiChuMat2?: string | null },
+  isPhaco2Lan = false
+) {
+  const c = classifyCSRNhom(h);
+  const isDaLen = c.isDaMo || c.isDenKhongMo;
+  const isDuKien = c.isNhomA || isDaLen;
+  const isChiDinh =
+    isDuKien ||
+    h.khuyenNghi === "Phẫu thuật" ||
+    h.huongXuTri === "Phẫu thuật" ||
+    h.nhom === "A" ||
+    h.nhom === "B" ||
+    TRANG_THAI_CHI_DINH.includes(h.trangThai || "");
+  const isMat2 = c.isDaMo && (isPhaco2Lan || /m[ắa]t\s*2/i.test(h.ghiChuMat2 || ""));
+
+  return { ...c, isChiDinh, isDuKien, isDaLen, isMat2 };
+}
+
 export const parseDiag = (raw: string | null): string[] => {
   try { const v = JSON.parse(raw || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
 };
