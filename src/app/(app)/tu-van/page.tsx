@@ -392,24 +392,30 @@ export default function TuVanSessionPage() {
     return { total, called, uncalled, nhomA, nhomB, daDen, daMo, daMoTruoc };
   }, [patients, currentBkDate]);
 
+  // Nội dung cuộc gọi đã nhập nhưng chưa lưu — tính là thay đổi chưa lưu của hồ sơ đang chọn.
+  const hasCallDraft = callNote.trim() !== "";
+
+  /** Ghi 1 dòng nhật ký cuộc gọi. Trả về true nếu lưu thành công (đã báo lỗi nếu thất bại). */
+  const postCallLog = async (hoSoId: string, noiDung: string) => {
+    const res = await fetch("/api/csr/nhatky", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hoSoId, noiDung }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      addToast({ type: "error", message: data.error || "Lỗi lưu nhật ký gọi" });
+      return false;
+    }
+    return true;
+  };
+
   const saveCallLog = async (presetText?: string) => {
     const textToSave = (presetText || callNote).trim();
     if (!selected || !textToSave) return;
     setSavingCallNote(true);
     try {
-      const res = await fetch("/api/csr/nhatky", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hoSoId: selected.id,
-          noiDung: textToSave,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        addToast({ type: "error", message: data.error || "Lỗi lưu nhật ký gọi" });
-        return;
-      }
+      if (!(await postCallLog(selected.id, textToSave))) return;
       setCallNote("");
       addToast({ type: "success", message: `Đã lưu nhật ký gọi cho ${selected.hoTen}` });
       await fetchPatients(selected.id, true);
@@ -535,26 +541,44 @@ export default function TuVanSessionPage() {
     his.runOne({ id: curBk.id, name: fmtBuoiKhamName(curBk), soCa: soCaAB || counts.total });
   };
 
-  const pick = async (p: HoSo) => {
+  /** `force`: bỏ qua hỏi xác nhận — dùng khi vừa lưu xong (biến `dirty` trong closure còn là giá trị cũ). */
+  const pick = async (p: HoSo, force = false) => {
     if (p.id === selId) return;
-    if (
-      dirty &&
-      !(await confirm({
+    if (!force && (dirty || hasCallDraft)) {
+      const pending = [dirty && "phiếu tư vấn", hasCallDraft && "nội dung cuộc gọi"].filter(Boolean).join(" và ");
+      const ok = await confirm({
         title: "Bỏ thay đổi chưa lưu?",
-        message: `Phiếu tư vấn đang có thay đổi chưa lưu.\nChuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
+        message: `Có ${pending} chưa lưu.\nChuyển sang ${p.hoTen} sẽ mất các thay đổi này.`,
         confirmLabel: "Chuyển & bỏ thay đổi",
         cancelLabel: "Ở lại",
-      }))
-    )
-      return;
+      });
+      if (!ok) return;
+    }
+    // Không mang nội dung cuộc gọi đang gõ sang bệnh nhân khác (tránh lưu nhầm hồ sơ).
+    setCallNote("");
     setSelId(p.id);
     loadForm(p);
   };
 
   const save = async () => {
     if (!selected) return;
+    const formChanged = dirty && !!f.nhom;
+    const pendingCall = callNote.trim();
+    if (!formChanged && !pendingCall) return;
     setSaving(true);
     try {
+      /* Lưu luôn cuộc gọi đang nhập dở: trước đây bấm "Lưu tư vấn" chỉ lưu phiếu,
+         nội dung ở ô Nhật ký cuộc gọi bị bỏ qua nên BN vẫn hiện "Chưa gọi". */
+      if (pendingCall) {
+        if (!(await postCallLog(selected.id, pendingCall))) return;
+        setCallNote("");
+      }
+      if (!formChanged) {
+        addToast({ type: "success", message: `Đã lưu nhật ký gọi cho ${selected.hoTen}` });
+        await fetchPatients(selected.id, false);
+        return;
+      }
+
       const res = await fetch(`/api/csr/hoso/${selected.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -575,13 +599,16 @@ export default function TuVanSessionPage() {
         return;
       }
       setBaseline(JSON.stringify(f));
-      addToast({ type: "success", message: `Đã lưu tư vấn: ${selected.hoTen}` });
+      addToast({
+        type: "success",
+        message: `Đã lưu tư vấn${pendingCall ? " & nhật ký gọi" : ""}: ${selected.hoTen}`,
+      });
       await fetchPatients(selected.id, true);
 
       // Tự động chuyển ca tiếp theo chưa tư vấn
       const nextPending = visible.find((p) => p.id !== selected.id && !p.nhom && p.xacNhanDieuTri == null);
       if (nextPending) {
-        pick(nextPending);
+        pick(nextPending, true);
       }
     } catch {
       addToast({ type: "error", message: "Mất kết nối máy chủ" });
@@ -1339,10 +1366,12 @@ export default function TuVanSessionPage() {
                     </div>
 
                     <span className="hidden md:inline-flex items-center gap-1.5 text-[12px] font-medium min-w-0 truncate">
-                      {dirty ? (
+                      {dirty || hasCallDraft ? (
                         <>
                           <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse shrink-0" />
-                          <span className="text-[var(--amber-deep)]">Có thay đổi chưa lưu</span>
+                          <span className="text-[var(--amber-deep)]">
+                            {hasCallDraft && !dirty ? "Cuộc gọi chưa lưu" : "Có thay đổi chưa lưu"}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -1356,7 +1385,7 @@ export default function TuVanSessionPage() {
                   <button
                     type="button"
                     onClick={save}
-                    disabled={saving || !dirty || !f.nhom}
+                    disabled={saving || !((dirty && f.nhom) || hasCallDraft)}
                     className="btn-primary inline-flex items-center gap-1.5 h-9 px-5 rounded-[10px] text-[13px] font-semibold shrink-0 disabled:opacity-40 disabled:pointer-events-none"
                   >
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
