@@ -170,6 +170,20 @@ export const ageOf = (p: { ngaySinh?: Date | string | null; namSinh?: number | n
   if (p.ngaySinh) return new Date().getFullYear() - new Date(p.ngaySinh).getFullYear();
   return p.namSinh ? new Date().getFullYear() - p.namSinh : 0;
 };
+/** Ngày sinh đầy đủ dd/mm/yyyy; dữ liệu lịch sử chỉ có năm sinh thì trả về năm. */
+export const fmtNgaySinh = (p: { ngaySinh?: Date | string | null; namSinh?: number | null }) => {
+  if (p.ngaySinh) {
+    return new Date(p.ngaySinh).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+  return p.namSinh ? String(p.namSinh) : "";
+};
+/** "NS 12/03/1948 (78 tuổi)" — hiện đủ ngày sinh lẫn tuổi để phân biệt BN trùng tên, trùng năm sinh. */
+export const fmtSinhTuoi = (p: { ngaySinh?: Date | string | null; namSinh?: number | null }) => {
+  const ns = fmtNgaySinh(p);
+  if (!ns) return "";
+  const age = ageOf(p);
+  return age > 0 ? `NS ${ns} (${age} tuổi)` : `NS ${ns}`;
+};
 export const tomorrowISO = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
 export const fmtDate = (iso?: Date | string | null) => (iso ? new Date(iso).toLocaleDateString("vi-VN") : "—");
 

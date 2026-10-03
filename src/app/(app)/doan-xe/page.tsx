@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { fmtDate, fmtBuoiKhamName, type HoSo } from "@/lib/csr";
+import { fmtDate, fmtBuoiKhamName, type HoSo, fmtSinhTuoi } from "@/lib/csr";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
@@ -349,14 +349,6 @@ export default function DoanXePage() {
 
   const expandAll = () => {
     setCollapsedStations(new Set());
-  };
-
-  // Helper tính tuổi từ năm sinh / ngày sinh
-  const getAge = (p: HoSo) => {
-    const y = p.namSinh || (p.ngaySinh ? new Date(p.ngaySinh).getFullYear() : null);
-    if (!y) return null;
-    const currentYear = new Date().getFullYear();
-    return currentYear - Number(y);
   };
 
   // Helper kiểm tra số điện thoại người nhà hợp lệ
@@ -1037,7 +1029,6 @@ export default function DoanXePage() {
                         {grp.items.map((p, pIdx) => {
                           const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
                           const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
-                          const age = getAge(p);
 
                           return (
                             <div
@@ -1067,9 +1058,7 @@ export default function DoanXePage() {
 
                                     <div className="text-[12px] text-[var(--mute)] font-medium flex items-center gap-2 flex-wrap">
                                       <span>
-                                        {p.gioiTinh || "—"}
-                                        {age ? ` · ${age} tuổi` : ""}
-                                        {p.namSinh ? ` (${p.namSinh})` : ""}
+                                        {[p.gioiTinh || "—", fmtSinhTuoi(p)].filter(Boolean).join(" · ")}
                                       </span>
                                       {p.ngayDieuTri && (
                                         <span className="text-[11px] font-mono font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">

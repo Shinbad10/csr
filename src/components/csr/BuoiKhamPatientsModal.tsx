@@ -7,7 +7,8 @@ import {
   FileSpreadsheet, Download, ChevronDown, FileText,
 } from "lucide-react";
 import {
-  fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, ageOf, parseDiag, checkSurgeryTiming, classifyCSRNhom, bhytLevel, type HoSo,
+  fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, parseDiag, checkSurgeryTiming, classifyCSRNhom, bhytLevel, type HoSo,
+  fmtSinhTuoi,
 } from "@/lib/csr";
 import { useToast } from "@/components/providers/ToastProvider";
 import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
@@ -219,14 +220,13 @@ export default function BuoiKhamPatientsModal({
       meta: { noTruncate: true },
       cell: ({ row }) => {
         const p = row.original;
-        const age = ageOf(p) || (p.namSinh ? new Date().getFullYear() - p.namSinh : null);
         return (
           <div className="min-w-0">
             <div className="font-semibold text-[13px] text-[var(--ink)] truncate" title={p.hoTen}>{p.hoTen}</div>
             <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--mute)] whitespace-nowrap min-w-0">
               <span className="font-mono font-bold text-[var(--navy)]">{p.maBN || p.id.slice(-6)}</span>
               <span className="text-[var(--mute-soft)]">·</span>
-              <span>{[p.gioiTinh, age ? `${age} tuổi` : null].filter(Boolean).join(" · ") || "—"}</span>
+              <span>{[p.gioiTinh, fmtSinhTuoi(p) || null].filter(Boolean).join(" · ") || "—"}</span>
               {p.maBNHIS && (
                 <>
                   <span className="text-[var(--mute-soft)]">·</span>

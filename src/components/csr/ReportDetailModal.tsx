@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { type ColumnDef } from "@tanstack/react-table";
-import { fmtDate, statusOf, bhytLevel, ageOf, parseDiag, classifyCSRNhom } from "@/lib/csr";
+import { fmtDate, statusOf, bhytLevel, ageOf, parseDiag, classifyCSRNhom, fmtSinhTuoi } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
 import { PatientInfoModal } from "@/components/csr/PatientModals";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -479,14 +479,13 @@ export default function ReportDetailModal({
       meta: { noTruncate: true },
       cell: ({ row }) => {
         const p = row.original;
-        const age = ageOf(p) || (p.namSinh ? new Date().getFullYear() - p.namSinh : null);
         return (
           <div className="min-w-0">
             <div className="font-bold text-[13px] text-[var(--ink)] truncate" title={p.hoTen}>
               {p.hoTen}
             </div>
             <div className="text-[11px] text-[var(--mute)] mt-0.5 truncate">
-              {[p.gioiTinh, age ? `${age} tuổi` : null, p.namSinh ? `NS ${p.namSinh}` : null].filter(Boolean).join(" · ") || "—"}
+              {[p.gioiTinh, fmtSinhTuoi(p) || null].filter(Boolean).join(" · ") || "—"}
             </div>
           </div>
         );

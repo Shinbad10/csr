@@ -16,6 +16,7 @@ import { useRealtimeEvent } from "@/lib/useRealtime";
 import { can, roleLabel } from "@/lib/permissions";
 import {
   CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
+  fmtSinhTuoi,
 } from "@/lib/csr";
 import {
   BENH_SU_OPTIONS, BENH_LY_OPTIONS, LOAI_BENH_LY_OPTIONS, HUONG_XU_TRI, MUC_HUONG_BHYT,
@@ -1894,7 +1895,8 @@ export default function ExamPage() {
                 <StatusBadge label={statusOf(selected.trangThai).label} cls={statusOf(selected.trangThai).cls} sm />
               </div>
               <dl className="mt-3 space-y-1 text-[11.5px] text-[var(--ink-soft)]">
-                <Row k="Giới tính" v={`${selected.gioiTinh} · ${ageOf(selected)} tuổi`} />
+                <Row k="Giới tính" v={selected.gioiTinh || "—"} />
+                <Row k="Ngày sinh" v={fmtSinhTuoi(selected).replace(/^NS /, "") || "—"} mono />
                 <Row k="BHYT" v={selected.bhyt ? `${selected.bhyt} · ${selected.mucHuongBHYT ? `${selected.mucHuongBHYT}%` : bhytLevel(selected.bhyt)}` : "—"} mono />
                 <Row k="CCCD" v={selected.cccd || "—"} mono />
                 <Row k="SĐT" v={selected.sdt || "—"} mono />

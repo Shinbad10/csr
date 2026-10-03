@@ -32,7 +32,6 @@ import { isCorporate } from "@/lib/permissions";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   parseDiag,
-  ageOf,
   fmtDate,
   fmtTime,
   fmtBuoiKhamName,
@@ -40,6 +39,7 @@ import {
   bhytLevel,
   TT_DIEU_TRI,
   type HoSo,
+  fmtSinhTuoi,
 } from "@/lib/csr";
 import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/components/csr/fields";
 import { SkeletonList } from "@/components/layout/Skeleton";
@@ -905,7 +905,7 @@ export default function TheoDoiPage() {
                         <h2 className="font-serif text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{sel.hoTen}</h2>
                         <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--navy-50)] text-[var(--navy)]">{sel.maBN}</span>
                         {sel.maBNHIS && <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--teal-soft)] text-[var(--teal-deep)]">HIS {sel.maBNHIS}</span>}
-                        <span className="text-[12.5px] text-[var(--mute)]">{sel.gioiTinh} · {ageOf(sel)} tuổi</span>
+                        <span className="text-[12.5px] text-[var(--mute)]">{[sel.gioiTinh, fmtSinhTuoi(sel)].filter(Boolean).join(" · ")}</span>
                         {sel.nhom && <Badge tone={sel.nhom === "A" ? "rose" : "amber"}>Nhóm {sel.nhom}</Badge>}
                       </div>
                       {hasHisConfig && (

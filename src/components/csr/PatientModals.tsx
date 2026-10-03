@@ -28,12 +28,25 @@ import {
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
-import { fmtDate, parseDiag, statusOf, bhytLevel, ageOf } from "@/lib/csr";
+import { fmtDate, parseDiag, statusOf, bhytLevel, fmtSinhTuoi, ageOf, fmtNgaySinh } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ── Khối trình bày dùng chung cho modal hồ sơ (chuẩn Visihub: thẻ trắng, nhãn trái – giá trị phải) ── */
-function InfoSection({ icon: Icon, title, aside, children }: { icon: any; title: string; aside?: React.ReactNode; children: React.ReactNode }) {
+function InfoSection({
+  icon: Icon,
+  title,
+  aside,
+  plain,
+  children,
+}: {
+  icon: any;
+  title: string;
+  aside?: React.ReactNode;
+  /** Nội dung tự do (danh sách, dòng thời gian) thay vì các dòng nhãn – giá trị. */
+  plain?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <section className="h-full flex flex-col bg-[var(--surface)] border border-[var(--line)] rounded-[var(--r-lg)] shadow-[var(--shadow-xs)] overflow-hidden">
       <header className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]">
@@ -45,7 +58,11 @@ function InfoSection({ icon: Icon, title, aside, children }: { icon: any; title:
         </div>
         {aside}
       </header>
-      <dl className="flex-1 px-3.5 py-0.5 divide-y divide-[var(--line-soft)]">{children}</dl>
+      {plain ? (
+        <div className="flex-1 min-h-0">{children}</div>
+      ) : (
+        <dl className="flex-1 px-3.5 py-0.5 divide-y divide-[var(--line-soft)]">{children}</dl>
+      )}
     </section>
   );
 }
@@ -53,7 +70,7 @@ function InfoSection({ icon: Icon, title, aside, children }: { icon: any; title:
 function InfoRow({ label, children, mono }: { label: string; children?: React.ReactNode; mono?: boolean }) {
   const empty = children === null || children === undefined || children === "" || children === "—";
   return (
-    <div className="grid grid-cols-[108px_1fr] gap-2.5 py-1.5 items-baseline">
+    <div className="grid grid-cols-[118px_1fr] gap-2.5 py-1.5 items-baseline">
       <dt className="text-[11.5px] text-[var(--mute)]">{label}</dt>
       <dd className={`text-[12.5px] min-w-0 break-words ${mono ? "font-mono tabular-nums" : ""} ${empty ? "text-[var(--mute-soft)]" : "text-[var(--ink)] font-semibold"}`}>
         {empty ? "—" : children}
@@ -77,6 +94,11 @@ function DiagChips({ items, other }: { items: string[]; other?: string | null })
 }
 
 const fmtMoney = (n?: number | null) => (n != null ? `${n.toLocaleString("vi-VN")} ₫` : null);
+const fmtDateTime = (d?: string | Date | null) =>
+  d
+    ? new Date(d).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })
+    : null;
+const NHOM_TEXT: Record<string, string> = { A: "Nhóm A · đồng ý mổ", B: "Nhóm B · chưa đồng ý / theo dõi" };
 
 // Modal xem thông tin chi tiết hồ sơ — chuẩn Visihub
 export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose: () => void }) {
@@ -124,12 +146,14 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
   const target = root || document.body;
 
   const st = data ? statusOf(data.trangThai) : null;
-  const age = data ? ageOf(data) : null;
   const diagMP = data ? parseDiag(data.chanDoanMP) : [];
   const diagMT = data ? parseDiag(data.chanDoanMT) : [];
   const diagAll = data ? parseDiag(data.chanDoan) : [];
   const hasEyeDiag = diagMP.length > 0 || diagMT.length > 0 || !!data?.chanDoanKhacMP || !!data?.chanDoanKhacMT;
   const benhLy = data ? parseDiag(data.loaiBenhLy) : [];
+  const loaiBenhSu = data ? parseDiag(data.loaiBenhSu) : [];
+  const age = data ? ageOf(data) : 0;
+  const nhatKy: Array<{ id: string; ngay: string; noiDung: string; nguoiGoi?: { hoTen?: string } | null }> = data?.nhatKy || [];
   const tvv = data?.tuVanVien?.hoTen || data?.nhanVienTuVan;
   const huyMo = data?.trangThaiDieuTri === "Hủy" || data?.trangThaiDieuTri === "Không đến";
 
@@ -199,8 +223,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     <span className="text-[var(--mute)]">
                       {[
                         data.gioiTinh,
-                        age ? `${age} tuổi` : null,
-                        data.ngaySinh ? `Sinh ${fmtDate(data.ngaySinh)}` : data.namSinh ? `NS ${data.namSinh}` : null,
+                        fmtSinhTuoi(data) || null,
                       ].filter(Boolean).join(" · ")}
                     </span>
                   </div>
@@ -262,16 +285,24 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
             </div>
           ) : data ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {/* 1. Hành chính */}
               <InfoSection icon={User} title="Hành chính & liên hệ">
+                <InfoRow label="Ngày sinh" mono>
+                  {fmtNgaySinh(data) ? `${fmtNgaySinh(data)}${age > 0 ? ` (${age} tuổi)` : ""}` : null}
+                </InfoRow>
+                <InfoRow label="Giới tính">{data.gioiTinh}</InfoRow>
                 <InfoRow label="SĐT cá nhân" mono>{data.sdt}</InfoRow>
                 <InfoRow label="SĐT người nhà" mono>{data.sdtNguoiNha}</InfoRow>
                 <InfoRow label="CCCD / Định danh" mono>{data.cccd}</InfoRow>
-                <InfoRow label="Địa chỉ">{data.diaChi || [data.khuPho, data.xaPhuong].filter(Boolean).join(", ")}</InfoRow>
+                <InfoRow label="Địa chỉ">{data.diaChi}</InfoRow>
+                <InfoRow label="Khu phố / Xã">{[data.khuPho, data.xaPhuong].filter(Boolean).join(", ")}</InfoRow>
+                <InfoRow label="Ngày tiếp nhận" mono>{fmtDateTime(data.createdAt)}</InfoRow>
               </InfoSection>
 
+              {/* 2. Phiếu khám sàng lọc */}
               <InfoSection
-                icon={Stethoscope}
-                title="Khám sàng lọc & chẩn đoán"
+                icon={Activity}
+                title="Phiếu khám sàng lọc"
                 aside={
                   data.buoiKham ? (
                     <span className="text-[11.5px] text-[var(--mute)] truncate">
@@ -281,6 +312,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                   ) : null
                 }
               >
+                <InfoRow label="Điểm khám">{data.diemKham || data.buoiKham?.diaDiem}</InfoRow>
                 <InfoRow label="Thị lực">
                   {data.thiLucMP || data.thiLucMT ? (
                     <span className="inline-flex gap-1.5 font-mono">
@@ -293,7 +325,34 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     </span>
                   ) : null}
                 </InfoRow>
-                <InfoRow label="Mắt chỉ định">{data.matKham}</InfoRow>
+                <InfoRow label="Chiều cao / Cân nặng" mono>
+                  {data.chieuCao || data.canNang
+                    ? [data.chieuCao ? `${data.chieuCao} cm` : null, data.canNang ? `${data.canNang} kg` : null].filter(Boolean).join(" · ")
+                    : null}
+                </InfoRow>
+                <InfoRow label="Bệnh sử">
+                  {data.benhSu == null ? null : data.benhSu ? (
+                    <span className="inline-flex flex-col gap-1">
+                      <span>Có</span>
+                      <DiagChips items={loaiBenhSu} other={data.loaiBenhSuKhac} />
+                    </span>
+                  ) : (
+                    "Không"
+                  )}
+                </InfoRow>
+                <InfoRow label="Kết luận">
+                  {data.benhLy ? (
+                    <span className={data.benhLy === "Nghi ngờ bệnh lý" ? "text-[var(--rose)]" : "text-[var(--teal-deep)]"}>{data.benhLy}</span>
+                  ) : null}
+                </InfoRow>
+                <InfoRow label="Bệnh lý (ICD)">
+                  {benhLy.length || data.loaiBenhLyKhac ? <DiagChips items={benhLy} other={data.loaiBenhLyKhac} /> : null}
+                </InfoRow>
+              </InfoSection>
+
+              {/* 3. Chẩn đoán & chỉ định */}
+              <InfoSection icon={Stethoscope} title="Chẩn đoán & chỉ định">
+                <InfoRow label="Mắt khám">{data.matKham}</InfoRow>
                 {hasEyeDiag ? (
                   <>
                     <InfoRow label="Chẩn đoán MP">
@@ -308,19 +367,27 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     {diagAll.length || data.chanDoanKhac ? <DiagChips items={diagAll} other={data.chanDoanKhac} /> : null}
                   </InfoRow>
                 )}
-                {benhLy.length > 0 && (
-                  <InfoRow label="Bệnh lý (ICD)">
-                    <DiagChips items={benhLy} other={data.loaiBenhLyKhac} />
-                  </InfoRow>
-                )}
+                <InfoRow label="Hướng xử trí">
+                  {data.huongXuTri ? `${data.huongXuTri}${data.huongXuTriKhac ? ` — ${data.huongXuTriKhac}` : ""}` : null}
+                </InfoRow>
                 <InfoRow label="Khuyến nghị">
                   {data.khuyenNghi ? (
                     <span className={data.khuyenNghi === "Phẫu thuật" ? "text-[var(--rose)]" : "text-[var(--amber-deep)]"}>{data.khuyenNghi}</span>
                   ) : null}
                 </InfoRow>
                 <InfoRow label="Bác sĩ chỉ định">{data.bacSiChiDinh || data.buoiKham?.bacSiKham}</InfoRow>
+                <InfoRow label="Xác nhận điều trị">
+                  {data.xacNhanDieuTri == null ? null : data.xacNhanDieuTri ? (
+                    <span className="text-[var(--teal-deep)]">Có — đồng ý điều trị</span>
+                  ) : (
+                    <span className="text-[var(--rose)]">
+                      Không{data.lyDoKhongDieuTri ? ` — ${data.lyDoKhongDieuTri}` : ""}
+                    </span>
+                  )}
+                </InfoRow>
               </InfoSection>
 
+              {/* 4. Tư vấn & BHYT */}
               <InfoSection icon={ShieldCheck} title="Tư vấn & BHYT">
                 <InfoRow label="Thẻ BHYT">
                   {data.bhyt ? (
@@ -333,12 +400,24 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                   ) : null}
                 </InfoRow>
                 <InfoRow label="Tư vấn viên">{tvv}</InfoRow>
+                <InfoRow label="Phân nhóm">{data.nhom ? NHOM_TEXT[data.nhom] || `Nhóm ${data.nhom}` : null}</InfoRow>
                 <InfoRow label="Chi phí báo BN" mono>{fmtMoney(data.soTienBao)}</InfoRow>
                 <InfoRow label="Ngày hẹn mổ" mono>{data.ngayDieuTri ? fmtDate(data.ngayDieuTri) : null}</InfoRow>
                 <InfoRow label="Điểm / giờ đón">{data.diemDon ? `${data.diemDon}${data.gioDon ? ` · ${data.gioDon}` : ""}` : null}</InfoRow>
-                {data.ghiChuTuVan && <InfoRow label="Ghi chú tư vấn">{data.ghiChuTuVan}</InfoRow>}
+                <InfoRow label="Ghi chú tư vấn">{data.ghiChuTuVan}</InfoRow>
+                <InfoRow label="Theo dõi">
+                  {data.followUpStatus
+                    ? `${data.followUpStatus}${data.nguoiPhuTrach?.hoTen ? ` · ${data.nguoiPhuTrach.hoTen}` : ""}`
+                    : null}
+                </InfoRow>
+                {(data.nguoiChotCuoi || data.ngayChot) && (
+                  <InfoRow label="Chốt cuối">
+                    {[data.nguoiChotCuoi?.hoTen, data.ngayChot ? fmtDate(data.ngayChot) : null].filter(Boolean).join(" · ")}
+                  </InfoRow>
+                )}
               </InfoSection>
 
+              {/* 5. Điều trị tại bệnh viện */}
               <InfoSection icon={Building2} title="Điều trị tại bệnh viện (HIS)">
                 <InfoRow label="Mã BN HIS" mono>{data.maBNHIS}</InfoRow>
                 <InfoRow label="Đến viện">
@@ -358,11 +437,42 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                 </InfoRow>
                 <InfoRow label="Ngày mổ" mono>{data.ngayMoThucTe ? fmtDate(data.ngayMoThucTe) : null}</InfoRow>
                 <InfoRow label="Chi phí thực thu" mono>{fmtMoney(data.soTienThucThu)}</InfoRow>
-                {data.ngayTaiKham && <InfoRow label="Ngày tái khám" mono>{fmtDate(data.ngayTaiKham)}</InfoRow>}
+                <InfoRow label="Ngày tái khám" mono>{data.ngayTaiKham ? fmtDate(data.ngayTaiKham) : null}</InfoRow>
+              </InfoSection>
+
+              {/* 6. Nhật ký cuộc gọi */}
+              <InfoSection
+                icon={Phone}
+                title="Nhật ký cuộc gọi"
+                plain
+                aside={
+                  <span className="font-mono text-[11px] font-bold px-1.5 py-px rounded-md bg-[var(--line-soft)] text-[var(--ink-soft)] tabular-nums shrink-0">
+                    {nhatKy.length} cuộc gọi
+                  </span>
+                }
+              >
+                {nhatKy.length > 0 ? (
+                  <ol className="max-h-[260px] overflow-y-auto divide-y divide-[var(--line-soft)] px-3.5">
+                    {nhatKy.map((log) => (
+                      <li key={log.id} className="py-2">
+                        <div className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="font-semibold text-[var(--ink-soft)] truncate">{log.nguoiGoi?.hoTen || "Tư vấn viên"}</span>
+                          <span className="font-mono text-[var(--mute)] tabular-nums shrink-0">{fmtDateTime(log.ngay)}</span>
+                        </div>
+                        <p className="mt-0.5 text-[12.5px] text-[var(--ink)] whitespace-pre-wrap break-words">{log.noiDung}</p>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <div className="h-full min-h-[96px] flex flex-col items-center justify-center gap-1.5 text-[12px] text-[var(--mute)]">
+                    <Phone className="w-4 h-4 text-[var(--mute-soft)]" />
+                    Chưa có cuộc gọi nào được ghi nhận.
+                  </div>
+                )}
               </InfoSection>
 
               {data.ghiChuMat2 && (
-                <section className="md:col-span-2 xl:col-span-2 bg-[var(--surface)] border border-[var(--line)] border-l-[3px] border-l-[var(--amber)] rounded-[var(--r-lg)] shadow-[var(--shadow-xs)] px-4 py-3 overflow-y-auto">
+                <section className="md:col-span-2 xl:col-span-3 bg-[var(--surface)] border border-[var(--line)] border-l-[3px] border-l-[var(--amber)] rounded-[var(--r-lg)] shadow-[var(--shadow-xs)] px-4 py-3">
                   <h3 className="text-[13px] font-bold text-[var(--ink)] flex items-center gap-2 mb-1.5">
                     <FileText className="w-3.5 h-3.5 text-[var(--amber)]" /> Ghi chú nội bộ & kết quả HIS
                   </h3>

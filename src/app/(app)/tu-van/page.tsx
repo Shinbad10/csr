@@ -26,7 +26,6 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import {
-  ageOf,
   fmtDate,
   fmtTime,
   fmtBuoiKhamName,
@@ -35,6 +34,7 @@ import {
   statusOf,
   checkSurgeryTiming,
   type HoSo,
+  fmtSinhTuoi,
 } from "@/lib/csr";
 import { StatusBadge, labelCls, Combobox, SectionHeader, Select, DateField } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
@@ -942,7 +942,6 @@ export default function TuVanSessionPage() {
                 visible.map((p, idx) => {
                   const active = selId === p.id;
                   const diags = getPatientDiags(p);
-                  const age = ageOf(p);
                   const hasCallLog = !!(p.nhatKy && p.nhatKy.length > 0);
                   const latestCallLog = hasCallLog ? p.nhatKy![0] : null;
                   const timing = checkSurgeryTiming(p, currentBkDate);
@@ -981,7 +980,7 @@ export default function TuVanSessionPage() {
                       </div>
 
                       <div className="mt-0.5 pl-[26px] text-[11.5px] text-[var(--mute)] truncate">
-                        {[p.gioiTinh, age > 0 ? `${age} tuổi` : null, p.bhyt ? `BH ${bhytLevel(p.bhyt)}` : null].filter(Boolean).join(" · ")}
+                        {[p.gioiTinh, fmtSinhTuoi(p) || null, p.bhyt ? `BH ${bhytLevel(p.bhyt)}` : null].filter(Boolean).join(" · ")}
                         {diags.length > 0 && <span className="text-[var(--ink-soft)]"> · {diags.join(", ")}</span>}
                       </div>
 
@@ -1037,7 +1036,7 @@ export default function TuVanSessionPage() {
                           <div className="min-w-0 flex items-center gap-x-2.5 gap-y-1.5 flex-wrap">
                             <h2 className="font-serif text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{selected.hoTen}</h2>
                             <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--navy-50)] text-[var(--navy)]">{selected.maBN}</span>
-                            <span className="text-[12.5px] text-[var(--mute)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
+                            <span className="text-[12.5px] text-[var(--mute)]">{[selected.gioiTinh, fmtSinhTuoi(selected)].filter(Boolean).join(" · ")}</span>
                             <span className="hidden sm:block w-px h-4 bg-[var(--line)]" />
                             {isTuVanDone(selected) ? (
                               <Badge tone="gray" dot={false}>

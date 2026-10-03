@@ -17,7 +17,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   try {
     const data = await getPrisma().hoSoBenhNhan.findUnique({
       where: { id },
-      include: { buoiKham: true, coSo: true, tuVanVien: true, nhatKy: { include: { nguoiGoi: true }, orderBy: { ngay: "desc" } } },
+      /* Chỉ chọn trường cần hiển thị: `coSo: true` / quan hệ người dùng đầy đủ sẽ gửi
+         bhxhPass, hisPass, matKhauHash ra trình duyệt. */
+      include: {
+        buoiKham: true,
+        coSo: { select: { id: true, ten: true } },
+        tuVanVien: { select: { maNV: true, hoTen: true } },
+        nguoiPhuTrach: { select: { maNV: true, hoTen: true } },
+        nguoiChotCuoi: { select: { maNV: true, hoTen: true } },
+        nhatKy: { include: { nguoiGoi: { select: { maNV: true, hoTen: true } } }, orderBy: { ngay: "desc" } },
+      },
     });
     if (!data) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
     return NextResponse.json(data);

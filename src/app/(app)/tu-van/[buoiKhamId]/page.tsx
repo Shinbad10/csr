@@ -8,7 +8,7 @@ import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCo
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo } from "@/lib/csr";
+import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi } from "@/lib/csr";
 import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
@@ -637,7 +637,7 @@ export default function TuVanSessionPage() {
                       }
                       return null;
                     })()}
-                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{selected.gioiTinh} · {ageOf(selected)} tuổi</span>
+                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{[selected.gioiTinh, fmtSinhTuoi(selected)].filter(Boolean).join(" · ")}</span>
                   </div>
                   {getPatientDiags(selected).length > 0 && (
                     <div className="text-[11.5px] font-bold text-[var(--rose)] bg-rose-50 px-2 py-0.5 rounded border border-rose-200">

@@ -13,7 +13,7 @@ import {
   RotateCw,
   X,
 } from "lucide-react";
-import { ageOf, fmtDate, fmtBuoiKhamName, parseDiag, statusOf, bhytLevel, type HoSo } from "@/lib/csr";
+import { fmtDate, fmtBuoiKhamName, parseDiag, statusOf, bhytLevel, type HoSo, fmtSinhTuoi } from "@/lib/csr";
 import { isCorporate } from "@/lib/permissions";
 import { useSession } from "next-auth/react";
 import { Dropdown, StatusBadge } from "@/components/csr/fields";
@@ -28,6 +28,12 @@ const TT_OPTS = ["", "TiepNhan", "DaKham", "TheoDoi", "CoChiDinhMo", "NhomA", "N
 const TT_LABELS: Record<string, string> = Object.fromEntries(TT_OPTS.filter(Boolean).map((k) => [k, statusOf(k).label]));
 const NHOM_LABELS = { A: "Nhóm A · đã chốt mổ", B: "Nhóm B · theo dõi" };
 const PAGE_SIZE_OPTS = [20, 50, 100, 200];
+
+// Chẩn đoán tổng hợp; hồ sơ nhập theo phiếu sàng lọc mới chỉ có loaiBenhLy.
+const diagText = (r: HoSo) => {
+  const d = parseDiag(r.chanDoan);
+  return (d.length ? d : parseDiag(r.loaiBenhLy ?? null)).join(", ");
+};
 
 export default function HoSoPage() {
   const { data: session } = useSession();
@@ -142,123 +148,144 @@ export default function HoSoPage() {
   const columns = useMemo<ColumnDef<HoSo>[]>(
     () => [
       {
-        id: "maBN",
-        accessorKey: "maBN",
-        header: "Mã BN",
-        size: 118,
-        enableSorting: false,
-        cell: ({ row }) => (
-          <span className="font-mono font-bold text-[var(--navy)] text-[11.5px] whitespace-nowrap">
-            <span className="text-[var(--mute-soft)] font-normal">BN-</span>
-            {row.original.maBN.replace(/^BN-?/i, "")}
-          </span>
-        ),
-      },
-      {
-        id: "hoTen",
+        id: "benhNhan",
         accessorKey: "hoTen",
-        header: "Họ tên",
-        size: 170,
-        meta: { flex: true },
-        enableSorting: false,
-        cell: ({ row }) => (
-          <span className="font-bold text-[var(--ink)] text-[13px]" title={row.original.hoTen}>
-            {row.original.hoTen}
-          </span>
-        ),
-      },
-      {
-        id: "gioiTuoi",
-        header: "Giới / Tuổi",
-        size: 102,
-        enableSorting: false,
-        cell: ({ row }) => (
-          <span>
-            {row.original.gioiTinh} · {ageOf(row.original)}t
-          </span>
-        ),
-      },
-      {
-        id: "chanDoan",
-        header: "Chẩn đoán",
-        size: 220,
+        header: "Bệnh nhân",
+        size: 260,
+        meta: { flex: true, noTruncate: true },
         enableSorting: false,
         cell: ({ row }) => {
-          const t = parseDiag(row.original.chanDoan).join(", ") || "—";
-          return <span title={t}>{t}</span>;
+          const r = row.original;
+          const sub = [r.gioiTinh, fmtSinhTuoi(r)].filter(Boolean).join(" · ");
+          return (
+            <div className="min-w-0">
+              <div className="font-bold text-[13px] text-[var(--ink)] truncate" title={r.hoTen}>
+                {r.hoTen}
+              </div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-[var(--mute)] min-w-0">
+                <span className="font-mono font-bold text-[var(--navy)] shrink-0">{r.maBN.replace(/^BN-?/i, "")}</span>
+                {sub && <span className="truncate" title={sub}>· {sub}</span>}
+              </div>
+            </div>
+          );
         },
       },
       {
-        id: "khuyenNghi",
-        accessorKey: "khuyenNghi",
-        header: "Khuyến nghị",
-        size: 150,
+        id: "chanDoan",
+        header: "Chẩn đoán / Khuyến nghị",
+        size: 240,
+        meta: { flex: true, noTruncate: true },
         enableSorting: false,
-        cell: ({ row }) => <span>{row.original.khuyenNghi || "—"}</span>,
+        cell: ({ row }) => {
+          const t = diagText(row.original);
+          const kn = row.original.khuyenNghi;
+          return (
+            <div className="min-w-0">
+              <div className={`truncate text-[12.5px] ${t ? "text-[var(--ink)]" : "text-[var(--mute-soft)]"}`} title={t}>
+                {t || "Chưa có chẩn đoán"}
+              </div>
+              {kn && (
+                <div
+                  className={`mt-0.5 text-[11.5px] truncate ${
+                    kn === "Phẫu thuật" ? "font-semibold text-[var(--rose)]" : "text-[var(--mute)]"
+                  }`}
+                >
+                  → {kn}
+                </div>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: "bhyt",
         header: "BHYT",
-        size: 88,
+        size: 72,
         enableSorting: false,
-        cell: ({ row }) => <span className="font-mono text-[12px]">{bhytLevel(row.original.bhyt) || "—"}</span>,
+        meta: { align: "center" },
+        cell: ({ row }) => {
+          const lv = bhytLevel(row.original.bhyt);
+          return lv ? (
+            <span className="font-mono text-[12px] text-[var(--ink)]">{lv}</span>
+          ) : (
+            <span className="text-[var(--mute-soft)]">—</span>
+          );
+        },
       },
       {
         id: "nhom",
         header: "Nhóm",
-        size: 74,
+        size: 64,
         enableSorting: false,
         meta: { align: "center" },
-        cell: ({ row }) => <span className="font-bold">{row.original.nhom || "—"}</span>,
-      },
-      {
-        id: "trangThai",
-        header: "Trạng thái",
-        size: 150,
-        enableSorting: false,
         cell: ({ row }) => {
-          const s = statusOf(row.original.trangThai);
-          return <StatusBadge label={s.label} cls={s.cls} sm />;
-        },
-      },
-      {
-        id: "buoiKham",
-        header: "Buổi khám",
-        size: 194,
-        enableSorting: false,
-        cell: ({ row }) => {
-          const t = `${fmtBuoiKhamName(row.original.buoiKham)} · ${fmtDate(row.original.buoiKham?.ngayKham)}`;
+          const n = row.original.nhom;
+          if (!n) return <span className="text-[var(--mute-soft)]">—</span>;
           return (
-            <span className="text-[11.5px] text-[var(--mute)]" title={t}>
-              {t}
+            <span
+              className={`inline-flex w-6 h-6 items-center justify-center rounded-md text-[12px] font-bold ${
+                n === "A" ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]" : "bg-[var(--gold-soft)] text-[var(--gold-deep)]"
+              }`}
+            >
+              {n}
             </span>
           );
         },
       },
       {
+        id: "trangThai",
+        header: "Trạng thái",
+        size: 132,
+        enableSorting: false,
+        cell: ({ row }) => {
+          const st = statusOf(row.original.trangThai);
+          return <StatusBadge label={st.label} cls={st.cls} sm />;
+        },
+      },
+      {
+        id: "buoiKham",
+        header: "Buổi khám",
+        size: 220,
+        enableSorting: false,
+        meta: { noTruncate: true },
+        cell: ({ row }) => {
+          const name = fmtBuoiKhamName(row.original.buoiKham);
+          return (
+            <div className="min-w-0">
+              <div className="truncate text-[12.5px] text-[var(--ink-soft)]" title={name}>
+                {name}
+              </div>
+              <div className="mt-0.5 font-mono text-[11px] text-[var(--mute)]">{fmtDate(row.original.buoiKham?.ngayKham)}</div>
+            </div>
+          );
+        },
+      },
+      {
         id: "actions",
-        header: "Thao tác",
-        size: 182,
+        header: "",
+        size: 84,
         enableSorting: false,
         enableResizing: false,
         meta: { align: "right" },
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-end gap-1">
             <button
               data-tour="hs-info"
               onClick={() => setInfoId(row.original.id)}
-              className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] font-semibold text-xs flex items-center gap-1 transition border border-[var(--navy-100)] cursor-pointer"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-[var(--navy)] hover:bg-[var(--navy-50)] border border-transparent hover:border-[var(--navy-100)] transition-colors cursor-pointer"
               title="Xem thông tin chi tiết hồ sơ"
+              aria-label="Thông tin"
             >
-              <Eye className="w-3.5 h-3.5" /> Thông tin
+              <Eye className="w-4 h-4" />
             </button>
             <button
               data-tour="hs-history"
               onClick={() => setHistoryId(row.original.id)}
-              className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--surface-soft)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] font-semibold text-xs flex items-center gap-1 transition border border-[var(--line)] cursor-pointer"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] border border-transparent hover:border-[var(--line)] transition-colors cursor-pointer"
               title="Xem lịch sử tương tác & thao tác"
+              aria-label="Lịch sử"
             >
-              <Clock className="w-3.5 h-3.5" /> Lịch sử
+              <Clock className="w-4 h-4" />
             </button>
           </div>
         ),
@@ -419,11 +446,11 @@ export default function HoSoPage() {
 
                 <div className="text-[12px] text-[var(--ink-soft)] space-y-1">
                   <div>
-                    {r.gioiTinh} · {ageOf(r)} tuổi{r.nhom ? ` · Nhóm ${r.nhom}` : ""}
+                    {[r.gioiTinh, fmtSinhTuoi(r)].filter(Boolean).join(" · ")}{r.nhom ? ` · Nhóm ${r.nhom}` : ""}
                     {bhytLevel(r.bhyt) ? ` · BHYT ${bhytLevel(r.bhyt)}` : ""}
                   </div>
                   <div className="text-[var(--mute)]">
-                    Chẩn đoán: <span className="text-[var(--ink)]">{parseDiag(r.chanDoan).join(", ") || "—"}</span>
+                    Chẩn đoán: <span className="text-[var(--ink)]">{diagText(r) || "—"}</span>
                   </div>
                   <div className="text-[var(--mute)]">
                     Khuyến nghị: <span className="text-[var(--ink)]">{r.khuyenNghi || "—"}</span>
@@ -455,8 +482,10 @@ export default function HoSoPage() {
         {/* Desktop: Bảng dữ liệu (TanStack — chuẩn VISIHUB) */}
         <div className="hidden md:block" data-tour="hs-table">
           <DataTable<HoSo>
+            dense
             emptyIcon={ClipboardList}
             emptyTitle="Không có hồ sơ khớp điều kiện"
+            onRowClick={(r) => setInfoId(r.id)}
           />
         </div>
 
