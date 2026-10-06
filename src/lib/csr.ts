@@ -170,6 +170,14 @@ export const ageOf = (p: { ngaySinh?: Date | string | null; namSinh?: number | n
   if (p.ngaySinh) return new Date().getFullYear() - new Date(p.ngaySinh).getFullYear();
   return p.namSinh ? new Date().getFullYear() - p.namSinh : 0;
 };
+/**
+ * Tên tư vấn viên của hồ sơ: ưu tiên ô "Nhân viên tư vấn" trên phiếu khám; trống thì lấy tài khoản
+ * đã phân nhóm A/B ở màn Tư vấn (tuVanVienMa) — cùng quy tắc với cột Google Sheet.
+ */
+export const tenTuVanVien = (h: { nhanVienTuVan?: string | null; tuVanVien?: { hoTen?: string | null } | null }) =>
+  (h.nhanVienTuVan?.trim() || h.tuVanVien?.hoTen?.trim() || "").replace(/\s+/g, " ");
+/** Giá trị lọc "chưa ghi nhận tư vấn viên" cho báo cáo chi tiết. */
+export const TVV_TRONG = "__none__";
 /** Ngày sinh đầy đủ dd/mm/yyyy; dữ liệu lịch sử chỉ có năm sinh thì trả về năm. */
 export const fmtNgaySinh = (p: { ngaySinh?: Date | string | null; namSinh?: number | null }) => {
   if (p.ngaySinh) {

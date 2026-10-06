@@ -30,7 +30,7 @@ import {
   Scissors,
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
-import { STATUS, statusOf, fmtDate } from "@/lib/csr";
+import { STATUS, statusOf, fmtDate, TVV_TRONG } from "@/lib/csr";
 import { Donut, BarChart, CHART_COLORS, type Slice } from "@/components/charts";
 import DateRangeFilter, { resolvePreset, type DateRange } from "@/components/csr/DateRangeFilter";
 import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
@@ -75,7 +75,7 @@ interface StatsData {
     daMo: number;
     denKhongMo: number;
   }>;
-  topDoctors: Array<{ name: string; total: number; nhomA: number; daMo: number }>;
+  topDoctors: Array<{ name: string; total: number; chiDinh: number; nhomA: number; daMo: number }>;
   topCounselors: Array<{ name: string; total: number; chotMo: number; daMo: number }>;
 }
 
@@ -1024,7 +1024,12 @@ function BaoCaoSkeleton() {
                         <span className="text-[var(--mute)]">
                           Khám: <b className="text-[var(--ink)]"><AnimatedNumber value={doc.total} /></b>
                         </span>
-                        <span className="text-emerald-700 font-bold">Chỉ định: <AnimatedNumber value={doc.nhomA} /></span>
+                        <span className="text-[var(--ink-soft)] font-bold" title="Bác sĩ chỉ định phẫu thuật">
+                          Chỉ định: <AnimatedNumber value={doc.chiDinh} />
+                        </span>
+                        <span className="text-emerald-700 font-bold" title="Đồng ý lên BV mổ (Nhóm A)">
+                          Nhóm A: <AnimatedNumber value={doc.nhomA} />
+                        </span>
                         <span className="text-[var(--teal-deep)] font-extrabold">Đã mổ: <AnimatedNumber value={doc.daMo} /></span>
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[var(--navy)] group-hover:translate-x-0.5 transition-all" />
                       </div>
@@ -1040,7 +1045,11 @@ function BaoCaoSkeleton() {
                 <div>
                   <h3 className="font-serif text-sm font-bold text-[var(--ink)]">Top Tư Vấn Viên Chốt Ca Mổ</h3>
                   <p className="text-[11px] text-[var(--mute)]">
-                    Theo số ca tư vấn và đã phẫu thuật (Bấm để xem danh sách bệnh nhân)
+                    Theo số ca tư vấn và đã phẫu thuật (Bấm để xem danh sách bệnh nhân) · Tổng chốt mổ{" "}
+                    <b className="font-mono text-[var(--ink-soft)]">
+                      {stats.topCounselors.reduce((sum, c) => sum + c.chotMo, 0).toLocaleString("vi-VN")}
+                    </b>
+                    /{stats.nhomA.toLocaleString("vi-VN")} Nhóm A
                   </p>
                 </div>
                 <UserCheck className="w-4 h-4 text-emerald-600" />
@@ -1049,27 +1058,36 @@ function BaoCaoSkeleton() {
                 {stats.topCounselors.length === 0 ? (
                   <div className="py-8 text-center text-xs text-[var(--mute)]">Chưa có dữ liệu tư vấn viên.</div>
                 ) : (
-                  stats.topCounselors.map((c, i) => (
+                  stats.topCounselors.map((c, i) => {
+                    const chuaGhiNhan = c.name === TVV_TRONG;
+                    const label = chuaGhiNhan ? "Chưa ghi nhận tư vấn viên" : c.name;
+                    return (
                     <div
                       key={c.name}
                       onClick={() =>
                         openDetail({
                           type: "counselor",
                           val: c.name,
-                          title: `Tư vấn viên: ${c.name}`,
-                          subtitle: `Danh sách bệnh nhân được tư vấn và chốt ca bởi ${c.name}`,
+                          title: chuaGhiNhan ? "Ca chốt mổ chưa ghi nhận tư vấn viên" : `Tư vấn viên: ${c.name}`,
+                          subtitle: chuaGhiNhan
+                            ? "Nhóm A chưa nhập Nhân viên tư vấn trên phiếu khám và chưa được phân nhóm ở màn Tư vấn"
+                            : `Danh sách bệnh nhân được tư vấn và chốt ca bởi ${c.name}`,
                           icon: UserCheck,
                         })
                       }
                       className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-soft)] hover:bg-[var(--surface-hover)] border border-[var(--line-soft)] hover:border-emerald-300 text-xs cursor-pointer transition-all group"
-                      title={`Xem danh sách bệnh nhân của tư vấn viên ${c.name}`}
+                      title={`Xem danh sách bệnh nhân của ${label}`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="w-5 h-5 rounded-full bg-white border border-[var(--line)] flex items-center justify-center font-bold text-[10px] text-emerald-700 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                          {i + 1}
+                          {chuaGhiNhan ? "?" : i + 1}
                         </span>
-                        <span className="font-bold text-[var(--ink)] group-hover:text-emerald-800 truncate transition-colors">
-                          {c.name}
+                        <span
+                          className={`font-bold truncate transition-colors ${
+                            chuaGhiNhan ? "italic text-amber-700" : "text-[var(--ink)] group-hover:text-emerald-800"
+                          }`}
+                        >
+                          {label}
                         </span>
                       </div>
                       <div className="flex items-center gap-4 font-mono shrink-0">
@@ -1081,7 +1099,8 @@ function BaoCaoSkeleton() {
                         <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

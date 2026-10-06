@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { classifyCSRFunnel } from "@/lib/csr";
+import { classifyCSRFunnel, tenTuVanVien, TVV_TRONG } from "@/lib/csr";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
 export const dynamic = "force-dynamic";
@@ -85,6 +85,7 @@ export async function GET(request: Request) {
           loaiBenhLy: true,
           bacSiChiDinh: true,
           nhanVienTuVan: true,
+          tuVanVien: { select: { hoTen: true } },
           ngayMoThucTe: true,
           daDon: true,
           ngayDenBV: true,
@@ -139,7 +140,7 @@ export async function GET(request: Request) {
     let bhytNone = 0;
 
     // Phân tích bác sĩ & tư vấn viên
-    const doctorMap: Record<string, { total: number; nhomA: number; daMo: number }> = {};
+    const doctorMap: Record<string, { total: number; chiDinh: number; nhomA: number; daMo: number }> = {};
     const counselorMap: Record<string, { total: number; chotMo: number; daMo: number }> = {};
 
     // Phân tích theo từng buổi khám
@@ -264,19 +265,24 @@ export async function GET(request: Request) {
       // Bác sĩ
       const bs = (h.bacSiChiDinh || h.buoiKham?.bacSiKham || "").trim();
       if (bs) {
-        if (!doctorMap[bs]) doctorMap[bs] = { total: 0, nhomA: 0, daMo: 0 };
+        if (!doctorMap[bs]) doctorMap[bs] = { total: 0, chiDinh: 0, nhomA: 0, daMo: 0 };
         doctorMap[bs].total++;
+        if (isChiDinh) doctorMap[bs].chiDinh++;
         if (isNhomA) doctorMap[bs].nhomA++;
         if (isDaMo) doctorMap[bs].daMo++;
       }
 
       // Tư vấn viên
-      const tvv = (h.nhanVienTuVan || "").trim();
-      if (tvv) {
-        if (!counselorMap[tvv]) counselorMap[tvv] = { total: 0, chotMo: 0, daMo: 0 };
-        counselorMap[tvv].total++;
-        if (isNhomA) counselorMap[tvv].chotMo++;
-        if (isDaMo) counselorMap[tvv].daMo++;
+      /* Trước đây chỉ đọc ô "Nhân viên tư vấn" trên phiếu khám nên bỏ sót các ca do tư vấn viên
+         phân nhóm ở màn Tư vấn (chỉ lưu tuVanVienMa). Ca chốt mổ chưa rõ tư vấn viên gom vào 1 dòng
+         riêng để tổng các dòng luôn khớp Nhóm A. */
+      const tvv = tenTuVanVien(h);
+      if (tvv || isNhomA) {
+        const key = tvv || TVV_TRONG;
+        if (!counselorMap[key]) counselorMap[key] = { total: 0, chotMo: 0, daMo: 0 };
+        counselorMap[key].total++;
+        if (isNhomA) counselorMap[key].chotMo++;
+        if (isDaMo) counselorMap[key].daMo++;
       }
 
       // Buổi khám
@@ -315,10 +321,14 @@ export async function GET(request: Request) {
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
 
-    const topCounselors = Object.entries(counselorMap)
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.chotMo - a.chotMo)
-      .slice(0, 8);
+    const { [TVV_TRONG]: chuaGhiNhanTvv, ...namedCounselors } = counselorMap;
+    const topCounselors = [
+      ...Object.entries(namedCounselors)
+        .map(([name, data]) => ({ name, ...data }))
+        .sort((a, b) => b.chotMo - a.chotMo || b.total - a.total)
+        .slice(0, 8),
+      ...(chuaGhiNhanTvv ? [{ name: TVV_TRONG, ...chuaGhiNhanTvv }] : []),
+    ];
 
     // Google Sheet link
     const sharedId = process.env.GOOGLE_SHEET_ID?.trim();

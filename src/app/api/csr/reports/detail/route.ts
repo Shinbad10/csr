@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { classifyCSRFunnel } from "@/lib/csr";
+import { classifyCSRFunnel, tenTuVanVien, TVV_TRONG } from "@/lib/csr";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
 export const dynamic = "force-dynamic";
@@ -68,6 +68,7 @@ export async function GET(request: Request) {
         huongXuTri: true,
         bacSiChiDinh: true,
         nhanVienTuVan: true,
+        tuVanVien: { select: { hoTen: true } },
         xacNhanDieuTri: true,
         lyDoKhongDieuTri: true,
         diemKham: true,
@@ -296,8 +297,9 @@ export async function GET(request: Request) {
         }
 
         case "counselor": {
-          const tvv = (h.nhanVienTuVan || "").trim().toLowerCase();
-          return tvv === val.trim().toLowerCase();
+          // Danh sách "Chưa ghi nhận" chỉ gồm ca chốt mổ, khớp với dòng tương ứng ở Top tư vấn.
+          if (val === TVV_TRONG) return !tenTuVanVien(h) && isNhomA;
+          return tenTuVanVien(h).toLowerCase() === val.trim().replace(/\s+/g, " ").toLowerCase();
         }
 
         case "session": {

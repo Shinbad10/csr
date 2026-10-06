@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { type ColumnDef } from "@tanstack/react-table";
-import { fmtDate, statusOf, bhytLevel, ageOf, parseDiag, classifyCSRNhom, fmtSinhTuoi } from "@/lib/csr";
+import { fmtDate, statusOf, bhytLevel, ageOf, parseDiag, classifyCSRNhom, fmtSinhTuoi, tenTuVanVien } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
 import { PatientInfoModal } from "@/components/csr/PatientModals";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -618,20 +618,21 @@ export default function ReportDetailModal({
       id: "bacSi",
       header: "Bác sĩ / TVV",
       size: 170,
-      accessorFn: (p) => [p.bacSiChiDinh || p.buoiKham?.bacSiKham, p.nhanVienTuVan].filter(Boolean).join(" "),
+      accessorFn: (p) => [p.bacSiChiDinh || p.buoiKham?.bacSiKham, tenTuVanVien(p)].filter(Boolean).join(" "),
       enableSorting: false,
       meta: { noTruncate: true },
       cell: ({ row }) => {
         const p = row.original;
         const doctor = p.bacSiChiDinh || p.buoiKham?.bacSiKham || "";
+        const tvv = tenTuVanVien(p);
         return (
           <div className="min-w-0">
             <div className="text-[12px] font-medium text-[var(--ink)] truncate" title={doctor}>
               {doctor || "—"}
             </div>
-            {p.nhanVienTuVan && (
-              <div className="text-[11px] text-[var(--mute)] truncate mt-0.5" title={p.nhanVienTuVan}>
-                TV: {p.nhanVienTuVan}
+            {tvv && (
+              <div className="text-[11px] text-[var(--mute)] truncate mt-0.5" title={tvv}>
+                TV: {tvv}
               </div>
             )}
           </div>
@@ -740,11 +741,15 @@ export default function ReportDetailModal({
           "Chẩn đoán chi tiết": diagnosisOf(p) || p.chanDoanKhac || "",
           "Khuyến nghị": p.khuyenNghi || "",
           "Hướng xử trí": p.huongXuTri || "",
-          "Nhóm phân loại": p.nhom || (p.khuyenNghi === "Phẫu thuật" ? "A" : p.khuyenNghi === "Theo dõi" ? "B" : ""),
+          // Cùng quy tắc phân nhóm với báo cáo (không suy Nhóm A từ khuyến nghị "Phẫu thuật").
+          "Nhóm phân loại": (() => {
+            const c = classifyCSRNhom(p);
+            return c.isNhomA ? "A" : c.hasPathology ? "B" : "";
+          })(),
           "Thẻ BHYT": p.bhyt || "",
           "Mức hưởng BHYT": p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt),
           "Bác sĩ chỉ định": p.bacSiChiDinh || p.buoiKham?.bacSiKham || "",
-          "Nhân viên tư vấn": p.nhanVienTuVan || "",
+          "Nhân viên tư vấn": tenTuVanVien(p),
           "Trạng thái": statusOf(p.trangThai).label,
           "Ngày mổ thực tế": p.ngayMoThucTe ? fmtDate(p.ngayMoThucTe) : "",
           "Trạng thái điều trị": p.trangThaiDieuTri || "",
