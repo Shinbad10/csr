@@ -8,6 +8,8 @@ import http from "node:http";
 import { bhytLevel } from "./csr";
 import { getPrisma, getLocalPrisma } from "./prisma";
 import { getTenCSKCB } from "./cskcb";
+import { decryptSecret } from "./secret";
+import { autoEncryptCoSo } from "./coso";
 export * from "./bhxh-types";
 import {
   type LichSuKCBRecord,
@@ -227,14 +229,18 @@ async function loadBhxhCredsFromDb(coSoId?: string | null): Promise<BhxhCreds | 
 
   if (!cs || !cs.bhxhUser || !cs.bhxhPass) return null;
 
+  // Còn dạng rõ cũ → máy chủ production tự mã hoá (chạy nền)
+  void autoEncryptCoSo(cs.id, { bhxhUser: cs.bhxhUser, bhxhPass: cs.bhxhPass, bhxhCccdCB: cs.bhxhCccdCB });
+
+  // Tài khoản / mật khẩu / CCCD cán bộ lưu dạng mã hoá (src/lib/secret.ts)
   return {
     coSoId: cs.id,
-    user: cs.bhxhUser.trim(),
-    pass: cs.bhxhPass.trim(),
+    user: (decryptSecret(cs.bhxhUser) || "").trim(),
+    pass: (decryptSecret(cs.bhxhPass) || "").trim(),
     maCSKCB: cs.bhxhMaCSKCB?.trim() || "",
     tenCSKCB: cs.ten || "",
     hoTenCB: cs.bhxhHoTenCB?.trim() || "",
-    cccdCB: cs.bhxhCccdCB?.trim() || "",
+    cccdCB: (decryptSecret(cs.bhxhCccdCB) || "").trim(),
     tokenUrl: BHXH_TOKEN_URL,
     queryUrl: BHXH_QUERY_URL,
   };

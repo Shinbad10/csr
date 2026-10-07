@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { syncHisDoctors } from "@/lib/his";
+import { isCorporate } from "@/lib/permissions";
+
+/**
+ * Bệnh viện áp dụng cho danh mục bác sĩ: cơ sở đang làm việc (cookie chọn cơ sở của tài khoản
+ * toàn hệ thống, hoặc cơ sở của tài khoản đơn vị). Chỉ tài khoản toàn hệ thống mới được chỉ định
+ * cơ sở khác qua tham số (màn Quản trị lọc theo cơ sở).
+ */
+async function resolveCoSoId(
+  session: Parameters<typeof getWorkingCoSoId>[0],
+  requested?: string | null
+): Promise<string | null> {
+  if (requested && isCorporate(session?.user?.role)) return requested;
+  return getWorkingCoSoId(session);
+}
 
 // Lưu vết thời điểm sync gần nhất để không gọi kết nối HIS quá dồn dập
 let lastSyncTimestamp = 0;
@@ -14,7 +28,7 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const coSoId = searchParams.get("coSoId") || session?.user?.coSoId || null;
+    const coSoId = await resolveCoSoId(session, searchParams.get("coSoId"));
     const prisma = getPrisma();
 
     // Tự động kích hoạt đồng bộ nền từ HIS nếu đã qua 15 phút kể từ lần đồng bộ trước
@@ -28,9 +42,11 @@ export async function GET(request: Request) {
 
     // 1. Lấy danh sách người dùng có vai trò Bác sĩ (bao gồm cả bác sĩ từ HIS)
     const [users, bkDoctors, hsDoctors] = await Promise.all([
+      // Chỉ bác sĩ của bệnh viện đang làm việc — bệnh viện khác không thấy.
       prisma.nguoiDungCSR.findMany({
         where: {
           trangThai: "active",
+          ...(coSoId ? { coSoId } : {}),
           OR: [
             { vaiTro: "BacSi" },
             { vaiTro: { contains: "BacSi" } },
@@ -45,12 +61,12 @@ export async function GET(request: Request) {
         orderBy: { hoTen: "asc" },
       }),
       prisma.buoiKham.findMany({
-        where: { bacSiKham: { not: null } },
+        where: { bacSiKham: { not: null }, ...(coSoId ? { coSoId } : {}) },
         select: { bacSiKham: true },
         distinct: ["bacSiKham"],
       }),
       prisma.hoSoBenhNhan.findMany({
-        where: { bacSiChiDinh: { not: null } },
+        where: { bacSiChiDinh: { not: null }, ...(coSoId ? { coSoId } : {}) },
         select: { bacSiChiDinh: true },
         distinct: ["bacSiChiDinh"],
       }),
@@ -78,7 +94,7 @@ export async function GET(request: Request) {
       for (const p of parts) {
         const key = p.toLowerCase();
         if (!map.has(key)) {
-          map.set(key, { maNV: `BS-${Date.now().toString().slice(-4)}`, hoTen: p, maHIS: null, coSoId: null });
+          map.set(key, { maNV: `BS-${Date.now().toString().slice(-4)}`, hoTen: p, maHIS: null, coSoId });
         }
       }
     }
@@ -90,7 +106,7 @@ export async function GET(request: Request) {
       if (name.length >= 3) {
         const key = name.toLowerCase();
         if (!map.has(key)) {
-          map.set(key, { maNV: `BS-${Date.now().toString().slice(-4)}`, hoTen: name, maHIS: null, coSoId: null });
+          map.set(key, { maNV: `BS-${Date.now().toString().slice(-4)}`, hoTen: name, maHIS: null, coSoId });
         }
       }
     }
@@ -109,15 +125,29 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json().catch(() => ({}));
-    const coSoId = body.coSoId || session?.user?.coSoId || null;
+    const coSoId = await resolveCoSoId(session, body.coSoId);
     const prisma = getPrisma();
 
     // 1. Thêm bác sĩ mới thủ công (để trống mã HIS chờ đồng bộ sau)
     if (body.action === "create" || (body.hoTen && body.hoTen.trim())) {
       const hoTen = String(body.hoTen).trim();
+      /* Bác sĩ thuộc bệnh viện đang làm việc. Trước đây lấy coSoId của tài khoản — tài khoản
+         toàn hệ thống có coSoId NULL nên bác sĩ thêm mới bị lưu NULL và hiện ở mọi bệnh viện. */
+      if (!coSoId) {
+        return NextResponse.json({ error: "Chọn bệnh viện làm việc trước khi thêm bác sĩ" }, { status: 400 });
+      }
       let existing = await prisma.nguoiDungCSR.findFirst({
-        where: { hoTen: { equals: hoTen } },
+        where: { hoTen: { equals: hoTen }, vaiTro: "BacSi", coSoId },
       });
+      if (!existing) {
+        // Bác sĩ cùng tên còn coSoId NULL (do lỗi cũ) → gán về bệnh viện này thay vì tạo trùng
+        const orphan = await prisma.nguoiDungCSR.findFirst({
+          where: { hoTen: { equals: hoTen }, vaiTro: "BacSi", coSoId: null },
+        });
+        if (orphan) {
+          existing = await prisma.nguoiDungCSR.update({ where: { maNV: orphan.maNV }, data: { coSoId, trangThai: "active" } });
+        }
+      }
 
       if (!existing) {
         const cleanName = hoTen.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();

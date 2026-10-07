@@ -9,15 +9,17 @@ export interface CoSoInfo {
   ten: string;
   diaChi?: string | null;
   trangThai: string;
+  /** Cơ sở đã cấu hình kết nối HIS (API không còn trả thông tin kết nối cho người dùng thường). */
+  hisConfigured?: boolean;
   hisHost?: string | null;
   hisPort?: string | null;
   hisDbName?: string | null;
   hisUser?: string | null;
-  hisPass?: string | null;
   bhxhUser?: string | null;
-  bhxhPass?: string | null;
   bhxhMaCSKCB?: string | null;
 }
+
+const coSoHasHis = (c: CoSoInfo) => c.hisConfigured ?? Boolean(c.hisHost?.trim() && c.hisDbName?.trim());
 
 export function readCosoCookie(): string {
   if (typeof document === "undefined") return "";
@@ -75,7 +77,7 @@ export function useCurrentFacility() {
     (coSoId?: string | null): boolean => {
       if (!coSoId) return false;
       const target = coSos.find((c) => c.id === coSoId);
-      return Boolean(target && target.hisHost?.trim() && target.hisDbName?.trim());
+      return Boolean(target && coSoHasHis(target));
     },
     [coSos]
   );
@@ -83,8 +85,8 @@ export function useCurrentFacility() {
   // Đơn vị có cấu hình Database HIS: có hisHost & hisDbName
   const hasHisConfig = Boolean(
     currentCoSo
-      ? currentCoSo.hisHost?.trim() && currentCoSo.hisDbName?.trim()
-      : isCorporate && coSos.some((c) => c.hisHost?.trim() && c.hisDbName?.trim())
+      ? coSoHasHis(currentCoSo)
+      : isCorporate && coSos.some(coSoHasHis)
   );
 
   return {

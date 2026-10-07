@@ -2,6 +2,8 @@ import sql from "mssql";
 import { getPrisma } from "./prisma";
 import { triggerSync } from "./syncWorker";
 import { checkSurgeryTiming } from "./csr";
+import { decryptSecret } from "./secret";
+import { autoEncryptCoSo } from "./coso";
 
 export interface HISCheckResult {
   found: boolean;
@@ -25,8 +27,9 @@ export interface HISCheckResult {
 }
 
 export async function getHisConfig(coSoId: string) {
+  let coSo: { hisHost: string | null; hisPort: string | null; hisUser: string | null; hisPass: string | null; hisDbName: string | null } | null;
   try {
-    const coSo = await getPrisma().coSo.findUnique({
+    coSo = await getPrisma().coSo.findUnique({
       where: { id: coSoId },
       select: {
         hisHost: true,
@@ -36,23 +39,29 @@ export async function getHisConfig(coSoId: string) {
         hisDbName: true,
       },
     });
-
-    return {
-      host: coSo?.hisHost || process.env.HIS_HOST || "192.168.10.250",
-      port: parseInt(coSo?.hisPort || process.env.HIS_PORT || "1433", 10),
-      user: coSo?.hisUser || process.env.HIS_USER || "reader",
-      pass: coSo?.hisPass || process.env.HIS_PASS || "Admin@123",
-      dbName: coSo?.hisDbName || process.env.HIS_DB || "shpt_phongKham",
-    };
   } catch {
+    coSo = null;
+  }
+  if (coSo) {
+    // Còn dạng rõ cũ → máy chủ production tự mã hoá (chạy nền, không làm chậm truy vấn HIS)
+    void autoEncryptCoSo(coSoId, coSo);
+    // Thông tin kết nối lưu dạng mã hoá (src/lib/secret.ts). Lỗi giải mã (sai/thiếu khoá) phải báo ra,
+    // KHÔNG được rơi về cấu hình mặc định — sẽ âm thầm kết nối nhầm máy chủ HIS.
     return {
-      host: process.env.HIS_HOST || "192.168.10.250",
-      port: parseInt(process.env.HIS_PORT || "1433", 10),
-      user: process.env.HIS_USER || "reader",
-      pass: process.env.HIS_PASS || "Admin@123",
-      dbName: process.env.HIS_DB || "shpt_phongKham",
+      host: decryptSecret(coSo.hisHost) || process.env.HIS_HOST || "192.168.10.250",
+      port: parseInt(decryptSecret(coSo.hisPort) || process.env.HIS_PORT || "1433", 10),
+      user: decryptSecret(coSo.hisUser) || process.env.HIS_USER || "reader",
+      pass: decryptSecret(coSo.hisPass) || process.env.HIS_PASS || "Admin@123",
+      dbName: decryptSecret(coSo.hisDbName) || process.env.HIS_DB || "shpt_phongKham",
     };
   }
+  return {
+    host: process.env.HIS_HOST || "192.168.10.250",
+    port: parseInt(process.env.HIS_PORT || "1433", 10),
+    user: process.env.HIS_USER || "reader",
+    pass: process.env.HIS_PASS || "Admin@123",
+    dbName: process.env.HIS_DB || "shpt_phongKham",
+  };
 }
 
 // ── Chuẩn hoá để đối chiếu giữa CSR và HIS ────────────────────────────────
@@ -1252,10 +1261,14 @@ export async function syncHisDoctors(targetCoSoId?: string | null): Promise<{ sy
     const tenDangNhap = `his_bs_${maClean}_${doc.coSoId}`.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 50);
 
     try {
-      // 1. Kiểm tra xem đã có bác sĩ trùng tên nhập tay trên CSR (đang để trống maHIS) chưa
+      // 1. Kiểm tra xem đã có bác sĩ trùng tên nhập tay trên CSR (đang để trống maHIS) chưa.
+      //    Chỉ xét bác sĩ của CÙNG bệnh viện (hoặc còn coSoId NULL do lỗi cũ) — không gán mã HIS
+      //    cho bác sĩ bệnh viện khác, không đổi vai trò của nhân viên khác trùng tên.
       const existingManual = await prisma.nguoiDungCSR.findFirst({
         where: {
           hoTen: { equals: tenClean },
+          vaiTro: "BacSi",
+          OR: [{ coSoId: doc.coSoId }, { coSoId: null }],
         },
       });
 
@@ -1267,6 +1280,7 @@ export async function syncHisDoctors(targetCoSoId?: string | null): Promise<{ sy
             data: {
               maHIS: doc.ma || maClean,
               vaiTro: "BacSi",
+              coSoId: doc.coSoId,
               trangThai: "active",
             },
           });
@@ -1275,6 +1289,7 @@ export async function syncHisDoctors(targetCoSoId?: string | null): Promise<{ sy
             where: { maNV: existingManual.maNV },
             data: {
               vaiTro: "BacSi",
+              coSoId: doc.coSoId,
               trangThai: "active",
             },
           });

@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { audit } from "@/lib/audit";
 import { clearBhxhCache } from "@/lib/bhxh";
+import { autoEncryptCoSo, coSoForAdmin, coSoSecretsForWrite } from "@/lib/coso";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -12,7 +13,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const isAllowed = session && (can(session.user.role, "admin.masterdata") || (can(session.user.role, "admin.users") && session.user.coSoId === id));
   if (!session || !isAllowed) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   try {
-    const { ten, diaChi, bhxhUser, bhxhPass, bhxhMaCSKCB, bhxhHoTenCB, bhxhCccdCB, hisHost, hisPort, hisUser, hisPass, hisDbName, cauHinhTruong } = await request.json();
+    const body = await request.json();
+    const { ten, diaChi, bhxhMaCSKCB, bhxhHoTenCB, cauHinhTruong } = body;
 
     // cauHinhTruong là chuỗi JSON object { "<fieldKey>": boolean }
     if (cauHinhTruong !== undefined && cauHinhTruong !== null) {
@@ -30,24 +32,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         ten,
         diaChi: diaChi !== undefined ? (diaChi || null) : undefined,
         cauHinhTruong: cauHinhTruong !== undefined ? (cauHinhTruong || null) : undefined,
-        bhxhUser: bhxhUser !== undefined ? (bhxhUser?.trim() || null) : undefined,
-        bhxhPass: bhxhPass !== undefined ? (bhxhPass?.trim() || null) : undefined,
         bhxhMaCSKCB: bhxhMaCSKCB !== undefined ? (bhxhMaCSKCB?.trim() || null) : undefined,
         bhxhHoTenCB: bhxhHoTenCB !== undefined ? (bhxhHoTenCB?.trim() || null) : undefined,
-        bhxhCccdCB: bhxhCccdCB !== undefined ? (bhxhCccdCB?.trim() || null) : undefined,
-        hisHost: hisHost !== undefined ? (hisHost?.trim() || null) : undefined,
-        hisPort: hisPort !== undefined ? (hisPort?.trim() || null) : undefined,
-        hisUser: hisUser !== undefined ? (hisUser?.trim() || null) : undefined,
-        hisPass: hisPass !== undefined ? (hisPass?.trim() || null) : undefined,
-        hisDbName: hisDbName !== undefined ? (hisDbName?.trim() || null) : undefined,
+        // Thông tin kết nối HIS / BHXH lưu dạng mã hoá; mật khẩu để trống = giữ nguyên
+        ...coSoSecretsForWrite(body, "update"),
       },
     });
     // Cấu hình Cổng BHXH được cache 10 phút trong bộ nhớ — xoá ngay để lần tra cứu kế tiếp dùng tài khoản mới
     clearBhxhCache(id);
     await audit(session.user.id, "CoSo", id, "sua", { ten, diaChi });
-    return NextResponse.json(data);
+    // Trường để trống (giữ nguyên) mà còn dạng rõ cũ → mã hoá luôn khi lưu
+    return NextResponse.json(coSoForAdmin(await autoEncryptCoSo(id, data)));
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
+    // 422 thay vì 500: nginx chặn phản hồi 5xx, người quản trị không đọc được lý do (vd. thiếu khoá mã hoá)
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 422 });
   }
 }
 

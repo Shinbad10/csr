@@ -31,6 +31,7 @@ import {
   Clock,
   Filter,
   Lock,
+  LockOpen,
   Eye,
   EyeOff,
   MapPin,
@@ -40,7 +41,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
-import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { fmtTime } from "@/lib/csr";
 import { can, roleLabel } from "@/lib/permissions";
@@ -48,22 +48,30 @@ import { Field, StatusBadge, SectionHeader } from "@/components/csr/fields";
 import { DataView, DataTable } from "@/components/data";
 import type { ColumnDef } from "@tanstack/react-table";
 
+type CoSoSecretKey = "hisHost" | "hisPort" | "hisUser" | "hisPass" | "hisDbName" | "bhxhUser" | "bhxhPass" | "bhxhCccdCB";
+
 interface CoSo {
   id: string;
   ten: string;
   diaChi: string | null;
   trangThai: string;
   cauHinhTruong?: string | null;
-  bhxhUser?: string | null;
-  bhxhPass?: string | null;
   bhxhMaCSKCB?: string | null;
   bhxhHoTenCB?: string | null;
-  bhxhCccdCB?: string | null;
-  hisHost?: string | null;
-  hisPort?: string | null;
-  hisUser?: string | null;
-  hisPass?: string | null;
-  hisDbName?: string | null;
+  // Thông tin kết nối HIS / BHXH không bao giờ gửi ra trình duyệt — chỉ cờ từng trường đã lưu
+  daLuu?: Partial<Record<CoSoSecretKey, boolean>>;
+  /** Bản che bớt để nhận ra đã lưu gì (vd. 14.•••.•••.96) — mật khẩu không có */
+  che?: Partial<Record<CoSoSecretKey, string>>;
+  /** Từng trường đã mã hoá trong CSDL (đã lưu mà false = còn dạng rõ) */
+  maHoa?: Partial<Record<CoSoSecretKey, boolean>>;
+  hisConfigured?: boolean;
+  bhxhConfigured?: boolean;
+  /** Thông tin kết nối trong CSDL đã ở dạng mã hoá */
+  daMaHoa?: boolean;
+  /** bat = máy chủ tự mã hoá; cho-may-chu = máy dev chỉ đọc; tat = chưa có CSR_ENCRYPTION_KEY */
+  cheDoMaHoa?: "bat" | "cho-may-chu" | "tat";
+  /** Lỗi giải mã (sai / thiếu khoá) */
+  secretError?: string | null;
 }
 
 interface LoiMoi {
@@ -119,6 +127,18 @@ const ROLE_BADGES: Record<string, { label: string; cls: string }> = {
 };
 
 /** Tạo mật khẩu tạm ngẫu nhiên an toàn trên client */
+/**
+ * Đọc JSON từ API email. Khi Cloudflare/proxy trả trang HTML lỗi (hết thời gian chờ, bị chặn…)
+ * thì diễn giải theo mã HTTP thay vì báo chung "Lỗi kết nối máy chủ".
+ */
+async function readEmailApi(res: Response): Promise<{ data: any; fallbackError: string }> {
+  const data = await res.json().catch(() => null);
+  const fallbackError = [502, 504, 522, 524].includes(res.status)
+    ? `Máy chủ không phản hồi kịp (HTTP ${res.status}) — thường do máy chủ ứng dụng không kết nối được máy chủ mail. Bấm "Kiểm tra kết nối" ở mục Email để xem lỗi chi tiết.`
+    : `Máy chủ trả về lỗi HTTP ${res.status}${data ? "" : " (không phải phản hồi của hệ thống — có thể bị tường lửa/proxy chặn)"}.`;
+  return { data, fallbackError };
+}
+
 function generateTempPassword(len = 10): string {
   const up = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   const low = "abcdefghijkmnpqrstuvwxyz";
@@ -132,6 +152,56 @@ function generateTempPassword(len = 10): string {
     [chars[i], chars[j]] = [chars[j], chars[i]];
   }
   return chars.join("");
+}
+
+/** Pill trạng thái chuẩn company UI: chấm 5px + chữ hoa mono. */
+function QtPill({ tone, children }: { tone: "active" | "draft" | "pending" | "expired"; children: React.ReactNode }) {
+  const cls = {
+    active: "bg-[var(--teal-soft)] text-[var(--teal-deep)]",
+    draft: "bg-[var(--line-soft)] text-[var(--mute)]",
+    pending: "bg-[var(--amber-soft)] text-[var(--amber)]",
+    expired: "bg-[var(--rose-soft)] text-[var(--rose)]",
+  }[tone];
+  return (
+    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.05em] px-2 py-[3px] rounded-[6px] whitespace-nowrap ${cls}`}>
+      <span className="w-[5px] h-[5px] rounded-full bg-current" />
+      {children}
+    </span>
+  );
+}
+
+/** Thẻ số liệu: dải màu 3px bên trái, nhãn chữ hoa, số Fraunces. */
+function QtStat({
+  icon: Icon,
+  label,
+  value,
+  unit,
+  sub,
+  tone,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number;
+  unit?: string;
+  sub?: string;
+  tone: "navy" | "teal" | "amber";
+}) {
+  const bar = { navy: "bg-[var(--navy)]", teal: "bg-[var(--teal)]", amber: "bg-[var(--amber)]" }[tone];
+  const ico = { navy: "text-[var(--navy)]", teal: "text-[var(--teal-deep)]", amber: "text-[var(--amber)]" }[tone];
+  return (
+    <div className="relative bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-4 py-3.5 overflow-hidden">
+      <span className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${bar}`} />
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mute)]">
+        <Icon className={`w-3.5 h-3.5 ${ico}`} />
+        {label}
+      </div>
+      <div className="mt-1.5 font-serif text-[26px] font-semibold leading-none text-[var(--ink)] tabular-nums">
+        {value}
+        {unit && <span className="font-mono text-[12px] font-semibold text-[var(--mute)] ml-0.5">{unit}</span>}
+      </div>
+      {sub && <div className="mt-1.5 text-[11px] text-[var(--mute)] truncate">{sub}</div>}
+    </div>
+  );
 }
 
 export default function QuanTriPage() {
@@ -175,6 +245,7 @@ export default function QuanTriPage() {
   const [confirmDialog, setConfirmDialog] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
   const [selectedCosos, setSelectedCosos] = useState<Set<string>>(new Set());
+  const [cosoSearch, setCosoSearch] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -222,8 +293,8 @@ export default function QuanTriPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      const data = await res.json();
-      if (res.ok) {
+      const { data, fallbackError } = await readEmailApi(res);
+      if (res.ok && data) {
         addToast({
           type: "success",
           title: "Máy chủ SMTP sẵn sàng",
@@ -234,7 +305,7 @@ export default function QuanTriPage() {
         addToast({
           type: "error",
           title: "Lỗi kết nối SMTP",
-          message: data.error || "Không thể kết nối đến máy chủ mail VISI.",
+          message: data?.error || fallbackError,
         });
       }
     } catch {
@@ -276,6 +347,35 @@ export default function QuanTriPage() {
     });
   }, [regularUsers, userRoleFilter, userCosoFilter, userEmailFilter, userSearch]);
 
+  // Tìm nhanh cơ sở theo mã / tên / địa chỉ
+  const filteredCosos = useMemo(() => {
+    const q = cosoSearch.trim().toLowerCase();
+    if (!q) return displayedCosos;
+    return displayedCosos.filter((c) => [c.id, c.ten, c.diaChi || ""].some((v) => v.toLowerCase().includes(q)));
+  }, [displayedCosos, cosoSearch]);
+
+  // Số tài khoản / bác sĩ theo từng cơ sở (hiển thị trong bảng cơ sở)
+  const nhanSuTheoCoSo = useMemo(() => {
+    const m: Record<string, { tk: number; bs: number }> = {};
+    for (const u of users) {
+      if (!u.coSoId) continue;
+      const laBacSi = u.vaiTro === "BacSi" || u.vaiTro.includes("Bác");
+      m[u.coSoId] ||= { tk: 0, bs: 0 };
+      m[u.coSoId][laBacSi ? "bs" : "tk"]++;
+    }
+    return m;
+  }, [users]);
+
+  const cosoStats = useMemo(
+    () => ({
+      tong: displayedCosos.length,
+      hoatDong: displayedCosos.filter((c) => c.trangThai === "active").length,
+      his: displayedCosos.filter((c) => c.hisConfigured).length,
+      bhyt: displayedCosos.filter((c) => c.bhxhConfigured).length,
+    }),
+    [displayedCosos]
+  );
+
   const doctorUsers = useMemo(() => {
     return users
       .filter((u) => u.vaiTro === "BacSi" || u.vaiTro.includes("Bác"))
@@ -313,19 +413,20 @@ export default function QuanTriPage() {
   const totalNotSent = regularUsers.filter((u) => !u.loiMoi?.ok).length;
 
   const availableTabs = useMemo(() => {
+    // [khoá, nhãn, icon, số đếm (null = không hiện)]
     if (isIT) {
       return [
-        ["coso", "Cấu hình đơn vị", Building2],
-        ["nguoidung", `Tài khoản (${regularUsers.length})`, Users],
-        ["bacsi", `Danh sách Bác sĩ (${doctorUsers.length})`, Stethoscope],
+        ["coso", "Cấu hình đơn vị", Building2, null],
+        ["nguoidung", "Tài khoản", Users, regularUsers.length],
+        ["bacsi", "Danh sách bác sĩ", Stethoscope, doctorUsers.length],
       ] as const;
     }
     return [
-      ["coso", `Cơ sở (${displayedCosos.length})`, Building2],
-      ["nguoidung", `Tài khoản (${regularUsers.length})`, Users],
-      ["bacsi", `Danh sách Bác sĩ (${doctorUsers.length})`, Stethoscope],
-      ["gsheet", "Google Sheet", FileSpreadsheet],
-      ["audit", `Nhật ký (${audits.length})`, ScrollText],
+      ["coso", "Cơ sở y tế", Building2, displayedCosos.length],
+      ["nguoidung", "Tài khoản", Users, regularUsers.length],
+      ["bacsi", "Danh sách bác sĩ", Stethoscope, doctorUsers.length],
+      ["gsheet", "Google Sheet", FileSpreadsheet, null],
+      ["audit", "Nhật ký", ScrollText, audits.length],
     ] as const;
   }, [isIT, displayedCosos.length, regularUsers.length, doctorUsers.length, audits.length]);
 
@@ -431,9 +532,9 @@ export default function QuanTriPage() {
                 <input
                   type="checkbox"
                   className={checkboxCls}
-                  checked={displayedCosos.length > 0 && selectedCosos.size === displayedCosos.length}
+                  checked={filteredCosos.length > 0 && filteredCosos.every((c) => selectedCosos.has(c.id))}
                   onChange={(e) =>
-                    setSelectedCosos(e.target.checked ? new Set(displayedCosos.map((c) => c.id)) : new Set())
+                    setSelectedCosos(e.target.checked ? new Set(filteredCosos.map((c) => c.id)) : new Set())
                   }
                 />
               ),
@@ -455,85 +556,93 @@ export default function QuanTriPage() {
           ] as ColumnDef<CoSo>[])
         : []),
       {
-        id: "id",
-        accessorKey: "id",
-        header: "Mã",
-        size: 80,
-        meta: { align: "center", width: "80px" },
+        id: "ten",
+        accessorKey: "ten",
+        header: "Cơ sở y tế",
+        size: 260,
+        meta: { width: "30%" },
         cell: ({ row }) => (
-          <div className="flex justify-center">
-            <span className="font-mono font-bold text-[12px] px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200/80">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[10.5px] font-extrabold text-[var(--navy)] shrink-0">
               {row.original.id}
             </span>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-[var(--ink)] truncate">{row.original.ten}</div>
+              <div className="mt-0.5 flex items-center gap-1 text-[10.5px] text-[var(--mute)] min-w-0">
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate">{row.original.diaChi || "Chưa có địa chỉ"}</span>
+              </div>
+            </div>
           </div>
         ),
       },
       {
-        id: "ten",
-        accessorKey: "ten",
-        header: "Tên cơ sở y tế",
-        size: 340,
-        meta: { width: "38%" },
-        cell: ({ row }) => (
-          <div className="min-w-0 pr-2">
-            <div className="font-bold text-[var(--ink)] text-[14px] flex items-center gap-1.5 truncate">
-              <Building2 className="w-4 h-4 text-teal-600 shrink-0" />
-              <span className="truncate">{row.original.ten}</span>
+        id: "nhanSu",
+        header: "Nhân sự",
+        size: 120,
+        meta: { width: "11%" },
+        enableSorting: false,
+        cell: ({ row }) => {
+          const ns = nhanSuTheoCoSo[row.original.id] || { tk: 0, bs: 0 };
+          return (
+            <div className="text-[11.5px] text-[var(--mute)] leading-[1.55]">
+              <div>
+                <b className="font-mono font-bold text-[var(--ink)] tabular-nums">{ns.tk}</b> tài khoản
+              </div>
+              <div>
+                <b className="font-mono font-bold text-[var(--ink)] tabular-nums">{ns.bs}</b> bác sĩ
+              </div>
             </div>
-            <div className="text-[12px] text-[var(--mute)] truncate mt-0.5 flex items-center gap-1.5">
-              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-              <span className="truncate">{row.original.diaChi || "Chưa có địa chỉ"}</span>
-            </div>
-          </div>
-        ),
+          );
+        },
       },
       {
         id: "bhxh",
-        header: "Cấu hình BHYT",
-        size: 260,
-        meta: { width: "27%" },
+        header: "Cổng tra cứu BHYT",
+        size: 200,
+        meta: { width: "20%" },
         enableSorting: false,
         cell: ({ row }) => {
-          const hasBhxh = Boolean(row.original.bhxhUser && row.original.bhxhPass);
-          return hasBhxh ? (
-            <div className="space-y-0.5">
-              <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                <Check className="w-3 h-3 text-emerald-600" />
-                <span>Mã CSKCB: {row.original.bhxhMaCSKCB || "Đã lưu"}</span>
-              </div>
-              <div className="text-[11.5px] text-slate-500 font-mono truncate pl-1">
-                TK: {row.original.bhxhUser} {row.original.bhxhHoTenCB ? `• ${row.original.bhxhHoTenCB}` : ""}
+          const c = row.original;
+          return c.bhxhConfigured ? (
+            <div className="space-y-1 min-w-0">
+              <QtPill tone="active">Đã cấu hình</QtPill>
+              <div className="font-mono text-[10.5px] text-[var(--mute)] truncate">
+                CSKCB <span className="text-[var(--ink-soft)] font-semibold">{c.bhxhMaCSKCB || "—"}</span>
+                {c.che?.bhxhUser && <> · {c.che.bhxhUser}</>}
               </div>
             </div>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[11.5px] text-slate-400 bg-slate-50 px-2.5 py-0.5 rounded-md border border-slate-200">
-              Chưa cấu hình
-            </span>
+            <QtPill tone="draft">Chưa cấu hình</QtPill>
           );
         },
       },
       {
         id: "his",
         header: "Kết nối HIS",
-        size: 260,
+        size: 230,
         meta: { width: "25%" },
         enableSorting: false,
         cell: ({ row }) => {
-          const hasHis = Boolean(row.original.hisHost && row.original.hisDbName);
-          return hasHis ? (
-            <div className="space-y-0.5">
-              <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                <Server className="w-3 h-3 text-blue-600" />
-                <span className="font-mono">{row.original.hisDbName}</span>
+          const c = row.original;
+          if (!c.hisConfigured) return <QtPill tone="draft">Chưa kết nối</QtPill>;
+          const maHoa = c.daMaHoa !== false;
+          return (
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <QtPill tone="active">Đã kết nối</QtPill>
+                <span title={maHoa ? "Thông tin kết nối đã mã hoá" : "Thông tin kết nối còn dạng rõ, chưa mã hoá"}>
+                  {maHoa ? (
+                    <Lock className="w-3 h-3 text-[var(--teal)]" />
+                  ) : (
+                    <LockOpen className="w-3 h-3 text-[var(--amber)]" />
+                  )}
+                </span>
               </div>
-              <div className="text-[11.5px] text-slate-500 font-mono truncate pl-1">
-                {row.original.hisHost}:{row.original.hisPort || "1433"}
+              <div className="font-mono text-[10.5px] text-[var(--mute)] truncate">
+                {c.che?.hisDbName || "••••••"} @ {c.che?.hisHost || "••••••"}:{c.che?.hisPort || "1433"}
               </div>
             </div>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[11.5px] text-slate-400 bg-slate-50 px-2.5 py-0.5 rounded-md border border-slate-200">
-              Chưa kết nối
-            </span>
           );
         },
       },
@@ -541,43 +650,40 @@ export default function QuanTriPage() {
         id: "trangThai",
         accessorKey: "trangThai",
         header: "Trạng thái",
-        size: 130,
-        meta: { align: "center", width: "130px" },
-        cell: ({ row }) => (
-          <div className="flex justify-center">
-            {row.original.trangThai === "active" ? (
-              <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
-            ) : (
-              <StatusBadge label="Đã khóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
-            )}
-          </div>
-        ),
+        size: 120,
+        meta: { width: "12%" },
+        cell: ({ row }) =>
+          row.original.trangThai === "active" ? (
+            <QtPill tone="active">Hoạt động</QtPill>
+          ) : (
+            <QtPill tone="expired">Đã khoá</QtPill>
+          ),
       },
       {
         id: "actions",
-        header: "Thao tác",
-        size: 90,
+        header: "",
+        size: 84,
         enableSorting: false,
         enableResizing: false,
-        meta: { align: "right", width: "90px" },
+        meta: { align: "right", width: "84px" },
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1" data-no-row-click>
+          <div className="flex items-center justify-end gap-0.5" data-no-row-click>
             <button
               type="button"
               onClick={() => setModal({ type: "coso", rec: row.original })}
-              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors"
-              title="Sửa cấu hình cơ sở"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors cursor-pointer"
+              title="Sửa thông tin & cấu hình kết nối"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
             {!isIT && (
               <button
                 type="button"
                 onClick={() => lockCoso(row.original.id)}
-                className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors"
-                title="Xóa cơ sở"
+                className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors cursor-pointer"
+                title="Xoá cơ sở"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -585,7 +691,7 @@ export default function QuanTriPage() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isIT, selectedCosos, displayedCosos]
+    [isIT, selectedCosos, filteredCosos, nhanSuTheoCoSo]
   );
 
   // Cột bảng Tài khoản (Tối ưu chuẩn VISIHUB)
@@ -1022,45 +1128,38 @@ export default function QuanTriPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={isIT ? "Quản trị tài khoản & Đơn vị" : "Quản trị hệ thống"}
-        description={
-          isIT
-            ? "Quản lý tài khoản nhân sự, gửi thư mời tham gia & danh sách bác sĩ thuộc đơn vị."
-            : "Quản trị danh mục cơ sở, phân quyền tài khoản, gửi email thư mời qua máy chủ VISI, và nhật ký kiểm toán."
-        }
-        guide={
-          isIT
-            ? [
-                { selector: '[data-tour="qt-tabs"]', title: "Chọn mục quản trị", desc: "Dùng các tab: Tài khoản đơn vị, Danh sách Bác sĩ." },
-                { title: "Quản lý tài khoản đơn vị", desc: "Tạo tài khoản, gửi thư mời tham gia kèm mật khẩu qua email cho nhân sự." },
-                { title: "Danh sách bác sĩ", desc: "Xem và đồng bộ danh sách bác sĩ thuộc cơ sở từ HIS." },
-              ]
-            : [
-                { selector: '[data-tour="qt-tabs"]', title: "Chọn mục quản trị", desc: "Dùng các tab: Cơ sở, Tài khoản, Danh sách Bác sĩ, Google Sheet, Nhật ký." },
-                { title: "Gửi thư mời tham gia", desc: "Sử dụng SMTP no-reply@visicare.com.vn để gửi thông tin đăng nhập tự động cho nhân sự." },
-                { title: "Đồng bộ Google Sheet", desc: "Quản lý ID bảng tính đồng bộ hồ sơ khám theo từng cơ sở." },
-              ]
-        }
-      />
-
+    <div className="space-y-4">
       {/* Tabs navigation */}
-      <div data-tour="qt-tabs" className="flex items-center gap-1.5 bg-white border border-[var(--line)] rounded-2xl p-1.5 w-full sm:w-fit overflow-x-auto hide-scrollbar shadow-xs">
-        {availableTabs.map(([k, label, Icon]) => (
-          <button
-            key={k}
-            onClick={() => changeTab(k as any)}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all whitespace-nowrap ${
-              tab === k
-                ? "bg-[var(--navy)] text-white shadow-sm"
-                : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:text-[var(--navy)]"
-            }`}
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            <span>{label}</span>
-          </button>
-        ))}
+      <div
+        data-tour="qt-tabs"
+        className="flex items-center gap-0.5 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-2 overflow-x-auto overflow-y-hidden hide-scrollbar"
+      >
+        {availableTabs.map(([k, label, Icon, count]) => {
+          const on = tab === k;
+          return (
+            <button
+              key={k}
+              onClick={() => changeTab(k as any)}
+              className={`relative inline-flex items-center gap-2 px-3.5 py-3 text-[12.5px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                on
+                  ? "text-[var(--navy)] after:absolute after:left-3 after:right-3 after:bottom-0 after:h-[2px] after:rounded-full after:bg-[var(--navy)]"
+                  : "text-[var(--mute)] hover:text-[var(--ink)]"
+              }`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{label}</span>
+              {count != null && (
+                <span
+                  className={`font-mono text-[10px] font-bold px-1.5 py-px rounded-[6px] tabular-nums ${
+                    on ? "bg-[var(--navy-100)] text-[var(--navy)]" : "bg-[var(--line-soft)] text-[var(--mute)]"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {loading && users.length === 0 && cosos.length === 0 ? (
@@ -1419,35 +1518,73 @@ export default function QuanTriPage() {
               TAB: CƠ SỞ Y TẾ
              ════════════════════════════════════════════════════════════════ */}
           {tab === "coso" && (
-            <div className="space-y-4">
-              <div className="flex flex-col-reverse sm:flex-row justify-between sm:items-center gap-3">
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                  {selectedCosos.size > 0 && !isIT && (
-                    <button
-                      onClick={bulkDeleteCosos}
-                      className="btn w-full sm:w-auto px-4 py-2 text-[13px] font-bold text-[var(--rose)] bg-[var(--rose-soft)] hover:bg-[var(--rose)] hover:text-white rounded-xl shadow-xs transition-colors flex justify-center items-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" /> Xóa {selectedCosos.size} đã chọn
-                    </button>
-                  )}
-                </div>
-                {!isIT && (
-                  <button
-                    onClick={() => setModal({ type: "coso" })}
-                    className="btn btn-primary w-full sm:w-auto px-5 py-2.5 text-[13px] font-bold flex justify-center items-center gap-2 rounded-xl shadow-sm"
-                  >
-                    <Plus className="w-4 h-4 text-[var(--teal)] stroke-[3]" /> Thêm cơ sở y tế
-                  </button>
-                )}
+            <div className="space-y-3.5">
+              {/* Thẻ số liệu nhanh */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <QtStat icon={Building2} label="Cơ sở y tế" value={cosoStats.tong} sub="trong phạm vi quản lý" tone="navy" />
+                <QtStat
+                  icon={Check}
+                  label="Đang hoạt động"
+                  value={cosoStats.hoatDong}
+                  sub={`${cosoStats.tong - cosoStats.hoatDong} đã khoá`}
+                  tone="teal"
+                />
+                <QtStat
+                  icon={Server}
+                  label="Kết nối HIS"
+                  value={cosoStats.his}
+                  unit={`/${cosoStats.tong}`}
+                  sub={cosoStats.his < cosoStats.tong ? `${cosoStats.tong - cosoStats.his} cơ sở chưa kết nối` : "Tất cả đã kết nối"}
+                  tone={cosoStats.his < cosoStats.tong ? "amber" : "teal"}
+                />
+                <QtStat
+                  icon={ShieldCheck}
+                  label="Cổng tra cứu BHYT"
+                  value={cosoStats.bhyt}
+                  unit={`/${cosoStats.tong}`}
+                  sub={cosoStats.bhyt < cosoStats.tong ? `${cosoStats.tong - cosoStats.bhyt} cơ sở chưa cấu hình` : "Tất cả đã cấu hình"}
+                  tone={cosoStats.bhyt < cosoStats.tong ? "amber" : "teal"}
+                />
               </div>
 
-              <div data-tour="qt-table" className="card p-0 overflow-hidden rounded-2xl border border-[var(--line)] shadow-xs">
+              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden">
+                {/* Thanh công cụ */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
+                  <div className="relative w-full sm:w-[300px]">
+                    <Search className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      value={cosoSearch}
+                      onChange={(e) => setCosoSearch(e.target.value)}
+                      placeholder="Tìm theo mã, tên, địa chỉ cơ sở…"
+                      className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedCosos.size > 0 && !isIT && (
+                      <button
+                        onClick={bulkDeleteCosos}
+                        className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] text-[12.5px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition-all cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Xoá <span className="font-mono">{selectedCosos.size}</span> đã chọn
+                      </button>
+                    )}
+                    {!isIT && (
+                      <button
+                        onClick={() => setModal({ type: "coso" })}
+                        className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" /> Thêm cơ sở y tế
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Mobile */}
-                <div className="md:hidden divide-y divide-[var(--line-soft)] bg-white">
-                  {displayedCosos.length === 0 ? (
-                    <div className="py-16 text-center text-[var(--mute)] text-[13px]">Chưa có cơ sở nào.</div>
+                <div className="md:hidden divide-y divide-[var(--line-soft)]">
+                  {filteredCosos.length === 0 ? (
+                    <div className="py-14 text-center text-[var(--mute)] text-[12.5px]">Không có cơ sở phù hợp.</div>
                   ) : (
-                    displayedCosos.map((c) => (
+                    filteredCosos.map((c) => (
                       <div key={c.id} className="p-4 flex items-start gap-3">
                         {!isIT && (
                           <input
@@ -1462,22 +1599,22 @@ export default function QuanTriPage() {
                             }}
                           />
                         )}
+                        <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[10.5px] font-extrabold text-[var(--navy)] shrink-0">
+                          {c.id}
+                        </span>
                         <div className="min-w-0 flex-1 space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-[14px] text-[var(--ink)]">{c.ten}</span>
-                            <span className="font-mono text-[11px] font-bold text-[var(--teal-deep)]">{c.id}</span>
+                          <div className="text-[13px] font-semibold text-[var(--ink)]">{c.ten}</div>
+                          <div className="text-[11px] text-[var(--mute)] break-words">{c.diaChi || "Chưa có địa chỉ"}</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {c.trangThai === "active" ? <QtPill tone="active">Hoạt động</QtPill> : <QtPill tone="expired">Đã khoá</QtPill>}
+                            <QtPill tone={c.hisConfigured ? "active" : "draft"}>{c.hisConfigured ? "HIS" : "Chưa HIS"}</QtPill>
+                            <QtPill tone={c.bhxhConfigured ? "active" : "draft"}>{c.bhxhConfigured ? "BHYT" : "Chưa BHYT"}</QtPill>
                           </div>
-                          <div className="text-[12px] text-[var(--mute)] break-words">{c.diaChi || "—"}</div>
-                          {c.trangThai === "active" ? (
-                            <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
-                          ) : (
-                            <StatusBadge label="Đã khóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
-                          )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-0.5 shrink-0">
                           <button
                             onClick={() => setModal({ type: "coso", rec: c })}
-                            className="p-2 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
+                            className="w-8 h-8 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)]"
                             title="Sửa cấu hình"
                           >
                             <Pencil className="w-4 h-4" />
@@ -1485,8 +1622,8 @@ export default function QuanTriPage() {
                           {!isIT && (
                             <button
                               onClick={() => lockCoso(c.id)}
-                              className="p-2 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]"
-                              title="Xóa cơ sở"
+                              className="w-8 h-8 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)]"
+                              title="Xoá cơ sở"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1499,14 +1636,30 @@ export default function QuanTriPage() {
 
                 {/* Desktop */}
                 <div className="hidden md:block">
-                  <DataView<CoSo, unknown> columns={cosoColumns} data={displayedCosos} pageSize={50}>
-                    <DataTable<CoSo> dense emptyIcon={Building2} emptyTitle="Chưa có cơ sở nào" />
+                  <DataView<CoSo, unknown> columns={cosoColumns} data={filteredCosos} pageSize={50}>
+                    <DataTable<CoSo>
+                      dense
+                      emptyIcon={Building2}
+                      emptyTitle={cosoSearch ? "Không có cơ sở phù hợp" : "Chưa có cơ sở nào"}
+                      onRowClick={(c) => setModal({ type: "coso", rec: c })}
+                    />
                   </DataView>
                 </div>
-                <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium">
-                  {isIT
-                    ? `Đơn vị của bạn: ${displayedCosos[0]?.ten || session?.user?.coSoId || ""}`
-                    : <>Tổng số <span className="font-mono font-bold text-[var(--ink)]">{displayedCosos.length}</span> cơ sở y tế</>}
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 px-4 py-2.5 border-t border-[var(--line)] bg-[var(--surface-soft)] text-[11px] text-[var(--mute)]">
+                  <span>
+                    {isIT ? (
+                      <>Đơn vị của bạn: <b className="text-[var(--ink-soft)]">{displayedCosos[0]?.ten || session?.user?.coSoId || ""}</b></>
+                    ) : (
+                      <>
+                        Hiển thị <b className="font-mono text-[var(--ink)]">{filteredCosos.length}</b> /{" "}
+                        <b className="font-mono text-[var(--ink)]">{displayedCosos.length}</b> cơ sở y tế
+                      </>
+                    )}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-[var(--teal)]" /> Thông tin kết nối được mã hoá, chỉ hiện bản che bớt
+                  </span>
                 </div>
               </div>
             </div>
@@ -1795,10 +1948,10 @@ function InviteUserModal({
           matKhau: capMatKhauMoi ? matKhau : undefined,
         }),
       });
-      const d = await res.json();
+      const { data: d, fallbackError } = await readEmailApi(res);
       setSending(false);
-      if (!res.ok) {
-        setErr(d.error || "Gửi email thất bại");
+      if (!res.ok || !d) {
+        setErr(d?.error || fallbackError);
         return;
       }
       addToast({
@@ -1809,7 +1962,7 @@ function InviteUserModal({
       onDone();
     } catch {
       setSending(false);
-      setErr("Lỗi kết nối máy chủ khi gửi email.");
+      setErr("Mất kết nối tới máy chủ — kiểm tra mạng rồi thử lại.");
     }
   };
 
@@ -1997,10 +2150,10 @@ function BulkInviteModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ targets }),
       });
-      const data = await res.json();
+      const { data, fallbackError } = await readEmailApi(res);
       setSending(false);
-      if (!res.ok) {
-        setErr(data.error || "Lỗi gửi hàng loạt");
+      if (!res.ok || !data) {
+        setErr(data?.error || fallbackError);
         return;
       }
       addToast({
@@ -2173,13 +2326,13 @@ function SmtpTestModal({ onClose }: { onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: testEmail.trim().toLowerCase() }),
       });
-      const data = await res.json();
+      const { data, fallbackError } = await readEmailApi(res);
       setSending(false);
-      if (res.ok) {
+      if (res.ok && data) {
         setResult({ ok: true, message: data.message || "Gửi thư thử nghiệm thành công!" });
         addToast({ type: "success", message: "Đã gửi email thử nghiệm thành công!" });
       } else {
-        setResult({ ok: false, message: data.error || "Gửi thất bại" });
+        setResult({ ok: false, message: data?.error || fallbackError });
       }
     } catch {
       setSending(false);
@@ -2830,6 +2983,197 @@ function UserModal({
 }
 
 // ─── Modal Cấu hình Cơ sở (CoSoModal) ───
+/* ─── Thành phần form cơ sở — chuẩn company UI (navy/teal, Manrope + JetBrains Mono, thẻ 14px) ─── */
+const CS_INPUT =
+  "h-9 w-full px-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all duration-150 focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] disabled:opacity-50 disabled:cursor-not-allowed";
+
+function CsField({
+  label,
+  required,
+  hint,
+  className = "",
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={`flex flex-col gap-1.5 min-w-0 ${className}`}>
+      <span className="text-[11px] font-semibold text-[var(--ink-soft)]">
+        {label}
+        {required && <span className="text-[var(--rose)] ml-0.5">*</span>}
+      </span>
+      {children}
+      {hint && <span className="text-[10.5px] text-[var(--mute)] leading-snug">{hint}</span>}
+    </label>
+  );
+}
+
+/**
+ * Ô thông tin kết nối (mã hoá): đã lưu thì hiện bản che bớt kèm khoá teal; gõ vào là sẽ thay giá trị mới (bút amber).
+ * Chặn trình duyệt tự điền tài khoản/mật khẩu đăng nhập vào các ô này.
+ */
+function CsSecretInput({
+  name,
+  value,
+  onChange,
+  saved,
+  encrypted,
+  masked,
+  placeholder,
+  password,
+  disabled,
+}: {
+  name: string;
+  value: string;
+  onChange: (v: string) => void;
+  saved?: boolean;
+  /** Giá trị đã lưu đang ở dạng mã hoá (false = còn bản rõ cũ) */
+  encrypted?: boolean;
+  masked?: string;
+  placeholder: string;
+  password?: boolean;
+  disabled?: boolean;
+}) {
+  const changing = value.trim() !== "";
+  const icon = changing ? (
+    <Pencil className="w-3.5 h-3.5 text-[var(--amber)]" />
+  ) : encrypted ? (
+    <Lock className="w-3.5 h-3.5 text-[var(--teal)]" />
+  ) : (
+    <LockOpen className="w-3.5 h-3.5 text-[var(--amber)]" />
+  );
+  const tip = changing
+    ? "Sẽ thay bằng giá trị mới khi lưu"
+    : encrypted
+    ? "Đã lưu & mã hoá — để trống để giữ nguyên"
+    : "Đã lưu nhưng CHƯA mã hoá (dạng rõ) — để trống để giữ nguyên";
+  return (
+    <div className="relative">
+      <input
+        type={password ? "password" : "text"}
+        name={`coso-${name}`}
+        autoComplete={password ? "new-password" : "off"}
+        data-lpignore="true"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={saved ? masked || "••••••••" : placeholder}
+        className={`${CS_INPUT} font-mono ${saved ? "pr-8" : ""} ${saved && !changing ? "placeholder:text-[var(--ink-soft)]" : ""}`}
+      />
+      {saved && (
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-auto" title={tip}>
+          {icon}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function CsSection({
+  icon: Icon,
+  title,
+  desc,
+  aside,
+  footer,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  desc?: string;
+  aside?: React.ReactNode;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)]">
+      <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--line-soft)]">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-7 h-7 rounded-[8px] bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center shrink-0">
+            <Icon className="w-3.5 h-3.5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--ink)] truncate">{title}</h3>
+            {desc && <p className="text-[11px] text-[var(--mute)] truncate mt-0.5">{desc}</p>}
+          </div>
+        </div>
+        {aside && <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">{aside}</div>}
+      </header>
+      <div className="p-4 space-y-3.5">{children}</div>
+      {footer && (
+        <div className="px-4 py-2.5 border-t border-[var(--line-soft)] bg-[var(--surface-soft)] rounded-b-[14px] text-[10.5px] text-[var(--mute)] flex items-center gap-1.5">
+          {footer}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Pill trạng thái: teal = đã cấu hình, xám = chưa. */
+function CsStatePill({ on, onLabel = "Đã cấu hình", offLabel = "Chưa cấu hình" }: { on: boolean; onLabel?: string; offLabel?: string }) {
+  return on ? (
+    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px] bg-[var(--teal-soft)] text-[var(--teal-deep)]">
+      <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" />
+      {onLabel}
+    </span>
+  ) : (
+    <span className="inline-flex items-center font-mono text-[10px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px] bg-[var(--line-soft)] text-[var(--mute)]">
+      {offLabel}
+    </span>
+  );
+}
+
+/** Trạng thái mã hoá thông tin kết nối HIS / BHXH của cơ sở. */
+function MaHoaBadge({ edit }: { edit?: CoSo }) {
+  const amber = "bg-[var(--amber-soft)] text-[var(--amber)]";
+  const base = "inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px]";
+  if (!edit || edit.daMaHoa !== false) {
+    return (
+      <span className={`${base} bg-[var(--navy-50)] text-[var(--navy)]`} title="Thông tin kết nối được mã hoá AES-256, không gửi nguyên văn ra trình duyệt">
+        <Lock className="w-3 h-3" /> AES-256
+      </span>
+    );
+  }
+  const [label, tip] =
+    edit.cheDoMaHoa === "tat"
+      ? ["Chưa bật mã hoá", "Chưa có CSR_ENCRYPTION_KEY trong .env — có khoá là máy chủ tự mã hoá"]
+      : edit.cheDoMaHoa === "cho-may-chu"
+      ? ["Chờ máy chủ mã hoá", "Máy này chỉ đọc — máy chủ chính tự mã hoá khi chạy bản mới có khoá"]
+      : ["Đang mã hoá", "Dữ liệu cũ đang được tự mã hoá — tải lại để cập nhật"];
+  return (
+    <span className={`${base} ${amber}`} title={tip}>
+      <LockOpen className="w-3 h-3" /> {label}
+    </span>
+  );
+}
+
+/** Nút xoá hẳn một nhóm cấu hình kết nối (áp dụng khi bấm Lưu). */
+function XoaCauHinhButton({ show, on, onToggle }: { show: boolean; on: boolean; onToggle: () => void }) {
+  if (!show) return null;
+  return on ? (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-[3px] rounded-[6px] bg-[var(--rose-soft)] text-[var(--rose)] hover:brightness-95 transition-all cursor-pointer"
+      title="Bỏ chọn — giữ nguyên cấu hình"
+    >
+      Sẽ xoá khi lưu · Hoàn tác
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-[3px] rounded-[6px] text-[var(--mute)] hover:text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-all cursor-pointer"
+      title="Xoá toàn bộ cấu hình nhóm này khi lưu"
+    >
+      <Trash2 className="w-3 h-3" /> Xoá
+    </button>
+  );
+}
+
 function CoSoModal({
   cosos,
   edit,
@@ -2858,16 +3202,26 @@ function CoSoModal({
   const [id, setId] = useState(edit?.id ?? autoId);
   const [ten, setTen] = useState(edit?.ten ?? "");
   const [diaChi, setDiaChi] = useState(edit?.diaChi ?? "");
-  const [bhxhUser, setBhxhUser] = useState(edit?.bhxhUser ?? "");
-  const [bhxhPass, setBhxhPass] = useState(edit?.bhxhPass ?? "");
+  // Thông tin kết nối không tải về trình duyệt: ô để trống khi sửa = giữ nguyên giá trị đã lưu
+  const [bhxhUser, setBhxhUser] = useState("");
+  // Mật khẩu không tải về trình duyệt: để trống khi sửa = giữ nguyên mật khẩu đã lưu
+  const [bhxhPass, setBhxhPass] = useState("");
   const [bhxhMaCSKCB, setBhxhMaCSKCB] = useState(edit?.bhxhMaCSKCB ?? "");
   const [bhxhHoTenCB, setBhxhHoTenCB] = useState(edit?.bhxhHoTenCB ?? "");
-  const [bhxhCccdCB, setBhxhCccdCB] = useState(edit?.bhxhCccdCB ?? "");
-  const [hisHost, setHisHost] = useState(edit?.hisHost ?? "");
-  const [hisPort, setHisPort] = useState(edit?.hisPort ?? "1433");
-  const [hisUser, setHisUser] = useState(edit?.hisUser ?? "");
-  const [hisPass, setHisPass] = useState(edit?.hisPass ?? "");
-  const [hisDbName, setHisDbName] = useState(edit?.hisDbName ?? "");
+  const [bhxhCccdCB, setBhxhCccdCB] = useState("");
+  const [hisHost, setHisHost] = useState("");
+  const [hisPort, setHisPort] = useState(edit ? "" : "1433");
+  const [hisUser, setHisUser] = useState("");
+  const [hisPass, setHisPass] = useState("");
+  const [hisDbName, setHisDbName] = useState("");
+  const [xoaHis, setXoaHis] = useState(false);
+  const [xoaBhxh, setXoaBhxh] = useState(false);
+  const daLuu = edit?.daLuu || {};
+  const coHis = Object.entries(daLuu).some(([k, v]) => k.startsWith("his") && v);
+  const coBhxh = Boolean(daLuu.bhxhUser || daLuu.bhxhPass || daLuu.bhxhCccdCB);
+  const secret = (f: CoSoSecretKey) => ({ saved: Boolean(daLuu[f]), encrypted: Boolean(edit?.maHoa?.[f]), masked: edit?.che?.[f] });
+  /** Nhóm còn trường đã lưu dạng rõ (chưa mã hoá)? */
+  const conBanRo = (fields: CoSoSecretKey[]) => fields.some((f) => daLuu[f] && !edit?.maHoa?.[f]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -2892,17 +3246,36 @@ function CoSoModal({
         hisUser,
         hisPass,
         hisDbName,
+        xoaHis,
+        xoaBhxh,
       }),
     });
-    const d = await res.json();
+    const d = await res.json().catch(() => null);
     setSaving(false);
-    if (!res.ok) {
-      setErr(d.error || "Lỗi lưu cơ sở");
+    if (!res.ok || !d) {
+      setErr(d?.error || `Lỗi lưu cơ sở (HTTP ${res.status})`);
       return;
     }
     addToast({ type: "success", message: edit ? "Đã cập nhật cơ sở." : "Đã thêm cơ sở." });
     onDone();
   };
+
+  const lockNote = (fields: CoSoSecretKey[]) =>
+    conBanRo(fields) ? (
+      <span className="flex items-center gap-1.5 text-[var(--amber)] font-semibold">
+        <LockOpen className="w-3 h-3 shrink-0" />
+        {edit?.cheDoMaHoa === "tat"
+          ? "Đang lưu dạng rõ — máy chủ cần CSR_ENCRYPTION_KEY trong .env, có khoá là tự mã hoá, không cần nhập lại."
+          : edit?.cheDoMaHoa === "cho-may-chu"
+          ? "Đang lưu dạng rõ — máy chủ chính sẽ tự mã hoá khi chạy bản mới có khoá, không cần nhập lại."
+          : "Đang tự mã hoá dữ liệu cũ — tải lại để cập nhật."}
+      </span>
+    ) : (
+      <>
+        <Lock className="w-3 h-3 shrink-0 text-[var(--teal)]" />
+        Đã mã hoá, chỉ hiện bản che bớt. Ô để trống giữ nguyên — chỉ nhập khi muốn thay đổi.
+      </>
+    );
 
   return (
     <Modal
@@ -2915,248 +3288,168 @@ function CoSoModal({
           : "Đăng ký cơ sở khám chữa bệnh mới vào hệ thống VISI CSR"
       }
       icon={Building2}
-      maxWidth="w-[95%] max-w-[780px]"
+      maxWidth="w-[95%] max-w-[760px]"
       noPadding
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 px-4 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition-all cursor-pointer"
+          >
+            Huỷ bỏ
+          </button>
+          <button
+            type="submit"
+            form="coso-form"
+            disabled={saving}
+            className="h-9 px-4 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" />}
+            {edit ? "Lưu thay đổi" : "Tạo cơ sở"}
+          </button>
+        </>
+      }
     >
-      <form onSubmit={submit} className="p-5 sm:p-7 space-y-6 bg-white">
+      <form id="coso-form" onSubmit={submit} autoComplete="off" className="p-4 sm:p-5 space-y-3.5 bg-[var(--bg)] min-h-full">
+        {edit?.secretError && (
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-[10px] bg-[var(--amber-soft)] text-[var(--amber)] text-[12px] font-semibold">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
+            <span>{edit.secretError}</span>
+          </div>
+        )}
         {err && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-[13px] font-semibold text-rose-700 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-[10px] bg-[var(--rose-soft)] text-[var(--rose)] text-[12px] font-semibold">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
             <span>{err}</span>
           </div>
         )}
 
-        {/* Hero Card thông tin cơ sở khi Edit */}
-        {edit && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 via-teal-50/30 to-blue-50/20 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-600 to-cyan-800 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-[16px] text-slate-900 truncate">{ten || edit.ten}</span>
-                  <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
-                    Mã CS: {edit.id}
-                  </span>
-                </div>
-                <div className="text-[12px] text-slate-500 mt-1 flex items-center gap-1.5 truncate">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{diaChi || edit.diaChi || "Chưa cập nhật địa chỉ cơ sở"}</span>
-                </div>
-              </div>
+        {/* Định danh cơ sở */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)]">
+          <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center shadow-[var(--navy-shadow)] shrink-0">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-serif text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)] truncate">
+                {ten.trim() || edit?.ten || "Cơ sở mới"}
+              </span>
+              <span className="font-mono text-[10.5px] font-bold px-1.5 py-px rounded-[6px] bg-[var(--navy-50)] text-[var(--navy)] shrink-0">
+                {id || "—"}
+              </span>
             </div>
-            <div className="shrink-0">
-              <StatusBadge
-                label={edit.trangThai === "active" ? "Hoạt động" : "Đã khóa"}
-                cls={
-                  edit.trangThai === "active"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-slate-100 text-slate-500 border-slate-200"
-                }
-                sm
-              />
+            <div className="mt-0.5 flex items-center gap-1 text-[11.5px] text-[var(--mute)] min-w-0">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span className="truncate">{diaChi.trim() || "Chưa cập nhật địa chỉ"}</span>
             </div>
           </div>
-        )}
+          {edit && (
+            <CsStatePill on={edit.trangThai === "active"} onLabel="Hoạt động" offLabel="Đã khoá" />
+          )}
+        </div>
 
-        {/* Khối 1: Thông tin cơ sở & Chi nhánh */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">
-                <Building2 className="w-3.5 h-3.5" />
-              </span>
-              <span className="font-bold text-[13.5px] text-slate-900 tracking-tight">
-                Thông tin cơ sở y tế & Chi nhánh
-              </span>
-            </div>
-            {!edit && (
-              <span className="font-mono text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                Mã CS: {id}
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                Tên cơ sở khám chữa bệnh <span className="text-rose-500">*</span>
-              </label>
+        {/* 1. Thông tin cơ sở */}
+        <CsSection icon={Building2} title="Thông tin cơ sở" desc="Tên & địa chỉ chi nhánh khám chữa bệnh">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CsField label="Tên cơ sở khám chữa bệnh" required>
               <input
                 value={ten}
                 onChange={(e) => setTen(e.target.value)}
                 required
-                className="input-field h-10 font-semibold text-[14px] w-full rounded-xl bg-white border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+                className={`${CS_INPUT} font-semibold`}
                 placeholder="VD: Bệnh viện Mắt VISI Đắk Lắk"
               />
-            </div>
-
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                Địa chỉ cơ sở
-              </label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  value={diaChi}
-                  onChange={(e) => setDiaChi(e.target.value)}
-                  className="input-field pl-9 pr-3 h-10 text-[13.5px] w-full rounded-xl bg-white border-slate-200 focus:border-blue-500 font-medium"
-                  placeholder="Số nhà, đường, phường/xã, tỉnh/thành..."
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Khối 2: Cấu hình tra cứu BHYT */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                <ShieldCheck className="w-3.5 h-3.5" />
-              </span>
-              <span className="font-bold text-[13.5px] text-slate-900 tracking-tight">
-                Cấu hình cổng tra cứu BHYT (Cổng Giám định BHYT)
-              </span>
-            </div>
-            <span className="text-[11px] text-slate-400">Tùy chọn tra cứu tự động</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Tài khoản BHXH</label>
+            </CsField>
+            <CsField label="Địa chỉ cơ sở">
               <input
-                value={bhxhUser}
-                onChange={(e) => setBhxhUser(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="VD: 0101000..."
+                value={diaChi}
+                onChange={(e) => setDiaChi(e.target.value)}
+                className={CS_INPUT}
+                placeholder="Số nhà, đường, phường/xã, tỉnh/thành"
               />
-            </div>
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Mật khẩu BHXH</label>
-              <input
-                type="password"
-                value={bhxhPass}
-                onChange={(e) => setBhxhPass(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder={edit && edit.bhxhPass ? "••••••••" : "Nhập mật khẩu BHXH..."}
-              />
-            </div>
+            </CsField>
           </div>
+        </CsSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Mã CSKCB</label>
+        {/* 2. Cổng tra cứu BHYT */}
+        <CsSection
+          icon={ShieldCheck}
+          title="Cổng tra cứu BHYT"
+          desc="Tài khoản Cổng giám định BHYT để tra cứu thẻ tự động"
+          aside={
+            <>
+              <CsStatePill on={coBhxh && !xoaBhxh} />
+              <XoaCauHinhButton show={coBhxh} on={xoaBhxh} onToggle={() => setXoaBhxh((v) => !v)} />
+            </>
+          }
+          footer={coBhxh && !xoaBhxh ? lockNote(["bhxhUser", "bhxhPass", "bhxhCccdCB"]) : undefined}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CsField label="Tài khoản BHXH">
+              <CsSecretInput name="bhxhUser" value={bhxhUser} onChange={setBhxhUser} disabled={xoaBhxh} placeholder="VD: 83674_BV" {...secret("bhxhUser")} />
+            </CsField>
+            <CsField label="Mật khẩu BHXH">
+              <CsSecretInput name="bhxhPass" password value={bhxhPass} onChange={setBhxhPass} disabled={xoaBhxh} placeholder="Nhập mật khẩu BHXH" {...secret("bhxhPass")} />
+            </CsField>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.6fr_1.4fr] gap-3">
+            <CsField label="Mã CSKCB">
               <input
                 value={bhxhMaCSKCB}
                 onChange={(e) => setBhxhMaCSKCB(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="VD: 01001"
+                className={`${CS_INPUT} font-mono`}
+                placeholder="VD: 83674"
               />
-            </div>
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Họ tên cán bộ</label>
+            </CsField>
+            <CsField label="Họ tên cán bộ tra cứu">
               <input
                 value={bhxhHoTenCB}
                 onChange={(e) => setBhxhHoTenCB(e.target.value)}
-                className="input-field text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="Họ tên CB tra cứu"
+                className={CS_INPUT}
+                placeholder="Họ tên cán bộ"
               />
-            </div>
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">CCCD cán bộ</label>
-              <input
-                value={bhxhCccdCB}
-                onChange={(e) => setBhxhCccdCB(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="Số CCCD cán bộ"
-              />
-            </div>
+            </CsField>
+            <CsField label="CCCD cán bộ">
+              <CsSecretInput name="bhxhCccdCB" value={bhxhCccdCB} onChange={setBhxhCccdCB} disabled={xoaBhxh} placeholder="12 số CCCD" {...secret("bhxhCccdCB")} />
+            </CsField>
           </div>
-        </div>
+        </CsSection>
 
-        {/* Khối 3: Cấu hình kết nối HIS (SQL Server) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
-                <Server className="w-3.5 h-3.5" />
-              </span>
-              <span className="font-bold text-[13.5px] text-slate-900 tracking-tight">
-                Cấu hình kết nối HIS nội viện (SQL Server)
-              </span>
-            </div>
-            <span className="text-[11px] text-slate-400">Đồng bộ bệnh nhân</span>
+        {/* 3. Kết nối HIS */}
+        <CsSection
+          icon={Server}
+          title="Kết nối HIS nội viện"
+          desc="CSDL SQL Server của HIS — đối chiếu bệnh nhân, ca mổ, bác sĩ"
+          aside={
+            <>
+              <CsStatePill on={coHis && !xoaHis} onLabel="Đã kết nối" offLabel="Chưa kết nối" />
+              <MaHoaBadge edit={edit} />
+              <XoaCauHinhButton show={coHis} on={xoaHis} onToggle={() => setXoaHis((v) => !v)} />
+            </>
+          }
+          footer={coHis && !xoaHis ? lockNote(["hisHost", "hisPort", "hisUser", "hisPass", "hisDbName"]) : undefined}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_2fr] gap-3">
+            <CsField label="IP / Host máy chủ">
+              <CsSecretInput name="hisHost" value={hisHost} onChange={setHisHost} disabled={xoaHis} placeholder="VD: 192.168.10.250" {...secret("hisHost")} />
+            </CsField>
+            <CsField label="Cổng">
+              <CsSecretInput name="hisPort" value={hisPort} onChange={setHisPort} disabled={xoaHis} placeholder="1433" {...secret("hisPort")} />
+            </CsField>
+            <CsField label="Tên database">
+              <CsSecretInput name="hisDbName" value={hisDbName} onChange={setHisDbName} disabled={xoaHis} placeholder="VD: shpt_PhongKham" {...secret("hisDbName")} />
+            </CsField>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">IP / Host máy chủ HIS</label>
-              <input
-                value={hisHost}
-                onChange={(e) => setHisHost(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="VD: 192.168.10.250"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Cổng (Port)</label>
-              <input
-                value={hisPort}
-                onChange={(e) => setHisPort(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="1433"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Tên Database</label>
-              <input
-                value={hisDbName}
-                onChange={(e) => setHisDbName(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="VD: shpt_phongKham"
-              />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <CsField label="Tài khoản database">
+              <CsSecretInput name="hisUser" value={hisUser} onChange={setHisUser} disabled={xoaHis} placeholder="VD: reader" {...secret("hisUser")} />
+            </CsField>
+            <CsField label="Mật khẩu database">
+              <CsSecretInput name="hisPass" password value={hisPass} onChange={setHisPass} disabled={xoaHis} placeholder="Nhập mật khẩu database" {...secret("hisPass")} />
+            </CsField>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Tài khoản Database (User)</label>
-              <input
-                value={hisUser}
-                onChange={(e) => setHisUser(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder="VD: sa"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">Mật khẩu Database</label>
-              <input
-                type="password"
-                value={hisPass}
-                onChange={(e) => setHisPass(e.target.value)}
-                className="input-field font-mono text-[13.5px] h-10 w-full rounded-xl bg-white border-slate-200 focus:border-blue-500"
-                placeholder={edit && edit.hisPass ? "••••••••" : "Mật khẩu database..."}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Footer actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
-          <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">
-            Hủy bỏ
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20 flex items-center gap-2"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />}
-            <span>{edit ? "Lưu thay đổi" : "Tạo cơ sở"}</span>
-          </button>
-        </div>
+        </CsSection>
       </form>
     </Modal>
   );

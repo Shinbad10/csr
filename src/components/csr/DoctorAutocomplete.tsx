@@ -4,6 +4,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from
 import { createPortal } from "react-dom";
 import { ChevronDown, UserCheck, Check, RefreshCw, Loader2, UserPlus, ShieldCheck, Clock, X } from "lucide-react";
 import { parseDoctorList, formatDoctorList } from "@/lib/csr";
+import { useToast } from "@/components/providers/ToastProvider";
 
 export interface DoctorItem {
   maNV?: string;
@@ -40,6 +41,25 @@ async function fetchDoctorsApi(): Promise<DoctorItem[]> {
     console.error("Lỗi lấy danh sách bác sĩ:", err);
   }
   return globalDoctorsCache || [];
+}
+
+/**
+ * Lưu bác sĩ mới vào danh mục của bệnh viện đang làm việc (máy chủ tự lấy theo cơ sở đang chọn).
+ * Trả về thông báo lỗi nếu không lưu được, null nếu thành công.
+ */
+async function createDoctorApi(hoTen: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/csr/bacsi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create", hoTen }),
+    });
+    if (res.ok) return null;
+    const d = await res.json().catch(() => null);
+    return d?.error || `Không lưu được bác sĩ vào danh mục (HTTP ${res.status})`;
+  } catch {
+    return "Mất kết nối máy chủ — chưa lưu được bác sĩ vào danh mục";
+  }
 }
 
 interface Coords {
@@ -91,6 +111,7 @@ export function DoctorAutocomplete({
   required = false,
   className = "",
 }: DoctorAutocompleteProps) {
+  const { addToast } = useToast();
   const safeVal = (value ?? "").toString();
   const [doctors, setDoctors] = useState<DoctorItem[]>(globalDoctorsCache || []);
   const [open, setOpen] = useState(false);
@@ -201,15 +222,8 @@ export function DoctorAutocomplete({
     globalDoctorsCache = nextList;
     setDoctors(nextList);
 
-    try {
-      await fetch("/api/csr/bacsi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create", hoTen: trimmed }),
-      });
-    } catch (e) {
-      console.error("Lỗi tạo bác sĩ mới:", e);
-    }
+    const err = await createDoctorApi(trimmed);
+    if (err) addToast({ type: "error", message: `${err}. Tên "${trimmed}" vẫn được ghi cho đợt khám này.` });
   };
 
   return (
@@ -394,6 +408,7 @@ export function DoctorMultiSelect({
   disabled?: boolean;
   className?: string;
 }) {
+  const { addToast } = useToast();
   const selectedList = Array.isArray(value) ? value : parseDoctorList(value);
   const [doctors, setDoctors] = useState<DoctorItem[]>(globalDoctorsCache || []);
   const [open, setOpen] = useState(false);
@@ -511,15 +526,8 @@ export function DoctorMultiSelect({
     globalDoctorsCache = nextList;
     setDoctors(nextList);
 
-    try {
-      await fetch("/api/csr/bacsi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create", hoTen: trimmed }),
-      });
-    } catch (e) {
-      console.error("Lỗi tạo bác sĩ mới:", e);
-    }
+    const err = await createDoctorApi(trimmed);
+    if (err) addToast({ type: "error", message: `${err}. Tên "${trimmed}" vẫn được ghi cho đợt khám này.` });
   };
 
   return (
