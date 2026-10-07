@@ -6,6 +6,11 @@ import { getPrisma } from "@/lib/prisma";
 import { can, roleLabel } from "@/lib/permissions";
 import { sendEmail, inviteEmail, appUrlFrom, tempPassword, emailConfigProblem, HANH_DONG_MOI } from "@/lib/email";
 
+/* Lỗi cấu hình / gửi SMTP trả 422, KHÔNG dùng 5xx: nginx trước ứng dụng chặn mọi phản hồi 5xx
+   (proxy_intercept_errors) và thay bằng trang lỗi riêng — với POST thành "405 Not Allowed", người dùng
+   không đọc được lý do thật. */
+const EMAIL_LOI = 422;
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
@@ -27,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Địa chỉ email không hợp lệ" }, { status: 400 });
 
   const problem = emailConfigProblem();
-  if (problem) return NextResponse.json({ error: `Chưa gửi được email: ${problem}` }, { status: 503 });
+  if (problem) return NextResponse.json({ error: `Chưa gửi được email: ${problem}` }, { status: EMAIL_LOI });
 
   const prisma = getPrisma();
   const user = await prisma.nguoiDungCSR.findUnique({ where: { maNV: id }, include: { coSo: { select: { ten: true } } } });
@@ -57,9 +62,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   });
 
   // Gửi TRƯỚC, đặt mật khẩu SAU: thư lỗi thì mật khẩu cũ vẫn giữ nguyên, người dùng không bị khóa ngoài.
-  const res = await sendEmail({ to: email, subject: mail.subject, html: mail.html, text: mail.text });
+  // Mọi lỗi đều trả JSON (và vẫn ghi nhật ký) — trước đây lỗi ném ra làm trình duyệt chỉ thấy "Lỗi kết nối máy chủ".
+  let res: { ok: boolean; error?: string };
+  try {
+    res = await sendEmail({ to: email, subject: mail.subject, html: mail.html, text: mail.text });
+  } catch (e) {
+    console.error("[moi] gửi thư mời lỗi:", e);
+    res = { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
   if (res.ok && matKhau) {
-    await prisma.nguoiDungCSR.update({ where: { maNV: id }, data: { matKhauHash: await bcrypt.hash(matKhau, 10) } });
+    try {
+      await prisma.nguoiDungCSR.update({ where: { maNV: id }, data: { matKhauHash: await bcrypt.hash(matKhau, 10) } });
+    } catch (e) {
+      console.error("[moi] lưu mật khẩu tạm lỗi:", e);
+      res = { ok: false, error: "Đã gửi thư nhưng KHÔNG lưu được mật khẩu tạm — mật khẩu trong thư chưa dùng được, hãy gửi lại thư mời" };
+    }
   }
 
   await prisma.auditLog
@@ -80,6 +97,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     })
     .catch(() => {});
 
-  if (!res.ok) return NextResponse.json({ error: `Gửi email thất bại: ${res.error}` }, { status: 502 });
+  if (!res.ok) return NextResponse.json({ error: `Gửi email thất bại: ${res.error}` }, { status: EMAIL_LOI });
   return NextResponse.json({ ok: true, email, capMatKhauMoi: !!matKhau });
 }

@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     ports:
       - "3008:3008"
-    volumes:
-      - ./public:/app/public
+    # Không mount ./public: thư mục public (logo, favicon, icon PWA) đã nằm sẵn trong image.
+    # Mount từ máy chủ sẽ che bản mới bằng bản cũ — favicon từng kẹt ở chữ "V" vì lý do này.
     env_file:
       - .env
     environment:

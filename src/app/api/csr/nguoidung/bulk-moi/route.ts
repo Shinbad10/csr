@@ -4,6 +4,11 @@ import bcrypt from "bcryptjs";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can, roleLabel } from "@/lib/permissions";
+
+/* Lỗi cấu hình / gửi SMTP trả 422, KHÔNG dùng 5xx: nginx trước ứng dụng chặn mọi phản hồi 5xx
+   (proxy_intercept_errors) và thay bằng trang lỗi riêng — với POST thành "405 Not Allowed", người dùng
+   không đọc được lý do thật. */
+const EMAIL_LOI = 422;
 import {
   sendEmail,
   inviteEmail,
@@ -24,7 +29,7 @@ export async function POST(request: Request) {
   if (!isMaster && !isIT) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
 
   const problem = emailConfigProblem();
-  if (problem) return NextResponse.json({ error: `Chưa gửi được email: ${problem}` }, { status: 503 });
+  if (problem) return NextResponse.json({ error: `Chưa gửi được email: ${problem}` }, { status: EMAIL_LOI });
 
   const b = await request.json().catch(() => ({}));
   const targets: { maNV: string; email: string; capMatKhauMoi?: boolean; matKhau?: string }[] = Array.isArray(b?.targets)

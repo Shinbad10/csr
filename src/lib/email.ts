@@ -6,6 +6,7 @@ import { randomInt } from "crypto";
  * Gửi email qua SMTP máy chủ mail VISI (mail.visicare.com.vn) — cùng cách làm với VisiHUB.
  * Toàn bộ thông tin đăng nhập SMTP đọc từ .env, KHÔNG ghi trong mã nguồn:
  *   EMAIL_BAT=1, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM_NAME
+ *   SMTP_HOST_IP (tuỳ chọn) — IP máy chủ mail, dùng khi máy chủ ứng dụng/container không phân giải được SMTP_HOST.
  */
 
 /** Hành động ghi vào AuditLog cho mỗi lần gửi thư mời — danh sách tài khoản đọc lại để hiện trạng thái. */
@@ -14,6 +15,8 @@ export const HANH_DONG_MOI = "gui_email_moi";
 export interface EmailConfig {
   enabled: boolean;
   host: string;
+  /** IP kết nối thẳng (bỏ qua DNS); rỗng = phân giải `host`. */
+  hostIp: string;
   port: number;
   user: string;
   pass: string;
@@ -25,6 +28,7 @@ export function readEmailConfig(): EmailConfig {
   return {
     enabled: process.env.EMAIL_BAT === "1" || process.env.EMAIL_BAT === "true",
     host: (process.env.SMTP_HOST || "mail.visicare.com.vn").trim(),
+    hostIp: (process.env.SMTP_HOST_IP || "").trim(),
     port,
     user: (process.env.SMTP_USER || "").trim(),
     pass: (process.env.SMTP_PASS || "").trim(),
@@ -42,6 +46,29 @@ export function emailConfigProblem(c: EmailConfig = readEmailConfig()): string {
   return missing.length ? `Chưa cấu hình ${missing.join(", ")} trong .env` : "";
 }
 
+/**
+ * Trần thời gian cho 1 lần gửi / kiểm tra. nodemailer chỉ bắt đầu đếm connectionTimeout SAU khi phân giải
+ * DNS xong (DNS mặc định chờ tới 30 s mỗi lượt IPv4/IPv6) — DNS hỏng trong container làm request treo quá
+ * 100 s, Cloudflare cắt và trình duyệt chỉ thấy "Lỗi kết nối máy chủ". Luôn trả lời trước mốc đó.
+ */
+const SMTP_TIMEOUT_MS = 25_000;
+
+function transportOptions(c: EmailConfig) {
+  return {
+    host: c.hostIp || c.host,
+    port: c.port,
+    // 465 = SSL trực tiếp; 587/25 = STARTTLS
+    secure: c.port === 465,
+    auth: { user: c.user, pass: c.pass },
+    // servername giữ tên miền gốc cho bắt tay TLS khi kết nối bằng SMTP_HOST_IP
+    tls: { rejectUnauthorized: false, servername: c.host },
+    dnsTimeout: 8_000,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
+  };
+}
+
 /*
   Một transporter dùng chung, giữ kết nối (pool) — gửi nhiều thư liên tiếp không phải bắt tay
   TLS + đăng nhập SMTP lại từng thư. Khoá theo cấu hình: đổi mật khẩu / máy chủ là tạo mới.
@@ -49,27 +76,63 @@ export function emailConfigProblem(c: EmailConfig = readEmailConfig()): string {
 const g = globalThis as unknown as { __csrMailer?: { key: string; tp: Transporter } };
 
 function getTransporter(c: EmailConfig): Transporter {
-  const key = [c.host, c.port, c.user, c.pass].join("|");
+  const key = [c.host, c.hostIp, c.port, c.user, c.pass].join("|");
   if (g.__csrMailer?.key === key) return g.__csrMailer.tp;
+  dropTransporter();
+  const tp = nodemailer.createTransport({ ...transportOptions(c), pool: true, maxConnections: 3, maxMessages: 100 });
+  g.__csrMailer = { key, tp };
+  return tp;
+}
+
+/** Bỏ transporter dùng chung (sau lỗi) để lần gửi sau kết nối lại từ đầu. */
+function dropTransporter() {
   try {
     g.__csrMailer?.tp.close();
   } catch {}
-  const tp = nodemailer.createTransport({
-    host: c.host,
-    port: c.port,
-    // 465 = SSL trực tiếp; 587/25 = STARTTLS
-    secure: c.port === 465,
-    auth: { user: c.user, pass: c.pass },
-    tls: { rejectUnauthorized: false },
-    pool: true,
-    maxConnections: 3,
-    maxMessages: 100,
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 15_000,
+  g.__csrMailer = undefined;
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error(`Quá ${ms / 1000} giây không phản hồi`), { code: "ETIMEOUT_TOTAL" })), ms);
   });
-  g.__csrMailer = { key, tp };
-  return tp;
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
+/** Diễn giải lỗi SMTP cho người quản trị, kèm mã lỗi gốc để tra cứu. */
+export function smtpErrorText(e: unknown, c: EmailConfig = readEmailConfig()): string {
+  const err = e as { code?: string; message?: string } | null;
+  const code = err?.code || "";
+  const raw = err?.message || String(e);
+  const dich = `${c.hostIp || c.host}:${c.port}`;
+  let why: string;
+  if (code === "EDNS" || /ENOTFOUND|EAI_AGAIN|queryA|getaddrinfo/i.test(raw)) {
+    why = `Máy chủ ứng dụng không phân giải được tên miền ${c.host} (lỗi DNS). Sửa DNS của máy chủ/container hoặc khai báo SMTP_HOST_IP=<IP máy chủ mail> trong .env.`;
+  } else if (code === "ETIMEOUT_TOTAL" || code === "ETIMEDOUT" || /timeout|timed out/i.test(raw)) {
+    why = `Máy chủ ứng dụng không kết nối được tới ${dich} (hết thời gian chờ). Kiểm tra tường lửa cho phép kết nối ra cổng ${c.port}.`;
+  } else if (code === "EAUTH") {
+    why = `Máy chủ mail từ chối đăng nhập tài khoản ${c.user} — kiểm tra SMTP_USER / SMTP_PASS.`;
+  } else if (/ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH/i.test(raw)) {
+    why = `Không mở được kết nối tới ${dich} — máy chủ mail từ chối hoặc mạng không tới được.`;
+  } else {
+    why = "Máy chủ mail trả lỗi khi gửi thư.";
+  }
+  return `${why} [${code || "ERR"}: ${raw}]`;
+}
+
+/** Kiểm tra kết nối + đăng nhập SMTP (không gửi thư). */
+export async function verifySmtp(c: EmailConfig = readEmailConfig()): Promise<{ ok: boolean; error?: string }> {
+  const tp = nodemailer.createTransport(transportOptions(c));
+  try {
+    await withTimeout(tp.verify(), SMTP_TIMEOUT_MS);
+    return { ok: true };
+  } catch (e) {
+    console.error("[email] verify SMTP thất bại:", e);
+    return { ok: false, error: smtpErrorText(e, c) };
+  } finally {
+    tp.close();
+  }
 }
 
 export async function sendEmail(args: { to: string; subject: string; html: string; text?: string }): Promise<{ ok: boolean; id?: string; error?: string }> {
@@ -78,16 +141,21 @@ export async function sendEmail(args: { to: string; subject: string; html: strin
   if (problem) return { ok: false, error: problem };
   try {
     // Địa chỉ gửi phải trùng tài khoản đăng nhập SMTP, nếu không máy chủ sẽ từ chối relay
-    const info = await getTransporter(c).sendMail({
-      from: `"${c.fromName}" <${c.user}>`,
-      to: args.to,
-      subject: args.subject,
-      html: args.html,
-      text: args.text,
-    });
+    const info = await withTimeout(
+      getTransporter(c).sendMail({
+        from: `"${c.fromName}" <${c.user}>`,
+        to: args.to,
+        subject: args.subject,
+        html: args.html,
+        text: args.text,
+      }),
+      SMTP_TIMEOUT_MS
+    );
     return { ok: true, id: info.messageId };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Lỗi kết nối máy chủ SMTP" };
+    console.error("[email] gửi thư thất bại:", e);
+    dropTransporter();
+    return { ok: false, error: smtpErrorText(e, c) };
   }
 }
 

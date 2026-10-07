@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { readEmailConfig, emailConfigProblem } from "@/lib/email";
+import { readEmailConfig, emailConfigProblem, verifySmtp } from "@/lib/email";
+
+/* Lỗi cấu hình / gửi SMTP trả 422, KHÔNG dùng 5xx: nginx trước ứng dụng chặn mọi phản hồi 5xx
+   (proxy_intercept_errors) và thay bằng trang lỗi riêng — với POST thành "405 Not Allowed", người dùng
+   không đọc được lý do thật. */
+const EMAIL_LOI = 422;
 
 /** Trạng thái cấu hình gửi email (không trả mật khẩu) — cho màn quản trị hiển thị. */
 export async function GET() {
@@ -24,7 +29,7 @@ export async function POST(request: Request) {
 
   const c = readEmailConfig();
   const problem = emailConfigProblem(c);
-  if (problem) return NextResponse.json({ error: problem }, { status: 503 });
+  if (problem) return NextResponse.json({ error: problem }, { status: EMAIL_LOI });
 
   const b = await request.json().catch(() => ({}));
   const to = String(b?.to || "").trim().toLowerCase();
@@ -42,24 +47,15 @@ export async function POST(request: Request) {
       ),
       text: `Kiểm tra kết nối email từ hệ thống VISI CSR (${c.user}). Thời điểm: ${new Date().toLocaleString("vi-VN")}`,
     });
-    if (!res.ok) return NextResponse.json({ error: res.error }, { status: 502 });
+    if (!res.ok) return NextResponse.json({ error: res.error }, { status: EMAIL_LOI });
     return NextResponse.json({ ok: true, message: `Đã gửi email thử nghiệm thành công tới ${to}` });
   }
 
-  try {
-    const nodemailer = (await import("nodemailer")).default;
-    const tp = nodemailer.createTransport({
-      host: c.host,
-      port: c.port,
-      secure: c.port === 465,
-      auth: { user: c.user, pass: c.pass },
-      tls: { rejectUnauthorized: false },
-      connectionTimeout: 10000,
-    });
-    await tp.verify();
-    return NextResponse.json({ ok: true, message: `Kết nối máy chủ SMTP ${c.host}:${c.port} (${c.user}) thành công!` });
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Không kết nối được máy chủ SMTP" }, { status: 502 });
-  }
+  const v = await verifySmtp(c);
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: EMAIL_LOI });
+  return NextResponse.json({
+    ok: true,
+    message: `Kết nối máy chủ SMTP ${c.host}${c.hostIp ? ` (${c.hostIp})` : ""}:${c.port} (${c.user}) thành công!`,
+  });
 }
 
