@@ -32,7 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       if (b.hoTen) data.hoTen = b.hoTen.trim();
       if (b.vaiTro) {
         if (isIT && !isMaster && b.vaiTro === "QuanLy") {
-          return NextResponse.json({ error: "IT đơn vị không được gán quyền Quản trị toàn hệ thống" }, { status: 403 });
+          return NextResponse.json({ error: "Quản trị viên đơn vị không được gán quyền Quản lý toàn hệ thống" }, { status: 403 });
         }
         data.vaiTro = b.vaiTro;
         data.coSoId = b.vaiTro === "QuanLy" ? null : (isMaster ? b.coSoId || null : session.user.coSoId || null);

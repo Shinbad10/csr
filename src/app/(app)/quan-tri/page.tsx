@@ -117,7 +117,7 @@ const IT_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "HCNS", "IT"];
 
 const ROLE_BADGES: Record<string, { label: string; cls: string }> = {
   QuanLy: { label: "Quản lý hệ thống", cls: "bg-purple-50 text-purple-700 border-purple-200" },
-  IT: { label: "IT Đơn vị", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  IT: { label: "Quản trị viên", cls: "bg-blue-50 text-blue-700 border-blue-200" },
   BacSi: { label: "Bác sĩ", cls: "bg-teal-50 text-teal-700 border-teal-200" },
   TuVanVien: { label: "Tư vấn viên", cls: "bg-cyan-50 text-cyan-700 border-cyan-200" },
   MKT: { label: "Marketing (MKT)", cls: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -2479,7 +2479,7 @@ function UserModal({
     TuVanVien: "Tư vấn viên",
     KeToan: "Kế toán",
     HCNS: "Hành chính Nhân sự (HCNS)",
-    IT: "Quản trị viên IT (Đơn vị)",
+    IT: "Quản trị viên",
     QuanLy: "Quản lý (Toàn hệ thống)",
     CSKH: "Marketing (MKT)",
   };
@@ -2769,7 +2769,7 @@ function UserModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 gap-4 ${isIT ? "" : "sm:grid-cols-2"}`}>
             <div>
               <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
                 Vai trò hệ thống <span className="text-rose-500">*</span>
@@ -2788,21 +2788,28 @@ function UserModal({
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Xác định các quyền và phạm vi dữ liệu được truy cập</p>
+              {isIT ? (
+                // Quản trị viên đơn vị chỉ tạo tài khoản cho chính đơn vị mình — không cần chọn cơ sở
+                <p className="text-[11.5px] text-[var(--mute)] mt-1.5 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />
+                  <span>
+                    Thuộc đơn vị{" "}
+                    <b className="text-[var(--ink-soft)]">
+                      {cosos.find((c) => c.id === userCoSoId)?.ten || userCoSoId || "của bạn"}
+                    </b>{" "}
+                    — tự động theo đơn vị của bạn
+                  </span>
+                </p>
+              ) : (
+                <p className="text-[11px] text-slate-400 mt-1">Xác định các quyền và phạm vi dữ liệu được truy cập</p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                Cơ sở làm việc {vaiTro !== "QuanLy" && <span className="text-rose-500">*</span>}
-              </label>
-              {isIT ? (
-                <div className="input-field h-10 flex items-center bg-slate-100 text-slate-700 font-semibold text-[13px] cursor-not-allowed rounded-xl border-slate-200">
-                  <ShieldCheck className="w-4 h-4 text-teal-600 mr-2 shrink-0" />
-                  <span className="truncate">
-                    {cosos.find((c) => c.id === userCoSoId)?.ten || userCoSoId || "Đơn vị hiện tại"}
-                  </span>
-                </div>
-              ) : (
+            {!isIT && (
+              <div>
+                <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
+                  Cơ sở làm việc {vaiTro !== "QuanLy" && <span className="text-rose-500">*</span>}
+                </label>
                 <div className="relative">
                   <select
                     value={vaiTro === "QuanLy" ? "" : coSoId}
@@ -2830,11 +2837,11 @@ function UserModal({
                   </select>
                   <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-              )}
-              <p className="text-[11px] text-slate-400 mt-1">
-                {vaiTro === "QuanLy" ? "Vai trò Quản lý có quyền xem dữ liệu toàn hệ thống" : "Đơn vị trực thuộc của nhân sự"}
-              </p>
-            </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {vaiTro === "QuanLy" ? "Vai trò Quản lý có quyền xem dữ liệu toàn hệ thống" : "Đơn vị trực thuộc của nhân sự"}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

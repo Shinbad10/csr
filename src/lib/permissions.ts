@@ -117,12 +117,12 @@ export const ROLE_LABEL: Record<Role, string> = {
   KeToan: "Kế toán",
   HCNS: "Hành chính Nhân sự (HCNS)",
   QuanLy: "Quản lý (Toàn hệ thống)",
-  IT: "Quản trị viên IT (Đơn vị)",
+  IT: "Quản trị viên",
 };
 
 export function roleLabel(raw?: string | null): string {
   if (raw === "BacSi" || raw === "Bác sĩ" || raw === "Bác sỹ") return "Bác sĩ";
-  if (raw === "IT") return "Quản trị IT";
+  if (raw === "IT") return "Quản trị viên";
   if (raw === "MKT" || raw === "Marketing" || raw === "CSKH") return "MKT";
   if (raw === "HCNS" || raw === "HanhChinh" || raw === "HanhChinhNhanSu" || raw === "HC-NS") return "Hành chính Nhân sự (HCNS)";
   return ROLE_LABEL[normalizeRole(raw)] || raw || "Nhân viên";

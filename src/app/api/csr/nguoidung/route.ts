@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       // IT chỉ được tạo tài khoản cho đơn vị của mình
       finalCoSoId = session.user.coSoId || null;
       if (vaiTro === "QuanLy") {
-        return NextResponse.json({ error: "IT đơn vị không được tạo tài khoản Quản trị toàn hệ thống" }, { status: 403 });
+        return NextResponse.json({ error: "Quản trị viên đơn vị không được tạo tài khoản Quản lý toàn hệ thống" }, { status: 403 });
       }
     } else {
       if (vaiTro === "QuanLy") finalCoSoId = null;

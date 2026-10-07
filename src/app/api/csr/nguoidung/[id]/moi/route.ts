@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const user = await prisma.nguoiDungCSR.findUnique({ where: { maNV: id }, include: { coSo: { select: { ten: true } } } });
   if (!user) return NextResponse.json({ error: "Không tìm thấy tài khoản" }, { status: 404 });
 
-  // IT đơn vị chỉ được mời tài khoản thuộc cơ sở của mình
+  // Quản trị viên đơn vị (vai trò IT) chỉ được mời tài khoản thuộc cơ sở của mình
   if (!isMaster && (user.vaiTro === "QuanLy" || (user.coSoId && user.coSoId !== session.user.coSoId))) {
     return NextResponse.json({ error: "Bạn chỉ có quyền mời tài khoản thuộc đơn vị của mình" }, { status: 403 });
   }
