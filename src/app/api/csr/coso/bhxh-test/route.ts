@@ -5,14 +5,16 @@ import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { decryptSecret } from "@/lib/secret";
 import { bhxhPasswordMd5 } from "@/lib/coso";
-import { BHXH_TOKEN_URL, postBhxhJson } from "@/lib/bhxh";
+import { BHXH_QUERY_URL, BHXH_TOKEN_URL, postBhxhJson } from "@/lib/bhxh";
 
 /* Lỗi trả 422 (không dùng 5xx): nginx chặn phản hồi 5xx nên người dùng không đọc được lý do. */
 const LOI = 422;
 
 /**
- * Thử đăng nhập Cổng giám định BHYT (chỉ lấy token, không tra cứu thẻ).
- * body: { coSoId?, bhxhUser?, bhxhPass? } — ô nào để trống thì dùng giá trị đã lưu của cơ sở.
+ * Kiểm tra tài khoản Cổng giám định BHYT: (1) đăng nhập lấy token, (2) dò quyền tra cứu thẻ bằng một
+ * mã thẻ giả — có quyền thì cổng trả HTTP 200 (kèm mã "thẻ không tồn tại"), không có quyền thì 401/403.
+ * Bước 2 cần thiết vì có tài khoản đăng nhập được nhưng không được phép tra cứu (lỗi của Hoa Lư).
+ * body: { coSoId?, bhxhUser?, bhxhPass?, bhxhHoTenCB?, bhxhCccdCB? } — ô trống dùng giá trị đã lưu.
  */
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -26,12 +28,19 @@ export async function POST(request: Request) {
 
   let user = String(b?.bhxhUser || "").trim();
   let pass = String(b?.bhxhPass || "").trim();
+  let hoTenCb = String(b?.bhxhHoTenCB || "").trim();
+  let cccdCb = String(b?.bhxhCccdCB || "").trim();
   try {
     pass = pass ? bhxhPasswordMd5(pass) : "";
-    if ((!user || !pass) && coSoId) {
-      const cs = await getPrisma().coSo.findUnique({ where: { id: coSoId }, select: { bhxhUser: true, bhxhPass: true } });
+    if ((!user || !pass || !hoTenCb || !cccdCb) && coSoId) {
+      const cs = await getPrisma().coSo.findUnique({
+        where: { id: coSoId },
+        select: { bhxhUser: true, bhxhPass: true, bhxhHoTenCB: true, bhxhCccdCB: true },
+      });
       if (!user) user = (decryptSecret(cs?.bhxhUser) || "").trim();
       if (!pass) pass = (decryptSecret(cs?.bhxhPass) || "").trim();
+      if (!hoTenCb) hoTenCb = (cs?.bhxhHoTenCB || "").trim();
+      if (!cccdCb) cccdCb = (decryptSecret(cs?.bhxhCccdCB) || "").trim();
     }
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Không đọc được cấu hình BHXH" }, { status: LOI });
@@ -44,13 +53,36 @@ export async function POST(request: Request) {
   try {
     const res = await postBhxhJson<{
       access_token?: string;
-      APIKey?: { access_token?: string } | null;
+      id_token?: string;
+      APIKey?: { access_token?: string; id_token?: string } | null;
       maKetQua?: string | number;
     }>(BHXH_TOKEN_URL, { username: user, password: pass }, 10_000, 0);
     const j = res.data || {};
-    const ms = Date.now() - t0;
-    if (j.access_token || j.APIKey?.access_token) {
-      return NextResponse.json({ ok: true, message: `Đăng nhập cổng BHXH thành công (${ms} ms)` });
+    const accessToken = j.access_token || j.APIKey?.access_token;
+    if (accessToken) {
+      // Bước 2: dò quyền tra cứu bằng mã thẻ giả (không phải người thật)
+      const qs = new URLSearchParams({
+        username: user,
+        password: pass,
+        token: accessToken,
+        id_token: j.id_token || j.APIKey?.id_token || "",
+      });
+      const probe = await postBhxhJson(
+        `${BHXH_QUERY_URL}?${qs.toString()}`,
+        { maThe: "0000000000", hoTen: "KIEM TRA KET NOI", ngaySinh: "01/01/2000", username: user, password: pass, hoTenCb, cccdCb },
+        10_000,
+        0
+      );
+      const ms = Date.now() - t0;
+      if (probe.status === 401 || probe.status === 403) {
+        return NextResponse.json(
+          {
+            error: `Đăng nhập được nhưng tài khoản KHÔNG có quyền tra cứu thẻ BHYT (HTTP ${probe.status}) — cần tài khoản cơ sở dạng <Mã CSKCB>_BV được BHXH cấp quyền tra cứu`,
+          },
+          { status: LOI }
+        );
+      }
+      return NextResponse.json({ ok: true, message: `Đăng nhập & quyền tra cứu thẻ BHYT đều OK (${ms} ms)` });
     }
     const ma = j.maKetQua ?? res.status;
     const giongCccd = /^\d{9,12}$/.test(user);

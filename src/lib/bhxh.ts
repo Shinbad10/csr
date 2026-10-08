@@ -21,7 +21,7 @@ import {
 } from "./bhxh-types";
 
 export const BHXH_TOKEN_URL = process.env.BHXH_TOKEN_URL || "https://egw.baohiemxahoi.gov.vn/api/token/take";
-const BHXH_QUERY_URL = process.env.BHXH_QUERY_URL || "https://egw.baohiemxahoi.gov.vn/api/egw/KQNhanLichSuKCB2024";
+export const BHXH_QUERY_URL = process.env.BHXH_QUERY_URL || "https://egw.baohiemxahoi.gov.vn/api/egw/KQNhanLichSuKCB2024";
 
 interface TokenCache {
   access_token: string;
@@ -579,6 +579,16 @@ async function traCuuTheBHYTGoc(params: TraCuuParams, retry = true): Promise<Ket
       console.warn(`[BHXH] Token hết hạn/không đúng (maKetQua: ${maKetQua}), tự động xin token mới và thử lại...`);
       _tokenCache.delete(creds.coSoId || "default");
       return traCuuTheBHYTGoc({ ...params, forceRefresh: true }, false);
+    }
+
+    /* Đã lấy token mới mà cổng vẫn trả 401/403: tài khoản ĐĂNG NHẬP được nhưng không có quyền gọi API tra
+       cứu thẻ (thường do dùng tài khoản cá nhân thay vì tài khoản cơ sở). Trước đây rơi xuống câu chung
+       "Không tìm thấy thông tin thẻ…" rất dễ hiểu nhầm. Không kèm raw để kết quả lỗi không bị lưu tạm. */
+    if (res.status === 401 || res.status === 403) {
+      return {
+        success: false,
+        error: `Tài khoản cổng BHXH của cơ sở đăng nhập được nhưng KHÔNG có quyền tra cứu thẻ (HTTP ${res.status}). Cần dùng tài khoản cơ sở dạng ${creds.maCSKCB || "<Mã CSKCB>"}_BV được BHXH cấp quyền tra cứu.`,
+      };
     }
 
     const the = parseTheBhyt(raw);

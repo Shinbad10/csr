@@ -3241,7 +3241,7 @@ function CoSoModal({
       const res = await fetch("/api/csr/coso/bhxh-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ coSoId: edit?.id, bhxhUser, bhxhPass }),
+        body: JSON.stringify({ coSoId: edit?.id, bhxhUser, bhxhPass, bhxhHoTenCB, bhxhCccdCB }),
       });
       const d = await res.json().catch(() => null);
       setBhxhTest(
@@ -3497,11 +3497,11 @@ function CoSoModal({
                 type="button"
                 onClick={testBhxh}
                 disabled={bhxhTesting || (!coBhxh && (!bhxhUser.trim() || !bhxhPass.trim()))}
-                title="Thử đăng nhập cổng giám định BHYT bằng tài khoản đang nhập (ô trống dùng giá trị đã lưu)"
+                title="Thử đăng nhập và kiểm tra quyền tra cứu thẻ trên cổng giám định BHYT (ô trống dùng giá trị đã lưu)"
                 className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy-50)] hover:border-[var(--navy-100)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
                 {bhxhTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                Kiểm tra đăng nhập BHXH
+                Kiểm tra kết nối BHXH
               </button>
             </div>
           )}
