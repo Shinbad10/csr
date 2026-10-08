@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { audit } from "@/lib/audit";
 import { clearBhxhCache } from "@/lib/bhxh";
 import { autoEncryptCoSo, coSoForAdmin, coSoSecretsForWrite } from "@/lib/coso";
+import { clearHisDown } from "@/lib/his";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -40,6 +41,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     });
     // Cấu hình Cổng BHXH được cache 10 phút trong bộ nhớ — xoá ngay để lần tra cứu kế tiếp dùng tài khoản mới
     clearBhxhCache(id);
+    // Vừa sửa cấu hình kết nối → bỏ trạng thái "HIS đang lỗi" để thống kê thử lại ngay
+    clearHisDown(id);
     await audit(session.user.id, "CoSo", id, "sua", { ten, diaChi });
     // Trường để trống (giữ nguyên) mà còn dạng rõ cũ → mã hoá luôn khi lưu
     return NextResponse.json(coSoForAdmin(await autoEncryptCoSo(id, data)));

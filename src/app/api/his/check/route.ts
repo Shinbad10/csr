@@ -104,6 +104,7 @@ export async function POST(request: Request) {
     });
   } catch (e: any) {
     console.error("HIS check route error:", e);
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi server" }, { status: 500 });
+    // 422 thay vì 500: nginx chặn phản hồi 5xx nên người dùng không đọc được lý do lỗi HIS
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi server" }, { status: 422 });
   }
 }

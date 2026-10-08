@@ -26,42 +26,75 @@ export interface HISCheckResult {
   error?: string;
 }
 
-export async function getHisConfig(coSoId: string) {
-  let coSo: { hisHost: string | null; hisPort: string | null; hisUser: string | null; hisPass: string | null; hisDbName: string | null } | null;
-  try {
-    coSo = await getPrisma().coSo.findUnique({
-      where: { id: coSoId },
-      select: {
-        hisHost: true,
-        hisPort: true,
-        hisUser: true,
-        hisPass: true,
-        hisDbName: true,
-      },
-    });
-  } catch {
-    coSo = null;
-  }
-  if (coSo) {
-    // Còn dạng rõ cũ → máy chủ production tự mã hoá (chạy nền, không làm chậm truy vấn HIS)
-    void autoEncryptCoSo(coSoId, coSo);
-    // Thông tin kết nối lưu dạng mã hoá (src/lib/secret.ts). Lỗi giải mã (sai/thiếu khoá) phải báo ra,
-    // KHÔNG được rơi về cấu hình mặc định — sẽ âm thầm kết nối nhầm máy chủ HIS.
-    return {
-      host: decryptSecret(coSo.hisHost) || process.env.HIS_HOST || "192.168.10.250",
-      port: parseInt(decryptSecret(coSo.hisPort) || process.env.HIS_PORT || "1433", 10),
-      user: decryptSecret(coSo.hisUser) || process.env.HIS_USER || "reader",
-      pass: decryptSecret(coSo.hisPass) || process.env.HIS_PASS || "Admin@123",
-      dbName: decryptSecret(coSo.hisDbName) || process.env.HIS_DB || "shpt_phongKham",
-    };
-  }
+export interface HisConfig {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  dbName: string;
+}
+
+/*
+  Trước đây cơ sở chưa cấu hình HIS vẫn được trả về máy chủ mặc định (HIS_HOST trong .env hoặc
+  192.168.10.250 / reader / Admin@123) → mỗi lần tải Bảng điều khiển, Báo cáo, Đợt khám… đều chờ
+  hết thời gian kết nối tới một máy chủ không liên quan. Nay chưa cấu hình = không có HIS.
+*/
+async function loadHisConfig(coSoId: string): Promise<HisConfig | null> {
+  const coSo = await getPrisma().coSo.findUnique({
+    where: { id: coSoId },
+    select: { hisHost: true, hisPort: true, hisUser: true, hisPass: true, hisDbName: true },
+  });
+  if (!coSo) return null;
+  // Còn dạng rõ cũ → máy chủ production tự mã hoá (chạy nền, không làm chậm truy vấn HIS)
+  void autoEncryptCoSo(coSoId, coSo);
+  // Thông tin kết nối lưu dạng mã hoá (src/lib/secret.ts) — sai/thiếu khoá thì decryptSecret báo lỗi rõ
+  const host = decryptSecret(coSo.hisHost)?.trim();
+  const dbName = decryptSecret(coSo.hisDbName)?.trim();
+  if (!host || !dbName) return null;
   return {
-    host: process.env.HIS_HOST || "192.168.10.250",
-    port: parseInt(process.env.HIS_PORT || "1433", 10),
-    user: process.env.HIS_USER || "reader",
-    pass: process.env.HIS_PASS || "Admin@123",
-    dbName: process.env.HIS_DB || "shpt_phongKham",
+    host,
+    port: parseInt(decryptSecret(coSo.hisPort) || "1433", 10) || 1433,
+    user: decryptSecret(coSo.hisUser) || "",
+    pass: decryptSecret(coSo.hisPass) || "",
+    dbName,
   };
+}
+
+/** Cấu hình HIS của cơ sở, hoặc null nếu cơ sở chưa cấu hình / không đọc được (dùng cho thống kê nền). */
+export async function getHisConfigOrNull(coSoId?: string | null): Promise<HisConfig | null> {
+  if (!coSoId) return null;
+  try {
+    return await loadHisConfig(coSoId);
+  } catch (e) {
+    console.error(`[HIS] Không đọc được cấu hình HIS của cơ sở ${coSoId}:`, e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** Cấu hình HIS cho thao tác bấm tay (đối chiếu, tìm kiếm…) — chưa cấu hình thì báo lỗi rõ ngay. */
+export async function getHisConfig(coSoId: string): Promise<HisConfig> {
+  if (!coSoId) throw new Error("Chưa chọn cơ sở để kết nối HIS");
+  const c = await loadHisConfig(coSoId);
+  if (!c) throw new Error(`Cơ sở ${coSoId} chưa cấu hình kết nối HIS — vào Quản trị → Cơ sở y tế để nhập thông tin kết nối`);
+  return c;
+}
+
+/*
+  Nhớ cơ sở có HIS đang lỗi (không kết nối được, thiếu quyền…) trong 5 phút. Các thống kê nền
+  (Mắt 2, đồng bộ bác sĩ) bỏ qua ngay thay vì lần tải trang nào cũng chờ hết thời gian kết nối.
+  Thao tác bấm tay (đối chiếu, tìm kiếm) vẫn thử kết nối thật và báo lỗi cho người dùng.
+*/
+const HIS_DOWN_MS = 5 * 60_000;
+const hisDownUntil = new Map<string, number>();
+const isHisDown = (coSoId: string) => (hisDownUntil.get(coSoId) ?? 0) > Date.now();
+function markHisDown(coSoId: string, err: unknown) {
+  hisDownUntil.set(coSoId, Date.now() + HIS_DOWN_MS);
+  console.warn(`[HIS] Cơ sở ${coSoId} lỗi HIS, tạm bỏ qua thống kê nền 5 phút:`, err instanceof Error ? err.message : err);
+}
+/** Xoá trạng thái lỗi (vd. vừa sửa cấu hình kết nối) để lần sau thử lại ngay. */
+export function clearHisDown(coSoId?: string) {
+  if (coSoId) hisDownUntil.delete(coSoId);
+  else hisDownUntil.clear();
 }
 
 // ── Chuẩn hoá để đối chiếu giữa CSR và HIS ────────────────────────────────
@@ -330,7 +363,12 @@ export async function checkHISForPatient(
   bhyt?: string | null,
   monthStr?: string | null
 ): Promise<HISCheckResult> {
-  const config = await getHisConfig(coSoId);
+  let config: HisConfig;
+  try {
+    config = await getHisConfig(coSoId);
+  } catch (e) {
+    return { found: false, error: e instanceof Error ? e.message : String(e) };
+  }
 
   const dbConfig: sql.config = {
     user: config.user,
@@ -1187,7 +1225,9 @@ export async function getHISSurgeryList(
 }
 
 export async function fetchHisDoctorsFromCoSo(coSoId: string): Promise<{ ma: string; ten: string; coSoId: string }[]> {
-  const config = await getHisConfig(coSoId);
+  if (isHisDown(coSoId)) return [];
+  const config = await getHisConfigOrNull(coSoId);
+  if (!config) return [];
   const dbConfig: sql.config = {
     user: config.user,
     password: config.pass,
@@ -1224,7 +1264,7 @@ export async function fetchHisDoctorsFromCoSo(coSoId: string): Promise<{ ma: str
       }))
       .filter((d) => d.ten.length > 0);
   } catch (err: any) {
-    console.error(`Lỗi lấy danh sách bác sĩ HIS (${coSoId} - ${config.host}):`, err?.message || err);
+    markHisDown(coSoId, err);
     return [];
   } finally {
     if (pool) {
@@ -1346,42 +1386,81 @@ export async function syncHisDoctors(targetCoSoId?: string | null): Promise<{ sy
   return { syncedCount, doctors: Array.from(syncedNames) };
 }
 
+/** Các cơ sở cần truy vấn HIS: cơ sở được chỉ định, hoặc mọi cơ sở đang hoạt động có cấu hình HIS. */
+async function hisTargets(coSoId?: string | null): Promise<string[]> {
+  if (coSoId) return [coSoId];
+  const rows = await getPrisma().coSo.findMany({
+    where: { trangThai: "active", hisHost: { not: null }, hisDbName: { not: null } },
+    select: { id: true },
+  });
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Chạy một truy vấn thống kê nền trên HIS của từng cơ sở (song song). Cơ sở chưa cấu hình hoặc đang
+ * lỗi trong 5 phút gần đây được bỏ qua ngay — không bao giờ làm chậm trang.
+ */
+async function forEachHis<T>(
+  coSoId: string | null | undefined,
+  run: (pool: sql.ConnectionPool, config: HisConfig, coSoId: string) => Promise<T[]>
+): Promise<T[]> {
+  const targets = await hisTargets(coSoId).catch(() => [] as string[]);
+  const parts = await Promise.all(
+    targets.map(async (id) => {
+      if (isHisDown(id)) return [] as T[];
+      const config = await getHisConfigOrNull(id);
+      if (!config) return [] as T[];
+      let pool: sql.ConnectionPool | null = null;
+      try {
+        pool = await new sql.ConnectionPool({
+          user: config.user,
+          password: config.pass,
+          server: config.host,
+          port: config.port,
+          database: "visi_csr",
+          options: { encrypt: true, trustServerCertificate: true },
+          connectionTimeout: 3000,
+          requestTimeout: 10000,
+        }).connect();
+        return await run(pool, config, id);
+      } catch (err) {
+        markHisDown(id, err);
+        return [] as T[];
+      } finally {
+        if (pool) {
+          try {
+            await pool.close();
+          } catch {}
+        }
+      }
+    })
+  );
+  return parts.flat();
+}
+
 /**
  * Thống kê số ca mổ Phẫu thuật Phaco 2 lần (Mắt 2) theo từng đợt khám (buoiKhamId)
  * Bệnh nhân có >= 2 lần chỉ định dịch vụ Phaco trong bảng BN_CTDichvu của HIS.
  */
 export async function fetchPhaco2LanStats(coSoId?: string): Promise<Map<string, number>> {
   const result = new Map<string, number>();
-  try {
-    const config = await getHisConfig(coSoId || "");
-    const hisDbName = config.dbName || "shpt_phongKham";
-    const pool = await new sql.ConnectionPool({
-      user: config.user,
-      password: config.pass,
-      server: config.host,
-      port: config.port,
-      database: "visi_csr",
-      options: { encrypt: true, trustServerCertificate: true },
-      connectionTimeout: 4000,
-      requestTimeout: 10000,
-    }).connect();
-
-    try {
-      const query = `
-        SELECT 
+  const rows = await forEachHis(coSoId, async (pool, config, id) => {
+    const hisDbName = config.dbName;
+    const query = `
+        SELECT
           t.buoiKhamId,
           COUNT(*) as phaco2Lan
         FROM (
-          SELECT 
+          SELECT
             h.buoiKhamId,
             h.id
           FROM HoSoBenhNhan h WITH (NOLOCK)
-          INNER JOIN [${hisDbName}].dbo.BN_CTDichvu dv WITH (NOLOCK) 
+          INNER JOIN [${hisDbName}].dbo.BN_CTDichvu dv WITH (NOLOCK)
             ON (dv.MaBN = h.maBNHIS OR REPLACE(dv.MaBN, '.', '') = REPLACE(h.maBNHIS, '.', ''))
-          INNER JOIN [${hisDbName}].dbo.DMDichvuCM dm WITH (NOLOCK) 
+          INNER JOIN [${hisDbName}].dbo.DMDichvuCM dm WITH (NOLOCK)
             ON dm.Ma = dv.MaDV
           WHERE h.maBNHIS IS NOT NULL
-            ${coSoId ? "AND h.coSoId = @coSoId" : ""}
+            AND h.coSoId = @coSoId
             AND (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%')
             AND (dm.Ten LIKE '%phaco%' OR dm.Ten LIKE '%Phaco%' OR dm.Ten LIKE '%PHACO%' OR dm.Ten LIKE N'%tán nhuyễn%')
           GROUP BY h.buoiKhamId, h.id
@@ -1389,20 +1468,11 @@ export async function fetchPhaco2LanStats(coSoId?: string): Promise<Map<string, 
         ) t
         GROUP BY t.buoiKhamId
       `;
-
-      const req = pool.request();
-      if (coSoId) req.input("coSoId", sql.NVarChar, coSoId);
-      const res = await req.query(query);
-      for (const row of res.recordset || []) {
-        if (row.buoiKhamId) {
-          result.set(row.buoiKhamId, Number(row.phaco2Lan) || 0);
-        }
-      }
-    } finally {
-      await pool.close();
-    }
-  } catch (err) {
-    console.error("fetchPhaco2LanStats error:", err);
+    const res = await pool.request().input("coSoId", sql.NVarChar, id).query(query);
+    return (res.recordset || []) as { buoiKhamId: string | null; phaco2Lan: number }[];
+  });
+  for (const row of rows) {
+    if (row.buoiKhamId) result.set(row.buoiKhamId, (result.get(row.buoiKhamId) || 0) + (Number(row.phaco2Lan) || 0));
   }
   return result;
 }
@@ -1411,54 +1481,28 @@ export async function fetchPhaco2LanStats(coSoId?: string): Promise<Map<string, 
  * Lấy danh sách ID bệnh nhân trong 1 đợt khám (hoặc toàn bộ) đã mổ Phaco 2 lần (Mắt 2)
  */
 export async function fetchPhaco2LanPatientIds(buoiKhamId?: string, coSoId?: string): Promise<Set<string>> {
-  const result = new Set<string>();
-  try {
-    const config = await getHisConfig(coSoId || "");
-    const hisDbName = config.dbName || "shpt_phongKham";
-    const pool = await new sql.ConnectionPool({
-      user: config.user,
-      password: config.pass,
-      server: config.host,
-      port: config.port,
-      database: "visi_csr",
-      options: { encrypt: true, trustServerCertificate: true },
-      connectionTimeout: 4000,
-      requestTimeout: 10000,
-    }).connect();
-
-    try {
-      const query = `
-        SELECT 
+  const rows = await forEachHis(coSoId, async (pool, config, id) => {
+    const hisDbName = config.dbName;
+    const query = `
+        SELECT
           h.id
         FROM HoSoBenhNhan h WITH (NOLOCK)
-        INNER JOIN [${hisDbName}].dbo.BN_CTDichvu dv WITH (NOLOCK) 
+        INNER JOIN [${hisDbName}].dbo.BN_CTDichvu dv WITH (NOLOCK)
           ON (dv.MaBN = h.maBNHIS OR REPLACE(dv.MaBN, '.', '') = REPLACE(h.maBNHIS, '.', ''))
-        INNER JOIN [${hisDbName}].dbo.DMDichvuCM dm WITH (NOLOCK) 
+        INNER JOIN [${hisDbName}].dbo.DMDichvuCM dm WITH (NOLOCK)
           ON dm.Ma = dv.MaDV
         WHERE h.maBNHIS IS NOT NULL
           ${buoiKhamId ? "AND h.buoiKhamId = @buoiKhamId" : ""}
-          ${coSoId ? "AND h.coSoId = @coSoId" : ""}
+          AND h.coSoId = @coSoId
           AND (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%')
           AND (dm.Ten LIKE '%phaco%' OR dm.Ten LIKE '%Phaco%' OR dm.Ten LIKE '%PHACO%' OR dm.Ten LIKE N'%tán nhuyễn%')
         GROUP BY h.id
         HAVING COUNT(dv.Ngaylap) >= 2
       `;
-
-      const req = pool.request();
-      if (buoiKhamId) req.input("buoiKhamId", sql.NVarChar, buoiKhamId);
-      if (coSoId) req.input("coSoId", sql.NVarChar, coSoId);
-      const res = await req.query(query);
-      for (const row of res.recordset || []) {
-        if (row.id) {
-          result.add(String(row.id));
-        }
-      }
-    } finally {
-      await pool.close();
-    }
-  } catch (err) {
-    console.error("fetchPhaco2LanPatientIds error:", err);
-  }
-  return result;
+    const req = pool.request().input("coSoId", sql.NVarChar, id);
+    if (buoiKhamId) req.input("buoiKhamId", sql.NVarChar, buoiKhamId);
+    const res = await req.query(query);
+    return (res.recordset || []) as { id: string | null }[];
+  });
+  return new Set(rows.filter((r) => r.id).map((r) => String(r.id)));
 }
-
