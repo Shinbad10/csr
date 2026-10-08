@@ -37,7 +37,8 @@ export async function GET(request: Request) {
 
     // Bộ lọc cho bảng BuoiKham — phải áp CÙNG khoảng ngày, nếu không thì
     // số "đợt khám" và danh sách đợt sẽ lệch với các chỉ số hồ sơ đã lọc.
-    const buoiKhamWhere: { coSoId?: string; ngayKham?: { gte?: Date; lte?: Date } } = {
+    const buoiKhamWhere: { id?: string; coSoId?: string; ngayKham?: { gte?: Date; lte?: Date } } = {
+      ...(buoiKhamId ? { id: buoiKhamId } : {}),
       ...(coSoId ? { coSoId } : {}),
       ...(ngayKhamRange ? { ngayKham: ngayKhamRange } : {}),
     };
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
     const [
       tong,
       theoTrangThai,
-      soBuoi,
+      buoiKhamList,
       coSo,
       daMo,
       allHoSos,
@@ -53,7 +54,11 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       prisma.hoSoBenhNhan.count({ where }),
       prisma.hoSoBenhNhan.groupBy({ by: ["trangThai"], where, _count: { _all: true } }),
-      prisma.buoiKham.count({ where: buoiKhamWhere }),
+      // Lấy danh sách (không chỉ đếm) để đợt khám chưa có bệnh nhân vẫn hiện trong bảng đợt khám
+      prisma.buoiKham.findMany({
+        where: buoiKhamWhere,
+        select: { id: true, ngayKham: true, xa: true, diaDiem: true, bacSiKham: true },
+      }),
       coSoId ? prisma.coSo.findUnique({ where: { id: coSoId }, select: { sheetId: true, ten: true } }) : Promise.resolve(null),
       prisma.hoSoBenhNhan.count({
         where: {
@@ -107,6 +112,7 @@ export async function GET(request: Request) {
          nếu đơn vị chưa cấu hình HIS — khi đó chỉ còn nguồn ghi chú "Mắt 2". */
       fetchPhaco2LanPatientIds(undefined, coSoId || undefined).catch(() => new Set<string>()),
     ]);
+    const soBuoi = buoiKhamList.length;
 
     const byStatus: Record<string, number> = {};
     for (const r of theoTrangThai) byStatus[r.trangThai] = r._count._all;
@@ -160,6 +166,23 @@ export async function GET(request: Request) {
         phaco2Lan: number;
       }
     > = {};
+    /* Khởi tạo đủ mọi đợt khám trong kỳ — trước đây bảng chỉ dựng từ hồ sơ bệnh nhân nên đợt mới
+       lập lịch (chưa có BN) bị thiếu, lệch với thẻ "Đợt khám CSR". */
+    for (const bk of buoiKhamList) {
+      sessionMap[bk.id] = {
+        id: bk.id,
+        ngayKham: bk.ngayKham ? new Date(bk.ngayKham).toISOString().slice(0, 10) : "",
+        xa: bk.xa || "",
+        diaDiem: bk.diaDiem || "",
+        bacSi: bk.bacSiKham || "",
+        tong: 0,
+        nhomA: 0,
+        nhomB: 0,
+        daMo: 0,
+        denKhongMo: 0,
+        phaco2Lan: 0,
+      };
+    }
 
     let daDenCount = 0;
     let denKhongMoCount = 0;
