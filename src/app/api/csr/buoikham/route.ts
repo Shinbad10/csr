@@ -10,6 +10,7 @@ import { classifyCSRNhom, checkSurgeryTiming } from "@/lib/csr";
 import { fetchPhaco2LanStats } from "@/lib/his";
 import { latestDoiChieuMap } from "@/lib/hisReconcile";
 
+import { COSO_AN_TOAN } from "@/lib/safeSelect";
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
       prisma.buoiKham.findMany({
         where: whereCoSo,
         include: {
-          coSo: true,
+          coSo: COSO_AN_TOAN, // không gửi thông tin kết nối HIS/BHXH ra trình duyệt
           _count: { select: { hoSo: true } },
         },
         orderBy: [{ createdAt: "desc" }, { ngayKham: "desc" }],
@@ -193,7 +194,7 @@ export async function POST(request: Request) {
 
     const data = await getPrisma().buoiKham.create({
       data: { id, coSoId, ngayKham: new Date(ngayKham), xa, diaDiem, bacSiKham: trimmedBacSi, ghiChu: ghiChu || null, nguoiTao: session.user.id },
-      include: { coSo: true, _count: { select: { hoSo: true } } },
+      include: { coSo: COSO_AN_TOAN, _count: { select: { hoSo: true } } },
     });
 
     broadcastEvent({

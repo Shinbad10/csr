@@ -11,6 +11,7 @@ import { broadcastEvent } from "@/lib/events";
 
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
+import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
 // Quan hệ kèm theo cho danh sách hồ sơ trả về TRÌNH DUYỆT.
 // Không dùng `coSo: true` / `tuVanVien: true`: nó gửi cả bhxhPass, hisPass, matKhauHash ra client
 // và lặp lại trên từng dòng (danh sách ~160 kB mỗi lần nạp).
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
     if (!b.sdt && !b.sdtNguoiNha)
       return NextResponse.json({ error: "Phải nhập SĐT hoặc SĐT người nhà" }, { status: 400 });
 
-    const buoiKham = await prisma.buoiKham.findUnique({ where: { id: b.buoiKhamId }, include: { coSo: true } });
+    const buoiKham = await prisma.buoiKham.findUnique({ where: { id: b.buoiKhamId }, include: { coSo: COSO_AN_TOAN } });
     if (!buoiKham) return NextResponse.json({ error: "Không tìm thấy buổi khám" }, { status: 404 });
 
     // Mức hưởng BHYT: ưu tiên giá trị nhập tay, nếu không thì suy từ mã thẻ (ký tự thứ 3)
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
             bacSiChiDinh: buoiKham.bacSiKham || null,
             trangThai: "TiepNhan", createdBy: session.user.id,
           },
-          include: { buoiKham: true, coSo: true, tuVanVien: true },
+          include: { buoiKham: true, coSo: COSO_AN_TOAN, tuVanVien: NGUOI_DUNG_AN_TOAN },
         });
         break;
       } catch (e: any) {

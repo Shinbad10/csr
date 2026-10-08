@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 import { phaseOf } from "@/lib/csr";
 
+import { COSO_AN_TOAN } from "@/lib/safeSelect";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -17,7 +18,7 @@ export async function GET(
     const { id } = await params;
     const data = await getPrisma().buoiKham.findUnique({
       where: { id },
-      include: { coSo: true },
+      include: { coSo: COSO_AN_TOAN },
     });
     if (!data) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
     return NextResponse.json(data);
@@ -90,7 +91,7 @@ export async function PATCH(
     const updated = await getPrisma().buoiKham.update({
       where: { id },
       data: updateData,
-      include: { coSo: true, _count: { select: { hoSo: true } } },
+      include: { coSo: COSO_AN_TOAN, _count: { select: { hoSo: true } } },
     });
 
     broadcastEvent({

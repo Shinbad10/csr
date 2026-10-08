@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { triggerSync } from "@/lib/syncWorker";
 import sql from "mssql";
-import { appendHisNote, getHisConfig, fetchHisRevenue } from "@/lib/his";
+import { appendHisNote, getHisConfig, fetchHisRevenue, clearPhacoCache } from "@/lib/his";
 import { broadcastEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
@@ -96,6 +96,8 @@ export async function POST(request: Request) {
       updatedCount++;
     }
 
+    // Vừa liên kết mã HIS (có thể là Mắt 2) → tính lại số liệu Mắt 2 ở lần tải sau
+    clearPhacoCache();
     triggerSync();
 
     if (updatedCount > 0) {

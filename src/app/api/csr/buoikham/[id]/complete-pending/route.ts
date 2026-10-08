@@ -17,7 +17,6 @@ export async function POST(
     const { id } = await params;
     const buoiKham = await getPrisma().buoiKham.findUnique({
       where: { id },
-      include: { coSo: true },
     });
 
     if (!buoiKham) {

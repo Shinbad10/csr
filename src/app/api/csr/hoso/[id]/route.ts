@@ -10,6 +10,7 @@ import { parseDiag } from "@/lib/csr";
 import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
 import { broadcastEvent } from "@/lib/events";
 
+import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -107,7 +108,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       data = await prisma.hoSoBenhNhan.update({
         where: { id },
         data: update,
-        include: { buoiKham: true, coSo: true, tuVanVien: true },
+        include: { buoiKham: true, coSo: COSO_AN_TOAN, tuVanVien: NGUOI_DUNG_AN_TOAN },
       });
     } catch (err: any) {
       if (err?.message?.includes("ngayDenBV") || String(err).includes("ngayDenBV")) {
@@ -115,7 +116,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         data = await prisma.hoSoBenhNhan.update({
           where: { id },
           data: update,
-          include: { buoiKham: true, coSo: true, tuVanVien: true },
+          include: { buoiKham: true, coSo: COSO_AN_TOAN, tuVanVien: NGUOI_DUNG_AN_TOAN },
         });
       } else {
         throw err;
@@ -263,7 +264,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data = await prisma.hoSoBenhNhan.update({
         where: { id },
         data: update,
-        include: { buoiKham: true, coSo: true, tuVanVien: true },
+        include: { buoiKham: true, coSo: COSO_AN_TOAN, tuVanVien: NGUOI_DUNG_AN_TOAN },
       });
     } catch (err: any) {
       if (err?.message?.includes("ngayDenBV") || String(err).includes("ngayDenBV")) {
@@ -271,7 +272,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         data = await prisma.hoSoBenhNhan.update({
           where: { id },
           data: update,
-          include: { buoiKham: true, coSo: true, tuVanVien: true },
+          include: { buoiKham: true, coSo: COSO_AN_TOAN, tuVanVien: NGUOI_DUNG_AN_TOAN },
         });
       } else {
         throw err;

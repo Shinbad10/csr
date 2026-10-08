@@ -95,6 +95,7 @@ function markHisDown(coSoId: string, err: unknown) {
 export function clearHisDown(coSoId?: string) {
   if (coSoId) hisDownUntil.delete(coSoId);
   else hisDownUntil.clear();
+  clearPhacoCache(coSoId);
 }
 
 // ── Chuẩn hoá để đối chiếu giữa CSR và HIS ────────────────────────────────
@@ -882,6 +883,7 @@ export async function batchCheckHISForPatients(
       try { await pool.close(); } catch {}
     }
   }
+  clearPhacoCache(coSoId);
   return results;
 }
 
@@ -1386,6 +1388,45 @@ export async function syncHisDoctors(targetCoSoId?: string | null): Promise<{ sy
   return { syncedCount, doctors: Array.from(syncedNames) };
 }
 
+/*
+  Lưu tạm kết quả "Mắt 2" 5 phút theo cơ sở. Truy vấn JOIN chéo HIS mất ~0,6 s trong LAN (lâu hơn qua
+  internet) mà trang Đợt khám / Bảng điều khiển / Báo cáo tải lại liên tục (cả khi ai đó sửa hồ sơ).
+  Hết hạn vẫn trả bản cũ ngay và làm mới ngầm; lần đầu chờ tối đa 1,5 s rồi hiện trang, truy vấn chạy tiếp ngầm.
+*/
+const PHACO_TTL_MS = 5 * 60_000;
+const PHACO_WAIT_MS = 1500;
+type PhacoEntry = { at: number; data?: unknown; pending?: Promise<unknown> };
+const phacoCache = new Map<string, PhacoEntry>();
+
+async function cachedPhaco<T>(key: string, empty: () => T, load: () => Promise<T>): Promise<T> {
+  let entry = phacoCache.get(key);
+  if (entry?.data !== undefined && Date.now() - entry.at < PHACO_TTL_MS) return entry.data as T;
+  if (!entry?.pending) {
+    const e: PhacoEntry = entry ?? { at: 0 };
+    e.pending = load()
+      .then((data) => {
+        e.data = data;
+        e.at = Date.now();
+        return data;
+      })
+      .finally(() => {
+        e.pending = undefined;
+      });
+    phacoCache.set(key, e);
+    entry = e;
+  }
+  if (entry.data !== undefined) return entry.data as T; // bản cũ — đang làm mới ngầm
+  const timeout = new Promise<T>((resolve) => setTimeout(() => resolve(empty()), PHACO_WAIT_MS));
+  return Promise.race([entry.pending as Promise<T>, timeout]);
+}
+
+/** Xoá số liệu Mắt 2 đã lưu tạm của cơ sở (vd. vừa đối chiếu HIS / sửa cấu hình) để lần sau tính lại. */
+export function clearPhacoCache(coSoId?: string) {
+  for (const key of phacoCache.keys()) {
+    if (!coSoId || key.includes(`|${coSoId}|`) || key.includes("|*|")) phacoCache.delete(key);
+  }
+}
+
 /** Các cơ sở cần truy vấn HIS: cơ sở được chỉ định, hoặc mọi cơ sở đang hoạt động có cấu hình HIS. */
 async function hisTargets(coSoId?: string | null): Promise<string[]> {
   if (coSoId) return [coSoId];
@@ -1443,6 +1484,10 @@ async function forEachHis<T>(
  * Bệnh nhân có >= 2 lần chỉ định dịch vụ Phaco trong bảng BN_CTDichvu của HIS.
  */
 export async function fetchPhaco2LanStats(coSoId?: string): Promise<Map<string, number>> {
+  return cachedPhaco(`stats|${coSoId || "*"}|`, () => new Map<string, number>(), () => loadPhaco2LanStats(coSoId));
+}
+
+async function loadPhaco2LanStats(coSoId?: string): Promise<Map<string, number>> {
   const result = new Map<string, number>();
   const rows = await forEachHis(coSoId, async (pool, config, id) => {
     const hisDbName = config.dbName;
@@ -1481,6 +1526,14 @@ export async function fetchPhaco2LanStats(coSoId?: string): Promise<Map<string, 
  * Lấy danh sách ID bệnh nhân trong 1 đợt khám (hoặc toàn bộ) đã mổ Phaco 2 lần (Mắt 2)
  */
 export async function fetchPhaco2LanPatientIds(buoiKhamId?: string, coSoId?: string): Promise<Set<string>> {
+  return cachedPhaco(
+    `ids|${coSoId || "*"}|${buoiKhamId || ""}`,
+    () => new Set<string>(),
+    () => loadPhaco2LanPatientIds(buoiKhamId, coSoId)
+  );
+}
+
+async function loadPhaco2LanPatientIds(buoiKhamId?: string, coSoId?: string): Promise<Set<string>> {
   const rows = await forEachHis(coSoId, async (pool, config, id) => {
     const hisDbName = config.dbName;
     const query = `
