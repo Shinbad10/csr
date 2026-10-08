@@ -1,4 +1,5 @@
 import type { CoSo } from "@prisma/client";
+import { createHash } from "crypto";
 import { getPrisma } from "./prisma";
 import {
   COSO_SECRET_FIELDS,
@@ -83,6 +84,15 @@ export function coSoForAdmin(c: CoSo) {
   };
 }
 
+/**
+ * Cổng giám định BHYT nhận mật khẩu dạng MD5. Người quản trị nhập mật khẩu thường thì tự băm;
+ * dán sẵn chuỗi MD5 (32 ký tự hex) thì giữ nguyên. Cổng không phân biệt hoa/thường của chuỗi MD5.
+ */
+export function bhxhPasswordMd5(v: string): string {
+  const s = v.trim();
+  return /^[0-9a-f]{32}$/i.test(s) ? s : createHash("md5").update(s, "utf8").digest("hex").toUpperCase();
+}
+
 const HIS_FIELDS: CoSoSecretField[] = ["hisHost", "hisPort", "hisUser", "hisPass", "hisDbName"];
 const BHXH_FIELDS: CoSoSecretField[] = ["bhxhUser", "bhxhPass", "bhxhCccdCB"];
 
@@ -100,7 +110,7 @@ export function coSoSecretsForWrite(body: Record<string, unknown>, mode: "create
       if (mode === "create") out[f] = null;
       continue;
     }
-    out[f] = encryptSecret(text);
+    out[f] = encryptSecret(f === "bhxhPass" ? bhxhPasswordMd5(text) : text);
   }
   if (mode === "update") {
     if (body.xoaHis === true) for (const f of HIS_FIELDS) out[f] = null;

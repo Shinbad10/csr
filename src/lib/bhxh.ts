@@ -20,7 +20,7 @@ import {
   explainMaKetQua,
 } from "./bhxh-types";
 
-const BHXH_TOKEN_URL = process.env.BHXH_TOKEN_URL || "https://egw.baohiemxahoi.gov.vn/api/token/take";
+export const BHXH_TOKEN_URL = process.env.BHXH_TOKEN_URL || "https://egw.baohiemxahoi.gov.vn/api/token/take";
 const BHXH_QUERY_URL = process.env.BHXH_QUERY_URL || "https://egw.baohiemxahoi.gov.vn/api/egw/KQNhanLichSuKCB2024";
 
 interface TokenCache {

@@ -3223,6 +3223,38 @@ function CoSoModal({
   const [hisDbName, setHisDbName] = useState("");
   const [xoaHis, setXoaHis] = useState(false);
   const [xoaBhxh, setXoaBhxh] = useState(false);
+  const [bhxhTesting, setBhxhTesting] = useState(false);
+  const [bhxhTest, setBhxhTest] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  /* Lỗi hay gặp: nhập số CCCD cán bộ vào ô tài khoản cổng (tài khoản đúng có dạng <Mã CSKCB>_BV).
+     Đang gõ thì xét giá trị gõ; chưa gõ thì so bản che bớt của tài khoản và CCCD đã lưu. */
+  const bhxhUserGo = bhxhUser.trim();
+  const bhxhUserGiongCccd = bhxhUserGo
+    ? /^\d{9,12}$/.test(bhxhUserGo) || bhxhUserGo === bhxhCccdCB.trim()
+    : Boolean(edit?.che?.bhxhUser && edit.che.bhxhUser === edit.che.bhxhCccdCB);
+
+  /** Thử đăng nhập cổng BHXH bằng giá trị đang nhập (ô trống → dùng giá trị đã lưu). */
+  const testBhxh = async () => {
+    setBhxhTesting(true);
+    setBhxhTest(null);
+    try {
+      const res = await fetch("/api/csr/coso/bhxh-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coSoId: edit?.id, bhxhUser, bhxhPass }),
+      });
+      const d = await res.json().catch(() => null);
+      setBhxhTest(
+        res.ok && d?.ok
+          ? { ok: true, msg: d.message || "Đăng nhập cổng BHXH thành công" }
+          : { ok: false, msg: d?.error || `Kiểm tra thất bại (HTTP ${res.status})` }
+      );
+    } catch {
+      setBhxhTest({ ok: false, msg: "Mất kết nối tới máy chủ" });
+    } finally {
+      setBhxhTesting(false);
+    }
+  };
   const daLuu = edit?.daLuu || {};
   const coHis = Object.entries(daLuu).some(([k, v]) => k.startsWith("his") && v);
   const coBhxh = Boolean(daLuu.bhxhUser || daLuu.bhxhPass || daLuu.bhxhCccdCB);
@@ -3393,11 +3425,41 @@ function CoSoModal({
           footer={coBhxh && !xoaBhxh ? lockNote(["bhxhUser", "bhxhPass", "bhxhCccdCB"]) : undefined}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CsField label="Tài khoản BHXH">
-              <CsSecretInput name="bhxhUser" value={bhxhUser} onChange={setBhxhUser} disabled={xoaBhxh} placeholder="VD: 83674_BV" {...secret("bhxhUser")} />
+            <CsField
+              label="Tài khoản BHXH"
+              hint={
+                bhxhUserGiongCccd ? (
+                  <span className="text-[var(--amber)] font-semibold">
+                    Đang giống số CCCD — tài khoản cổng thường có dạng {bhxhMaCSKCB.trim() || "<Mã CSKCB>"}_BV
+                  </span>
+                ) : undefined
+              }
+            >
+              <CsSecretInput
+                name="bhxhUser"
+                value={bhxhUser}
+                onChange={(v) => {
+                  setBhxhUser(v);
+                  setBhxhTest(null);
+                }}
+                disabled={xoaBhxh}
+                placeholder={`VD: ${bhxhMaCSKCB.trim() || "83674"}_BV`}
+                {...secret("bhxhUser")}
+              />
             </CsField>
-            <CsField label="Mật khẩu BHXH">
-              <CsSecretInput name="bhxhPass" password value={bhxhPass} onChange={setBhxhPass} disabled={xoaBhxh} placeholder="Nhập mật khẩu BHXH" {...secret("bhxhPass")} />
+            <CsField label="Mật khẩu BHXH" hint="Nhập mật khẩu cổng BHXH — hệ thống tự mã hoá MD5 (dán sẵn chuỗi MD5 cũng được)">
+              <CsSecretInput
+                name="bhxhPass"
+                password
+                value={bhxhPass}
+                onChange={(v) => {
+                  setBhxhPass(v);
+                  setBhxhTest(null);
+                }}
+                disabled={xoaBhxh}
+                placeholder="Nhập mật khẩu BHXH"
+                {...secret("bhxhPass")}
+              />
             </CsField>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.6fr_1.4fr] gap-3">
@@ -3421,6 +3483,28 @@ function CoSoModal({
               <CsSecretInput name="bhxhCccdCB" value={bhxhCccdCB} onChange={setBhxhCccdCB} disabled={xoaBhxh} placeholder="12 số CCCD" {...secret("bhxhCccdCB")} />
             </CsField>
           </div>
+          {!xoaBhxh && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+              <div className="min-h-[20px] text-[11.5px] font-semibold">
+                {bhxhTest && (
+                  <span className={`inline-flex items-start gap-1.5 ${bhxhTest.ok ? "text-[var(--teal-deep)]" : "text-[var(--rose)]"}`}>
+                    {bhxhTest.ok ? <Check className="w-3.5 h-3.5 shrink-0 mt-px" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />}
+                    {bhxhTest.msg}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={testBhxh}
+                disabled={bhxhTesting || (!coBhxh && (!bhxhUser.trim() || !bhxhPass.trim()))}
+                title="Thử đăng nhập cổng giám định BHYT bằng tài khoản đang nhập (ô trống dùng giá trị đã lưu)"
+                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy-50)] hover:border-[var(--navy-100)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              >
+                {bhxhTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                Kiểm tra đăng nhập BHXH
+              </button>
+            </div>
+          )}
         </CsSection>
 
         {/* 3. Kết nối HIS */}
