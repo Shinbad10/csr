@@ -581,13 +581,13 @@ async function traCuuTheBHYTGoc(params: TraCuuParams, retry = true): Promise<Ket
       return traCuuTheBHYTGoc({ ...params, forceRefresh: true }, false);
     }
 
-    /* Đã lấy token mới mà cổng vẫn trả 401/403: tài khoản ĐĂNG NHẬP được nhưng không có quyền gọi API tra
-       cứu thẻ (thường do dùng tài khoản cá nhân thay vì tài khoản cơ sở). Trước đây rơi xuống câu chung
+    /* Đã lấy token mới mà cổng vẫn trả 401/403: tài khoản ĐĂNG NHẬP được nhưng chưa được cấp quyền gọi API
+       tra cứu thẻ (quyền này khác quyền đăng nhập trang web giám định). Trước đây rơi xuống câu chung
        "Không tìm thấy thông tin thẻ…" rất dễ hiểu nhầm. Không kèm raw để kết quả lỗi không bị lưu tạm. */
     if (res.status === 401 || res.status === 403) {
       return {
         success: false,
-        error: `Tài khoản cổng BHXH của cơ sở đăng nhập được nhưng KHÔNG có quyền tra cứu thẻ (HTTP ${res.status}). Cần dùng tài khoản cơ sở dạng ${creds.maCSKCB || "<Mã CSKCB>"}_BV được BHXH cấp quyền tra cứu.`,
+        error: `Tài khoản cổng BHXH đăng nhập được nhưng bị từ chối khi tra cứu thẻ (HTTP ${res.status}) — tài khoản chưa được BHXH cấp quyền tra cứu qua API (khác quyền đăng nhập trang web). Liên hệ BHXH cấp quyền, hoặc dùng tài khoản đã có quyền.`,
       };
     }
 

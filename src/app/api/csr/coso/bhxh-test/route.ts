@@ -10,10 +10,25 @@ import { BHXH_QUERY_URL, BHXH_TOKEN_URL, postBhxhJson } from "@/lib/bhxh";
 /* Lỗi trả 422 (không dùng 5xx): nginx chặn phản hồi 5xx nên người dùng không đọc được lý do. */
 const LOI = 422;
 
+/** Tóm tắt NGUYÊN VĂN phản hồi của cổng cho 1 bước: mã HTTP, maKetQua, ghiChu / nội dung thô. */
+function tomTatCong(buoc: string, status: number, data: unknown): string {
+  const parts = [`${buoc}: HTTP ${status}`];
+  if (data && typeof data === "object" && Object.keys(data).length > 0) {
+    const d = data as Record<string, unknown>;
+    if (d.maKetQua != null) parts.push(`maKetQua ${String(d.maKetQua)}`);
+    const ghiChu = String(d.ghiChu || d.message || d.error || "").trim();
+    if (ghiChu) parts.push(ghiChu.length > 220 ? `${ghiChu.slice(0, 220)}…` : ghiChu);
+  } else {
+    const raw = String(data ?? "").trim();
+    parts.push(raw ? `nội dung: ${raw.slice(0, 220)}` : "phản hồi rỗng (cổng không nêu lý do)");
+  }
+  return parts.join(" · ");
+}
+
 /**
  * Kiểm tra tài khoản Cổng giám định BHYT: (1) đăng nhập lấy token, (2) dò quyền tra cứu thẻ bằng một
  * mã thẻ giả — có quyền thì cổng trả HTTP 200 (kèm mã "thẻ không tồn tại"), không có quyền thì 401/403.
- * Bước 2 cần thiết vì có tài khoản đăng nhập được nhưng không được phép tra cứu (lỗi của Hoa Lư).
+ * Bước 2 cần thiết vì có tài khoản đăng nhập được nhưng chưa được cấp quyền gọi API tra cứu (gặp ở Hoa Lư).
  * body: { coSoId?, bhxhUser?, bhxhPass?, bhxhHoTenCB?, bhxhCccdCB? } — ô trống dùng giá trị đã lưu.
  */
 export async function POST(request: Request) {
@@ -74,15 +89,25 @@ export async function POST(request: Request) {
         0
       );
       const ms = Date.now() - t0;
+      // Nguyên văn phản hồi của cổng ở 2 bước — hiện cho người dùng để đối chiếu / gửi BHXH khi cần
+      const cong = [
+        tomTatCong("Đăng nhập (/api/token/take)", res.status, res.data),
+        tomTatCong("Tra cứu thử mã thẻ giả (KQNhanLichSuKCB2024)", probe.status, probe.data),
+      ];
       if (probe.status === 401 || probe.status === 403) {
         return NextResponse.json(
           {
-            error: `Đăng nhập được nhưng tài khoản KHÔNG có quyền tra cứu thẻ BHYT (HTTP ${probe.status}) — cần tài khoản cơ sở dạng <Mã CSKCB>_BV được BHXH cấp quyền tra cứu`,
+            error: `Đăng nhập được nhưng cổng từ chối API tra cứu thẻ (HTTP ${probe.status}).`,
+            cong,
           },
           { status: LOI }
         );
       }
-      return NextResponse.json({ ok: true, message: `Đăng nhập & quyền tra cứu thẻ BHYT đều OK (${ms} ms)` });
+      return NextResponse.json({
+        ok: true,
+        message: `Đăng nhập & tra cứu thẻ BHYT hoạt động (${ms} ms) — mã thẻ thử là giả nên cổng báo không khớp là bình thường`,
+        cong,
+      });
     }
     const ma = j.maKetQua ?? res.status;
     const giongCccd = /^\d{9,12}$/.test(user);
@@ -94,6 +119,7 @@ export async function POST(request: Request) {
                 giongCccd ? " — ô tài khoản đang giống số CCCD; tài khoản cổng thường có dạng <Mã CSKCB>_BV" : ""
               }`
             : `Cổng BHXH từ chối đăng nhập (mã ${ma})`,
+        cong: [tomTatCong("Đăng nhập (/api/token/take)", res.status, res.data)],
       },
       { status: LOI }
     );

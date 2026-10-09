@@ -2556,7 +2556,7 @@ function UserModal({
     const body = isEditing
       ? { hoTen: hoTen.trim(), vaiTro, coSoId: finalCoSoId, matKhau: matKhau.trim() || undefined }
       : {
-          maNV: maNV.trim(),
+          maNV: isEditing ? edit!.maNV : undefined,
           hoTen: hoTen.trim(),
           vaiTro,
           coSoId: finalCoSoId,
@@ -3224,7 +3224,7 @@ function CoSoModal({
   const [xoaHis, setXoaHis] = useState(false);
   const [xoaBhxh, setXoaBhxh] = useState(false);
   const [bhxhTesting, setBhxhTesting] = useState(false);
-  const [bhxhTest, setBhxhTest] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [bhxhTest, setBhxhTest] = useState<{ ok: boolean; msg: string; cong?: string[] } | null>(null);
 
   /* Lỗi hay gặp: nhập số CCCD cán bộ vào ô tài khoản cổng (tài khoản đúng có dạng <Mã CSKCB>_BV).
      Đang gõ thì xét giá trị gõ; chưa gõ thì so bản che bớt của tài khoản và CCCD đã lưu. */
@@ -3244,10 +3244,11 @@ function CoSoModal({
         body: JSON.stringify({ coSoId: edit?.id, bhxhUser, bhxhPass, bhxhHoTenCB, bhxhCccdCB }),
       });
       const d = await res.json().catch(() => null);
+      const cong: string[] | undefined = Array.isArray(d?.cong) ? d.cong : undefined;
       setBhxhTest(
         res.ok && d?.ok
-          ? { ok: true, msg: d.message || "Đăng nhập cổng BHXH thành công" }
-          : { ok: false, msg: d?.error || `Kiểm tra thất bại (HTTP ${res.status})` }
+          ? { ok: true, msg: d.message || "Đăng nhập cổng BHXH thành công", cong }
+          : { ok: false, msg: d?.error || `Kiểm tra thất bại (HTTP ${res.status})`, cong }
       );
     } catch {
       setBhxhTest({ ok: false, msg: "Mất kết nối tới máy chủ" });
@@ -3484,6 +3485,7 @@ function CoSoModal({
             </CsField>
           </div>
           {!xoaBhxh && (
+            <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
               <div className="min-h-[20px] text-[11.5px] font-semibold">
                 {bhxhTest && (
@@ -3504,6 +3506,17 @@ function CoSoModal({
                 Kiểm tra kết nối BHXH
               </button>
             </div>
+            {bhxhTest?.cong && bhxhTest.cong.length > 0 && (
+              <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] px-3 py-2 space-y-1">
+                <div className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">Phản hồi nguyên văn của cổng BHXH</div>
+                {bhxhTest.cong.map((line, i) => (
+                  <div key={i} className="font-mono text-[11px] leading-[1.5] text-[var(--ink-soft)] break-words">
+                    {line}
+                  </div>
+                ))}
+              </div>
+            )}
+            </>
           )}
         </CsSection>
 
