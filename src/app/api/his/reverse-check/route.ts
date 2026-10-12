@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { getHISSurgeryList, foldName, foldId, foldPhone } from "@/lib/his";
 
+import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
 
     // Lấy tất cả hồ sơ bệnh nhân của cơ sở trong DB để đối chiếu
     const csrPatients = await prisma.hoSoBenhNhan.findMany({
-      where: { coSoId },
+      where: { coSoId, ...HOSO_CUA_DOT_CON_HIEU_LUC }, // bỏ hồ sơ thuộc đợt khám đã xoá mềm
       include: {
         buoiKham: {
           select: { ngayKham: true, xa: true, diaDiem: true },

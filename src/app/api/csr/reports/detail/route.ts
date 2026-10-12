@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { classifyCSRFunnel, tenTuVanVien, TVV_TRONG } from "@/lib/csr";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
+import { DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
@@ -25,8 +26,11 @@ export async function GET(request: Request) {
     if (coSoId) baseWhere.coSoId = coSoId;
     if (buoiKhamId) baseWhere.buoiKhamId = buoiKhamId;
 
+    // Bỏ hồ sơ thuộc đợt khám đã xoá mềm
+    baseWhere.buoiKham = { ...DOT_CON_HIEU_LUC };
     if (fromDate || toDate) {
       baseWhere.buoiKham = {
+        ...DOT_CON_HIEU_LUC,
         ngayKham: {
           ...(fromDate ? { gte: new Date(fromDate) } : {}),
           ...(toDate ? { lte: new Date(`${toDate}T23:59:59.999Z`) } : {}),

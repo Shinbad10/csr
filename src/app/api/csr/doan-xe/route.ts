@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 
+import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
       AND: [
         coSoId ? { coSoId } : {},
         buoiKhamId ? { buoiKhamId } : {},
+        HOSO_CUA_DOT_CON_HIEU_LUC, // bỏ hồ sơ thuộc đợt khám đã xoá mềm
         {
           OR: [
             { nhom: "A" },

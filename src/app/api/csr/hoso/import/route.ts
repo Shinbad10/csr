@@ -8,6 +8,7 @@ import type { ImportRow } from "@/lib/importExcel";
 import { triggerSync } from "@/lib/syncWorker";
 import { broadcastEvent } from "@/lib/events";
 
+import { DOT_KHAM_DA_XOA } from "@/lib/dotKham";
 interface BlockPayload {
   /** Gán vào đợt khám có sẵn; bỏ trống thì tạo đợt mới từ 4 trường bên dưới */
   buoiKhamId?: string;
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
 
       if (buoiKhamId) {
         const bk = await prisma.buoiKham.findUnique({ where: { id: buoiKhamId } });
-        if (!bk) { results.push({ tieuDe: blk.xa || buoiKhamId, buoiKhamId, created: 0, skipped: rows.length, errors: ["Không tìm thấy đợt khám"] }); continue; }
+        if (!bk || bk.trangThai === DOT_KHAM_DA_XOA) { results.push({ tieuDe: blk.xa || buoiKhamId, buoiKhamId, created: 0, skipped: rows.length, errors: ["Không tìm thấy đợt khám (có thể đã bị xoá)"] }); continue; }
         ngayKham = bk.ngayKham;
       } else {
         if (!blk.ngayKham || !blk.xa?.trim()) {

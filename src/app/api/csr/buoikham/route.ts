@@ -11,6 +11,7 @@ import { fetchPhaco2LanStats } from "@/lib/his";
 import { latestDoiChieuMap } from "@/lib/hisReconcile";
 
 import { COSO_AN_TOAN } from "@/lib/safeSelect";
+import { DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
     // Tối ưu tốc độ nạp: Dùng aggregation ở cấp DB thay vì tải toàn bộ hàng ngàn dòng hồ sơ về bộ nhớ Node.js
     const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback, phaco2LanMap] = await Promise.all([
       prisma.buoiKham.findMany({
-        where: whereCoSo,
+        where: { ...(whereCoSo || {}), ...DOT_CON_HIEU_LUC }, // đợt đã xoá mềm không hiện
         include: {
           coSo: COSO_AN_TOAN, // không gửi thông tin kết nối HIS/BHXH ra trình duyệt
           _count: { select: { hoSo: true } },

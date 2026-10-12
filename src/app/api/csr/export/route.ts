@@ -6,6 +6,7 @@ import { can } from "@/lib/permissions";
 import { HOSO_HEADER, hoSoToCells, KHAM_SUC_KHOE_HEADER, hoSoToKhamSucKhoeCells } from "@/lib/csr";
 import * as XLSX from "xlsx";
 
+import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 // UC-08 / SRS §11.1 — xuất danh sách theo bộ lọc + phân quyền cơ sở.
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -45,6 +46,7 @@ export async function GET(request: Request) {
           buoiKhamId ? { buoiKhamId } : {},
           trangThai ? { trangThai } : {},
           ngayKhamRange ? { buoiKham: { ngayKham: ngayKhamRange } } : {},
+          HOSO_CUA_DOT_CON_HIEU_LUC, // bỏ hồ sơ thuộc đợt khám đã xoá mềm
         ],
       },
       include: { buoiKham: true, tuVanVien: { select: { hoTen: true } } },

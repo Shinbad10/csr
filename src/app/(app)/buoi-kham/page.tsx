@@ -10,7 +10,7 @@ import {
   Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X,
   Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet, UserCheck,
   RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical,
-  ClipboardList, Clock, RefreshCw, History, Download, Layers
+  ClipboardList, Clock, RefreshCw, History, Download, Layers, Trash2
 } from "lucide-react";
 import { can } from "@/lib/permissions";
 import { motion } from "framer-motion";
@@ -21,6 +21,7 @@ import { DoctorMultiSelect, parseDoctorList, formatDoctorList } from "@/componen
 import BuoiKhamPatientsModal from "@/components/csr/BuoiKhamPatientsModal";
 import { SkeletonTable } from "@/components/layout/Skeleton";
 import { useToast } from "@/components/providers/ToastProvider";
+import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { DataView, DataToolbar, DataTable, DataPagination, ToolbarSelect, useDataContext } from "@/components/data";
 import {
@@ -124,7 +125,7 @@ function MenuItem({
   icon: React.ElementType;
   label: string;
   hint?: string;
-  tone?: "default" | "navy" | "teal" | "amber";
+  tone?: "default" | "navy" | "teal" | "amber" | "rose";
   disabled?: boolean;
   onClick: () => void;
 }) {
@@ -133,17 +134,26 @@ function MenuItem({
     navy: "text-[var(--navy)]",
     teal: "text-[var(--teal-deep)]",
     amber: "text-[var(--amber)]",
+    rose: "text-[var(--rose)]",
   }[tone];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-[8px] text-left hover:bg-[var(--navy-50)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      className={`w-full flex items-start gap-2.5 px-2.5 py-2 rounded-[8px] text-left transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+        tone === "rose" ? "hover:bg-[var(--rose-soft)]" : "hover:bg-[var(--navy-50)]"
+      }`}
     >
       <Icon className={`w-4 h-4 mt-px shrink-0 ${iconCls}`} />
       <div className="flex-1 min-w-0">
-        <div className={`text-[12.5px] font-semibold leading-tight ${tone === "amber" ? "text-[var(--amber-deep)]" : "text-[var(--ink)]"}`}>{label}</div>
+        <div
+          className={`text-[12.5px] font-semibold leading-tight ${
+            tone === "amber" ? "text-[var(--amber-deep)]" : tone === "rose" ? "text-[var(--rose)]" : "text-[var(--ink)]"
+          }`}
+        >
+          {label}
+        </div>
         {hint && <div className="text-[10.5px] text-[var(--mute)] mt-0.5 truncate">{hint}</div>}
       </div>
     </button>
@@ -169,6 +179,8 @@ function BuoiKhamRowActions({
   onViewPatients,
   onReconcile,
   onHistory,
+  canDelete,
+  onDelete,
 }: {
   b: BuoiKham;
   canManage: boolean;
@@ -183,6 +195,9 @@ function BuoiKhamRowActions({
   onViewPatients?: (b: BuoiKham) => void;
   onReconcile?: (b: BuoiKham) => void;
   onHistory?: (b: BuoiKham) => void;
+  /** Quản lý / Quản trị viên: xoá mềm đợt khám */
+  canDelete?: boolean;
+  onDelete?: (b: BuoiKham) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -311,6 +326,19 @@ function BuoiKhamRowActions({
                 <div className="my-1 border-t border-[var(--line-soft)]" />
                 {!isEnded && <MenuItem icon={CheckCheck} tone="amber" label="Kết thúc đợt khám" onClick={pick(() => onComplete(b))} />}
                 <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" onClick={pick(() => onEdit(b))} />
+              </>
+            )}
+
+            {canDelete && onDelete && (
+              <>
+                <div className="my-1 border-t border-[var(--line-soft)]" />
+                <MenuItem
+                  icon={Trash2}
+                  tone="rose"
+                  label="Xoá đợt khám"
+                  hint={(b._count?.hoSo ?? 0) > 0 ? `Ẩn đợt & ${b._count?.hoSo} hồ sơ bệnh nhân` : "Ẩn khỏi danh sách"}
+                  onClick={pick(() => onDelete(b))}
+                />
               </>
             )}
           </div>,
@@ -461,6 +489,9 @@ export default function BuoiKhamPage() {
   const canClinical = can(session?.user?.role, "hoso.clinical");
   const canExport = can(session?.user?.role, "report.export");
   const canReconcile = can(session?.user?.role, "hoso.treatment");
+  // Xoá (mềm) đợt khám: chỉ Quản lý toàn hệ thống & Quản trị viên (IT) — máy chủ giới hạn IT trong đơn vị mình
+  const canDelete = can(session?.user?.role, "admin.masterdata") || can(session?.user?.role, "admin.users");
+  const confirm = useConfirm();
 
   const [list, setList] = useState<BuoiKham[]>([]);
   const [cosos, setCosos] = useState<CoSo[]>([]);
@@ -846,6 +877,37 @@ export default function BuoiKhamPage() {
   const toTarget = (b: BuoiKham) => ({ id: b.id, name: fmtBuoiKhamName(b), soCa: (b.stats?.nhomA ?? 0) + (b.stats?.nhomB ?? 0) });
   const reconcileOne = (b: BuoiKham) => his.runOne(toTarget(b));
 
+  /** Xoá mềm đợt khám (có xác nhận): đợt & hồ sơ trong đợt bị ẩn khỏi mọi danh sách, dữ liệu vẫn giữ. */
+  const deleteBuoiKham = useCallback(
+    async (b: BuoiKham) => {
+      const soBN = b._count?.hoSo ?? 0;
+      const ok = await confirm({
+        title: "Xoá đợt khám?",
+        message: `Đợt khám ${fmtBuoiKhamName(b)} ngày ${fmtDate(b.ngayKham)} sẽ chuyển sang trạng thái "Đã xoá" và bị ẩn khỏi danh sách đợt khám, bảng điều khiển, báo cáo.${
+          soBN > 0 ? `\n${soBN} hồ sơ bệnh nhân trong đợt cũng sẽ bị ẩn theo.` : ""
+        }`,
+        note: "Dữ liệu không bị xoá vĩnh viễn — cần khôi phục thì liên hệ quản trị hệ thống.",
+        confirmLabel: "Xoá đợt khám",
+        cancelLabel: "Huỷ",
+        tone: "danger",
+      });
+      if (!ok) return;
+      try {
+        const res = await fetch(`/api/csr/buoikham/${b.id}`, { method: "DELETE" });
+        const d = await res.json().catch(() => null);
+        if (!res.ok) {
+          addToast({ type: "error", message: d?.error || `Không xoá được đợt khám (HTTP ${res.status})` });
+          return;
+        }
+        setList((prev) => prev.filter((x) => x.id !== b.id));
+        addToast({ type: "success", message: `Đã xoá đợt khám ${fmtBuoiKhamName(b)}` });
+      } catch {
+        addToast({ type: "error", message: "Mất kết nối máy chủ" });
+      }
+    },
+    [confirm, addToast]
+  );
+
   const columns = useMemo<ColumnDef<BuoiKham>[]>(
     () => [
       {
@@ -1019,12 +1081,14 @@ export default function BuoiKhamPage() {
             onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
             onReconcile={reconcileOne}
             onHistory={setHistoryTarget}
+            canDelete={canDelete}
+            onDelete={deleteBuoiKham}
           />
         ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canManage, canViewTamSoat, canClinical, canReconcile, exportingId, his.runningIds]
+    [canManage, canViewTamSoat, canClinical, canReconcile, canDelete, deleteBuoiKham, exportingId, his.runningIds]
   );
 
   const statusTabs: { key: StatusFilter; label: string; dot?: boolean }[] = [
@@ -1254,6 +1318,8 @@ export default function BuoiKhamPage() {
                               onViewPatients={(rec) => setViewPatientsBuoiKham(rec)}
                               onReconcile={reconcileOne}
                               onHistory={setHistoryTarget}
+                              canDelete={canDelete}
+                              onDelete={deleteBuoiKham}
                             />
                           </div>
                         </div>

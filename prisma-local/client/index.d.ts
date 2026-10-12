@@ -4234,6 +4234,9 @@ export namespace Prisma {
     nguoiTao: string | null
     createdAt: Date | null
     syncStatus: string | null
+    trangThai: string | null
+    xoaLuc: Date | null
+    xoaBoi: string | null
   }
 
   export type BuoiKhamMaxAggregateOutputType = {
@@ -4247,6 +4250,9 @@ export namespace Prisma {
     nguoiTao: string | null
     createdAt: Date | null
     syncStatus: string | null
+    trangThai: string | null
+    xoaLuc: Date | null
+    xoaBoi: string | null
   }
 
   export type BuoiKhamCountAggregateOutputType = {
@@ -4260,6 +4266,9 @@ export namespace Prisma {
     nguoiTao: number
     createdAt: number
     syncStatus: number
+    trangThai: number
+    xoaLuc: number
+    xoaBoi: number
     _all: number
   }
 
@@ -4275,6 +4284,9 @@ export namespace Prisma {
     nguoiTao?: true
     createdAt?: true
     syncStatus?: true
+    trangThai?: true
+    xoaLuc?: true
+    xoaBoi?: true
   }
 
   export type BuoiKhamMaxAggregateInputType = {
@@ -4288,6 +4300,9 @@ export namespace Prisma {
     nguoiTao?: true
     createdAt?: true
     syncStatus?: true
+    trangThai?: true
+    xoaLuc?: true
+    xoaBoi?: true
   }
 
   export type BuoiKhamCountAggregateInputType = {
@@ -4301,6 +4316,9 @@ export namespace Prisma {
     nguoiTao?: true
     createdAt?: true
     syncStatus?: true
+    trangThai?: true
+    xoaLuc?: true
+    xoaBoi?: true
     _all?: true
   }
 
@@ -4387,6 +4405,9 @@ export namespace Prisma {
     nguoiTao: string
     createdAt: Date
     syncStatus: string
+    trangThai: string
+    xoaLuc: Date | null
+    xoaBoi: string | null
     _count: BuoiKhamCountAggregateOutputType | null
     _min: BuoiKhamMinAggregateOutputType | null
     _max: BuoiKhamMaxAggregateOutputType | null
@@ -4417,6 +4438,9 @@ export namespace Prisma {
     nguoiTao?: boolean
     createdAt?: boolean
     syncStatus?: boolean
+    trangThai?: boolean
+    xoaLuc?: boolean
+    xoaBoi?: boolean
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
     nguoiTaoRef?: boolean | NguoiDungCSRDefaultArgs<ExtArgs>
     hoSo?: boolean | BuoiKham$hoSoArgs<ExtArgs>
@@ -4434,6 +4458,9 @@ export namespace Prisma {
     nguoiTao?: boolean
     createdAt?: boolean
     syncStatus?: boolean
+    trangThai?: boolean
+    xoaLuc?: boolean
+    xoaBoi?: boolean
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
     nguoiTaoRef?: boolean | NguoiDungCSRDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["buoiKham"]>
@@ -4449,6 +4476,9 @@ export namespace Prisma {
     nguoiTao?: boolean
     createdAt?: boolean
     syncStatus?: boolean
+    trangThai?: boolean
+    xoaLuc?: boolean
+    xoaBoi?: boolean
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
     nguoiTaoRef?: boolean | NguoiDungCSRDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["buoiKham"]>
@@ -4464,9 +4494,12 @@ export namespace Prisma {
     nguoiTao?: boolean
     createdAt?: boolean
     syncStatus?: boolean
+    trangThai?: boolean
+    xoaLuc?: boolean
+    xoaBoi?: boolean
   }
 
-  export type BuoiKhamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "coSoId" | "ngayKham" | "xa" | "diaDiem" | "bacSiKham" | "ghiChu" | "nguoiTao" | "createdAt" | "syncStatus", ExtArgs["result"]["buoiKham"]>
+  export type BuoiKhamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "coSoId" | "ngayKham" | "xa" | "diaDiem" | "bacSiKham" | "ghiChu" | "nguoiTao" | "createdAt" | "syncStatus" | "trangThai" | "xoaLuc" | "xoaBoi", ExtArgs["result"]["buoiKham"]>
   export type BuoiKhamInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
     nguoiTaoRef?: boolean | NguoiDungCSRDefaultArgs<ExtArgs>
@@ -4500,6 +4533,9 @@ export namespace Prisma {
       nguoiTao: string
       createdAt: Date
       syncStatus: string
+      trangThai: string
+      xoaLuc: Date | null
+      xoaBoi: string | null
     }, ExtArgs["result"]["buoiKham"]>
     composites: {}
   }
@@ -4936,6 +4972,9 @@ export namespace Prisma {
     readonly nguoiTao: FieldRef<"BuoiKham", 'String'>
     readonly createdAt: FieldRef<"BuoiKham", 'DateTime'>
     readonly syncStatus: FieldRef<"BuoiKham", 'String'>
+    readonly trangThai: FieldRef<"BuoiKham", 'String'>
+    readonly xoaLuc: FieldRef<"BuoiKham", 'DateTime'>
+    readonly xoaBoi: FieldRef<"BuoiKham", 'String'>
   }
     
 
@@ -11613,7 +11652,10 @@ export namespace Prisma {
     ghiChu: 'ghiChu',
     nguoiTao: 'nguoiTao',
     createdAt: 'createdAt',
-    syncStatus: 'syncStatus'
+    syncStatus: 'syncStatus',
+    trangThai: 'trangThai',
+    xoaLuc: 'xoaLuc',
+    xoaBoi: 'xoaBoi'
   };
 
   export type BuoiKhamScalarFieldEnum = (typeof BuoiKhamScalarFieldEnum)[keyof typeof BuoiKhamScalarFieldEnum]
@@ -12008,6 +12050,9 @@ export namespace Prisma {
     nguoiTao?: StringFilter<"BuoiKham"> | string
     createdAt?: DateTimeFilter<"BuoiKham"> | Date | string
     syncStatus?: StringFilter<"BuoiKham"> | string
+    trangThai?: StringFilter<"BuoiKham"> | string
+    xoaLuc?: DateTimeNullableFilter<"BuoiKham"> | Date | string | null
+    xoaBoi?: StringNullableFilter<"BuoiKham"> | string | null
     coSo?: XOR<CoSoScalarRelationFilter, CoSoWhereInput>
     nguoiTaoRef?: XOR<NguoiDungCSRScalarRelationFilter, NguoiDungCSRWhereInput>
     hoSo?: HoSoBenhNhanListRelationFilter
@@ -12024,6 +12069,9 @@ export namespace Prisma {
     nguoiTao?: SortOrder
     createdAt?: SortOrder
     syncStatus?: SortOrder
+    trangThai?: SortOrder
+    xoaLuc?: SortOrderInput | SortOrder
+    xoaBoi?: SortOrderInput | SortOrder
     coSo?: CoSoOrderByWithRelationInput
     nguoiTaoRef?: NguoiDungCSROrderByWithRelationInput
     hoSo?: HoSoBenhNhanOrderByRelationAggregateInput
@@ -12043,6 +12091,9 @@ export namespace Prisma {
     nguoiTao?: StringFilter<"BuoiKham"> | string
     createdAt?: DateTimeFilter<"BuoiKham"> | Date | string
     syncStatus?: StringFilter<"BuoiKham"> | string
+    trangThai?: StringFilter<"BuoiKham"> | string
+    xoaLuc?: DateTimeNullableFilter<"BuoiKham"> | Date | string | null
+    xoaBoi?: StringNullableFilter<"BuoiKham"> | string | null
     coSo?: XOR<CoSoScalarRelationFilter, CoSoWhereInput>
     nguoiTaoRef?: XOR<NguoiDungCSRScalarRelationFilter, NguoiDungCSRWhereInput>
     hoSo?: HoSoBenhNhanListRelationFilter
@@ -12059,6 +12110,9 @@ export namespace Prisma {
     nguoiTao?: SortOrder
     createdAt?: SortOrder
     syncStatus?: SortOrder
+    trangThai?: SortOrder
+    xoaLuc?: SortOrderInput | SortOrder
+    xoaBoi?: SortOrderInput | SortOrder
     _count?: BuoiKhamCountOrderByAggregateInput
     _max?: BuoiKhamMaxOrderByAggregateInput
     _min?: BuoiKhamMinOrderByAggregateInput
@@ -12078,6 +12132,9 @@ export namespace Prisma {
     nguoiTao?: StringWithAggregatesFilter<"BuoiKham"> | string
     createdAt?: DateTimeWithAggregatesFilter<"BuoiKham"> | Date | string
     syncStatus?: StringWithAggregatesFilter<"BuoiKham"> | string
+    trangThai?: StringWithAggregatesFilter<"BuoiKham"> | string
+    xoaLuc?: DateTimeNullableWithAggregatesFilter<"BuoiKham"> | Date | string | null
+    xoaBoi?: StringNullableWithAggregatesFilter<"BuoiKham"> | string | null
   }
 
   export type HoSoBenhNhanWhereInput = {
@@ -12922,6 +12979,9 @@ export namespace Prisma {
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     coSo: CoSoCreateNestedOneWithoutBuoiKhamInput
     nguoiTaoRef: NguoiDungCSRCreateNestedOneWithoutBuoiKhamTaoInput
     hoSo?: HoSoBenhNhanCreateNestedManyWithoutBuoiKhamInput
@@ -12938,6 +12998,9 @@ export namespace Prisma {
     nguoiTao: string
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     hoSo?: HoSoBenhNhanUncheckedCreateNestedManyWithoutBuoiKhamInput
   }
 
@@ -12950,6 +13013,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     coSo?: CoSoUpdateOneRequiredWithoutBuoiKhamNestedInput
     nguoiTaoRef?: NguoiDungCSRUpdateOneRequiredWithoutBuoiKhamTaoNestedInput
     hoSo?: HoSoBenhNhanUpdateManyWithoutBuoiKhamNestedInput
@@ -12966,6 +13032,9 @@ export namespace Prisma {
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     hoSo?: HoSoBenhNhanUncheckedUpdateManyWithoutBuoiKhamNestedInput
   }
 
@@ -12980,6 +13049,9 @@ export namespace Prisma {
     nguoiTao: string
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
   }
 
   export type BuoiKhamUpdateManyMutationInput = {
@@ -12991,6 +13063,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BuoiKhamUncheckedUpdateManyInput = {
@@ -13004,6 +13079,9 @@ export namespace Prisma {
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type HoSoBenhNhanCreateInput = {
@@ -13907,6 +13985,17 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type CoSoScalarRelationFilter = {
     is?: CoSoWhereInput
     isNot?: CoSoWhereInput
@@ -13928,6 +14017,9 @@ export namespace Prisma {
     nguoiTao?: SortOrder
     createdAt?: SortOrder
     syncStatus?: SortOrder
+    trangThai?: SortOrder
+    xoaLuc?: SortOrder
+    xoaBoi?: SortOrder
   }
 
   export type BuoiKhamMaxOrderByAggregateInput = {
@@ -13941,6 +14033,9 @@ export namespace Prisma {
     nguoiTao?: SortOrder
     createdAt?: SortOrder
     syncStatus?: SortOrder
+    trangThai?: SortOrder
+    xoaLuc?: SortOrder
+    xoaBoi?: SortOrder
   }
 
   export type BuoiKhamMinOrderByAggregateInput = {
@@ -13954,6 +14049,9 @@ export namespace Prisma {
     nguoiTao?: SortOrder
     createdAt?: SortOrder
     syncStatus?: SortOrder
+    trangThai?: SortOrder
+    xoaLuc?: SortOrder
+    xoaBoi?: SortOrder
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -13970,6 +14068,20 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -13979,17 +14091,6 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntFilter<$PrismaModel> | number
-  }
-
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -14268,20 +14369,6 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -14849,6 +14936,10 @@ export namespace Prisma {
     set?: Date | string
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type CoSoUpdateOneRequiredWithoutBuoiKhamNestedInput = {
     create?: XOR<CoSoCreateWithoutBuoiKhamInput, CoSoUncheckedCreateWithoutBuoiKhamInput>
     connectOrCreate?: CoSoCreateOrConnectWithoutBuoiKhamInput
@@ -14943,10 +15034,6 @@ export namespace Prisma {
     decrement?: number
     multiply?: number
     divide?: number
-  }
-
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
   }
 
   export type NullableIntFieldUpdateOperationsInput = {
@@ -15170,6 +15257,17 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -15184,7 +15282,7 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
     notIn?: Date[] | string[] | null
@@ -15192,7 +15290,10 @@ export namespace Prisma {
     lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedBoolNullableFilter<$PrismaModel = never> = {
@@ -15241,20 +15342,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -15314,6 +15401,9 @@ export namespace Prisma {
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     nguoiTaoRef: NguoiDungCSRCreateNestedOneWithoutBuoiKhamTaoInput
     hoSo?: HoSoBenhNhanCreateNestedManyWithoutBuoiKhamInput
   }
@@ -15328,6 +15418,9 @@ export namespace Prisma {
     nguoiTao: string
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     hoSo?: HoSoBenhNhanUncheckedCreateNestedManyWithoutBuoiKhamInput
   }
 
@@ -15554,6 +15647,9 @@ export namespace Prisma {
     nguoiTao?: StringFilter<"BuoiKham"> | string
     createdAt?: DateTimeFilter<"BuoiKham"> | Date | string
     syncStatus?: StringFilter<"BuoiKham"> | string
+    trangThai?: StringFilter<"BuoiKham"> | string
+    xoaLuc?: DateTimeNullableFilter<"BuoiKham"> | Date | string | null
+    xoaBoi?: StringNullableFilter<"BuoiKham"> | string | null
   }
 
   export type NguoiDungCSRUpsertWithWhereUniqueWithoutCoSoInput = {
@@ -15729,6 +15825,9 @@ export namespace Prisma {
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     coSo: CoSoCreateNestedOneWithoutBuoiKhamInput
     hoSo?: HoSoBenhNhanCreateNestedManyWithoutBuoiKhamInput
   }
@@ -15743,6 +15842,9 @@ export namespace Prisma {
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     hoSo?: HoSoBenhNhanUncheckedCreateNestedManyWithoutBuoiKhamInput
   }
 
@@ -16706,6 +16808,9 @@ export namespace Prisma {
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
     coSo: CoSoCreateNestedOneWithoutBuoiKhamInput
     nguoiTaoRef: NguoiDungCSRCreateNestedOneWithoutBuoiKhamTaoInput
   }
@@ -16721,6 +16826,9 @@ export namespace Prisma {
     nguoiTao: string
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
   }
 
   export type BuoiKhamCreateOrConnectWithoutHoSoInput = {
@@ -16925,6 +17033,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     coSo?: CoSoUpdateOneRequiredWithoutBuoiKhamNestedInput
     nguoiTaoRef?: NguoiDungCSRUpdateOneRequiredWithoutBuoiKhamTaoNestedInput
   }
@@ -16940,6 +17051,9 @@ export namespace Prisma {
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CoSoUpsertWithoutHoSoInput = {
@@ -17508,6 +17622,9 @@ export namespace Prisma {
     nguoiTao: string
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
   }
 
   export type NguoiDungCSRCreateManyCoSoInput = {
@@ -17596,6 +17713,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     nguoiTaoRef?: NguoiDungCSRUpdateOneRequiredWithoutBuoiKhamTaoNestedInput
     hoSo?: HoSoBenhNhanUpdateManyWithoutBuoiKhamNestedInput
   }
@@ -17610,6 +17730,9 @@ export namespace Prisma {
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     hoSo?: HoSoBenhNhanUncheckedUpdateManyWithoutBuoiKhamNestedInput
   }
 
@@ -17623,6 +17746,9 @@ export namespace Prisma {
     nguoiTao?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type NguoiDungCSRUpdateWithoutCoSoInput = {
@@ -17878,6 +18004,9 @@ export namespace Prisma {
     ghiChu?: string | null
     createdAt?: Date | string
     syncStatus?: string
+    trangThai?: string
+    xoaLuc?: Date | string | null
+    xoaBoi?: string | null
   }
 
   export type HoSoBenhNhanCreateManyTuVanVienInput = {
@@ -18098,6 +18227,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     coSo?: CoSoUpdateOneRequiredWithoutBuoiKhamNestedInput
     hoSo?: HoSoBenhNhanUpdateManyWithoutBuoiKhamNestedInput
   }
@@ -18112,6 +18244,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
     hoSo?: HoSoBenhNhanUncheckedUpdateManyWithoutBuoiKhamNestedInput
   }
 
@@ -18125,6 +18260,9 @@ export namespace Prisma {
     ghiChu?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     syncStatus?: StringFieldUpdateOperationsInput | string
+    trangThai?: StringFieldUpdateOperationsInput | string
+    xoaLuc?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    xoaBoi?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type HoSoBenhNhanUpdateWithoutTuVanVienInput = {

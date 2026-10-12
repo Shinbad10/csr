@@ -5,8 +5,10 @@ import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 import { phaseOf } from "@/lib/csr";
-
+import { audit } from "@/lib/audit";
 import { COSO_AN_TOAN } from "@/lib/safeSelect";
+import { DOT_KHAM_DA_XOA } from "@/lib/dotKham";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -20,7 +22,8 @@ export async function GET(
       where: { id },
       include: { coSo: COSO_AN_TOAN },
     });
-    if (!data) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
+    if (!data || data.trangThai === DOT_KHAM_DA_XOA)
+      return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
@@ -42,7 +45,8 @@ export async function PATCH(
     const { xa, diaDiem, ghiChu, ngayKham, bacSiKham } = body;
 
     const existing = await getPrisma().buoiKham.findUnique({ where: { id } });
-    if (!existing) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
+    if (!existing || existing.trangThai === DOT_KHAM_DA_XOA)
+      return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
 
     const phase = phaseOf(existing.ngayKham);
     // Cho phép quản lý cập nhật bác sĩ, ghi chú hoặc địa điểm để hoàn thiện dữ liệu
@@ -115,21 +119,44 @@ export async function PUT(
   return PATCH(request, { params });
 }
 
+/**
+ * Xoá MỀM đợt khám: chuyển trạng thái "deleted", ẩn đợt và các hồ sơ trong đợt khỏi mọi danh sách / báo cáo,
+ * KHÔNG xoá dữ liệu. Trước đây là xoá thật (kéo theo xoá toàn bộ hồ sơ bệnh nhân) và cả MKT / Tư vấn viên
+ * cũng gọi được. Nay chỉ Quản lý (toàn hệ thống) và Quản trị viên (IT) của chính đơn vị được xoá.
+ */
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!can(session.user.role, "buoikham.manage"))
-    return NextResponse.json({ error: "Bạn không có quyền xóa đợt khám" }, { status: 403 });
+  const isMaster = can(session.user.role, "admin.masterdata");
+  const isIT = can(session.user.role, "admin.users");
+  if (!isMaster && !isIT)
+    return NextResponse.json({ error: "Chỉ Quản lý hoặc Quản trị viên được xoá đợt khám" }, { status: 403 });
 
   try {
     const { id } = await params;
-    const existing = await getPrisma().buoiKham.findUnique({ where: { id } });
-    if (!existing) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
+    const prisma = getPrisma();
+    const existing = await prisma.buoiKham.findUnique({
+      where: { id },
+      select: { id: true, coSoId: true, xa: true, ngayKham: true, trangThai: true, _count: { select: { hoSo: true } } },
+    });
+    if (!existing || existing.trangThai === DOT_KHAM_DA_XOA)
+      return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
+    if (!isMaster && existing.coSoId !== session.user.coSoId)
+      return NextResponse.json({ error: "Bạn chỉ được xoá đợt khám thuộc đơn vị của mình" }, { status: 403 });
 
-    await getPrisma().buoiKham.delete({ where: { id } });
+    await prisma.buoiKham.update({
+      where: { id },
+      data: { trangThai: DOT_KHAM_DA_XOA, xoaLuc: new Date(), xoaBoi: session.user.id },
+    });
+    await audit(session.user.id, "BuoiKham", id, "xoa", {
+      xoaMem: true,
+      xa: existing.xa,
+      ngayKham: existing.ngayKham,
+      soHoSo: existing._count.hoSo,
+    });
 
     broadcastEvent({
       type: "buoikham_change",
@@ -138,8 +165,9 @@ export async function DELETE(
       buoiKhamId: id,
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, soHoSo: existing._count.hoSo });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
+    // 422 thay vì 500: nginx chặn phản hồi 5xx nên người dùng không đọc được lý do
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 422 });
   }
 }

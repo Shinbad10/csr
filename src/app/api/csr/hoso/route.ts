@@ -12,6 +12,7 @@ import { broadcastEvent } from "@/lib/events";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
 import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
+import { DOT_KHAM_DA_XOA, HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 // Quan hệ kèm theo cho danh sách hồ sơ trả về TRÌNH DUYỆT.
 // Không dùng `coSo: true` / `tuVanVien: true`: nó gửi cả bhxhPass, hisPass, matKhauHash ra client
 // và lặp lại trên từng dòng (danh sách ~160 kB mỗi lần nạp).
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
         buoiKhamId ? { buoiKhamId } : {},
         trangThai ? { trangThai } : {},
         nhom ? { nhom } : {},
+        HOSO_CUA_DOT_CON_HIEU_LUC, // bỏ hồ sơ thuộc đợt khám đã xoá mềm
         search
           ? { OR: [{ maBN: { contains: search } }, { hoTen: { contains: search } }, { sdt: { contains: search } }, { cccd: { contains: search } }] }
           : {},
@@ -122,7 +124,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Phải nhập SĐT hoặc SĐT người nhà" }, { status: 400 });
 
     const buoiKham = await prisma.buoiKham.findUnique({ where: { id: b.buoiKhamId }, include: { coSo: COSO_AN_TOAN } });
-    if (!buoiKham) return NextResponse.json({ error: "Không tìm thấy buổi khám" }, { status: 404 });
+    if (!buoiKham || buoiKham.trangThai === DOT_KHAM_DA_XOA)
+      return NextResponse.json({ error: "Không tìm thấy buổi khám (có thể đã bị xoá)" }, { status: 404 });
 
     // Mức hưởng BHYT: ưu tiên giá trị nhập tay, nếu không thì suy từ mã thẻ (ký tự thứ 3)
     const mucHuongRaw = b.mucHuongBHYT ?? bhytLevel(b.bhyt);

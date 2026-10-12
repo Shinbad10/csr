@@ -157,7 +157,10 @@ exports.Prisma.BuoiKhamScalarFieldEnum = {
   ghiChu: 'ghiChu',
   nguoiTao: 'nguoiTao',
   createdAt: 'createdAt',
-  syncStatus: 'syncStatus'
+  syncStatus: 'syncStatus',
+  trangThai: 'trangThai',
+  xoaLuc: 'xoaLuc',
+  xoaBoi: 'xoaBoi'
 };
 
 exports.Prisma.HoSoBenhNhanScalarFieldEnum = {

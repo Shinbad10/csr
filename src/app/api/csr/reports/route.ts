@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { classifyCSRFunnel, tenTuVanVien, TVV_TRONG } from "@/lib/csr";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
+import { DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
@@ -31,13 +32,13 @@ export async function GET(request: Request) {
           }
         : null;
 
-    if (ngayKhamRange) {
-      where.buoiKham = { ngayKham: ngayKhamRange };
-    }
+    // Bỏ hồ sơ thuộc đợt khám đã xoá mềm
+    where.buoiKham = { ...DOT_CON_HIEU_LUC, ...(ngayKhamRange ? { ngayKham: ngayKhamRange } : {}) };
 
     // Bộ lọc cho bảng BuoiKham — phải áp CÙNG khoảng ngày, nếu không thì
     // số "đợt khám" và danh sách đợt sẽ lệch với các chỉ số hồ sơ đã lọc.
-    const buoiKhamWhere: { id?: string; coSoId?: string; ngayKham?: { gte?: Date; lte?: Date } } = {
+    const buoiKhamWhere: { id?: string; coSoId?: string; ngayKham?: { gte?: Date; lte?: Date }; trangThai?: { not: string } } = {
+      ...DOT_CON_HIEU_LUC,
       ...(buoiKhamId ? { id: buoiKhamId } : {}),
       ...(coSoId ? { coSoId } : {}),
       ...(ngayKhamRange ? { ngayKham: ngayKhamRange } : {}),

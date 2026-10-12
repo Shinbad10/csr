@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import path from "path";
 import { broadcastEvent } from "@/lib/events";
 
+import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 const ROUTES_FILE = path.join(process.cwd(), "data", "doan-xe-routes.json");
 
 interface StoredRoute {
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
     // 2. Lấy bệnh nhân có xếp xe từ Database
     const where: any = {
       diemDon: { not: null },
-      AND: [coSoId ? { coSoId } : {}],
+      AND: [coSoId ? { coSoId } : {}, HOSO_CUA_DOT_CON_HIEU_LUC], // bỏ hồ sơ thuộc đợt khám đã xoá mềm
     };
 
     if (ngayQuery) {
@@ -104,6 +105,7 @@ export async function GET(request: Request) {
           diemDon: { not: null },
           ngayDieuTri: { not: null },
           coSoId: coSoId ? coSoId : undefined,
+          ...HOSO_CUA_DOT_CON_HIEU_LUC,
         },
         select: {
           id: true,

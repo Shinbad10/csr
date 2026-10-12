@@ -61,6 +61,9 @@ model BuoiKham {
   nguoiTaoRef NguoiDungCSR   @relation(fields: [nguoiTao], references: [maNV], onUpdate: NoAction, onDelete: NoAction)
   createdAt   DateTime       @default(now())
   syncStatus  String         @default("SYNCED")
+  trangThai   String         @default("active") // active | deleted — xoá mềm: ẩn khỏi mọi danh sách & số liệu
+  xoaLuc      DateTime?      // thời điểm xoá mềm
+  xoaBoi      String?        // maNV người xoá
   hoSo        HoSoBenhNhan[]
 }
 

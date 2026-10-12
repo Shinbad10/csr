@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { syncHisDoctors } from "@/lib/his";
 import { isCorporate } from "@/lib/permissions";
 
+import { DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 /**
  * Bệnh viện áp dụng cho danh mục bác sĩ: cơ sở đang làm việc (cookie chọn cơ sở của tài khoản
  * toàn hệ thống, hoặc cơ sở của tài khoản đơn vị). Chỉ tài khoản toàn hệ thống mới được chỉ định
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
         orderBy: { hoTen: "asc" },
       }),
       prisma.buoiKham.findMany({
-        where: { bacSiKham: { not: null }, ...(coSoId ? { coSoId } : {}) },
+        where: { bacSiKham: { not: null }, ...(coSoId ? { coSoId } : {}), ...DOT_CON_HIEU_LUC },
         select: { bacSiKham: true },
         distinct: ["bacSiKham"],
       }),
