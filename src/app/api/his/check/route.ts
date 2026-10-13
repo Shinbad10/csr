@@ -67,13 +67,10 @@ export async function POST(request: Request) {
       data: updateData,
     });
 
-    // Xoá các nhật ký liên hệ do hệ thống tự tạo nhầm vào lịch sử liên hệ khi đối chiếu HIS trước đây
-    await prisma.nhatKyTheoDoi.deleteMany({
-      where: {
-        hoSoId,
-        noiDung: { startsWith: "[⚡ Đối chiếu HIS]" },
-      },
-    });
+    /* KHÔNG xoá nhật ký cuộc gọi ở đây. Lệnh cũ deleteMany({ noiDung: { startsWith: "[⚡ Đối chiếu HIS]" } })
+       trên SQL Server thành LIKE '[⚡ Đối chiếu HIS]%' — ngoặc vuông là "1 ký tự bất kỳ trong nhóm" nên đã xoá
+       nhầm mọi cuộc gọi mở đầu bằng Đ/H/I/S/… (vd. "Đã gọi - Đồng ý mổ") sau mỗi lần đối chiếu.
+       Rác hệ thống cần dọn đã hết (0 dòng) và không còn được tạo ra. */
 
     // Đẩy vào hàng đợi đồng bộ Google Sheet
     try {
