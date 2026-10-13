@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   Loader2,
   Search,
@@ -427,6 +427,27 @@ export default function TuVanSessionPage() {
   };
 
   const curPatientIndex = visible.findIndex((p) => p.id === selId);
+
+  /* Danh sách sắp theo "Ưu tiên" nên sau khi lưu tư vấn / ghi cuộc gọi / đối chiếu HIS, bệnh nhân đang mở có thể
+     nhảy sang vị trí khác mà danh sách không cuộn theo → dễ nhầm người. Luôn cuộn tới dòng đang mở; nếu vị trí
+     vừa đổi do sắp xếp lại thì đưa ra giữa và nháy sáng nhẹ để mắt bắt được ngay. */
+  const listRef = useRef<HTMLDivElement>(null);
+  const lastPosRef = useRef<{ id: string | null; idx: number }>({ id: null, idx: -1 });
+  useEffect(() => {
+    if (!selId || curPatientIndex < 0) return;
+    const el = listRef.current?.querySelector<HTMLElement>(`[data-hoso-id="${CSS.escape(selId)}"]`);
+    if (!el) return;
+    const last = lastPosRef.current;
+    const reordered = last.id === selId && last.idx !== curPatientIndex;
+    lastPosRef.current = { id: selId, idx: curPatientIndex };
+    el.scrollIntoView({ block: reordered ? "center" : "nearest", behavior: reordered ? "smooth" : "auto" });
+    if (reordered) {
+      el.animate(
+        [{ backgroundColor: "rgba(2, 184, 169, 0.22)" }, { backgroundColor: "rgba(2, 184, 169, 0)" }],
+        { duration: 1600, easing: "ease-out" }
+      );
+    }
+  }, [selId, curPatientIndex]);
   const prevPatient = curPatientIndex > 0 ? visible[curPatientIndex - 1] : null;
   const nextPatient = curPatientIndex >= 0 && curPatientIndex < visible.length - 1 ? visible[curPatientIndex + 1] : null;
 
@@ -930,7 +951,7 @@ export default function TuVanSessionPage() {
             </div>
 
             {/* Danh sách */}
-            <div data-tour="tv-list" className="flex-1 overflow-y-auto divide-y divide-[var(--line-soft)]">
+            <div ref={listRef} data-tour="tv-list" className="flex-1 overflow-y-auto divide-y divide-[var(--line-soft)]">
               {patients.length === 0 ? (
                 <div className="flex flex-col items-center text-center text-[var(--mute)] text-[12.5px] py-16 px-6 gap-2">
                   <Stethoscope className="w-8 h-8 text-[var(--mute-soft)]" />
@@ -962,6 +983,7 @@ export default function TuVanSessionPage() {
                   return (
                     <button
                       key={p.id}
+                      data-hoso-id={p.id}
                       type="button"
                       onClick={() => {
                         pick(p);
