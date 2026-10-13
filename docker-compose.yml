@@ -1,9 +1,11 @@
-version: '3.8'
 services:
   web:
     image: ghcr.io/shinbad10/csr:latest
     container_name: csr_runner
     restart: unless-stopped
+    # Next.js chờ mọi kết nối keep-alive (nginx/Cloudflare) đóng rồi mới thoát, nên lần nào
+    # cũng đợi hết 10 giây mặc định của Docker. 3 giây đủ để các request đang chạy hoàn tất.
+    stop_grace_period: 3s
     ports:
       - "3008:3008"
     # Không mount ./public: thư mục public (logo, favicon, icon PWA) đã nằm sẵn trong image.
