@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
-import { getHISSurgeryList, foldName, foldId, foldPhone } from "@/lib/his";
+import { getHISSurgeryList, foldName, foldId, foldCccd, foldPhone } from "@/lib/his";
 
 import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export async function POST(request: Request) {
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const listWithMatches = hisSurgeries.map((his: any) => {
       const hisName = foldName(his.hoTen);
       const hisYear = String(his.namSinh).trim();
-      const hisCccd = foldId(his.cccd);
+      const hisCccd = foldCccd(his.cccd); // bù số 0 đầu mà HIS/CSR lưu dạng số làm mất
       const hisBhyt = (his.bhyt || "").toUpperCase().trim();
       const hisBhytDigits = foldId(hisBhyt);
       const hisPhone = foldPhone(his.sdt);
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
       // 1. Khớp theo CCCD
       if (hisCccd && hisCccd.length >= 9) {
-        const byCccd = csrPatients.filter((csr) => foldId(csr.cccd) === hisCccd);
+        const byCccd = csrPatients.filter((csr) => foldCccd(csr.cccd) === hisCccd);
         if (byCccd.length > 0) {
           matched = byCccd[0];
           matchType = "exact";
@@ -101,14 +101,23 @@ export async function POST(request: Request) {
       }
 
       if (matched) {
-        // Kiểm tra nếu bệnh nhân trong CSR đã từng mổ mắt trước đây
-        const hadPriorSurgeryInCsr = Boolean(
-          matched.trangThaiDieuTri === "Đã mổ" ||
-          (matched.ngayMoThucTe && his.ngayMo && new Date(his.ngayMo).getTime() > new Date(matched.ngayMoThucTe).getTime() + 86400000) ||
-          (matched.ghiChuMat2 && matched.ghiChuMat2.trim().length > 0)
-        );
+        /* CSR đã có ca mổ TRƯỚC ca này (cách hơn 1,5 ngày) → ca này là Mắt 2. Trước đây chỉ cần CSR đang
+           "Đã mổ" hoặc có bất kỳ ghi chú HIS nào là bị coi là Mắt 2 — kể cả khi đó chính là ca mổ này. */
+        const NGAY_MS = 86400000;
+        const csrMoMs = matched.ngayMoThucTe ? new Date(matched.ngayMoThucTe).getTime() : 0;
+        const hisMoMs = his.ngayMo ? new Date(his.ngayMo).getTime() : 0;
+        const hadPriorSurgeryInCsr = Boolean(csrMoMs && hisMoMs && hisMoMs - csrMoMs > 1.5 * NGAY_MS);
 
         const isMat2 = Boolean(his.isMat2 || hadPriorSurgeryInCsr);
+        /* CSR đã ghi nhận ĐÚNG ca mổ này (cùng ngày, hoặc đã lưu ghi chú Mắt 2). Chỉ có mã HIS / đã đến
+           viện thì CHƯA tính — BN được đối chiếu lúc mới nhập viện (chờ mổ) vẫn phải được đánh dấu khi mổ. */
+        const daGhiCaNay =
+          !his.choMo &&
+          Boolean(
+            (csrMoMs && hisMoMs && Math.abs(hisMoMs - csrMoMs) <= 1.5 * NGAY_MS) ||
+              (isMat2 && /Mắt 2/.test(matched.ghiChuMat2 || "")) ||
+              (matched.trangThaiDieuTri === "Đã mổ" && !csrMoMs)
+          );
         const lanMo = his.lanMo > 1 ? his.lanMo : (hadPriorSurgeryInCsr ? 2 : 1);
         const mat2Reason = hadPriorSurgeryInCsr && matched.ngayMoThucTe
           ? `Đã mổ mắt 1 ngày ${new Date(matched.ngayMoThucTe).toLocaleDateString("vi-VN")}`
@@ -135,7 +144,7 @@ export async function POST(request: Request) {
                 }
               : null,
             trangThaiDieuTri: matched.trangThaiDieuTri,
-            daMo: matched.trangThaiDieuTri === "Đã mổ" || matched.daDon,
+            daMo: daGhiCaNay,
             ngayMoThucTe: matched.ngayMoThucTe,
             ghiChuMat2: matched.ghiChuMat2 || null,
             maBNHIS: matched.maBNHIS,
@@ -149,11 +158,16 @@ export async function POST(request: Request) {
       return { ...his, matchedCsr: null };
     });
 
+    // Số liệu ca mổ chỉ tính ca có trong sổ phòng mổ; ca chờ mổ đếm riêng
+    const caMo = listWithMatches.filter((h: any) => !h.choMo);
+    const choMo = listWithMatches.filter((h: any) => h.choMo);
     const summary = {
-      totalHIS: listWithMatches.length,
-      matchedCSR: listWithMatches.filter((h: any) => h.matchedCsr).length,
-      alreadyLinked: listWithMatches.filter((h: any) => h.matchedCsr?.maBNHIS).length,
-      unlinkedMatched: listWithMatches.filter((h: any) => h.matchedCsr && !h.matchedCsr?.maBNHIS).length,
+      totalHIS: caMo.length,
+      matchedCSR: caMo.filter((h: any) => h.matchedCsr).length,
+      alreadyLinked: caMo.filter((h: any) => h.matchedCsr?.daMo).length,
+      unlinkedMatched: caMo.filter((h: any) => h.matchedCsr && !h.matchedCsr.daMo).length,
+      choMo: choMo.length,
+      choMoCSR: choMo.filter((h: any) => h.matchedCsr).length,
     };
 
     return NextResponse.json({

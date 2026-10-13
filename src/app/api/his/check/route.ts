@@ -29,7 +29,10 @@ export async function POST(request: Request) {
       hoSo.namSinh,
       hoSo.cccd,
       hoSo.bhyt,
-      month || (hoSo.buoiKham?.ngayKham ? new Date(hoSo.buoiKham.ngayKham).toISOString().slice(0, 7) : null)
+      month || (hoSo.buoiKham?.ngayKham ? new Date(hoSo.buoiKham.ngayKham).toISOString().slice(0, 7) : null),
+      hoSo.sdt,
+      hoSo.buoiKham?.ngayKham,
+      hoSo.trangThaiDieuTri
     );
 
     if (!res.found) {
@@ -39,21 +42,12 @@ export async function POST(request: Request) {
       }, { status: 404 });
     }
 
-    // Đã tìm thấy trên HIS -> Cập nhật hồ sơ (Có mã HIS = Đã đến bệnh viện)
-    const updateData: any = { maBNHIS: res.maHIS, daDon: true };
+    /* Đã tìm thấy trên HIS -> cập nhật hồ sơ. "Đã mổ" chỉ khi có trong sổ phòng mổ sau ngày khám;
+       nhập viện / có DV phẫu thuật mà chưa vào sổ là "chờ mổ" — chỉ ghi chú, không đánh dấu (xem hisCareDecision). */
+    const updateData: any = { maBNHIS: res.maHIS, ...(res.capNhat || {}) };
 
-    if (res.hasSurgery) {
-      updateData.trangThaiDieuTri = "Đã mổ";
-      updateData.trangThai = "DaMoHauPhau";
-      if (res.ngayMo) {
-        updateData.ngayMoThucTe = new Date(res.ngayMo);
-      } else if (!hoSo.ngayMoThucTe) {
-        updateData.ngayMoThucTe = new Date();
-      }
-      updateData.followUpStatus = "Đã chốt";
-      if (session.user.id && session.user.id !== "admin") {
-        updateData.nguoiPhuTrachMa = session.user.id;
-      }
+    if (res.isDaMo && session.user.id && session.user.id !== "admin") {
+      updateData.nguoiPhuTrachMa = session.user.id;
     }
     if (res.soTienThucThu != null && res.soTienThucThu > 0) {
       updateData.soTienThucThu = res.soTienThucThu;

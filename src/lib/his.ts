@@ -1,7 +1,6 @@
 import sql from "mssql";
 import { getPrisma } from "./prisma";
 import { triggerSync } from "./syncWorker";
-import { checkSurgeryTiming } from "./csr";
 import { decryptSecret } from "./secret";
 import { autoEncryptCoSo } from "./coso";
 
@@ -15,6 +14,14 @@ export interface HISCheckResult {
   cccdHIS?: string;
   bhytHIS?: string;
   hasSurgery?: boolean;
+  /** Có trong sổ phòng mổ từ ngày khám tầm soát trở đi */
+  isDaMo?: boolean;
+  /** Chỉ có ca mổ trước ngày khám tầm soát */
+  isDaMoTruoc?: boolean;
+  /** Đã nhập viện / có DV phẫu thuật nhưng chưa có trong sổ phòng mổ */
+  isChoMo?: boolean;
+  /** Các trường cần ghi vào hồ sơ CSR (daDon, trạng thái mổ…) — xem hisCareDecision */
+  capNhat?: Record<string, unknown>;
   ngayMo?: string | null;
   khoaMo?: string | null;
   chanDoan?: string | null;
@@ -111,6 +118,27 @@ export const foldName = (s?: string | null) =>
 
 /** Chỉ giữ chữ số. Dùng cho CCCD/CMND/BHYT */
 export const foldId = (s?: string | null) => (s || "").replace(/\D/g, "");
+
+/*
+  CCCD 12 số luôn mở đầu bằng 0 (mã tỉnh 001–096), nhưng nhiều nơi lưu dạng số nên mất số 0 đầu:
+  HIS Hoa Lư có ~23.000 CMND chỉ còn 11 số. So nguyên chuỗi thì "037…" ≠ "37…" → bị coi là
+  "trùng tên nhưng khác CCCD" và loại luôn người đúng. Chuẩn hoá về 12 số trước khi so.
+*/
+export const foldCccd = (s?: string | null) => {
+  const d = foldId(s);
+  return d.length === 10 || d.length === 11 ? d.padStart(12, "0") : d;
+};
+
+/** Các dạng HIS có thể đang lưu cùng một số CCCD (đủ 12 số / mất 1–2 số 0 đầu) — để tìm bằng IN (...). */
+export const cccdVariants = (s?: string | null): string[] => {
+  const n = foldCccd(s);
+  if (n.length < 9) return [];
+  return Array.from(new Set([n, n.replace(/^0/, ""), n.replace(/^0+/, "")])).filter((v) => v.length >= 9);
+};
+
+/** Hai số cùng loại giấy tờ (cùng độ dài sau chuẩn hoá) mà khác nhau → chắc chắn là hai người.
+ *  CMND 9 số và CCCD 12 số là hai giấy tờ của cùng một người nên không tính là xung đột. */
+export const cccdConflict = (a: string, b: string) => a.length >= 9 && a.length === b.length && a !== b;
 
 /** 9 số cuối của SĐT — bỏ qua số 0 đầu, +84 và ký tự phân cách. */
 export const foldPhone = (s?: string | null) => {
@@ -284,6 +312,133 @@ export async function fetchHisSurgeryDetail(
   }
 }
 
+// ── Tình trạng điều trị trên HIS so với ngày khám tầm soát ─────────────────────
+/*
+  "Đã mổ" CHỈ khi có trong sổ phòng mổ (QLyPhongMo). Trước đây có DV phẫu thuật, có nhập viện, thậm
+  chí chỉ cần có tiền thu (kể cả tiền khám) là tính "đã mổ" → BN nhập viện buổi sáng bị đếm là đã mổ
+  dù chưa lên bàn, ca hoãn/huỷ vẫn nằm trong báo cáo, và lệch với tab "Mổ trong ngày" (đọc sổ phòng mổ).
+  Đo 60 ngày ở cả 4 cơ sở: ~100% lượt có DV phẫu thuật đều có trong sổ phòng mổ → dùng sổ làm chuẩn;
+  nhập viện / có DV phẫu thuật mà chưa vào sổ là "chờ mổ".
+*/
+export interface HisCareStatus {
+  /** Ca mổ đầu tiên trong sổ phòng mổ từ ngày khám tầm soát trở đi → Đã mổ */
+  moSau: Date | null;
+  /** Ca mổ gần nhất trong sổ phòng mổ trước ngày khám → Đã mổ trước đây */
+  moTruoc: Date | null;
+  /** Lần nhập viện nội trú đầu tiên từ ngày khám trở đi */
+  nhapVien: Date | null;
+  /** DV phẫu thuật đầu tiên được chỉ định / thu từ ngày khám trở đi */
+  dvPT: Date | null;
+  /** Lượt khám đầu tiên tại viện từ ngày khám trở đi */
+  denKham: Date | null;
+}
+
+/** Ngày "YYYY-MM-DD" (giờ VN) của ngày khám tầm soát. */
+export function ngayKhamVN(d?: Date | string | null): string | null {
+  if (!d) return null;
+  const t = new Date(d).getTime();
+  return Number.isNaN(t) ? null : new Date(t + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
+/** Thời điểm đọc từ HIS (driver mssql đọc giờ treo tường như UTC) → "dd/mm/yyyy HH:mm". */
+export function fmtHisTime(d: Date | null, withTime = true): string {
+  if (!d) return "";
+  const s = d.toISOString();
+  const gio = s.slice(11, 16);
+  return `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}${withTime && gio !== "00:00" ? ` ${gio}` : ""}`;
+}
+
+/** Sổ phòng mổ, nhập viện, DV phẫu thuật, lượt khám của BN — mốc là ngày khám tầm soát (null = tính mọi thời điểm). */
+export async function fetchHisCareStatus(pool: sql.ConnectionPool, maHIS: string, khamDay: string | null): Promise<HisCareStatus> {
+  const ma = maHIS.trim();
+  const res = await pool
+    .request()
+    .input("ma", sql.NVarChar, ma)
+    .input("maNoDot", sql.NVarChar, ma.replace(/\./g, ""))
+    .input("tu", sql.VarChar, khamDay || "1900-01-01")
+    .query(`
+      DECLARE @d DATE = CAST(@tu AS DATE);
+      SELECT
+        (SELECT MIN(Ngaymo) FROM QLyPhongMo WITH (NOLOCK) WHERE MaBenhnhan = @ma AND Ngaymo >= @d) AS moSau,
+        (SELECT MAX(Ngaymo) FROM QLyPhongMo WITH (NOLOCK) WHERE MaBenhnhan = @ma AND Ngaymo < @d) AS moTruoc,
+        (SELECT MIN(Ngayvao) FROM Noitru_HSBA WITH (NOLOCK) WHERE MaBenhnhan = @ma AND Ngayvao >= @d) AS nhapVien,
+        (SELECT MIN(dv.Ngaylap) FROM BN_CTDichvu dv WITH (NOLOCK)
+          WHERE (dv.MaBN = @ma OR dv.MaBN = @maNoDot) AND (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%') AND dv.Ngaylap >= @d) AS dvPT,
+        (SELECT MIN(Ngay) FROM BN_Master WITH (NOLOCK) WHERE MaBN = @ma AND Ngay >= @d) AS denKham
+    `);
+  const x = res.recordset?.[0] || {};
+  const d = (v: unknown) => (v ? new Date(v as string) : null);
+  return { moSau: d(x.moSau), moTruoc: d(x.moTruoc), nhapVien: d(x.nhapVien), dvPT: d(x.dvPT), denKham: d(x.denKham) };
+}
+
+/**
+ * Cập nhật hồ sơ CSR từ tình trạng trên HIS — dùng chung cho đối chiếu từng BN và hàng loạt.
+ * Chỉ nâng trạng thái, không hạ: HIS chưa thấy mổ thì giữ nguyên những gì CSR đã ghi.
+ */
+export function hisCareDecision(p: { trangThaiDieuTri?: string | null }, care: HisCareStatus) {
+  const daMo = Boolean(care.moSau);
+  const daMoTruoc = !daMo && Boolean(care.moTruoc);
+  const choMo = !daMo && Boolean(care.nhapVien || care.dvPT);
+  // Đến viện SAU ngày khám — trước đây chỉ cần có hồ sơ HIS (kể cả từ nhiều năm trước) là tính "đã đến"
+  const denVien = daMo || choMo || Boolean(care.denKham);
+
+  const data: Record<string, unknown> = {};
+  if (denVien) data.daDon = true;
+  if (daMo) {
+    data.ngayMoThucTe = care.moSau;
+    data.trangThaiDieuTri = "Đã mổ";
+    data.trangThai = "DaMoHauPhau";
+    data.followUpStatus = "Đã chốt";
+  } else if (daMoTruoc && p.trangThaiDieuTri !== "Đã mổ") {
+    data.ngayMoThucTe = care.moTruoc;
+    data.trangThaiDieuTri = "Đã mổ trước đây";
+    data.trangThai = "DaMoTruocDay";
+    data.followUpStatus = "Đã chốt";
+  }
+
+  let ghiChu: string;
+  if (choMo) {
+    ghiChu = `• Trạng thái: ${care.nhapVien ? `Nhập viện ${fmtHisTime(care.nhapVien)}` : `Có chỉ định phẫu thuật ngày ${fmtHisTime(care.dvPT, false)}`} — chờ mổ (chưa có trong sổ phòng mổ)`;
+    if (daMoTruoc) ghiChu += `\n• Đã mổ trước ngày khám tầm soát: ${fmtHisTime(care.moTruoc, false)}`;
+  } else if (daMo || daMoTruoc) {
+    ghiChu = "";
+  } else if (care.denKham) {
+    ghiChu = `• Trạng thái: Đã đến khám ngày ${fmtHisTime(care.denKham, false)} — chưa mổ`;
+  } else {
+    ghiChu = `• Trạng thái: Chưa ghi nhận lịch sử mổ trên HIS`;
+  }
+  return { daMo, daMoTruoc, choMo, denVien, ngayMo: care.moSau || care.moTruoc, data, ghiChu };
+}
+
+/** Ghi chú "[HIS]: …" lưu vào hồ sơ sau khi đối chiếu. */
+export function buildHisChiTiet(o: {
+  hoTenHIS: string;
+  maHIS: string;
+  namSinhHIS: string;
+  matchType: "exact" | "partial";
+  matchReason: string;
+  dec: ReturnType<typeof hisCareDecision>;
+  loaiPhauThuat?: string | null;
+  tenDichVu?: string | null;
+  chanDoan?: string | null;
+  soTienThucThu?: number | null;
+}): string {
+  let s = `${o.hoTenHIS} (Mã HIS: ${o.maHIS}, NS: ${o.namSinhHIS}) ${o.matchType === "exact" ? `[✓ ${o.matchReason}]` : `[⚠ ${o.matchReason}]`}`;
+  if (o.dec.daMo || (o.dec.daMoTruoc && !o.dec.choMo)) {
+    s += `\n• Loại mổ: ${o.loaiPhauThuat || "Phẫu thuật"} (Ngày mổ: ${fmtHisTime(o.dec.ngayMo, false)}${o.dec.daMoTruoc ? " — trước ngày khám tầm soát" : ""})`;
+    if (o.tenDichVu) s += `\n• Chi tiết PT: ${o.tenDichVu}`;
+    if (o.chanDoan) s += `\n• Chẩn đoán: ${o.chanDoan}`;
+    s += `\n• Khoa: KMTH`;
+  } else {
+    s += `\n${o.dec.ghiChu}`;
+    if (o.dec.choMo && o.tenDichVu) s += `\n• Chỉ định PT: ${o.tenDichVu}`;
+  }
+  if (o.soTienThucThu != null && o.soTienThucThu > 0) {
+    s += `\n• Thực thu HIS: ${new Intl.NumberFormat("vi-VN").format(o.soTienThucThu)} VNĐ`;
+  }
+  return s;
+}
+
 /** Tự dò tên bảng và tên cột thực tế trong bảng QLyCapThe của HIS SQL Server */
 async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
   tableName: string;
@@ -362,7 +517,12 @@ export async function checkHISForPatient(
   namSinh: number | string | null,
   cccd?: string | null,
   bhyt?: string | null,
-  monthStr?: string | null
+  monthStr?: string | null,
+  sdt?: string | null,
+  /** Ngày khám tầm soát — mốc tách ca mổ trước / sau và "chờ mổ" */
+  ngayKham?: Date | string | null,
+  /** Trạng thái điều trị CSR đang có — không hạ "Đã mổ" xuống "Đã mổ trước đây" */
+  trangThaiDieuTri?: string | null
 ): Promise<HISCheckResult> {
   let config: HisConfig;
   try {
@@ -393,7 +553,9 @@ export async function checkHISForPatient(
     const hoTenClean = (hoTen || "").trim();
     const namSinhStr = String(namSinh || "").trim();
     const cccdClean = (cccd || "").trim();
-    const cccdDigits = foldId(cccdClean);
+    const cccdNorm = foldCccd(cccdClean);
+    const cccdVars = cccdVariants(cccdClean);
+    const sdtFold = foldPhone(sdt);
     const bhytClean = (bhyt || "").toUpperCase().trim();
     const bhytDigits = foldId(bhytClean);
     const bhytLast10 = bhytDigits.length >= 10 ? bhytDigits.slice(-10) : "";
@@ -405,7 +567,7 @@ export async function checkHISForPatient(
     const whereClauses: string[] = [];
     if (cmndCol) {
       whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
-      whereClauses.push(`(REPLACE(c.[${cmndCol}], ' ', '') = @cccdDigits AND @cccdDigits <> '')`);
+      if (cccdVars.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${cccdVars.map((_, i) => `@cv${i}`).join(", ")})`);
     }
     if (bhytCol) {
       whereClauses.push(`(c.[${bhytCol}] = @bhyt AND @bhyt <> '')`);
@@ -414,6 +576,8 @@ export async function checkHISForPatient(
     whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
 
     const whereSql = whereClauses.join(" OR ");
+    // Người khớp CCCD/BHYT lên đầu — tránh bị các BN trùng tên (nhiều lượt khám) đẩy ra khỏi TOP 5
+    const idMatchSql = whereClauses.length > 1 ? whereClauses.slice(0, -1).join(" OR ") : "1 = 0";
 
     // Truy vấn tổng hợp từ QLyCapThe (so khớp cả CCCD và mã thẻ BHYT)
     const query = `
@@ -435,12 +599,12 @@ export async function checkHISForPatient(
       LEFT JOIN Noitru_HSBA hsba WITH (NOLOCK) ON c.Ma = hsba.MaBenhnhan
       LEFT JOIN BN_Master bm WITH (NOLOCK) ON c.Ma = bm.MaBN
       WHERE ${whereSql}
-      ORDER BY hsba.Ngayvao DESC, bm.Ngay DESC
+      ORDER BY CASE WHEN ${idMatchSql} THEN 0 ELSE 1 END, hsba.Ngayvao DESC, bm.Ngay DESC
     `;
 
     const req = pool.request();
     req.input("cccd", sql.NVarChar, cccdClean);
-    req.input("cccdDigits", sql.NVarChar, cccdDigits);
+    cccdVars.forEach((v, i) => req.input(`cv${i}`, sql.NVarChar, v));
     req.input("bhyt", sql.NVarChar, bhytClean);
     req.input("bhytLast10", sql.NVarChar, bhytLast10);
     req.input("hoTen", sql.NVarChar, hoTenClean);
@@ -460,21 +624,18 @@ export async function checkHISForPatient(
     let matchedRow: any = null;
     let matchType: "exact" | "partial" = "partial";
     let matchReason = "";
+    let matchedByPhone = false;
 
     for (const r of rows) {
-      const candidateCccdDigits = foldId(r.CMND);
+      const candidateCccd = foldCccd(r.CMND);
       const candidateBhytDigits = foldId(r.Sothe);
       const candidateBhytLast10 = candidateBhytDigits.length >= 10 ? candidateBhytDigits.slice(-10) : "";
       const candidateNameFold = foldName(r.Hoten);
       const candidateNamSinh = String(r.Namsinh || "").trim();
 
       // Kiểm tra xung đột thông tin định danh:
-      // 1. Xung đột CCCD: nếu cả 2 bên đều có CCCD (>=9 số) mà không giống nhau -> XUNG ĐỘT
-      const hasCccdConflict = Boolean(
-        cccdDigits.length >= 9 &&
-        candidateCccdDigits.length >= 9 &&
-        cccdDigits !== candidateCccdDigits
-      );
+      // 1. Xung đột CCCD: cùng loại giấy tờ (đã bù số 0 đầu bị mất) mà khác số -> XUNG ĐỘT
+      const hasCccdConflict = cccdConflict(cccdNorm, candidateCccd);
 
       // 2. Xung đột BHYT: nếu cả 2 bên đều có BHYT (>=10 số) mà 10 số cuối không giống nhau -> XUNG ĐỘT
       const hasBhytConflict = Boolean(
@@ -483,17 +644,21 @@ export async function checkHISForPatient(
         bhytLast10 !== candidateBhytLast10
       );
 
-      if (hasCccdConflict || hasBhytConflict) {
-        // Loại bỏ ứng viên này vì trùng Tên + Năm sinh nhưng khác CCCD hoặc khác BHYT!
-        continue;
-      }
-
-      const isCccdMatch = Boolean(cccdDigits.length >= 9 && candidateCccdDigits === cccdDigits);
-      const isBhytMatch = Boolean(bhytLast10.length >= 10 && candidateBhytLast10 === bhytLast10);
       const isNameYearMatch = Boolean(
         foldName(hoTenClean) === candidateNameFold &&
         (namSinhStr === candidateNamSinh || !namSinhStr || !candidateNamSinh)
       );
+      // Trùng Họ tên + Năm sinh + SĐT thì vẫn là cùng một người dù CCCD lệch — thường do gõ
+      // thiếu/sai một số lúc khám tầm soát (CSR có ca CCCD 11 số, HIS đủ 12 số, cùng SĐT).
+      const isPhoneMatch = Boolean(sdtFold && foldPhone(r.Dienthoai) === sdtFold);
+
+      if ((hasCccdConflict && !(isNameYearMatch && isPhoneMatch)) || hasBhytConflict) {
+        // Loại bỏ ứng viên này vì trùng Tên + Năm sinh nhưng khác CCCD hoặc khác BHYT!
+        continue;
+      }
+
+      const isCccdMatch = Boolean(cccdNorm.length >= 9 && candidateCccd === cccdNorm);
+      const isBhytMatch = Boolean(bhytLast10.length >= 10 && candidateBhytLast10 === bhytLast10);
 
       if (isCccdMatch) {
         matchedRow = r;
@@ -509,10 +674,13 @@ export async function checkHISForPatient(
         break;
       }
 
-      if (isNameYearMatch && !matchedRow) {
+      if (isNameYearMatch && (!matchedRow || (isPhoneMatch && !matchedByPhone))) {
         matchedRow = r;
+        matchedByPhone = isPhoneMatch;
         matchType = "partial";
-        matchReason = "Khớp Họ tên + Năm sinh";
+        matchReason = isPhoneMatch
+          ? hasCccdConflict ? "Khớp Họ tên + Năm sinh + SĐT (CCCD lệch — kiểm tra lại)" : "Khớp Họ tên + Năm sinh + SĐT"
+          : "Khớp Họ tên + Năm sinh";
       }
     }
 
@@ -529,36 +697,29 @@ export async function checkHISForPatient(
     const hisCccd = String(matchedRow.CMND || "").trim();
     const hisBhyt = String(matchedRow.Sothe || "").trim();
 
-    // Lấy tổng số tiền thực thu & tạm ứng từ HIS (bỏ qua phiếu hủy)
-    const soTienThucThu = await fetchHisRevenue(pool, maHIS);
-    // Lấy chi tiết phẫu thuật từ BN_CTDichvu + DMDichvuCM
-    const surgDetail = await fetchHisSurgeryDetail(pool, maHIS);
+    // Thực thu (bỏ phiếu hủy), tên DV phẫu thuật, và tình trạng mổ / nhập viện so với ngày khám tầm soát
+    const [soTienThucThu, surgDetail, care] = await Promise.all([
+      fetchHisRevenue(pool, maHIS),
+      fetchHisSurgeryDetail(pool, maHIS),
+      fetchHisCareStatus(pool, maHIS, ngayKhamVN(ngayKham)),
+    ]);
 
     const targetRow = matchedRow;
-    const ngayMoRaw = surgDetail?.ngayMo || targetRow.ngayVao || targetRow.ngayRa || targetRow.ngayKham;
-    const ngayMo = ngayMoRaw ? new Date(ngayMoRaw).toISOString() : null;
+    const dec = hisCareDecision({ trangThaiDieuTri }, care);
+    const ngayMo = dec.ngayMo ? dec.ngayMo.toISOString() : null;
     const khoaMo = "KMTH";
     const chanDoan = targetRow.chanDoanRavien || targetRow.chanDoanVaovien || targetRow.chanDoanBM || null;
     const bsDieutri = targetRow.BsDieutri || null;
-    const hasSurgery = Boolean(surgDetail?.hasSurgery || targetRow.ngayVao || targetRow.ngayRa || (soTienThucThu != null && soTienThucThu > 0));
+    const hasSurgery = dec.daMo || dec.daMoTruoc;
     const tenDichVu = surgDetail?.tenDichVu || null;
     const loaiPhauThuat = surgDetail?.loaiPhauThuat || null;
-
-    let chiTiet = `${hoTenHIS} (Mã HIS: ${maHIS}, NS: ${namSinhHIS}) ${matchType === "exact" ? `[✓ ${matchReason}]` : `[⚠ Khớp Họ tên+Năm sinh]`}`;
-    if (hasSurgery && ngayMo) {
-      const dStr = new Date(ngayMo).toLocaleDateString("vi-VN");
-      chiTiet += `\n• Loại mổ: ${loaiPhauThuat || "Phẫu thuật"} (Ngày mổ: ${dStr})`;
-      if (tenDichVu) chiTiet += `\n• Chi tiết PT: ${tenDichVu}`;
-      if (chanDoan) chiTiet += `\n• Chẩn đoán: ${chanDoan}`;
-      if (khoaMo) chiTiet += `\n• Khoa: ${khoaMo}`;
-    } else {
-      chiTiet += `\n• Trạng thái: Chưa ghi nhận lịch sử mổ trên HIS`;
-    }
-    if (soTienThucThu != null && soTienThucThu > 0) {
-      chiTiet += `\n• Thực thu HIS: ${new Intl.NumberFormat("vi-VN").format(soTienThucThu)} VNĐ`;
-    }
+    const chiTiet = buildHisChiTiet({ hoTenHIS, maHIS, namSinhHIS, matchType, matchReason, dec, loaiPhauThuat, tenDichVu, chanDoan, soTienThucThu });
 
     return {
+      isDaMo: dec.daMo,
+      isDaMoTruoc: dec.daMoTruoc,
+      isChoMo: dec.choMo,
+      capNhat: dec.data,
       found: true,
       matchType,
       matchReason,
@@ -621,6 +782,7 @@ export async function batchCheckHISForPatients(
     namSinh: number | string | null;
     cccd?: string | null;
     bhyt?: string | null;
+    sdt?: string | null;
     buoiKham?: { ngayKham: Date | string } | null;
     nhom?: string | null;
     khuyenNghi?: string | null;
@@ -660,7 +822,9 @@ export async function batchCheckHISForPatients(
         const hoTenClean = (p.hoTen || "").trim();
         const namSinhStr = String(p.namSinh || "").trim();
         const cccdClean = (p.cccd || "").trim();
-        const cccdDigits = foldId(cccdClean);
+        const cccdNorm = foldCccd(cccdClean);
+        const cccdVars = cccdVariants(cccdClean);
+        const sdtFold = foldPhone(p.sdt);
         const bhytClean = (p.bhyt || "").toUpperCase().trim();
         const bhytDigits = foldId(bhytClean);
         const bhytLast10 = bhytDigits.length >= 10 ? bhytDigits.slice(-10) : "";
@@ -669,7 +833,7 @@ export async function batchCheckHISForPatients(
         const whereClauses: string[] = [];
         if (cmndCol) {
           whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
-          whereClauses.push(`(REPLACE(c.[${cmndCol}], ' ', '') = @cccdDigits AND @cccdDigits <> '')`);
+          if (cccdVars.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${cccdVars.map((_, i) => `@cv${i}`).join(", ")})`);
         }
         if (bhytCol) {
           whereClauses.push(`(c.[${bhytCol}] = @bhyt AND @bhyt <> '')`);
@@ -678,6 +842,8 @@ export async function batchCheckHISForPatients(
         whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
 
         const whereSql = whereClauses.join(" OR ");
+        // Người khớp CCCD/BHYT lên đầu — tránh bị các BN trùng tên (nhiều lượt khám) đẩy ra khỏi TOP 5
+        const idMatchSql = whereClauses.length > 1 ? whereClauses.slice(0, -1).join(" OR ") : "1 = 0";
 
         const query = `
           SELECT TOP 5
@@ -689,11 +855,11 @@ export async function batchCheckHISForPatients(
           LEFT JOIN Noitru_HSBA hsba WITH (NOLOCK) ON c.Ma = hsba.MaBenhnhan
           LEFT JOIN BN_Master bm WITH (NOLOCK) ON c.Ma = bm.MaBN
           WHERE ${whereSql}
-          ORDER BY hsba.Ngayvao DESC, bm.Ngay DESC
+          ORDER BY CASE WHEN ${idMatchSql} THEN 0 ELSE 1 END, hsba.Ngayvao DESC, bm.Ngay DESC
         `;
         const req = pool!.request();
         req.input("cccd", sql.NVarChar, cccdClean);
-        req.input("cccdDigits", sql.NVarChar, cccdDigits);
+        cccdVars.forEach((v, i) => req.input(`cv${i}`, sql.NVarChar, v));
         req.input("bhyt", sql.NVarChar, bhytClean);
         req.input("bhytLast10", sql.NVarChar, bhytLast10);
         req.input("hoTen", sql.NVarChar, hoTenClean);
@@ -710,21 +876,18 @@ export async function batchCheckHISForPatients(
         let matchedRow: any = null;
         let matchType: "exact" | "partial" = "partial";
         let matchReason = "";
+        let matchedByPhone = false;
 
         for (const r of rows) {
-          const candidateCccdDigits = foldId(r.CMND);
+          const candidateCccd = foldCccd(r.CMND);
           const candidateBhytDigits = foldId(r.Sothe);
           const candidateBhytLast10 = candidateBhytDigits.length >= 10 ? candidateBhytDigits.slice(-10) : "";
           const candidateNameFold = foldName(r.Hoten);
           const candidateNamSinh = String(r.Namsinh || "").trim();
 
           // Kiểm tra xung đột thông tin định danh:
-          // 1. Xung đột CCCD: nếu cả 2 bên đều có CCCD (>=9 số) mà không giống nhau -> XUNG ĐỘT
-          const hasCccdConflict = Boolean(
-            cccdDigits.length >= 9 &&
-            candidateCccdDigits.length >= 9 &&
-            cccdDigits !== candidateCccdDigits
-          );
+          // 1. Xung đột CCCD: cùng loại giấy tờ (đã bù số 0 đầu bị mất) mà khác số -> XUNG ĐỘT
+          const hasCccdConflict = cccdConflict(cccdNorm, candidateCccd);
 
           // 2. Xung đột BHYT: nếu cả 2 bên đều có BHYT (>=10 số) mà 10 số cuối không giống nhau -> XUNG ĐỘT
           const hasBhytConflict = Boolean(
@@ -733,17 +896,21 @@ export async function batchCheckHISForPatients(
             bhytLast10 !== candidateBhytLast10
           );
 
-          if (hasCccdConflict || hasBhytConflict) {
-            // Loại bỏ ứng viên này vì trùng Tên + Năm sinh nhưng khác CCCD hoặc khác BHYT!
-            continue;
-          }
-
-          const isCccdMatch = Boolean(cccdDigits.length >= 9 && candidateCccdDigits === cccdDigits);
-          const isBhytMatch = Boolean(bhytLast10.length >= 10 && candidateBhytLast10 === bhytLast10);
           const isNameYearMatch = Boolean(
             foldName(hoTenClean) === candidateNameFold &&
             (namSinhStr === candidateNamSinh || !namSinhStr || !candidateNamSinh)
           );
+          // Trùng Họ tên + Năm sinh + SĐT thì vẫn là cùng một người dù CCCD lệch — thường do gõ
+          // thiếu/sai một số lúc khám tầm soát (CSR có ca CCCD 11 số, HIS đủ 12 số, cùng SĐT).
+          const isPhoneMatch = Boolean(sdtFold && foldPhone(r.Dienthoai) === sdtFold);
+
+          if ((hasCccdConflict && !(isNameYearMatch && isPhoneMatch)) || hasBhytConflict) {
+            // Loại bỏ ứng viên này vì trùng Tên + Năm sinh nhưng khác CCCD hoặc khác BHYT!
+            continue;
+          }
+
+          const isCccdMatch = Boolean(cccdNorm.length >= 9 && candidateCccd === cccdNorm);
+          const isBhytMatch = Boolean(bhytLast10.length >= 10 && candidateBhytLast10 === bhytLast10);
 
           if (isCccdMatch) {
             matchedRow = r;
@@ -759,10 +926,13 @@ export async function batchCheckHISForPatients(
             break;
           }
 
-          if (isNameYearMatch && !matchedRow) {
+          if (isNameYearMatch && (!matchedRow || (isPhoneMatch && !matchedByPhone))) {
             matchedRow = r;
+            matchedByPhone = isPhoneMatch;
             matchType = "partial";
-            matchReason = "Khớp Họ tên + Năm sinh";
+            matchReason = isPhoneMatch
+              ? hasCccdConflict ? "Khớp Họ tên + Năm sinh + SĐT (CCCD lệch — kiểm tra lại)" : "Khớp Họ tên + Năm sinh + SĐT"
+              : "Khớp Họ tên + Năm sinh";
           }
         }
 
@@ -776,66 +946,25 @@ export async function batchCheckHISForPatients(
         const hisCccd = String(matchedRow.CMND || "").trim();
         const hisBhyt = String(matchedRow.Sothe || "").trim();
 
-        // Thực thu (bỏ phiếu hủy) và chi tiết phẫu thuật — hai truy vấn độc lập, chạy song song
-        const [soTienThucThu, surgDetail] = await Promise.all([
+        // Thực thu (bỏ phiếu hủy), tên DV phẫu thuật, và tình trạng mổ / nhập viện so với ngày khám — chạy song song
+        const [soTienThucThu, surgDetail, care] = await Promise.all([
           fetchHisRevenue(pool!, maHIS),
           fetchHisSurgeryDetail(pool!, maHIS),
+          fetchHisCareStatus(pool!, maHIS, ngayKhamVN(p.buoiKham?.ngayKham)),
         ]);
 
         const targetRow = matchedRow;
-        const ngayMoRaw = surgDetail?.ngayMo || targetRow.ngayVao || targetRow.ngayRa || targetRow.ngayKham;
-        const ngayMo = ngayMoRaw ? new Date(ngayMoRaw).toISOString() : null;
-        const khoaMo = "KMTH";
+        const dec = hisCareDecision(p, care);
         const chanDoan = targetRow.chanDoanRavien || targetRow.chanDoanVaovien || targetRow.chanDoanBM || null;
-        const hasSurgery = Boolean(surgDetail?.hasSurgery || targetRow.ngayVao || targetRow.ngayRa || (soTienThucThu != null && soTienThucThu > 0));
-        const tenDichVu = surgDetail?.tenDichVu || null;
-        const loaiPhauThuat = surgDetail?.loaiPhauThuat || null;
+        const hasSurgery = dec.daMo || dec.daMoTruoc;
+        const chiTiet = buildHisChiTiet({
+          hoTenHIS, maHIS, namSinhHIS, matchType, matchReason, dec, chanDoan, soTienThucThu,
+          loaiPhauThuat: surgDetail?.loaiPhauThuat || null,
+          tenDichVu: surgDetail?.tenDichVu || null,
+        });
 
-        let chiTiet = `${hoTenHIS} (Mã HIS: ${maHIS}, NS: ${namSinhHIS}) ${matchType === "exact" ? `[✓ ${matchReason}]` : `[⚠ Khớp Họ tên+Năm sinh]`}`;
-        if (hasSurgery && ngayMo) {
-          const dStr = new Date(ngayMo).toLocaleDateString("vi-VN");
-          chiTiet += `\n• Loại mổ: ${loaiPhauThuat || "Phẫu thuật"} (Ngày mổ: ${dStr})`;
-          if (tenDichVu) chiTiet += `\n• Chi tiết PT: ${tenDichVu}`;
-          if (chanDoan) chiTiet += `\n• Chẩn đoán: ${chanDoan}`;
-          if (khoaMo) chiTiet += `\n• Khoa: ${khoaMo}`;
-        } else {
-          chiTiet += `\n• Trạng thái: Chưa ghi nhận lịch sử mổ trên HIS`;
-        }
-        if (soTienThucThu != null && soTienThucThu > 0) {
-          chiTiet += `\n• Thực thu HIS: ${new Intl.NumberFormat("vi-VN").format(soTienThucThu)} VNĐ`;
-        }
-
-        // Cập nhật DB: Có mã HIS = Đã đến bệnh viện
-        const updateData: any = { maBNHIS: maHIS, daDon: true };
-        if (hasSurgery) {
-          if (ngayMo) {
-            updateData.ngayMoThucTe = new Date(ngayMo);
-          } else if (!p.ngayMoThucTe) {
-            updateData.ngayMoThucTe = new Date();
-          }
-
-          const moDate = ngayMo ? new Date(ngayMo) : (p.ngayMoThucTe ? new Date(p.ngayMoThucTe) : null);
-          const khamDateStr = p.buoiKham?.ngayKham;
-          const khamDate = khamDateStr ? new Date(khamDateStr) : null;
-
-          let isPriorSurgery = false;
-          if (moDate && khamDate) {
-            const dMo = new Date(moDate.getFullYear(), moDate.getMonth(), moDate.getDate()).getTime();
-            const dKham = new Date(khamDate.getFullYear(), khamDate.getMonth(), khamDate.getDate()).getTime();
-            if (dMo < dKham) {
-              isPriorSurgery = true;
-            }
-          }
-
-          if (isPriorSurgery) {
-            updateData.trangThaiDieuTri = "Đã mổ trước đây";
-            updateData.trangThai = "DaMoTruocDay";
-          } else {
-            updateData.trangThaiDieuTri = "Đã mổ";
-            updateData.trangThai = "DaMoHauPhau";
-          }
-          updateData.followUpStatus = "Đã chốt";
-        }
+        // Cập nhật DB: mã HIS luôn ghi; đến viện / đã mổ chỉ khi HIS có ghi nhận SAU ngày khám (xem hisCareDecision)
+        const updateData: any = { maBNHIS: maHIS, ...dec.data };
         if (soTienThucThu != null && soTienThucThu > 0) {
           updateData.soTienThucThu = soTienThucThu;
         }
@@ -857,17 +986,10 @@ export async function batchCheckHISForPatients(
           await prisma.syncQueue.create({ data: { hoSoId: p.id } });
         } catch {}
 
-        // Tách ca mổ SAU ngày khám tầm soát (tính vào tiến độ CSR) khỏi ca đã mổ TRƯỚC đó — cùng quy tắc với danh sách đợt khám
-        const timing = checkSurgeryTiming({
-          ngayMoThucTe: updateData.ngayMoThucTe ?? p.ngayMoThucTe,
-          trangThaiDieuTri: updateData.trangThaiDieuTri ?? p.trangThaiDieuTri,
-          trangThai: updateData.trangThai,
-          buoiKham: p.buoiKham,
-        });
-
         return {
           id: p.id, hoTen: p.hoTen, found: true, matchType, matchReason, maHIS, cccdHIS: hisCccd, bhytHIS: hisBhyt,
-          hasSurgery, isDaMo: hasSurgery && timing.isDaMo, isDaMoTruoc: hasSurgery && timing.isDaMoTruoc, chiTiet,
+          // Ca mổ SAU ngày khám (tính tiến độ CSR) tách khỏi ca mổ TRƯỚC đó; chờ mổ = nhập viện / có DV PT, chưa vào sổ mổ
+          hasSurgery, isDaMo: dec.daMo, isDaMoTruoc: dec.daMoTruoc, isChoMo: dec.choMo, chiTiet,
         };
       } catch (e: any) {
         return { id: p.id, hoTen: p.hoTen, found: false, error: e?.message || "Lỗi khi tra cứu BN này" };
@@ -915,6 +1037,9 @@ export async function searchHIS(coSoId: string, keyword: string) {
 
     const whereClauses = [`LOWER(c.Hoten) LIKE LOWER(@kw)`];
     if (cmndCol) whereClauses.push(`c.[${cmndCol}] LIKE @kw`);
+    // Gõ đủ 12 số CCCD vẫn ra người mà HIS lưu mất số 0 đầu
+    const kwCccd = /^\d{10,12}$/.test(kw) ? cccdVariants(kw) : [];
+    if (cmndCol && kwCccd.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${kwCccd.map((_, i) => `@cv${i}`).join(", ")})`);
     if (bhytCol) whereClauses.push(`c.[${bhytCol}] LIKE @kw`);
     whereClauses.push(`c.Ma = @kwRaw`);
     const whereSql = whereClauses.join(" OR ");
@@ -922,6 +1047,7 @@ export async function searchHIS(coSoId: string, keyword: string) {
     const req = pool.request();
     req.input("kw", sql.NVarChar, `%${kw}%`);
     req.input("kwRaw", sql.NVarChar, kw);
+    kwCccd.forEach((v, i) => req.input(`cv${i}`, sql.NVarChar, v));
 
     const query = `
       SELECT TOP 30
@@ -996,6 +1122,16 @@ export async function searchHIS(coSoId: string, keyword: string) {
       try { await pool.close(); } catch {}
     }
   }
+}
+
+/** Nhóm phẫu thuật hiển thị từ tên dịch vụ HIS. */
+function phanLoaiPT(ten: string): string {
+  if (/phaco/i.test(ten)) return "Phaco";
+  if (/mộng/i.test(ten)) return "Mộng thịt";
+  if (/quặm/i.test(ten)) return "Quặm";
+  if (/lác/i.test(ten)) return "Lác";
+  if (/thủy tinh|thuỷ tinh/i.test(ten)) return "Đục TTT";
+  return "Phẫu thuật";
 }
 
 export async function getHISSurgeryList(
@@ -1082,8 +1218,60 @@ export async function getHISSurgeryList(
     const res = await req.query(query);
     const rows = res.recordset || [];
 
+    /* "Chờ mổ" (chỉ khi xem theo 1 ngày): BN nhập viện / có DV phẫu thuật trong ngày mà phòng mổ chưa
+       ghi sổ (không có ca nào trong QLyPhongMo từ ngày đó trở đi). Sổ phòng mổ thường ghi sau khi mổ
+       xong, nên buổi sáng tab "Mổ trong ngày" trống trơn dù BN đã vào viện. */
+    let choMoRows: any[] = [];
+    if (dateStr) {
+      try {
+        const pReq = pool.request();
+        pReq.input("ngay", sql.VarChar, dateStr.slice(0, 10));
+        const pRes = await pReq.query(`
+          DECLARE @d DATE = CAST(@ngay AS DATE);
+          WITH nv AS (
+            SELECT MaBenhnhan AS ma, MIN(Ngayvao) AS t FROM Noitru_HSBA WITH (NOLOCK)
+            WHERE Ngayvao >= @d AND Ngayvao < DATEADD(day, 1, @d)
+            GROUP BY MaBenhnhan
+          ), pt AS (
+            SELECT dv.MaBN AS ma, MIN(dv.Ngaylap) AS t, MAX(dm.Ten) AS ten
+            FROM BN_CTDichvu dv WITH (NOLOCK)
+            JOIN DMDichvuCM dm WITH (NOLOCK) ON dv.MaDV = dm.Ma
+            WHERE (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%') AND dv.Ngaylap >= @d AND dv.Ngaylap < DATEADD(day, 1, @d)
+            GROUP BY dv.MaBN
+          ), x AS (
+            SELECT COALESCE(nv.ma, pt.ma) AS ma, nv.t AS nhapVien, pt.t AS ngayPT, pt.ten AS tenDV
+            FROM nv FULL OUTER JOIN pt ON pt.ma = nv.ma
+          )
+          SELECT TOP 300
+            x.ma AS maHIS,
+            c.Hoten AS hoTen,
+            c.Namsinh AS namSinh,
+            ${cmndSelect}
+            ${bhytSelect}
+            ${sdtSelect}
+            x.nhapVien,
+            x.tenDV,
+            COALESCE(x.nhapVien, x.ngayPT) AS ngayMo,
+            CONVERT(VARCHAR(19), COALESCE(x.nhapVien, x.ngayPT), 120) AS ngayMoLocal,
+            hs.Chandoan_Vaovien AS chanDoanVaovien
+          FROM x
+          JOIN [${tableName}] c ON c.Ma = x.ma
+          OUTER APPLY (
+            SELECT TOP 1 h.Chandoan_Vaovien FROM Noitru_HSBA h WITH (NOLOCK)
+            WHERE h.MaBenhnhan = x.ma ORDER BY h.Ngayvao DESC
+          ) hs
+          WHERE NOT EXISTS (SELECT 1 FROM QLyPhongMo mo WITH (NOLOCK) WHERE mo.MaBenhnhan = x.ma AND mo.Ngaymo >= @d)
+          ORDER BY COALESCE(x.nhapVien, x.ngayPT)
+        `);
+        choMoRows = pRes.recordset || [];
+      } catch (choMoErr) {
+        // Phụ trợ — lỗi thì vẫn trả danh sách ca mổ
+        console.warn("Lỗi lấy danh sách chờ mổ:", choMoErr);
+      }
+    }
+
     // Query dịch vụ phẫu thuật hàng loạt từ BN_CTDichvu + DMDichvuCM cho các bệnh nhân có trong danh sách
-    const uniqueMa = Array.from(new Set(rows.map((r) => String(r.maHIS || "").trim()).filter(Boolean)));
+    const uniqueMa = Array.from(new Set([...rows, ...choMoRows].map((r) => String(r.maHIS || "").trim()).filter(Boolean)));
     const serviceMap = new Map<string, Array<{ ngayLap: Date; tenDichVu: string; loaiPT: string }>>();
 
     for (let i = 0; i < uniqueMa.length; i += 80) {
@@ -1111,12 +1299,7 @@ export async function getHISSurgeryList(
           const ma = String(s.MaBN || "").trim();
           if (!serviceMap.has(ma)) serviceMap.set(ma, []);
           const ten = String(s.tenDichVu || "").trim();
-          let loaiPT = "Phẫu thuật";
-          if (/phaco/i.test(ten)) loaiPT = "Phaco";
-          else if (/mộng/i.test(ten)) loaiPT = "Mộng thịt";
-          else if (/quặm/i.test(ten)) loaiPT = "Quặm";
-          else if (/lác/i.test(ten)) loaiPT = "Lác";
-          else if (/thủy tinh|thuỷ tinh/i.test(ten)) loaiPT = "Đục TTT";
+          const loaiPT = phanLoaiPT(ten);
 
           serviceMap.get(ma)!.push({
             ngayLap: s.Ngaylap,
@@ -1171,8 +1354,7 @@ export async function getHISSurgeryList(
       surgeryOrderMap.set(r, { lanMo, isMat2: lanMo >= 2 });
     });
 
-    return rows.map((r: any) => {
-      const orderInfo = surgeryOrderMap.get(r) || { lanMo: 1, isMat2: false };
+    const toRow = (r: any, orderInfo: { lanMo: number; isMat2: boolean }) => {
       const cd = (r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || "").trim();
       let matMo = "";
       if (cd.toLowerCase().includes("mắt phải") || cd.includes("(MP)") || cd.startsWith("MP:")) {
@@ -1210,13 +1392,24 @@ export async function getHISSurgeryList(
         phongMo: r.phongMo || "",
         chanDoan: cd,
         matMo,
-        tenDichVu: matchedSvc ? matchedSvc.tenDichVu : "Phẫu thuật mắt",
-        loaiPT: matchedSvc ? matchedSvc.loaiPT : "Phẫu thuật",
+        tenDichVu: r.tenDV ? String(r.tenDV).trim() : matchedSvc ? matchedSvc.tenDichVu : r.choMo ? "" : "Phẫu thuật mắt",
+        loaiPT: r.tenDV ? phanLoaiPT(String(r.tenDV)) : matchedSvc ? matchedSvc.loaiPT : r.choMo ? "" : "Phẫu thuật",
         bsDieuTri: r.bsDieuTri || "",
         lanMo: orderInfo.lanMo,
         isMat2: orderInfo.isMat2,
+        /** Nhập viện / có DV phẫu thuật nhưng chưa có trong sổ phòng mổ — `ngayMoLocal` khi đó là giờ nhập viện / chỉ định */
+        choMo: Boolean(r.choMo),
+        daNhapVien: Boolean(r.nhapVien),
       };
+    };
+
+    const caMo = rows.map((r: any) => toRow(r, surgeryOrderMap.get(r) || { lanMo: 1, isMat2: false }));
+    // Chờ mổ: mọi ca trong sổ phòng mổ của BN đều trước ngày đang xem → lần mổ sắp tới = số ca cũ + 1
+    const choMo = choMoRows.map((r: any) => {
+      const soCaCu = (historyMap.get(String(r.maHIS || "").trim()) || []).length;
+      return toRow({ ...r, choMo: true }, { lanMo: soCaCu + 1, isMat2: soCaCu >= 1 });
     });
+    return [...caMo, ...choMo];
   } catch (err: any) {
     console.error("HIS Surgery List Error:", err);
     throw new Error(`Lỗi lấy danh sách mổ HIS (${config.host}): ${err?.message || "Không xác định"}`);

@@ -19,6 +19,8 @@ export interface DoiChieuSummary {
   surgery: number;
   /** Ca đã mổ TRƯỚC ngày khám — thống kê riêng, không tính tiến độ. */
   surgeryPrior: number;
+  /** Đã nhập viện / có DV phẫu thuật nhưng chưa có trong sổ phòng mổ — chưa tính là đã mổ. */
+  choMo?: number;
   exactMatch: number;
   partialMatch: number;
   errors: number;
@@ -93,6 +95,7 @@ export async function reconcileBuoiKham(
         found: results.filter((r) => r.found).length,
         surgery: results.filter((r) => r.isDaMo).length,
         surgeryPrior: results.filter((r) => r.isDaMoTruoc).length,
+        choMo: results.filter((r) => r.isChoMo).length,
         exactMatch: results.filter((r) => r.matchType === "exact").length,
         partialMatch: results.filter((r) => r.found && r.matchType === "partial").length,
         errors: results.filter((r) => r.error).length,

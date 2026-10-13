@@ -83,7 +83,7 @@ export default function DoiChieuHisPage() {
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [hasScannedDaily, setHasScannedDaily] = useState<boolean>(false);
   const [dailySearch, setDailySearch] = useState<string>("");
-  const [dailyFilterStatus, setDailyFilterStatus] = useState<"all" | "unlinked" | "linked" | "mat2" | "unmatched">("all");
+  const [dailyFilterStatus, setDailyFilterStatus] = useState<"all" | "unlinked" | "linked" | "mat2" | "unmatched" | "choMo">("all");
   const [syncingAll, setSyncingAll] = useState<boolean>(false);
 
   // Tab 1: Batch Check state (Mặc định chọn tháng hiện tại)
@@ -97,7 +97,7 @@ export default function DoiChieuHisPage() {
 
   // Filter states cho Tab 1
   const [batchSearch, setBatchSearch] = useState<string>("");
-  const [batchFilterStatus, setBatchFilterStatus] = useState<"all" | "found" | "surgery" | "pending" | "not_found">("all");
+  const [batchFilterStatus, setBatchFilterStatus] = useState<"all" | "found" | "chomo" | "surgery" | "pending" | "not_found">("all");
 
   // Tab 2: Reverse Check state (Mặc định chọn tháng hiện tại)
   const [revMonth, setRevMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -201,7 +201,9 @@ export default function DoiChieuHisPage() {
         setDailySummary(d.summary || null);
         addToast({
           type: "success",
-          message: `Đã tìm thấy ${d.summary?.totalHIS || 0} ca mổ ngày ${fmtDate(targetDate)} (${d.summary?.matchedCSR || 0} ca khớp CSR)`,
+          message:
+            `Đã tìm thấy ${d.summary?.totalHIS || 0} ca mổ ngày ${fmtDate(targetDate)} (${d.summary?.matchedCSR || 0} ca khớp CSR)` +
+            (d.summary?.choMo ? ` · ${d.summary.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""),
         });
       } else {
         addToast({ type: "error", message: d.error || "Lỗi khi quét dữ liệu từ HIS" });
@@ -288,7 +290,7 @@ export default function DoiChieuHisPage() {
   };
 
   const syncAllDailyUnlinked = async () => {
-    const unlinked = dailyList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo && !r.matchedCsr.maBNHIS);
+    const unlinked = dailyList.filter((r) => !r.choMo && r.matchedCsr && !r.matchedCsr.daMo);
     if (unlinked.length === 0) {
       addToast({ type: "info", message: "Tất cả các ca mổ khớp đều đã được cập nhật vào CSR!" });
       return;
@@ -495,7 +497,7 @@ export default function DoiChieuHisPage() {
 
   // Link all matched patients
   const linkAllMatched = async () => {
-    const pending = revList.filter((r) => r.matchedCsr && !r.matchedCsr.maBNHIS && !r.matchedCsr.daMo);
+    const pending = revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo);
     const unlinked = pending.filter((r) => !r.matchedCsr.ambiguous);
     const skipped = pending.length - unlinked.length;
     if (unlinked.length === 0) {
@@ -573,7 +575,8 @@ export default function DoiChieuHisPage() {
         const matchHIS = r.maHIS?.toLowerCase().includes(q);
         if (!matchName && !matchBN && !matchHIS) return false;
       }
-      if (batchFilterStatus === "found") return r.found && !r.hasSurgery;
+      if (batchFilterStatus === "found") return r.found && !r.hasSurgery && !r.isChoMo;
+      if (batchFilterStatus === "chomo") return r.found && !r.hasSurgery && r.isChoMo;
       if (batchFilterStatus === "surgery") return r.hasSurgery && (r.matchType === "exact" || r.confirmed);
       if (batchFilterStatus === "pending") return r.hasSurgery && r.matchType === "partial" && !r.confirmed;
       if (batchFilterStatus === "not_found") return !r.found;
@@ -600,7 +603,7 @@ export default function DoiChieuHisPage() {
       }
       if (revFilterStatus === "matched") return !!r.matchedCsr;
       if (revFilterStatus === "unmatched") return !r.matchedCsr;
-      if (revFilterStatus === "linked") return !!(r.matchedCsr && (r.matchedCsr.maBNHIS || r.matchedCsr.daMo));
+      if (revFilterStatus === "linked") return Boolean(r.matchedCsr?.daMo);
       if (revFilterStatus === "mat2") return Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
       return true;
     });
@@ -697,6 +700,16 @@ export default function DoiChieuHisPage() {
                 <ShieldQuestion className="w-3.5 h-3.5" /> Chờ xác nhận
               </span>
             );
+          // Đã nhập viện / có DV phẫu thuật nhưng phòng mổ chưa ghi sổ — chưa tính là đã mổ
+          if (r.isChoMo)
+            return (
+              <span
+                title="Đã nhập viện hoặc có chỉ định phẫu thuật, phòng mổ chưa ghi sổ"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--amber-soft)] text-[var(--amber-deep)] border border-[var(--amber)]/30"
+              >
+                <Clock className="w-3.5 h-3.5" /> Chờ mổ
+              </span>
+            );
           return (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/30">
               <Check className="w-3.5 h-3.5" /> Có hồ sơ HIS
@@ -736,12 +749,30 @@ export default function DoiChieuHisPage() {
     [confirmingId]
   );
 
+  /* Số đếm trên các chip — tính thẳng từ danh sách. Ca "chờ mổ" (nhập viện / có DV phẫu thuật nhưng
+     phòng mổ chưa ghi sổ) chỉ nằm ở chip riêng, không lẫn vào số ca mổ. */
+  const dailyCounts = useMemo(() => {
+    const caMo = dailyList.filter((r) => !r.choMo);
+    return {
+      choMo: dailyList.length - caMo.length,
+      unlinked: caMo.filter((r) => r.matchedCsr && !r.matchedCsr.daMo).length,
+      linked: caMo.filter((r) => r.matchedCsr?.daMo).length,
+      mat2: caMo.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length,
+      unmatched: caMo.filter((r) => !r.matchedCsr).length,
+    };
+  }, [dailyList]);
+
   const filteredDailyList = useMemo(() => {
     let result = dailyList;
+    if (dailyFilterStatus === "choMo") {
+      result = result.filter((r) => r.choMo);
+    } else if (dailyFilterStatus !== "all") {
+      result = result.filter((r) => !r.choMo);
+    }
     if (dailyFilterStatus === "unlinked") {
-      result = result.filter((r) => r.matchedCsr && !r.matchedCsr.daMo && !r.matchedCsr.maBNHIS);
+      result = result.filter((r) => r.matchedCsr && !r.matchedCsr.daMo);
     } else if (dailyFilterStatus === "linked") {
-      result = result.filter((r) => r.matchedCsr && (r.matchedCsr.daMo || r.matchedCsr.maBNHIS));
+      result = result.filter((r) => r.matchedCsr?.daMo);
     } else if (dailyFilterStatus === "mat2") {
       result = result.filter((r) => Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2)));
     } else if (dailyFilterStatus === "unmatched") {
@@ -838,6 +869,18 @@ export default function DoiChieuHisPage() {
         cell: ({ row }) => {
           const ngay = hisNgay(row.original);
           const gio = hisGio(row.original);
+          if (row.original.choMo) {
+            return (
+              <div className="leading-tight" title="Đã nhập viện / có chỉ định phẫu thuật — phòng mổ chưa ghi sổ">
+                <span className="inline-flex items-center gap-1 rounded border border-[var(--amber)]/40 bg-[var(--amber-soft)] px-1.5 py-0.5 text-[10.5px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
+                  <Clock className="h-3 w-3 shrink-0" /> Chờ mổ
+                </span>
+                <div className="mt-0.5 font-mono text-[10.5px] text-[var(--mute)] whitespace-nowrap">
+                  {row.original.daNhapVien ? `Nhập viện ${gio}` : "Có chỉ định PT"}
+                </div>
+              </div>
+            );
+          }
           return (
             <div className="font-mono text-xs">
               <div className="font-bold text-[var(--ink)] whitespace-nowrap">
@@ -993,9 +1036,17 @@ export default function DoiChieuHisPage() {
         meta: { align: "right" },
         cell: ({ row }) => {
           const r = row.original;
+          if (r.choMo) {
+            // Chưa mổ thật thì không cho đánh dấu — đợi phòng mổ ghi sổ rồi quét lại
+            return (
+              <span className="text-[11px] font-semibold text-[var(--amber-deep)]" title="Phòng mổ ghi sổ xong thì ca này hiện ở danh sách mổ để đánh dấu">
+                Chờ ghi sổ mổ
+              </span>
+            );
+          }
           if (!r.matchedCsr) return <span className="text-xs text-[var(--mute-soft)]">—</span>;
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
-          const isLinked = r.matchedCsr.daMo || r.matchedCsr.maBNHIS;
+          const isLinked = r.matchedCsr.daMo;
           const hasMat2Note = Boolean(r.matchedCsr.ghiChuMat2);
 
           if (isLinked && (!isSecondEye || hasMat2Note)) {
@@ -1295,7 +1346,7 @@ export default function DoiChieuHisPage() {
           const r = row.original;
           if (!r.matchedCsr) return <span className="text-xs text-[var(--mute-soft)] font-mono">—</span>;
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
-          const isLinked = r.matchedCsr.maBNHIS || r.matchedCsr.daMo;
+          const isLinked = r.matchedCsr.daMo;
           const hasMat2Note = Boolean(r.matchedCsr.ghiChuMat2);
 
           if (isLinked && (!isSecondEye || hasMat2Note)) {
@@ -1495,7 +1546,7 @@ export default function DoiChieuHisPage() {
               <CompactStatCard
                 label="Tổng ca mổ ở HIS"
                 value={dailySummary.totalHIS.toLocaleString("vi-VN")}
-                sub={`Ngày ${fmtDate(dailyDate)}`}
+                sub={`Ngày ${fmtDate(dailyDate)}${dailyCounts.choMo ? ` · +${dailyCounts.choMo} chờ mổ` : ""}`}
                 icon={Stethoscope}
                 tone="navy"
               />
@@ -1538,6 +1589,22 @@ export default function DoiChieuHisPage() {
                   >
                     Tất cả ({dailyList.length})
                   </button>
+                  {dailyCounts.choMo > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDailyFilterStatus("choMo")}
+                      title="Đã nhập viện / có chỉ định phẫu thuật trong ngày, phòng mổ chưa ghi sổ"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "choMo" ? "bg-[var(--amber-deep)] text-white shadow-2xs" : "bg-white text-[var(--amber-deep)] hover:bg-[var(--amber-soft)] border border-[var(--amber)]/40"
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Chờ mổ</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "choMo" ? "bg-white/25 text-white" : "bg-[var(--amber-soft)] text-[var(--amber-deep)]"}`}>
+                        {dailyCounts.choMo}
+                      </span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setDailyFilterStatus("unlinked")}
@@ -1547,7 +1614,7 @@ export default function DoiChieuHisPage() {
                   >
                     <span>⚡ Cần cập nhật CSR</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "unlinked" ? "bg-white/25 text-white" : "bg-amber-100 text-amber-900"}`}>
-                      {dailySummary?.unlinkedMatched || 0}
+                      {dailyCounts.unlinked}
                     </span>
                   </button>
                   <button
@@ -1560,7 +1627,7 @@ export default function DoiChieuHisPage() {
                     <Eye className="w-3.5 h-3.5" />
                     <span>Mắt 2</span>
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "mat2" ? "bg-white/25 text-white" : "bg-purple-100 text-purple-900"}`}>
-                      {dailyList.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length}
+                      {dailyCounts.mat2}
                     </span>
                   </button>
                   <button
@@ -1570,7 +1637,7 @@ export default function DoiChieuHisPage() {
                       dailyFilterStatus === "linked" ? "bg-emerald-600 text-white shadow-2xs" : "bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200"
                     }`}
                   >
-                    Đã lưu CSR ({dailySummary?.alreadyLinked || 0})
+                    Đã lưu CSR ({dailyCounts.linked})
                   </button>
                   <button
                     type="button"
@@ -1579,7 +1646,7 @@ export default function DoiChieuHisPage() {
                       dailyFilterStatus === "unmatched" ? "bg-slate-700 text-white shadow-2xs" : "bg-white text-slate-600 hover:bg-slate-100 border border-[var(--line)]"
                     }`}
                   >
-                    Chưa có trong CSR ({dailyList.length - (dailySummary?.matchedCSR || 0)})
+                    Chưa có trong CSR ({dailyCounts.unmatched})
                   </button>
                 </div>
 
@@ -1595,7 +1662,7 @@ export default function DoiChieuHisPage() {
                     />
                   </div>
 
-                  {(dailySummary?.unlinkedMatched || 0) > 0 && (
+                  {dailyCounts.unlinked > 0 && (
                     <button
                       type="button"
                       onClick={syncAllDailyUnlinked}
@@ -1607,7 +1674,7 @@ export default function DoiChieuHisPage() {
                       ) : (
                         <Zap className="w-3.5 h-3.5" />
                       )}
-                      <span>Đồng bộ {dailySummary?.unlinkedMatched} ca</span>
+                      <span>Đồng bộ {dailyCounts.unlinked} ca</span>
                     </button>
                   )}
                 </div>
@@ -1804,7 +1871,8 @@ export default function DoiChieuHisPage() {
               <div className="flex items-center gap-1 bg-[var(--surface-soft)] p-1 rounded-[var(--r-md)] border border-[var(--line)] shrink-0 overflow-x-auto">
                 {([
                   { k: "all", label: `Tất cả (${batchResults.length})`, on: "bg-[var(--navy)] text-white" },
-                  { k: "found", label: `Khớp HIS (${batchResults.filter((r) => r.found && !r.hasSurgery).length})`, on: "bg-[var(--teal-deep)] text-white" },
+                  { k: "found", label: `Khớp HIS (${batchResults.filter((r) => r.found && !r.hasSurgery && !r.isChoMo).length})`, on: "bg-[var(--teal-deep)] text-white" },
+                  { k: "chomo", label: `Chờ mổ (${batchResults.filter((r) => r.found && !r.hasSurgery && r.isChoMo).length})`, on: "bg-[var(--amber-deep)] text-white" },
                   { k: "surgery", label: `✅ Đã mổ (${batchResults.filter((r) => r.hasSurgery && (r.matchType === "exact" || r.confirmed)).length})`, on: "bg-[var(--gold)] text-white" },
                   { k: "pending", label: `⚠ Chờ xác nhận (${batchResults.filter((r) => r.hasSurgery && r.matchType === "partial" && !r.confirmed).length})`, on: "bg-[var(--amber)] text-white" },
                   { k: "not_found", label: `Chưa thấy (${batchResults.filter((r) => !r.found).length})`, on: "bg-[var(--ink-soft)] text-white" },
@@ -1887,14 +1955,14 @@ export default function DoiChieuHisPage() {
                 {revLoading ? "Đang tải danh sách HIS..." : "Tải danh sách mổ HIS"}
               </button>
 
-              {revList.some((r) => r.matchedCsr && !r.matchedCsr.maBNHIS) && (
+              {revList.some((r) => r.matchedCsr && !r.matchedCsr.daMo) && (
                 <button
                   onClick={linkAllMatched}
                   disabled={revLoading}
                   className="btn btn-success h-[42px] px-6 rounded-[var(--r-md)] font-bold text-sm gap-2"
                 >
                   <UserCheck className="w-4 h-4" />
-                  Cập nhật toàn bộ ({revList.filter((r) => r.matchedCsr && !r.matchedCsr.maBNHIS).length})
+                  Cập nhật toàn bộ ({revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo).length})
                 </button>
               )}
             </div>
@@ -1970,7 +2038,7 @@ export default function DoiChieuHisPage() {
                   { k: "matched", label: `Khớp BN (${revList.filter((r) => r.matchedCsr).length})`, on: "bg-[var(--teal-deep)] text-white" },
                   { k: "mat2", label: `👁️ Mắt 2 (${revList.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length})`, on: "bg-purple-700 text-white" },
                   { k: "unmatched", label: `Khách tự đến (${revList.filter((r) => !r.matchedCsr).length})`, on: "bg-[var(--ink-soft)] text-white" },
-                  { k: "linked", label: `Đã liên kết (${revList.filter((r) => r.matchedCsr && (r.matchedCsr.maBNHIS || r.matchedCsr.daMo)).length})`, on: "bg-[var(--gold)] text-white" },
+                  { k: "linked", label: `Đã liên kết (${revList.filter((r) => r.matchedCsr?.daMo).length})`, on: "bg-[var(--gold)] text-white" },
                 ] as const).map((f) => (
                   <button key={f.k} onClick={() => setRevFilterStatus(f.k)}
                     className={`px-3 py-1.5 rounded-[var(--r-sm)] text-[12px] font-bold transition-all whitespace-nowrap cursor-pointer ${revFilterStatus === f.k ? `${f.on} shadow-[var(--shadow-sm)]` : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}>

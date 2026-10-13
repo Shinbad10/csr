@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       // Chỉ tính ca mổ SAU ngày khám tầm soát; ca mổ trước đó thống kê riêng
       surgery: results.filter((r) => r.isDaMo).length,
       surgeryPrior: results.filter((r) => r.isDaMoTruoc).length,
+      choMo: results.filter((r) => r.isChoMo).length,
       exactMatch: results.filter((r) => r.matchType === "exact").length,
       partialMatch: results.filter((r) => r.matchType === "partial" && r.found).length,
       surgeryExact: results.filter((r) => r.isDaMo && r.matchType === "exact").length,

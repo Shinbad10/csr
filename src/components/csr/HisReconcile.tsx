@@ -133,7 +133,7 @@ export function useHisReconcile({
           addToast({
             type: "success",
             title: "Đã đối chiếu HIS",
-            message: `${t.name}: tìm thấy ${log.found ?? 0}/${log.total ?? 0} BN, ${log.surgery ?? 0} ca mổ sau khám${log.surgeryPrior ? ` (+${log.surgeryPrior} mổ trước)` : ""} — ${fmtDuration(log.durationMs)}`,
+            message: `${t.name}: tìm thấy ${log.found ?? 0}/${log.total ?? 0} BN, ${log.surgery ?? 0} ca mổ sau khám${log.choMo ? `, ${log.choMo} ca chờ mổ` : ""}${log.surgeryPrior ? ` (+${log.surgeryPrior} mổ trước)` : ""} — ${fmtDuration(log.durationMs)}`,
           });
         }
         onFinishRef.current();
@@ -343,6 +343,7 @@ export function HisReconcilePanel({
                         <>
                           <b className="text-[var(--navy)]">{it.log.found ?? 0}</b>/{it.log.total ?? 0}
                           {(it.log.surgery ?? 0) > 0 && <span className="text-[var(--teal-deep)]"> · {it.log.surgery} mổ</span>}
+                          {(it.log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {it.log.choMo} chờ mổ</span>}
                           {(it.log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{it.log.surgeryPrior} trước</span>}
                         </>
                       ) : (
@@ -401,7 +402,7 @@ export function DoiChieuCell({
     : `${fmtDateTime(log.thoiDiem)} · ${log.nguoiThucHien || log.nguoiDung}\nTìm thấy ${log.found ?? 0}/${log.total ?? 0} BN` +
       (legacy
         ? "\nLần đối chiếu cũ chưa tách ca mổ trước ngày khám — đối chiếu lại để cập nhật"
-        : ` · ${log.surgery ?? 0} ca mổ sau khám${log.surgeryPrior ? ` · ${log.surgeryPrior} ca đã mổ trước ngày khám` : ""}`);
+        : ` · ${log.surgery ?? 0} ca mổ sau khám${log.choMo ? ` · ${log.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""}${log.surgeryPrior ? ` · ${log.surgeryPrior} ca đã mổ trước ngày khám` : ""}`);
 
   return (
     <button
@@ -427,6 +428,7 @@ export function DoiChieuCell({
               <>
                 {" · "}
                 <span className={log.surgery ? "text-[var(--teal-deep)] font-semibold" : undefined}>{log.surgery ?? 0} mổ</span>
+                {(log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {log.choMo} chờ</span>}
                 {(log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{log.surgeryPrior} trước</span>}
               </>
             )}
