@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Camera, X, RefreshCw, AlertCircle } from "lucide-react";
 import Modal from "@/components/layout/Modal";
 import { Html5Qrcode } from "html5-qrcode";
+import { MobileQrScanner } from "./MobileQrScanner";
 
 interface CameraScannerModalProps {
   open: boolean;
@@ -11,58 +12,70 @@ interface CameraScannerModalProps {
   onScan: (decodedText: string) => void;
 }
 
+const SCANNER_ID = "qr-camera-reader-box";
+const MOBILE_QUERY = "(max-width: 767px), (pointer: coarse) and (max-width: 1024px)";
+
+/** Điện thoại / máy tính bảng: quét toàn màn hình (giống ứng dụng bhyt-check); máy tính: hộp thoại. */
+function useIsMobileScanner() {
+  const [mobile, setMobile] = useState(() => typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const update = () => setMobile(mq.matches);
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return mobile;
+}
+
 export function CameraScannerModal({ open, onClose, onScan }: CameraScannerModalProps) {
+  const isMobile = useIsMobileScanner();
+  if (!open) return null;
+  // Điện thoại: quét toàn màn hình bằng bộ quét riêng (giống bhyt-check); máy tính: hộp thoại html5-qrcode
+  return isMobile ? <MobileQrScanner onScan={onScan} onClose={onClose} /> : <DesktopScanner onScan={onScan} onClose={onClose} />;
+}
+
+function DesktopScanner({ onClose, onScan }: Omit<CameraScannerModalProps, "open">) {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  // Giữ hàm của trang cha trong ref: trang cha render lại thì camera không bị khởi động lại
+  const onScanRef = useRef(onScan);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
-    if (!open) {
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {}).finally(() => {
-          scannerRef.current = null;
-        });
-      }
-      return;
-    }
-
-    setError(null);
-    setStarting(true);
-
     let isMounted = true;
-    let timerId: any = null;
-    const scannerId = "qr-camera-reader-box";
+    let timerId: ReturnType<typeof setTimeout> | null = null;
 
     const initScanner = () => {
       if (!isMounted) return;
-      const el = document.getElementById(scannerId);
+      const el = document.getElementById(SCANNER_ID);
       if (!el) {
         timerId = setTimeout(initScanner, 50);
         return;
       }
 
       try {
-        const scanner = new Html5Qrcode(scannerId);
+        const scanner = new Html5Qrcode(SCANNER_ID);
         scannerRef.current = scanner;
 
         scanner
           .start(
             { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 260, height: 260 },
-              aspectRatio: 1.0,
-            },
+            { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
             (decodedText) => {
               if (!isMounted) return;
               scanner.stop().catch(() => {}).finally(() => {
                 scannerRef.current = null;
-                onScan(decodedText);
-                onClose();
+                onScanRef.current(decodedText);
+                onCloseRef.current();
               });
             },
             () => {
-              // Ignore background frame decode failures
+              // Bỏ qua các khung hình chưa đọc được mã
             }
           )
           .then(() => {
@@ -74,7 +87,7 @@ export function CameraScannerModal({ open, onClose, onScan }: CameraScannerModal
             console.error("Camera start error:", err);
             setError("Không thể truy cập camera. Vui lòng kiểm tra quyền camera hoặc thử trình duyệt khác.");
           });
-      } catch (err: any) {
+      } catch (err) {
         if (!isMounted) return;
         setStarting(false);
         console.error("Html5Qrcode init error:", err);
@@ -92,17 +105,15 @@ export function CameraScannerModal({ open, onClose, onScan }: CameraScannerModal
           if (scannerRef.current.isScanning) {
             scannerRef.current.stop().catch(() => {});
           }
-        } catch (e) {}
+        } catch {}
         scannerRef.current = null;
       }
     };
-  }, [open, onClose, onScan]);
-
-  if (!open) return null;
+  }, []);
 
   return (
     <Modal
-      open={open}
+      open={true}
       onClose={onClose}
       title="Quét mã QR bằng Camera"
       subtitle="Đưa mã QR trên thẻ BHYT / CCCD / VNeID vào khung quét để tự động điền"
@@ -128,7 +139,7 @@ export function CameraScannerModal({ open, onClose, onScan }: CameraScannerModal
               <div className="text-[12.5px] text-[var(--mute)] leading-relaxed">{error}</div>
             </div>
           ) : (
-            <div id="qr-camera-reader-box" className="w-full h-full overflow-hidden rounded-xl" />
+            <div id={SCANNER_ID} className="w-full h-full overflow-hidden rounded-xl" />
           )}
         </div>
 
