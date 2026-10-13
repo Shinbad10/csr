@@ -406,7 +406,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           {/* Row 3: Ngày sinh * (6) | Điện thoại (6) */}
           <div className="sm:col-span-6">
             <Field label="Ngày sinh" required>
-              <DateField value={ngaySinh} onChange={setNgaySinh} placeholder="dd/mm/yyyy" />
+              <DateField value={ngaySinh} onChange={setNgaySinh} placeholder="dd/mm/yyyy" birth />
             </Field>
           </div>
           <div className="sm:col-span-6">
@@ -758,7 +758,7 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
           <Field label="Giới tính" required>
             <div className="flex items-center gap-5 h-[42px]">{["Nam", "Nữ", "Khác"].map((g) => <label key={g} className="flex items-center gap-1.5 cursor-pointer text-[14px]"><input type="radio" name="egt" checked={gioiTinh === g} onChange={() => setGioiTinh(g)} className="accent-[var(--navy)] w-4 h-4" />{g}</label>)}</div>
           </Field>
-          <Field label="Ngày sinh"><DateField value={ngaySinh} onChange={setNgaySinh} /></Field>
+          <Field label="Ngày sinh"><DateField value={ngaySinh} onChange={setNgaySinh} birth /></Field>
           <Field label="CCCD"><input value={cccd} onChange={(e) => handleCccdChange(e.target.value)} className="input-field font-mono" /></Field>
           <Field label="Điện thoại"><input value={sdt} onChange={(e) => handleSdtChange(e.target.value)} className="input-field font-mono" /></Field>
         </div>
