@@ -77,6 +77,16 @@ export async function POST(request: Request) {
         const dateStr = item.ngayMo ? new Date(item.ngayMo).toLocaleDateString("vi-VN") : "";
         const mat2Note = `[Mắt 2]: Mổ ngày ${dateStr}${svcInfo}${matInfo}`;
         updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, mat2Note);
+      } else if (item.confirmed || item.xacNhanKhop) {
+        const userStr = session?.user?.name || "Người dùng";
+        const dateStr = item.ngayMo ? new Date(item.ngayMo).toLocaleDateString("vi-VN") : "";
+        const confirmNote = `[✓ Đã xác nhận khớp HIS]: ${userStr} xác nhận thủ công ca mổ ${dateStr ? `ngày ${dateStr}` : ""} (Mã HIS: ${item.maHIS}${item.isKhuyetCccd ? " - Khuyết CCCD" : ""})`;
+        updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, confirmNote);
+      } else if (item.matchType === "exact") {
+        const exactNote = `[✓ Khớp CCCD]: Liên kết mã HIS ${item.maHIS}`;
+        updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, exactNote);
+      } else if (item.chiTiet) {
+        updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, item.chiTiet);
       }
 
       await prisma.hoSoBenhNhan.update({

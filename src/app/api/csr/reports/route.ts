@@ -71,9 +71,12 @@ export async function GET(request: Request) {
         where,
         select: {
           id: true,
+          hoTen: true,
           gioiTinh: true,
           namSinh: true,
           ngaySinh: true,
+          cccd: true,
+          maBNHIS: true,
           bhyt: true,
           mucHuongBHYT: true,
           trangThai: true,
@@ -359,7 +362,7 @@ export async function GET(request: Request) {
     const sheetId = sharedId || coSo?.sheetId || null;
     const sheetUrl = sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}` : null;
 
-    const chuyenDoiMoPct = nhomA > 0 ? Math.round((daMo / nhomA) * 100) : 0;
+    const chuyenDoiMoPct = nhomA > 0 ? Math.round((nguoiDaMoCount / nhomA) * 100) : 0;
     const bhytPct = tong > 0 ? Math.round((coBhytCount / tong) * 100) : 0;
 
     return NextResponse.json({
@@ -368,7 +371,7 @@ export async function GET(request: Request) {
       byStatus,
       nhomA,
       nhomB,
-      daMo,
+      daMo: nguoiDaMoCount,
       daDen: daDenCount,
       denKhongMo: denKhongMoCount,
       phaco2Lan: phaco2LanTong,

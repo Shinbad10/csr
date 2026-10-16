@@ -18,6 +18,69 @@ export const THI_LUC = ["", "10/10", "8/10", "6/10", "5/10", "4/10", "3/10", "2/
  * - isDaMoTruoc: Đã từng mổ trước khi đợt khám tầm soát diễn ra (tách riêng để đánh giá khách quan)
  * - isDaDenTruoc: Đã từng đến viện trước ngày khám
  */
+/**
+ * Kiểm tra tính hợp lệ của ca phẫu thuật khi đưa vào số liệu báo cáo CSR:
+ * Quy tắc nghiệp vụ:
+ * - Số liệu báo cáo chỉ tính:
+ *   1. Khớp CCCD + Họ tên + Ngày sinh (hoặc năm sinh) giữa HIS và CSR.
+ *   2. VÀ xác nhận thủ công nếu 1 trong 2 giữa HIS và CSR khuyết CCCD.
+ * - Trường hợp CCCD bị lệch/xung đột hoặc chưa xác nhận khi khuyết CCCD thì KHÔNG tính vào báo cáo.
+ */
+export function isReportValidSurgery(h: {
+  ngayMoThucTe?: Date | string | null;
+  trangThaiDieuTri?: string | null;
+  trangThai?: string | null;
+  cccd?: string | null;
+  ghiChuMat2?: string | null;
+  maBNHIS?: string | null;
+  hoTen?: string | null;
+}): boolean {
+  const hasRawSurgery =
+    Boolean(h.ngayMoThucTe) ||
+    h.trangThaiDieuTri === "Đã mổ" ||
+    h.trangThai === "DaMoHauPhau";
+  if (!hasRawSurgery) return false;
+
+  const note = h.ghiChuMat2 || "";
+
+  // 1. Nếu có cảnh báo lệch/xung đột CCCD mà chưa được người dùng xác nhận đè -> TUYỆT ĐỐI LOẠI BỎ
+  if (
+    note.includes("CCCD lệch") &&
+    !note.includes("Đã xác nhận") &&
+    !note.includes("Xác nhận thủ công")
+  ) {
+    return false;
+  }
+
+  // 2. Khớp CCCD / BHYT chính xác từ đối chiếu HIS
+  if (note.includes("[✓ Khớp CCCD]") || note.includes("[✓ Khớp mã BHYT]")) {
+    return true;
+  }
+
+  // 3. Đã được người dùng bấm "Xác nhận" thủ công (đặc biệt khi 1 trong 2 bên khuyết CCCD)
+  if (
+    note.includes("Đã xác nhận") ||
+    note.includes("Xác nhận thủ công") ||
+    note.includes("[✓ Đã xác nhận khớp HIS]")
+  ) {
+    return true;
+  }
+
+  // 4. Nếu ghi chú chỉ khớp Họ tên + Năm sinh (chưa xác minh CCCD / khuyết CCCD) mà CHƯA có xác nhận
+  if (note.includes("[⚠ Khớp Họ tên") || note.includes("[⚠")) {
+    return false;
+  }
+
+  // 5. Nếu hồ sơ có số CCCD chuẩn (>= 9 số) và có mã HIS, không có ghi chú cảnh báo lệch
+  const cccdDigits = (h.cccd || "").replace(/\D/g, "");
+  if (cccdDigits.length >= 9) {
+    return true;
+  }
+
+  // 6. Khuyết CCCD (CCCD rỗng hoặc < 9 số) nhưng chưa có xác nhận thủ công -> KHÔNG TÍNH
+  return false;
+}
+
 export function checkSurgeryTiming(
   h: {
     ngayMoThucTe?: Date | string | null;
@@ -25,6 +88,10 @@ export function checkSurgeryTiming(
     trangThai?: string | null;
     buoiKham?: { ngayKham?: Date | string | null } | null;
     buoiKhamNgayKham?: Date | string | null;
+    cccd?: string | null;
+    ghiChuMat2?: string | null;
+    maBNHIS?: string | null;
+    hoTen?: string | null;
   },
   buoiKhamDateOverride?: Date | string | null
 ) {
@@ -47,14 +114,25 @@ export function checkSurgeryTiming(
   }
 
   const isDaMoTruoc = isPriorMarked || isDatePrior;
-  const hasSurgery = Boolean(h.ngayMoThucTe) || h.trangThaiDieuTri === "Đã mổ" || h.trangThai === "DaMoHauPhau" || isDaMoTruoc;
-  const isDaMo = hasSurgery && !isDaMoTruoc;
+  const hasRawSurgery =
+    Boolean(h.ngayMoThucTe) ||
+    h.trangThaiDieuTri === "Đã mổ" ||
+    h.trangThai === "DaMoHauPhau" ||
+    isDaMoTruoc;
+
+  // CHỈ tính vào số liệu báo cáo ("Đã mổ") nếu:
+  // - Khớp CCCD + Họ tên + Ngày sinh
+  // - VÀ đã xác nhận nếu 1 trong 2 giữa HIS và CSR khuyết CCCD
+  const isValidReportMatch = isReportValidSurgery(h);
+  const hasSurgery = hasRawSurgery && (isDaMoTruoc || isValidReportMatch);
+  const isDaMo = hasRawSurgery && !isDaMoTruoc && isValidReportMatch;
 
   return {
     hasSurgery,
     isDaMo,
     isDaMoTruoc,
     isDaDenTruoc: isPriorVisitMarked,
+    isValidReportMatch,
   };
 }
 
@@ -84,6 +162,10 @@ export function classifyCSRNhom(h: {
   trangThaiDieuTri?: string | null;
   buoiKham?: { ngayKham?: Date | string | null } | null;
   buoiKhamNgayKham?: Date | string | null;
+  cccd?: string | null;
+  ghiChuMat2?: string | null;
+  maBNHIS?: string | null;
+  hoTen?: string | null;
 }) {
   const hasPathology =
     Boolean(h.nhom) ||

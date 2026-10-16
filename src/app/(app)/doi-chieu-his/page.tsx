@@ -83,7 +83,7 @@ export default function DoiChieuHisPage() {
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [hasScannedDaily, setHasScannedDaily] = useState<boolean>(false);
   const [dailySearch, setDailySearch] = useState<string>("");
-  const [dailyFilterStatus, setDailyFilterStatus] = useState<"all" | "unlinked" | "linked" | "mat2" | "unmatched" | "choMo">("all");
+  const [dailyFilterStatus, setDailyFilterStatus] = useState<"all" | "pending" | "unlinked" | "linked" | "mat2" | "choMo">("all");
   const [syncingAll, setSyncingAll] = useState<boolean>(false);
 
   // Tab 1: Batch Check state (Mặc định chọn tháng hiện tại)
@@ -111,7 +111,7 @@ export default function DoiChieuHisPage() {
   // Filter states cho Tab 2 (Lọc theo ngày, từ khóa, trạng thái)
   const [revSearch, setRevSearch] = useState<string>("");
   const [revFilterDate, setRevFilterDate] = useState<string>(""); // YYYY-MM-DD
-  const [revFilterStatus, setRevFilterStatus] = useState<"all" | "matched" | "unmatched" | "linked" | "mat2">("all");
+  const [revFilterStatus, setRevFilterStatus] = useState<"all" | "pending" | "unlinked" | "linked" | "mat2">("all");
 
   // Load BuoiKham list
   useEffect(() => {
@@ -228,7 +228,7 @@ export default function DoiChieuHisPage() {
     } catch {}
   };
 
-  const linkDailyPatient = async (item: any) => {
+  const linkDailyPatient = async (item: any, isConfirm = false) => {
     if (!item.matchedCsr?.id) return;
     setLinkingId(item.matchedCsr.id);
     try {
@@ -245,7 +245,12 @@ export default function DoiChieuHisPage() {
           tenDichVu: item.tenDichVu,
           matMo: item.matMo,
           loaiPT: item.loaiPT,
-          chiTiet: isSecondEye
+          matchType: item.matchedCsr.matchType,
+          isKhuyetCccd: Boolean(item.matchedCsr.isKhuyetCccd),
+          confirmed: isConfirm || item.matchedCsr.matchType === "exact",
+          chiTiet: isConfirm
+            ? `[✓ Đã xác nhận khớp HIS]: Xác nhận thủ công ca mổ ngày ${fmtDate(hisNgay(item))} (Mã HIS: ${item.maHIS}${item.matchedCsr.isKhuyetCccd ? " - Khuyết CCCD" : ""})`
+            : isSecondEye
             ? `Mắt 2: Mổ ngày ${fmtDate(hisNgay(item))} (${item.tenDichVu || item.loaiPT || "Phẫu thuật"}${item.matMo ? ` - ${item.matMo}` : ""})`
             : `Mổ ngày ${fmtDate(hisNgay(item))} (Khoa: ${item.khoaMo || "Phòng mổ"}, Bác sĩ: ${item.bsDieuTri || "—"}${item.tenDichVu ? `, DV: ${item.tenDichVu}` : ""})`,
         }),
@@ -254,7 +259,9 @@ export default function DoiChieuHisPage() {
       if (res.ok) {
         addToast({
           type: "success",
-          message: isSecondEye
+          message: isConfirm
+            ? `Đã xác nhận ca mổ cho bệnh nhân ${item.hoTen || item.matchedCsr.hoTen} vào báo cáo!`
+            : isSecondEye
             ? `Đã ghi nhận Mắt 2 cho bệnh nhân ${item.hoTen || item.matchedCsr.hoTen}`
             : `Đã cập nhật Đã mổ cho bệnh nhân ${item.hoTen || item.matchedCsr.hoTen}`,
         });
@@ -266,9 +273,10 @@ export default function DoiChieuHisPage() {
                   matchedCsr: {
                     ...r.matchedCsr,
                     daMo: true,
+                    confirmed: true,
                     maBNHIS: item.maHIS,
                     trangThaiDieuTri: "Đã mổ",
-                    ghiChuMat2: isSecondEye ? "Mắt 2" : r.matchedCsr.ghiChuMat2,
+                    ghiChuMat2: isSecondEye ? "Mắt 2" : (isConfirm ? "[✓ Đã xác nhận khớp HIS]" : r.matchedCsr.ghiChuMat2),
                   },
                 }
               : r
@@ -290,22 +298,34 @@ export default function DoiChieuHisPage() {
   };
 
   const syncAllDailyUnlinked = async () => {
-    const unlinked = dailyList.filter((r) => !r.choMo && r.matchedCsr && !r.matchedCsr.daMo);
-    if (unlinked.length === 0) {
-      addToast({ type: "info", message: "Tất cả các ca mổ khớp đều đã được cập nhật vào CSR!" });
+    // Chỉ tự động đồng bộ hàng loạt các ca KHỚP CCCD CHÍNH XÁC. Ca khuyết CCCD cần xác nhận tay từng ca.
+    const exactUnlinked = dailyList.filter((r) => !r.choMo && r.matchedCsr && !r.matchedCsr.daMo && r.matchedCsr.matchType === "exact");
+    const partialUnlinked = dailyList.filter((r) => !r.choMo && r.matchedCsr && (!r.matchedCsr.daMo || !r.matchedCsr.confirmed) && r.matchedCsr.matchType === "partial");
+
+    if (exactUnlinked.length === 0) {
+      if (partialUnlinked.length > 0) {
+        addToast({
+          type: "info",
+          message: `Có ${partialUnlinked.length} ca khuyết CCCD chưa được xác nhận. Vui lòng bấm "Xác nhận đã mổ" thủ công từng ca để tránh nhầm lẫn!`,
+        });
+      } else {
+        addToast({ type: "info", message: "Tất cả các ca mổ khớp đều đã được cập nhật vào CSR!" });
+      }
       return;
     }
 
     const ok = await confirm({
-      title: "Đồng bộ tất cả ca mổ vào CSR",
-      message: `Bạn có chắc chắn muốn đánh dấu "Đã mổ" vào hồ sơ CSR cho toàn bộ ${unlinked.length} bệnh nhân đã khớp không? Dữ liệu sẽ được lưu vĩnh viễn vào hệ thống CSR.`,
-      confirmLabel: `Đồng bộ ${unlinked.length} ca`,
+      title: "Đồng bộ tất cả ca mổ khớp CCCD vào CSR",
+      message: `Tìm thấy ${exactUnlinked.length} ca khớp CCCD chính xác. Bạn có chắc muốn cập nhật vào CSR không?${
+        partialUnlinked.length > 0 ? ` (${partialUnlinked.length} ca khuyết CCCD sẽ được giữ lại để bạn xác nhận thủ công từng ca)` : ""
+      }`,
+      confirmLabel: `Đồng bộ ${exactUnlinked.length} ca`,
     });
     if (!ok) return;
 
     setSyncingAll(true);
     try {
-      const items = unlinked.map((r) => ({
+      const items = exactUnlinked.map((r) => ({
         hoSoId: r.matchedCsr.id,
         maHIS: r.maHIS,
         ngayMo: r.ngayMo,
@@ -314,6 +334,8 @@ export default function DoiChieuHisPage() {
         tenDichVu: r.tenDichVu,
         matMo: r.matMo,
         loaiPT: r.loaiPT,
+        matchType: "exact",
+        confirmed: true,
         chiTiet: r.isMat2
           ? `Mắt 2: Mổ ngày ${fmtDate(hisNgay(r))} (${r.tenDichVu || r.loaiPT}${r.matMo ? ` - ${r.matMo}` : ""})`
           : `Mổ ngày ${fmtDate(hisNgay(r))} (Khoa: ${r.khoaMo || "Phòng mổ"}, Bác sĩ: ${r.bsDieuTri || "—"}${r.tenDichVu ? `, DV: ${r.tenDichVu}` : ""})`,
@@ -325,19 +347,24 @@ export default function DoiChieuHisPage() {
       });
       const d = await res.json();
       if (res.ok) {
-        addToast({ type: "success", message: `Đã đồng bộ thành công ${d.count || unlinked.length} ca mổ vào CSR!` });
-        const unlinkedIds = new Set(unlinked.map((u) => u.matchedCsr.id));
+        addToast({
+          type: "success",
+          message: `Đã đồng bộ ${d.count || exactUnlinked.length} ca khớp CCCD vào CSR!${
+            partialUnlinked.length > 0 ? ` Còn ${partialUnlinked.length} ca khuyết CCCD cần xác nhận tay.` : ""
+          }`,
+        });
+        const unlinkedIds = new Set(exactUnlinked.map((u) => u.matchedCsr.id));
         setDailyList((prev) =>
           prev.map((r) =>
             r.matchedCsr && unlinkedIds.has(r.matchedCsr.id)
-              ? { ...r, matchedCsr: { ...r.matchedCsr, daMo: true, maBNHIS: r.maHIS, trangThaiDieuTri: "Đã mổ", ghiChuMat2: r.isMat2 ? "Mắt 2" : r.matchedCsr.ghiChuMat2 } }
+              ? { ...r, matchedCsr: { ...r.matchedCsr, daMo: true, confirmed: true, maBNHIS: r.maHIS, trangThaiDieuTri: "Đã mổ", ghiChuMat2: r.isMat2 ? "Mắt 2" : r.matchedCsr.ghiChuMat2 } }
               : r
           )
         );
         setDailySummary((prev: any) => prev ? {
           ...prev,
-          alreadyLinked: (prev.alreadyLinked || 0) + unlinked.length,
-          unlinkedMatched: 0,
+          alreadyLinked: (prev.alreadyLinked || 0) + exactUnlinked.length,
+          unlinkedMatched: Math.max(0, (prev.unlinkedMatched || 0) - exactUnlinked.length),
         } : null);
       } else {
         addToast({ type: "error", message: d.error || "Lỗi khi đồng bộ hàng loạt" });
@@ -448,10 +475,11 @@ export default function DoiChieuHisPage() {
   };
 
   // Link single patient in Reverse Check
-  const linkPatient = async (item: any) => {
+  const linkPatient = async (item: any, isConfirm = false) => {
     if (!item.matchedCsr?.id) return;
     setLinkingId(item.matchedCsr.id);
     try {
+      const isSecondEye = Boolean(item.isMat2 || (item.lanMo && item.lanMo >= 2));
       const res = await fetch("/api/his/link-reverse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -464,18 +492,38 @@ export default function DoiChieuHisPage() {
           tenDichVu: item.tenDichVu,
           matMo: item.matMo,
           loaiPT: item.loaiPT,
-          chiTiet: item.isMat2
+          matchType: item.matchedCsr.matchType,
+          isKhuyetCccd: Boolean(item.matchedCsr.isKhuyetCccd),
+          confirmed: isConfirm || item.matchedCsr.matchType === "exact",
+          chiTiet: isConfirm
+            ? `[✓ Đã xác nhận khớp HIS]: Xác nhận thủ công ca mổ ngày ${fmtDate(hisNgay(item))} (Mã HIS: ${item.maHIS}${item.matchedCsr.isKhuyetCccd ? " - Khuyết CCCD" : ""})`
+            : item.isMat2
             ? `Mắt 2: Mổ ngày ${fmtDate(hisNgay(item))} (${item.tenDichVu || item.loaiPT}${item.matMo ? ` - ${item.matMo}` : ""})`
             : `Mổ ngày ${fmtDate(hisNgay(item))} (Khoa: ${item.khoaMo || "Phòng mổ"}, Bác sĩ: ${item.bsDieuTri || "—"}${item.tenDichVu ? `, DV: ${item.tenDichVu}` : ""})`,
         }),
       });
       if (res.ok) {
-        addToast({ type: "success", message: `Đã liên kết ${item.isMat2 ? "Mắt 2" : "mã HIS"} cho ${item.matchedCsr.hoTen}` });
+        addToast({
+          type: "success",
+          message: isConfirm
+            ? `Đã xác nhận ca mổ cho ${item.matchedCsr.hoTen} vào báo cáo!`
+            : `Đã liên kết ${item.isMat2 ? "Mắt 2" : "mã HIS"} cho ${item.matchedCsr.hoTen}`,
+        });
         // update local revList
         setRevList((prev) =>
           prev.map((r) =>
             r.matchedCsr?.id === item.matchedCsr.id
-              ? { ...r, matchedCsr: { ...r.matchedCsr, daMo: true, maBNHIS: item.maHIS, trangThaiDieuTri: "Đã mổ", ghiChuMat2: item.isMat2 ? "Mắt 2" : r.matchedCsr.ghiChuMat2 } }
+              ? {
+                  ...r,
+                  matchedCsr: {
+                    ...r.matchedCsr,
+                    daMo: true,
+                    confirmed: true,
+                    maBNHIS: item.maHIS,
+                    trangThaiDieuTri: "Đã mổ",
+                    ghiChuMat2: item.isMat2 ? "Mắt 2" : (isConfirm ? "[✓ Đã xác nhận khớp HIS]" : r.matchedCsr.ghiChuMat2),
+                  },
+                }
               : r
           )
         );
@@ -497,31 +545,40 @@ export default function DoiChieuHisPage() {
 
   // Link all matched patients
   const linkAllMatched = async () => {
-    const pending = revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo);
-    const unlinked = pending.filter((r) => !r.matchedCsr.ambiguous);
-    const skipped = pending.length - unlinked.length;
-    if (unlinked.length === 0) {
-      addToast({
-        type: "info",
-        message: skipped > 0
-          ? `${skipped} ca khớp nhiều hồ sơ trùng tên — cần chọn tay, không tự động liên kết được.`
-          : "Tất cả các BN khớp đều đã được liên kết mã HIS!",
-      });
+    const pending = revList.filter((r) => r.matchedCsr && (!r.matchedCsr.daMo || !r.matchedCsr.confirmed));
+    const exactUnlinked = pending.filter((r) => !r.matchedCsr.ambiguous && r.matchedCsr.matchType === "exact");
+    const partialUnlinked = pending.filter((r) => !r.matchedCsr.ambiguous && r.matchedCsr.matchType === "partial");
+    const skipped = pending.length - exactUnlinked.length;
+
+    if (exactUnlinked.length === 0) {
+      if (partialUnlinked.length > 0) {
+        addToast({
+          type: "info",
+          message: `Có ${partialUnlinked.length} ca khuyết CCCD chưa được xác nhận. Vui lòng bấm "Xác nhận đã mổ" từng ca để đảm bảo chính xác!`,
+        });
+      } else {
+        addToast({
+          type: "info",
+          message: skipped > 0
+            ? `${skipped} ca khớp nhiều hồ sơ hoặc khuyết CCCD — cần kiểm tra tay từng ca.`
+            : "Tất cả các BN khớp CCCD đều đã được liên kết mã HIS!",
+        });
+      }
       return;
     }
     if (!(await confirm({
-      title: "Liên kết mã HIS hàng loạt",
-      message: `Sẽ gán mã HIS cho ${unlinked.length} bệnh nhân đang khớp.`,
-      note: skipped > 0
-        ? `Bỏ qua ${skipped} ca khớp nhiều hồ sơ trùng tên — anh/chị cần chọn tay từng ca. Thao tác không thể hoàn tác tự động.`
+      title: "Liên kết mã HIS hàng loạt (Chỉ ca khớp CCCD)",
+      message: `Sẽ gán mã HIS cho ${exactUnlinked.length} bệnh nhân khớp CCCD chính xác.`,
+      note: partialUnlinked.length > 0
+        ? `Giữ lại ${partialUnlinked.length} ca khuyết CCCD để bạn bấm "Xác nhận đã mổ" thủ công.`
         : "Thao tác chạy lần lượt từng hồ sơ và không thể hoàn tác tự động.",
-      confirmLabel: `Liên kết ${unlinked.length} hồ sơ`,
+      confirmLabel: `Liên kết ${exactUnlinked.length} hồ sơ`,
       tone: "info",
     }))) return;
 
     setRevLoading(true);
     try {
-      const items = unlinked.map((r) => ({
+      const items = exactUnlinked.map((r) => ({
         hoSoId: r.matchedCsr.id,
         maHIS: r.maHIS,
         ngayMo: r.ngayMo,
@@ -530,6 +587,8 @@ export default function DoiChieuHisPage() {
         tenDichVu: r.tenDichVu,
         matMo: r.matMo,
         loaiPT: r.loaiPT,
+        matchType: "exact",
+        confirmed: true,
         chiTiet: r.isMat2
           ? `Mắt 2: Mổ ngày ${fmtDate(hisNgay(r))} (${r.tenDichVu || r.loaiPT}${r.matMo ? ` - ${r.matMo}` : ""})`
           : `Mổ ngày ${fmtDate(hisNgay(r))} (Khoa: ${r.khoaMo || "Phòng mổ"}, Bác sĩ: ${r.bsDieuTri || "—"}${r.tenDichVu ? `, DV: ${r.tenDichVu}` : ""})`,
@@ -541,20 +600,20 @@ export default function DoiChieuHisPage() {
       });
       const d = await res.json();
       if (res.ok) {
-        const unlinkedIds = new Set(unlinked.map((u) => u.matchedCsr.id));
+        const unlinkedIds = new Set(exactUnlinked.map((u) => u.matchedCsr.id));
         setRevList((prev) =>
           prev.map((r) =>
             r.matchedCsr && unlinkedIds.has(r.matchedCsr.id)
-              ? { ...r, matchedCsr: { ...r.matchedCsr, daMo: true, maBNHIS: r.maHIS, trangThaiDieuTri: "Đã mổ", ghiChuMat2: r.isMat2 ? "Mắt 2" : r.matchedCsr.ghiChuMat2 } }
+              ? { ...r, matchedCsr: { ...r.matchedCsr, daMo: true, confirmed: true, maBNHIS: r.maHIS, trangThaiDieuTri: "Đã mổ", ghiChuMat2: r.isMat2 ? "Mắt 2" : r.matchedCsr.ghiChuMat2 } }
               : r
           )
         );
         setRevSummary((prev: any) => prev ? {
           ...prev,
-          alreadyLinked: (prev.alreadyLinked || 0) + unlinked.length,
-          unlinkedMatched: 0,
+          alreadyLinked: (prev.alreadyLinked || 0) + exactUnlinked.length,
+          unlinkedMatched: Math.max(0, (prev.unlinkedMatched || 0) - exactUnlinked.length),
         } : null);
-        addToast({ type: "success", message: `Đã tự động liên kết thành công ${d.count || unlinked.length} bệnh nhân!` });
+        addToast({ type: "success", message: `Đã tự động liên kết thành công ${d.count || exactUnlinked.length} bệnh nhân khớp CCCD!${partialUnlinked.length > 0 ? ` Còn ${partialUnlinked.length} ca khuyết CCCD cần xác nhận tay.` : ""}` });
       } else {
         addToast({ type: "error", message: d.error || "Lỗi liên kết hàng loạt" });
       }
@@ -584,9 +643,12 @@ export default function DoiChieuHisPage() {
     });
   }, [batchResults, batchSearch, batchFilterStatus]);
 
-  // Filtered Reverse List
+  // Filtered Reverse List: Chỉ hiển thị các ca thuộc CSR (khớp CCCD và chờ xác nhận)
   const filteredRevList = useMemo(() => {
-    return revList.filter((r) => {
+    // Chỉ giữ các ca có hồ sơ CSR
+    const list = revList.filter((r) => Boolean(r.matchedCsr));
+
+    return list.filter((r) => {
       if (revSearch) {
         const q = revSearch.toLowerCase();
         const matchName = r.hoTen?.toLowerCase().includes(q);
@@ -601,17 +663,29 @@ export default function DoiChieuHisPage() {
         const dateStr = hisNgay(r);
         if (dateStr !== revFilterDate) return false;
       }
-      if (revFilterStatus === "matched") return !!r.matchedCsr;
-      if (revFilterStatus === "unmatched") return !r.matchedCsr;
-      if (revFilterStatus === "linked") return Boolean(r.matchedCsr?.daMo);
-      if (revFilterStatus === "mat2") return Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+      if (revFilterStatus === "pending") {
+        return (r.matchedCsr?.matchType === "partial" || r.matchedCsr?.isKhuyetCccd) && !r.matchedCsr?.confirmed;
+      }
+      if (revFilterStatus === "unlinked") {
+        return r.matchedCsr?.matchType === "exact" && !r.matchedCsr?.daMo;
+      }
+      if (revFilterStatus === "linked") {
+        return Boolean(r.matchedCsr?.daMo || r.matchedCsr?.confirmed);
+      }
+      if (revFilterStatus === "mat2") {
+        return Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+      }
       return true;
     });
   }, [revList, revSearch, revFilterDate, revFilterStatus]);
 
-  // Ưu tiên hiển thị các ca khớp tầm soát lên đầu
+  // Ưu tiên ca chờ xác nhận lên đầu, tiếp đến ca chưa liên kết
   const sortedRevList = useMemo(
-    () => [...filteredRevList].sort((a, b) => (b.matchedCsr ? 1 : 0) - (a.matchedCsr ? 1 : 0)),
+    () => [...filteredRevList].sort((a, b) => {
+      const aPending = (a.matchedCsr?.matchType === "partial" || a.matchedCsr?.isKhuyetCccd) && !a.matchedCsr?.confirmed ? 1 : 0;
+      const bPending = (b.matchedCsr?.matchType === "partial" || b.matchedCsr?.isKhuyetCccd) && !b.matchedCsr?.confirmed ? 1 : 0;
+      return bPending - aPending;
+    }),
     [filteredRevList]
   );
 
@@ -749,34 +823,37 @@ export default function DoiChieuHisPage() {
     [confirmingId]
   );
 
-  /* Số đếm trên các chip — tính thẳng từ danh sách. Ca "chờ mổ" (nhập viện / có DV phẫu thuật nhưng
-     phòng mổ chưa ghi sổ) chỉ nằm ở chip riêng, không lẫn vào số ca mổ. */
+  /* Số đếm trên các chip — chỉ đếm trên các ca thuộc chương trình tầm soát CSR (có matchedCsr) */
   const dailyCounts = useMemo(() => {
-    const caMo = dailyList.filter((r) => !r.choMo);
+    const caCsr = dailyList.filter((r) => r.matchedCsr && !r.choMo);
     return {
-      choMo: dailyList.length - caMo.length,
-      unlinked: caMo.filter((r) => r.matchedCsr && !r.matchedCsr.daMo).length,
-      linked: caMo.filter((r) => r.matchedCsr?.daMo).length,
-      mat2: caMo.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length,
-      unmatched: caMo.filter((r) => !r.matchedCsr).length,
+      all: dailyList.filter((r) => r.matchedCsr).length,
+      pending: caCsr.filter((r) => (r.matchedCsr.matchType === "partial" || r.matchedCsr.isKhuyetCccd) && !r.matchedCsr.confirmed).length,
+      unlinked: caCsr.filter((r) => r.matchedCsr.matchType === "exact" && !r.matchedCsr.daMo).length,
+      linked: caCsr.filter((r) => r.matchedCsr.daMo || r.matchedCsr.confirmed).length,
+      mat2: caCsr.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length,
+      choMo: dailyList.filter((r) => r.matchedCsr && r.choMo).length,
     };
   }, [dailyList]);
 
   const filteredDailyList = useMemo(() => {
-    let result = dailyList;
+    // CHỈ HIỆN CÁC CA THUỘC CSR (khớp CCCD hoặc chờ xác nhận khuyết CCCD)
+    let result = dailyList.filter((r) => Boolean(r.matchedCsr));
+
     if (dailyFilterStatus === "choMo") {
       result = result.filter((r) => r.choMo);
     } else if (dailyFilterStatus !== "all") {
       result = result.filter((r) => !r.choMo);
     }
-    if (dailyFilterStatus === "unlinked") {
-      result = result.filter((r) => r.matchedCsr && !r.matchedCsr.daMo);
+
+    if (dailyFilterStatus === "pending") {
+      result = result.filter((r) => (r.matchedCsr?.matchType === "partial" || r.matchedCsr?.isKhuyetCccd) && !r.matchedCsr?.confirmed);
+    } else if (dailyFilterStatus === "unlinked") {
+      result = result.filter((r) => r.matchedCsr?.matchType === "exact" && !r.matchedCsr?.daMo);
     } else if (dailyFilterStatus === "linked") {
-      result = result.filter((r) => r.matchedCsr?.daMo);
+      result = result.filter((r) => r.matchedCsr?.daMo || r.matchedCsr?.confirmed);
     } else if (dailyFilterStatus === "mat2") {
       result = result.filter((r) => Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2)));
-    } else if (dailyFilterStatus === "unmatched") {
-      result = result.filter((r) => !r.matchedCsr);
     }
 
     if (dailySearch.trim()) {
@@ -862,32 +939,23 @@ export default function DoiChieuHisPage() {
       },
       {
         id: "ngayMo",
-        header: "Mổ lúc",
-        size: 100,
+        header: "Ngày mổ",
+        size: 95,
         // Sắp xếp trên chuỗi "YYYY-MM-DD HH:mm:ss" — thứ tự chuỗi trùng thứ tự thời gian.
         accessorFn: (r) => r.ngayMoLocal || "",
         cell: ({ row }) => {
           const ngay = hisNgay(row.original);
-          const gio = hisGio(row.original);
           if (row.original.choMo) {
             return (
-              <div className="leading-tight" title="Đã nhập viện / có chỉ định phẫu thuật — phòng mổ chưa ghi sổ">
-                <span className="inline-flex items-center gap-1 rounded border border-[var(--amber)]/40 bg-[var(--amber-soft)] px-1.5 py-0.5 text-[10.5px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
-                  <Clock className="h-3 w-3 shrink-0" /> Chờ mổ
-                </span>
-                <div className="mt-0.5 font-mono text-[10.5px] text-[var(--mute)] whitespace-nowrap">
-                  {row.original.daNhapVien ? `Nhập viện ${gio}` : "Có chỉ định PT"}
-                </div>
-              </div>
+              <span className="inline-flex items-center gap-1 rounded border border-[var(--amber)]/40 bg-[var(--amber-soft)] px-1.5 py-0.5 text-[10.5px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
+                <Clock className="h-3 w-3 shrink-0" /> Chờ mổ
+              </span>
             );
           }
           return (
-            <div className="font-mono text-xs">
-              <div className="font-bold text-[var(--ink)] whitespace-nowrap">
-                {ngay ? fmtDate(ngay) : "—"}
-              </div>
-              {gio && <div className="text-[11px] text-[var(--mute)]">{gio}</div>}
-            </div>
+            <span className="font-mono text-xs font-semibold text-[var(--ink)] whitespace-nowrap">
+              {ngay ? fmtDate(ngay) : "—"}
+            </span>
           );
         },
       },
@@ -980,6 +1048,18 @@ export default function DoiChieuHisPage() {
         size: 230,
         cell: ({ row }) => {
           const r = row.original;
+          if (r.cccdConflict) {
+            return (
+              <div className="text-xs space-y-1 min-w-0">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  ✕ Lệch CCCD ({r.cccdConflict.maBN})
+                </span>
+                <div className="text-[11px] text-[var(--mute)]">
+                  HIS: {r.cccd || "—"} ≠ CSR: {r.cccdConflict.cccd || "—"}
+                </div>
+              </div>
+            );
+          }
           if (!r.matchedCsr) {
             return (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-[var(--mute)] bg-slate-100 border border-slate-200 font-medium">
@@ -990,6 +1070,7 @@ export default function DoiChieuHisPage() {
           const m = r.matchedCsr;
           const isBhyt = m.matchReason?.includes("BHYT");
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+          const isPartial = m.matchType === "partial" || m.isKhuyetCccd;
           return (
             <div className="text-xs space-y-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -999,10 +1080,10 @@ export default function DoiChieuHisPage() {
                       ? isBhyt
                         ? "bg-blue-50 text-blue-700 border-blue-200"
                         : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-purple-50 text-purple-700 border-purple-200"
+                      : "bg-amber-50 text-amber-700 border-amber-300"
                   }`}
                 >
-                  {m.matchReason || "Khớp hồ sơ"}
+                  {isPartial ? "⚠ Khuyết CCCD (Tên + NS)" : (m.matchReason || "Khớp hồ sơ")}
                 </span>
                 <span className="font-mono font-bold text-[var(--navy)]">{m.maBN}</span>
                 {m.nhom && (
@@ -1032,7 +1113,7 @@ export default function DoiChieuHisPage() {
       {
         id: "actions",
         header: "Thao tác",
-        size: 130,
+        size: 140,
         meta: { align: "right" },
         cell: ({ row }) => {
           const r = row.original;
@@ -1044,10 +1125,39 @@ export default function DoiChieuHisPage() {
               </span>
             );
           }
+          if (r.cccdConflict) {
+            return (
+              <span className="text-xs font-semibold text-rose-600" title="Trùng tên và năm sinh nhưng CCCD khác nhau - không thể liên kết">
+                ✕ Lệch CCCD
+              </span>
+            );
+          }
           if (!r.matchedCsr) return <span className="text-xs text-[var(--mute-soft)]">—</span>;
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+          const isPartial = r.matchedCsr.matchType === "partial" || r.matchedCsr.isKhuyetCccd;
           const isLinked = r.matchedCsr.daMo;
           const hasMat2Note = Boolean(r.matchedCsr.ghiChuMat2);
+
+          // Nếu 1 trong 2 khuyết CCCD và CHƯA được xác nhận: nút "Xác nhận đã mổ" màu cam
+          if (isPartial && !r.matchedCsr.confirmed) {
+            return (
+              <button
+                type="button"
+                data-no-row-click
+                onClick={() => linkDailyPatient(r, true)}
+                disabled={linkingId === r.matchedCsr.id}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50"
+                title="1 trong 2 bên khuyết CCCD: Bấm xác nhận sau khi kiểm tra đúng bệnh nhân"
+              >
+                {linkingId === r.matchedCsr.id ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
+                <span>Xác nhận đã mổ</span>
+              </button>
+            );
+          }
 
           if (isLinked && (!isSecondEye || hasMat2Note)) {
             return (
@@ -1055,11 +1165,13 @@ export default function DoiChieuHisPage() {
                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border ${
                   isSecondEye
                     ? "bg-purple-50 text-purple-800 border-purple-200"
+                    : isPartial
+                    ? "bg-amber-50 text-amber-800 border-amber-300"
                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{isSecondEye ? "Đã lưu Mắt 2" : "Đã lưu CSR"}</span>
+                <span>{isSecondEye ? "Đã lưu Mắt 2" : isPartial ? "Đã xác nhận" : "Đã lưu CSR"}</span>
               </span>
             );
           }
@@ -1068,7 +1180,7 @@ export default function DoiChieuHisPage() {
             <button
               type="button"
               data-no-row-click
-              onClick={() => linkDailyPatient(r)}
+              onClick={() => linkDailyPatient(r, false)}
               disabled={linkingId === r.matchedCsr.id}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50 ${
                 isSecondEye
@@ -1170,20 +1282,16 @@ export default function DoiChieuHisPage() {
       },
       {
         id: "ngayMo",
-        header: "Thời gian mổ",
-        size: 115,
+        header: "Ngày mổ",
+        size: 95,
         // Sắp xếp trên chuỗi "YYYY-MM-DD HH:mm:ss" — thứ tự chuỗi trùng thứ tự thời gian.
         accessorFn: (r) => r.ngayMoLocal || "",
         cell: ({ row }) => {
           const ngay = hisNgay(row.original);
-          const gio = hisGio(row.original);
           return (
-            <div className="font-mono text-xs">
-              <div className="font-bold text-[var(--ink)] whitespace-nowrap">
-                {ngay ? fmtDate(ngay) : "—"}
-              </div>
-              {gio && <div className="text-[11px] text-[var(--mute)]">{gio}</div>}
-            </div>
+            <span className="font-mono text-xs font-semibold text-[var(--ink)] whitespace-nowrap">
+              {ngay ? fmtDate(ngay) : "—"}
+            </span>
           );
         },
       },
@@ -1295,6 +1403,18 @@ export default function DoiChieuHisPage() {
         size: 270,
         cell: ({ row }) => {
           const r = row.original;
+          if (r.cccdConflict) {
+            return (
+              <div className="text-xs space-y-1 min-w-0">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  ✕ Lệch CCCD ({r.cccdConflict.maBN})
+                </span>
+                <div className="text-[11px] text-[var(--mute)]">
+                  HIS: {r.cccd || "—"} ≠ CSR: {r.cccdConflict.cccd || "—"}
+                </div>
+              </div>
+            );
+          }
           if (!r.matchedCsr) {
             return (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-[var(--mute)] bg-slate-100 border border-slate-200 font-medium">
@@ -1305,6 +1425,7 @@ export default function DoiChieuHisPage() {
           const m = r.matchedCsr;
           const isBhyt = m.matchReason?.includes("BHYT");
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+          const isPartial = m.matchType === "partial" || m.isKhuyetCccd;
           return (
             <div className="text-xs space-y-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1314,10 +1435,10 @@ export default function DoiChieuHisPage() {
                       ? isBhyt
                         ? "bg-blue-50 text-blue-700 border-blue-200"
                         : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-purple-50 text-purple-700 border-purple-200"
+                      : "bg-amber-50 text-amber-700 border-amber-300"
                   }`}
                 >
-                  {m.matchReason || "Khớp hồ sơ"}
+                  {isPartial ? "⚠ Khuyết CCCD (Tên + NS)" : (m.matchReason || "Khớp hồ sơ")}
                 </span>
                 <span className="font-mono font-bold text-[var(--navy)]">{m.maBN}</span>
               </div>
@@ -1338,16 +1459,45 @@ export default function DoiChieuHisPage() {
       {
         id: "actions",
         header: "Thao tác",
-        size: 140,
+        size: 150,
         enableSorting: false,
         enableResizing: false,
         meta: { align: "right" },
         cell: ({ row }) => {
           const r = row.original;
+          if (r.cccdConflict) {
+            return (
+              <span className="text-xs font-semibold text-rose-600" title="Trùng tên và năm sinh nhưng CCCD khác nhau - không thể liên kết">
+                ✕ Lệch CCCD
+              </span>
+            );
+          }
           if (!r.matchedCsr) return <span className="text-xs text-[var(--mute-soft)] font-mono">—</span>;
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+          const isPartial = r.matchedCsr.matchType === "partial" || r.matchedCsr.isKhuyetCccd;
           const isLinked = r.matchedCsr.daMo;
           const hasMat2Note = Boolean(r.matchedCsr.ghiChuMat2);
+
+          // Nếu 1 trong 2 khuyết CCCD và CHƯA được xác nhận: hiển thị nút "Xác nhận đã mổ" màu cam
+          if (isPartial && !r.matchedCsr.confirmed) {
+            return (
+              <button
+                type="button"
+                data-no-row-click
+                onClick={() => linkPatient(r, true)}
+                disabled={linkingId === r.matchedCsr.id}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50 ml-auto"
+                title="1 trong 2 bên khuyết CCCD: Bấm xác nhận sau khi kiểm tra đúng bệnh nhân"
+              >
+                {linkingId === r.matchedCsr.id ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                )}
+                <span>Xác nhận đã mổ</span>
+              </button>
+            );
+          }
 
           if (isLinked && (!isSecondEye || hasMat2Note)) {
             return (
@@ -1355,11 +1505,13 @@ export default function DoiChieuHisPage() {
                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border ${
                   isSecondEye
                     ? "bg-purple-50 text-purple-800 border-purple-200"
+                    : isPartial
+                    ? "bg-amber-50 text-amber-800 border-amber-300"
                     : "bg-emerald-50 text-emerald-700 border-emerald-200"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{isSecondEye ? "Đã lưu Mắt 2" : "Đã liên kết"}</span>
+                <span>{isSecondEye ? "Đã lưu Mắt 2" : isPartial ? "Đã xác nhận" : "Đã liên kết"}</span>
               </span>
             );
           }
@@ -1368,7 +1520,7 @@ export default function DoiChieuHisPage() {
             <button
               type="button"
               data-no-row-click
-              onClick={() => linkPatient(r)}
+              onClick={() => linkPatient(r, false)}
               disabled={linkingId === r.matchedCsr.id}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50 ml-auto ${
                 isSecondEye
@@ -1579,7 +1731,7 @@ export default function DoiChieuHisPage() {
             <div className="card p-0 overflow-hidden bg-white border border-[var(--line)] rounded-xl shadow-2xs">
               {/* Header Lọc & Tìm kiếm & Đồng bộ tất cả */}
               <div className="p-2 border-b border-[var(--line)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-[var(--surface-soft)]/60">
-                <div className="flex flex-wrap items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setDailyFilterStatus("all")}
@@ -1587,8 +1739,64 @@ export default function DoiChieuHisPage() {
                       dailyFilterStatus === "all" ? "bg-[var(--navy)] text-white shadow-2xs" : "bg-white text-[var(--ink-soft)] hover:bg-slate-100 border border-[var(--line)]"
                     }`}
                   >
-                    Tất cả ({dailyList.length})
+                    Tất cả ca CSR ({dailyCounts.all})
                   </button>
+                  {dailyCounts.pending > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDailyFilterStatus("pending")}
+                      title="Ca khuyết CCCD (chỉ khớp Họ tên + Năm sinh) cần xác nhận thủ công"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "pending"
+                          ? "bg-amber-600 text-white shadow-2xs"
+                          : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300"
+                      }`}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Chờ xác nhận</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "pending" ? "bg-white/25 text-white" : "bg-amber-200 text-amber-950"}`}>
+                        {dailyCounts.pending}
+                      </span>
+                    </button>
+                  )}
+                  {dailyCounts.unlinked > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDailyFilterStatus("unlinked")}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "unlinked" ? "bg-blue-600 text-white shadow-2xs" : "bg-white text-blue-800 hover:bg-blue-50 border border-blue-200"
+                      }`}
+                    >
+                      <span>⚡ Cần cập nhật CSR</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "unlinked" ? "bg-white/25 text-white" : "bg-blue-100 text-blue-900"}`}>
+                        {dailyCounts.unlinked}
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDailyFilterStatus("linked")}
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      dailyFilterStatus === "linked" ? "bg-emerald-600 text-white shadow-2xs" : "bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200"
+                    }`}
+                  >
+                    Đã lưu CSR ({dailyCounts.linked})
+                  </button>
+                  {dailyCounts.mat2 > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDailyFilterStatus("mat2")}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "mat2" ? "bg-purple-700 text-white shadow-2xs" : "bg-white text-purple-900 hover:bg-purple-50 border border-purple-200"
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Mắt 2</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "mat2" ? "bg-white/25 text-white" : "bg-purple-100 text-purple-900"}`}>
+                        {dailyCounts.mat2}
+                      </span>
+                    </button>
+                  )}
                   {dailyCounts.choMo > 0 && (
                     <button
                       type="button"
@@ -1605,49 +1813,6 @@ export default function DoiChieuHisPage() {
                       </span>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setDailyFilterStatus("unlinked")}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      dailyFilterStatus === "unlinked" ? "bg-amber-600 text-white shadow-2xs" : "bg-white text-amber-800 hover:bg-amber-50 border border-amber-200"
-                    }`}
-                  >
-                    <span>⚡ Cần cập nhật CSR</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "unlinked" ? "bg-white/25 text-white" : "bg-amber-100 text-amber-900"}`}>
-                      {dailyCounts.unlinked}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDailyFilterStatus("mat2")}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      dailyFilterStatus === "mat2" ? "bg-purple-700 text-white shadow-2xs" : "bg-white text-purple-900 hover:bg-purple-50 border border-purple-200"
-                    }`}
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Mắt 2</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "mat2" ? "bg-white/25 text-white" : "bg-purple-100 text-purple-900"}`}>
-                      {dailyCounts.mat2}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDailyFilterStatus("linked")}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      dailyFilterStatus === "linked" ? "bg-emerald-600 text-white shadow-2xs" : "bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200"
-                    }`}
-                  >
-                    Đã lưu CSR ({dailyCounts.linked})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDailyFilterStatus("unmatched")}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      dailyFilterStatus === "unmatched" ? "bg-slate-700 text-white shadow-2xs" : "bg-white text-slate-600 hover:bg-slate-100 border border-[var(--line)]"
-                    }`}
-                  >
-                    Chưa có trong CSR ({dailyCounts.unmatched})
-                  </button>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -2034,12 +2199,12 @@ export default function DoiChieuHisPage() {
 
               <div className="flex items-center gap-1 bg-[var(--surface-soft)] p-1 rounded-[var(--r-md)] border border-[var(--line)] shrink-0 overflow-x-auto">
                 {([
-                  { k: "all", label: `Tất cả (${revList.length})`, on: "bg-[var(--navy)] text-white" },
-                  { k: "matched", label: `Khớp BN (${revList.filter((r) => r.matchedCsr).length})`, on: "bg-[var(--teal-deep)] text-white" },
+                  { k: "all", label: `Tất cả (${revList.filter((r) => r.matchedCsr).length})`, on: "bg-[var(--navy)] text-white" },
+                  { k: "pending", label: `⚠ Chờ xác nhận (${revList.filter((r) => (r.matchedCsr?.matchType === "partial" || r.matchedCsr?.isKhuyetCccd) && !r.matchedCsr?.confirmed).length})`, on: "bg-amber-600 text-white" },
+                  { k: "unlinked", label: `⚡ Cần cập nhật (${revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo && r.matchedCsr.matchType === "exact").length})`, on: "bg-blue-600 text-white" },
+                  { k: "linked", label: `Đã liên kết (${revList.filter((r) => r.matchedCsr?.daMo || r.matchedCsr?.confirmed).length})`, on: "bg-[var(--gold)] text-white" },
                   { k: "mat2", label: `👁️ Mắt 2 (${revList.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length})`, on: "bg-purple-700 text-white" },
-                  { k: "unmatched", label: `Khách tự đến (${revList.filter((r) => !r.matchedCsr).length})`, on: "bg-[var(--ink-soft)] text-white" },
-                  { k: "linked", label: `Đã liên kết (${revList.filter((r) => r.matchedCsr?.daMo).length})`, on: "bg-[var(--gold)] text-white" },
-                ] as const).map((f) => (
+                ] as const).filter((f) => f.k === "all" || !f.label.includes("(0)")).map((f) => (
                   <button key={f.k} onClick={() => setRevFilterStatus(f.k)}
                     className={`px-3 py-1.5 rounded-[var(--r-sm)] text-[12px] font-bold transition-all whitespace-nowrap cursor-pointer ${revFilterStatus === f.k ? `${f.on} shadow-[var(--shadow-sm)]` : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}>
                     {f.label}

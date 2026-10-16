@@ -83,7 +83,8 @@ export async function POST(request: Request) {
         }
       }
 
-      // 3. Khớp theo Họ tên + Năm sinh / SĐT
+      // 3. Khớp theo Họ tên + Năm sinh / SĐT (CHỈ khi 1 trong 2 bên khuyết CCCD)
+      let cccdConflict: any = null;
       if (!matched) {
         const byInfo = csrPatients.filter((csr) => {
           const name = foldName(csr.hoTen);
@@ -91,16 +92,49 @@ export async function POST(request: Request) {
           if (String(csr.namSinh).trim() === hisYear) return true;
           return !!hisPhone && foldPhone(csr.sdt) === hisPhone;
         });
-        if (byInfo.length > 0) {
-          matched = byInfo[0];
+
+        // Lọc loại trừ những người có CCCD xung đột với HIS:
+        // Cả 2 bên đều có CCCD (>= 9 số) mà khác nhau -> XUNG ĐỘT TUYỆT ĐỐI
+        const noConflict = byInfo.filter((csr) => {
+          const csrCccd = foldCccd(csr.cccd);
+          if (hisCccd && hisCccd.length >= 9 && csrCccd && csrCccd.length >= 9 && hisCccd !== csrCccd) {
+            return false;
+          }
+          return true;
+        });
+
+        if (noConflict.length > 0) {
+          matched = noConflict[0];
           matchType = "partial";
-          matchReason = "Khớp Họ tên + Năm sinh";
-          candidates = byInfo.length;
-          ambiguous = byInfo.length > 1;
+          const isKhuyetCccd = !hisCccd || hisCccd.length < 9 || !matched.cccd || foldCccd(matched.cccd).length < 9;
+          matchReason = isKhuyetCccd ? "Khuyết CCCD (Khớp Họ tên + Năm sinh)" : "Khớp Họ tên + Năm sinh";
+          candidates = noConflict.length;
+          ambiguous = noConflict.length > 1;
+        } else if (byInfo.length > 0) {
+          // Trùng Họ tên + Năm sinh nhưng CCCD lệch!
+          const conf = byInfo[0];
+          cccdConflict = {
+            id: conf.id,
+            maBN: conf.maBN,
+            hoTen: conf.hoTen,
+            namSinh: conf.namSinh,
+            cccd: conf.cccd,
+            hisCccd: his.cccd,
+          };
         }
       }
 
       if (matched) {
+        /* Kiểm tra trạng thái xác nhận thủ công (khi khuyết CCCD / partial match) */
+        const note = matched.ghiChuMat2 || "";
+        const isManualConfirmed = Boolean(
+          note.includes("Đã xác nhận") ||
+          note.includes("Xác nhận thủ công") ||
+          note.includes("[✓ Đã xác nhận khớp HIS]")
+        );
+        const isExact = matchType === "exact";
+        const confirmed = isExact || isManualConfirmed;
+
         /* CSR đã có ca mổ TRƯỚC ca này (cách hơn 1,5 ngày) → ca này là Mắt 2. Trước đây chỉ cần CSR đang
            "Đã mổ" hoặc có bất kỳ ghi chú HIS nào là bị coi là Mắt 2 — kể cả khi đó chính là ca mổ này. */
         const NGAY_MS = 86400000;
@@ -109,10 +143,10 @@ export async function POST(request: Request) {
         const hadPriorSurgeryInCsr = Boolean(csrMoMs && hisMoMs && hisMoMs - csrMoMs > 1.5 * NGAY_MS);
 
         const isMat2 = Boolean(his.isMat2 || hadPriorSurgeryInCsr);
-        /* CSR đã ghi nhận ĐÚNG ca mổ này (cùng ngày, hoặc đã lưu ghi chú Mắt 2). Chỉ có mã HIS / đã đến
-           viện thì CHƯA tính — BN được đối chiếu lúc mới nhập viện (chờ mổ) vẫn phải được đánh dấu khi mổ. */
+        /* CSR đã ghi nhận ĐÚNG ca mổ này (cùng ngày, hoặc đã lưu ghi chú Mắt 2). Chỉ tính khi ĐÃ XÁC NHẬN! */
         const daGhiCaNay =
           !his.choMo &&
+          confirmed &&
           Boolean(
             (csrMoMs && hisMoMs && Math.abs(hisMoMs - csrMoMs) <= 1.5 * NGAY_MS) ||
               (isMat2 && /Mắt 2/.test(matched.ghiChuMat2 || "")) ||
@@ -128,6 +162,7 @@ export async function POST(request: Request) {
           isMat2,
           lanMo,
           mat2Reason,
+          cccdConflict,
           matchedCsr: {
             id: matched.id,
             maBN: matched.maBN,
@@ -145,6 +180,8 @@ export async function POST(request: Request) {
               : null,
             trangThaiDieuTri: matched.trangThaiDieuTri,
             daMo: daGhiCaNay,
+            confirmed,
+            isKhuyetCccd: matchType === "partial",
             ngayMoThucTe: matched.ngayMoThucTe,
             ghiChuMat2: matched.ghiChuMat2 || null,
             maBNHIS: matched.maBNHIS,
@@ -155,7 +192,7 @@ export async function POST(request: Request) {
           },
         };
       }
-      return { ...his, matchedCsr: null };
+      return { ...his, cccdConflict, matchedCsr: null };
     });
 
     // Số liệu ca mổ chỉ tính ca có trong sổ phòng mổ; ca chờ mổ đếm riêng
@@ -164,10 +201,11 @@ export async function POST(request: Request) {
     const summary = {
       totalHIS: caMo.length,
       matchedCSR: caMo.filter((h: any) => h.matchedCsr).length,
-      alreadyLinked: caMo.filter((h: any) => h.matchedCsr?.daMo).length,
-      unlinkedMatched: caMo.filter((h: any) => h.matchedCsr && !h.matchedCsr.daMo).length,
+      alreadyLinked: caMo.filter((h: any) => h.matchedCsr?.confirmed && h.matchedCsr?.daMo).length,
+      unlinkedMatched: caMo.filter((h: any) => h.matchedCsr && (!h.matchedCsr.confirmed || !h.matchedCsr.daMo)).length,
       choMo: choMo.length,
       choMoCSR: choMo.filter((h: any) => h.matchedCsr).length,
+      conflicts: caMo.filter((h: any) => h.cccdConflict).length,
     };
 
     return NextResponse.json({

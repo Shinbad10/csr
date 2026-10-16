@@ -648,11 +648,9 @@ export async function checkHISForPatient(
         foldName(hoTenClean) === candidateNameFold &&
         (namSinhStr === candidateNamSinh || !namSinhStr || !candidateNamSinh)
       );
-      // Trùng Họ tên + Năm sinh + SĐT thì vẫn là cùng một người dù CCCD lệch — thường do gõ
-      // thiếu/sai một số lúc khám tầm soát (CSR có ca CCCD 11 số, HIS đủ 12 số, cùng SĐT).
       const isPhoneMatch = Boolean(sdtFold && foldPhone(r.Dienthoai) === sdtFold);
 
-      if ((hasCccdConflict && !(isNameYearMatch && isPhoneMatch)) || hasBhytConflict) {
+      if (hasCccdConflict || hasBhytConflict) {
         // Loại bỏ ứng viên này vì trùng Tên + Năm sinh nhưng khác CCCD hoặc khác BHYT!
         continue;
       }
@@ -904,7 +902,7 @@ export async function batchCheckHISForPatients(
           // thiếu/sai một số lúc khám tầm soát (CSR có ca CCCD 11 số, HIS đủ 12 số, cùng SĐT).
           const isPhoneMatch = Boolean(sdtFold && foldPhone(r.Dienthoai) === sdtFold);
 
-          if ((hasCccdConflict && !(isNameYearMatch && isPhoneMatch)) || hasBhytConflict) {
+          if (hasCccdConflict || hasBhytConflict) {
             // Loại bỏ ứng viên này vì trùng Tên + Năm sinh nhưng khác CCCD hoặc khác BHYT!
             continue;
           }
@@ -930,8 +928,9 @@ export async function batchCheckHISForPatients(
             matchedRow = r;
             matchedByPhone = isPhoneMatch;
             matchType = "partial";
-            matchReason = isPhoneMatch
-              ? hasCccdConflict ? "Khớp Họ tên + Năm sinh + SĐT (CCCD lệch — kiểm tra lại)" : "Khớp Họ tên + Năm sinh + SĐT"
+            const isKhuyetCccd = !candidateCccd || candidateCccd.length < 9 || !cccdNorm || cccdNorm.length < 9;
+            matchReason = isKhuyetCccd
+              ? "Khuyết CCCD (Khớp Họ tên + Năm sinh)"
               : "Khớp Họ tên + Năm sinh";
           }
         }
@@ -963,8 +962,15 @@ export async function batchCheckHISForPatients(
           tenDichVu: surgDetail?.tenDichVu || null,
         });
 
-        // Cập nhật DB: mã HIS luôn ghi; đến viện / đã mổ chỉ khi HIS có ghi nhận SAU ngày khám (xem hisCareDecision)
-        const updateData: any = { maBNHIS: maHIS, ...dec.data };
+        // Cập nhật DB: mã HIS luôn ghi.
+        // CHỈ tự động nâng lên "Đã mổ" khi matchType === "exact" (Khớp CCCD / BHYT)!
+        // Nếu là partial (khuyết CCCD) -> KHÔNG tự động nâng lên "Đã mổ", chỉ lưu mã HIS và ghi chú để người dùng xác nhận thủ công!
+        const updateData: any = { maBNHIS: maHIS };
+        if (matchType === "exact") {
+          Object.assign(updateData, dec.data);
+        } else {
+          if (dec.denVien) updateData.daDon = true;
+        }
         if (soTienThucThu != null && soTienThucThu > 0) {
           updateData.soTienThucThu = soTienThucThu;
         }
