@@ -340,6 +340,15 @@ export function ngayKhamVN(d?: Date | string | null): string | null {
   return Number.isNaN(t) ? null : new Date(t + 7 * 3600_000).toISOString().slice(0, 10);
 }
 
+/**
+ * Ngày lấy từ HIS (giờ treo tường bị driver đọc như UTC) → 00:00 UTC của đúng ngày đó, cùng dạng với
+ * ngày nhập tay (ô ngày gửi "YYYY-MM-DD" → new Date("YYYY-MM-DD")). Giữ nguyên giờ thì ca mổ sau 17:00
+ * (vd. 19/10 17:36) bị trình duyệt cộng 7 tiếng thành 20/10 trên thẻ, trong khi ô ngày vẫn hiện 19/10.
+ */
+export function hisNgayLuu(d: Date | string): Date {
+  return new Date(`${new Date(d).toISOString().slice(0, 10)}T00:00:00.000Z`);
+}
+
 /** Thời điểm đọc từ HIS (driver mssql đọc giờ treo tường như UTC) → "dd/mm/yyyy HH:mm". */
 export function fmtHisTime(d: Date | null, withTime = true): string {
   if (!d) return "";
@@ -385,12 +394,12 @@ export function hisCareDecision(p: { trangThaiDieuTri?: string | null }, care: H
   const data: Record<string, unknown> = {};
   if (denVien) data.daDon = true;
   if (daMo) {
-    data.ngayMoThucTe = care.moSau;
+    data.ngayMoThucTe = hisNgayLuu(care.moSau!);
     data.trangThaiDieuTri = "Đã mổ";
     data.trangThai = "DaMoHauPhau";
     data.followUpStatus = "Đã chốt";
   } else if (daMoTruoc && p.trangThaiDieuTri !== "Đã mổ") {
-    data.ngayMoThucTe = care.moTruoc;
+    data.ngayMoThucTe = hisNgayLuu(care.moTruoc!);
     data.trangThaiDieuTri = "Đã mổ trước đây";
     data.trangThai = "DaMoTruocDay";
     data.followUpStatus = "Đã chốt";

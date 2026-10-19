@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { triggerSync } from "@/lib/syncWorker";
 import sql from "mssql";
-import { appendHisNote, getHisConfig, fetchHisRevenue, clearPhacoCache } from "@/lib/his";
+import { appendHisNote, getHisConfig, fetchHisRevenue, clearPhacoCache, hisNgayLuu, ngayKhamVN } from "@/lib/his";
 import { broadcastEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
@@ -38,12 +38,12 @@ export async function POST(request: Request) {
 
       if (item.ngayMo) {
         if (!hoSo.ngayMoThucTe) {
-          updateData.ngayMoThucTe = new Date(item.ngayMo);
+          updateData.ngayMoThucTe = hisNgayLuu(item.ngayMo);
         } else if (!isMat2) {
-          updateData.ngayMoThucTe = new Date(item.ngayMo);
+          updateData.ngayMoThucTe = hisNgayLuu(item.ngayMo);
         }
       } else if (!hoSo.ngayMoThucTe) {
-        updateData.ngayMoThucTe = new Date();
+        updateData.ngayMoThucTe = hisNgayLuu(`${ngayKhamVN(new Date())}T00:00:00Z`); // hôm nay theo giờ VN
       }
 
       if (item.soTienThucThu != null && Number(item.soTienThucThu) > 0) {
