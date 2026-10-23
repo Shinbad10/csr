@@ -1019,4 +1019,117 @@ export function getDoanColor(doan: number): {
   }
 }
 
+export interface ThongTinNguoiNha {
+  hasNguoiNha: boolean;
+  coDiCung: boolean;
+  soLuongDiCung: number;
+  sdt: string;
+  tenQuanHe: string;
+  raw: string;
+  displayLabel: string;
+}
+
+/**
+ * Trích xuất thông tin người nhà đi kèm từ sdtNguoiNha và ghiChuTuVan
+ */
+export function parseThongTinNguoiNha(
+  sdtNguoiNha?: string | null,
+  ghiChuTuVan?: string | null
+): ThongTinNguoiNha {
+  const raw = (sdtNguoiNha || "").trim();
+  const rawLower = raw.toLowerCase();
+  const ghiChuLower = (ghiChuTuVan || "").toLowerCase();
+
+  const isDefault =
+    rawLower === "" ||
+    rawLower === "0" ||
+    rawLower.includes("chưa cung cấp") ||
+    rawLower.includes("không có") ||
+    rawLower.includes("chưa có");
+
+  const combined = `${rawLower} ${ghiChuLower}`;
+
+  const hasKeywordDiCung =
+    combined.includes("đi kèm") ||
+    combined.includes("đi cùng") ||
+    combined.includes("đi với") ||
+    combined.includes("kèm người") ||
+    combined.includes("người nhà đi") ||
+    combined.includes("người đi cùng") ||
+    combined.includes("người đi kèm");
+
+  const coDiCung = hasKeywordDiCung || (!isDefault && raw !== "");
+
+  const countMatch = combined.match(/(\d+)\s*(?:người|chỗ)/i);
+  const soLuongDiCung = coDiCung ? (countMatch ? parseInt(countMatch[1], 10) : 1) : 0;
+
+  const phoneMatch = raw.match(/(0\d{8,10})/);
+  const sdt = phoneMatch ? phoneMatch[1] : "";
+
+  let tenQuanHe = raw
+    .replace(/(0\d{8,10})/, "")
+    .replace(/\(?\d+\s*người(?:\s*nhà)?(?:\s*đi\s*(?:kèm|cùng))?\)?/gi, "")
+    .replace(/đi\s*(?:kèm|cùng|với)\s*(?:xe)?/gi, "")
+    .replace(/người nhà\s*:/gi, "")
+    .replace(/người nhà/gi, "")
+    .replace(/[-–—():]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (isDefault) {
+    tenQuanHe = "";
+  } else if (!tenQuanHe && !sdt && raw) {
+    tenQuanHe = raw;
+  }
+
+  const hasNguoiNha = (!isDefault && raw !== "") || (coDiCung && soLuongDiCung > 0);
+
+  let displayLabel = "";
+  if (hasNguoiNha) {
+    const parts: string[] = [];
+    if (coDiCung) {
+      parts.push(`${soLuongDiCung} người đi kèm`);
+    }
+    if (tenQuanHe) {
+      parts.push(tenQuanHe);
+    }
+    displayLabel = parts.join(" · ") || (sdt ? `Người nhà: ${sdt}` : "Có người nhà");
+  }
+
+  return {
+    hasNguoiNha,
+    coDiCung,
+    soLuongDiCung,
+    sdt,
+    tenQuanHe,
+    raw,
+    displayLabel,
+  };
+}
+
+/**
+ * Đóng gói chuỗi thông tin người nhà để lưu vào trường sdtNguoiNha
+ */
+export function formatThongTinNguoiNha(
+  coDiCung: boolean,
+  soLuong: number,
+  tenQuanHe?: string | null,
+  sdt?: string | null
+): string | null {
+  const cleanPhone = (sdt || "").trim();
+  const cleanRel = (tenQuanHe || "").trim();
+  if (coDiCung) {
+    const qty = Math.max(1, soLuong || 1);
+    const label = `${qty} người nhà đi kèm${cleanRel ? ` - ${cleanRel}` : ""}`;
+    if (cleanPhone) return `${cleanPhone} (${label})`;
+    return label;
+  }
+  if (cleanPhone || cleanRel) {
+    if (cleanPhone && cleanRel) return `${cleanPhone} (${cleanRel})`;
+    return cleanPhone || cleanRel;
+  }
+  return null;
+}
+
+
 

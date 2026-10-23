@@ -46,6 +46,8 @@ import {
   formatGhiChuWithDoanXe,
   suggestNextTime,
   getDoanColor,
+  type ThongTinNguoiNha,
+  parseThongTinNguoiNha,
 } from "@/lib/csr";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
@@ -53,91 +55,6 @@ import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
 import type { ColumnDef } from "@tanstack/react-table";
 import * as XLSX from "xlsx";
-
-export interface ThongTinNguoiNha {
-  hasNguoiNha: boolean;
-  coDiCung: boolean;
-  soLuongDiCung: number;
-  sdt: string;
-  tenQuanHe: string;
-  raw: string;
-  displayLabel: string;
-}
-
-export function parseThongTinNguoiNha(
-  sdtNguoiNha?: string | null,
-  ghiChuTuVan?: string | null
-): ThongTinNguoiNha {
-  const raw = (sdtNguoiNha || "").trim();
-  const rawLower = raw.toLowerCase();
-  const ghiChuLower = (ghiChuTuVan || "").toLowerCase();
-
-  const isDefault =
-    rawLower === "" ||
-    rawLower === "0" ||
-    rawLower.includes("chưa cung cấp") ||
-    rawLower.includes("không có") ||
-    rawLower.includes("chưa có");
-
-  const combined = `${rawLower} ${ghiChuLower}`;
-
-  const hasKeywordDiCung =
-    combined.includes("đi kèm") ||
-    combined.includes("đi cùng") ||
-    combined.includes("đi với") ||
-    combined.includes("kèm người") ||
-    combined.includes("người nhà đi") ||
-    combined.includes("người đi cùng") ||
-    combined.includes("người đi kèm");
-
-  const coDiCung = hasKeywordDiCung || (!isDefault && raw !== "");
-
-  const countMatch = combined.match(/(\d+)\s*(?:người|chỗ)/i);
-  const soLuongDiCung = coDiCung ? (countMatch ? parseInt(countMatch[1], 10) : 1) : 0;
-
-  const phoneMatch = raw.match(/(0\d{8,10})/);
-  const sdt = phoneMatch ? phoneMatch[1] : "";
-
-  let tenQuanHe = raw
-    .replace(/(0\d{8,10})/, "")
-    .replace(/\(?\d+\s*người(?:\s*nhà)?(?:\s*đi\s*(?:kèm|cùng))?\)?/gi, "")
-    .replace(/đi\s*(?:kèm|cùng|với)\s*(?:xe)?/gi, "")
-    .replace(/người nhà\s*:/gi, "")
-    .replace(/người nhà/gi, "")
-    .replace(/[-–—():]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (isDefault) {
-    tenQuanHe = "";
-  } else if (!tenQuanHe && !sdt && raw) {
-    tenQuanHe = raw;
-  }
-
-  const hasNguoiNha = (!isDefault && raw !== "") || (coDiCung && soLuongDiCung > 0);
-
-  let displayLabel = "";
-  if (hasNguoiNha) {
-    const parts: string[] = [];
-    if (coDiCung) {
-      parts.push(`${soLuongDiCung} người đi kèm`);
-    }
-    if (tenQuanHe) {
-      parts.push(tenQuanHe);
-    }
-    displayLabel = parts.join(" · ") || (sdt ? `Người nhà: ${sdt}` : "Có người nhà");
-  }
-
-  return {
-    hasNguoiNha,
-    coDiCung,
-    soLuongDiCung,
-    sdt,
-    tenQuanHe,
-    raw,
-    displayLabel,
-  };
-}
 
 type StatusFilter = "all" | "chuaDon" | "daDon" | "daMo";
 type ViewMode = "grouped" | "grid" | "table";
@@ -304,7 +221,7 @@ export default function DoanXePage() {
       if (res.ok) {
         addToast({
           type: "success",
-          message: `✓ Đã chuyển bệnh nhân ${p.hoTen} sang Đoàn ${targetDoan}${targetDoan === 1 ? " (đi sớm)" : ""}!`,
+          message: `✓ Đã chuyển bệnh nhân ${p.hoTen} sang Đoàn ${targetDoan}!`,
         });
         setData((prev) =>
           prev.map((it) =>
@@ -712,7 +629,7 @@ export default function DoanXePage() {
         "Giới tính": p.gioiTinh || "",
         "Năm sinh": p.namSinh || (p.ngaySinh ? new Date(p.ngaySinh).getFullYear() : ""),
         "Số điện thoại BN": p.sdt || "",
-        "Đoàn xe": `Đoàn ${doan}${doan === 1 ? " (đi sớm)" : ""}`,
+        "Đoàn xe": `Đoàn ${doan}`,
         "Người nhà đi kèm": nguoiNhaText,
         "SĐT người nhà": info.sdt || (info.hasNguoiNha ? p.sdtNguoiNha : ""),
         "Tổng số người lên xe": `${tongCho} (${tongCho > 1 ? `1 BN + ${info.soLuongDiCung} người nhà` : "1 BN"})`,
@@ -818,7 +735,6 @@ export default function DoanXePage() {
                 <Bus className="w-3 h-3" />
                 <span>
                   Đoàn {currentDoan}
-                  {currentDoan === 1 ? " (sớm)" : ""}
                 </span>
               </span>
               <button
@@ -1086,10 +1002,10 @@ export default function DoanXePage() {
               </div>
             </div>
 
-            {/* 2. Đoàn 1 (đi sớm) */}
+            {/* 2. Đoàn 1 */}
             <div className="p-2.5 rounded-xl bg-white border border-blue-200/90 shadow-2xs hover:border-blue-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5 truncate">
-                <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1 (sớm)
+                <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="font-mono text-[20px] font-black text-blue-700">{summary.totalDoan1}</span>
@@ -1099,10 +1015,10 @@ export default function DoanXePage() {
               </div>
             </div>
 
-            {/* 3. Đoàn 2 (chuyến sau) */}
+            {/* 3. Đoàn 2 trở lên */}
             <div className="p-2.5 rounded-xl bg-white border border-purple-200/90 shadow-2xs hover:border-purple-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-purple-900 flex items-center gap-1.5 truncate">
-                <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2 & sau
+                <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2+
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="font-mono text-[20px] font-black text-purple-700">{summary.totalDoan2}</span>
@@ -1686,7 +1602,6 @@ export default function DoanXePage() {
                                                     )}
                                                     <span>
                                                       Đoàn {dNum}
-                                                      {dNum === 1 ? " (sớm)" : ""}
                                                     </span>
                                                   </button>
                                                 );
@@ -2090,7 +2005,7 @@ export default function DoanXePage() {
                                               }`}
                                               title={isCurrent ? `Đang ở Đoàn ${dNum}` : `Chuyển sang Đoàn ${dNum}`}
                                             >
-                                              {isSwitching && isCurrent ? "..." : `Đ${dNum}${dNum === 1 ? " (sớm)" : ""}`}
+                                              {isSwitching && isCurrent ? "..." : `Đ${dNum}`}
                                             </button>
                                           );
                                         })}
@@ -2459,7 +2374,7 @@ export default function DoanXePage() {
                   <span>Chọn đoàn xe đón tại trạm</span>
                 </span>
                 <span className="text-[11px] text-slate-500 font-normal">
-                  (chọn đoàn phù hợp với nhu cầu đi sớm / đi sau của BN)
+                  (chọn số thứ tự đoàn xe đón BN)
                 </span>
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -2491,7 +2406,7 @@ export default function DoanXePage() {
                         Đoàn {dNum}
                       </span>
                       <span className="text-[10.5px] text-slate-400 mt-0.5">
-                        {dNum === 1 ? "Chuyến sớm" : dNum === 2 ? "Chuyến sau" : `Chuyến ${dNum}`}
+                        Xe đoàn {dNum}
                       </span>
                     </button>
                   );
@@ -2768,7 +2683,7 @@ export default function DoanXePage() {
                 {/* Đoàn 1 */}
                 <div className="p-2.5 rounded-lg bg-white border border-blue-200 shadow-2xs">
                   <div className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5 mb-1">
-                    <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1 (Chuyến sớm)
+                    <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1
                   </div>
                   <div className="text-[12.5px] font-mono font-black text-blue-700">
                     Giờ xe đón: {splitModalStation.defaultDoan1Gio || "05:15"}
@@ -2781,7 +2696,7 @@ export default function DoanXePage() {
                 {/* Đoàn tách */}
                 <div className="p-2.5 rounded-lg bg-white border border-purple-300 shadow-2xs">
                   <div className="text-[11px] font-extrabold uppercase tracking-wider text-purple-900 flex items-center gap-1.5 mb-1">
-                    <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn {splitTargetDoanNum} (Chuyến tách)
+                    <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn {splitTargetDoanNum}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[12px] font-bold text-slate-600">Giờ xe đón:</span>

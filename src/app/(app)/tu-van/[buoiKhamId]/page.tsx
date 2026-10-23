@@ -4,17 +4,29 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus, FileSpreadsheet, Plus } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus, FileSpreadsheet, Plus, Users } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi, parseDoanXe, formatGhiChuWithDoanXe, getDoanColor } from "@/lib/csr";
+import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi, parseDoanXe, formatGhiChuWithDoanXe, getDoanColor, parseThongTinNguoiNha, formatThongTinNguoiNha } from "@/lib/csr";
 import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 
 interface BuoiKham { id: string; xa: string; diaDiem: string; ghiChu?: string | null; ngayKham: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null } }
-const EMPTY = { bhyt: "", soTienBao: "", nhom: "", ngayHen: "", diemDon: "", gioDon: "", ghiChuTuVan: "" };
+const EMPTY = {
+  bhyt: "",
+  soTienBao: "",
+  nhom: "",
+  ngayHen: "",
+  diemDon: "",
+  gioDon: "",
+  ghiChuTuVan: "",
+  coNguoiNha: false,
+  soNguoiNha: 1,
+  tenQuanHe: "",
+  sdtNguoiNha: "",
+};
 
 const PHUONG_AN_TU_VAN = [
   {
@@ -245,6 +257,7 @@ export default function TuVanSessionPage() {
   }, [activeDiemDonList, patients]);
 
   const loadForm = useCallback((p: HoSo) => {
+    const infoNN = parseThongTinNguoiNha(p.sdtNguoiNha, p.ghiChuTuVan);
     const next = {
       bhyt: p.bhyt || "",
       soTienBao: p.soTienBao != null ? String(p.soTienBao) : "",
@@ -253,6 +266,10 @@ export default function TuVanSessionPage() {
       diemDon: p.diemDon || "",
       gioDon: p.gioDon || "",
       ghiChuTuVan: p.ghiChuTuVan || "",
+      coNguoiNha: infoNN.coDiCung || infoNN.hasNguoiNha,
+      soNguoiNha: infoNN.soLuongDiCung || 1,
+      tenQuanHe: infoNN.tenQuanHe || "",
+      sdtNguoiNha: infoNN.sdt || (!infoNN.tenQuanHe && infoNN.hasNguoiNha ? p.sdtNguoiNha || "" : ""),
     };
     setF(next); setBaseline(JSON.stringify(next));
   }, []);
@@ -319,6 +336,12 @@ export default function TuVanSessionPage() {
     if (!selected) return;
     setSaving(true);
     try {
+      const finalSdtNguoiNha = formatThongTinNguoiNha(
+        f.coNguoiNha,
+        f.soNguoiNha,
+        f.tenQuanHe,
+        f.sdtNguoiNha
+      );
       const res = await fetch(`/api/csr/hoso/${selected.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -327,10 +350,11 @@ export default function TuVanSessionPage() {
           soTienBao: f.soTienBao ? Number(f.soTienBao) : null,
           nhom: f.nhom || null,
           xacNhanDieuTri: f.nhom === "A" ? true : f.nhom === "B" || f.nhom === "HoiGiaDinh" ? false : null,
-          ngayDieuTri: f.ngayHen || null,
-          diemDon: f.diemDon,
-          gioDon: f.gioDon,
+          ngayDieuTri: f.nhom === "A" ? (f.ngayHen || null) : null,
+          diemDon: f.nhom === "A" ? (f.diemDon || null) : null,
+          gioDon: f.nhom === "A" ? (f.gioDon || null) : null,
           ghiChuTuVan: f.ghiChuTuVan || null,
+          sdtNguoiNha: finalSdtNguoiNha,
         }),
       });
       const data = await res.json();
@@ -893,10 +917,7 @@ export default function TuVanSessionPage() {
                                         }`}
                                       >
                                         <Bus className="w-3.5 h-3.5" />
-                                        <span>
-                                          Đoàn {num}
-                                          {num === 1 ? " (Chuyến sớm)" : num === 2 ? " (Chuyến sau)" : ""}
-                                        </span>
+                                        <span>Đoàn {num}</span>
                                       </button>
                                     );
                                   })}
@@ -919,21 +940,180 @@ export default function TuVanSessionPage() {
                                 </button>
                               </div>
                             )}
+
+                            {/* Khu vực Người nhà đi kèm xe đón */}
+                            <div className="mt-3 pt-2.5 border-t border-slate-200/80">
+                              <div className="rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50/50 via-white to-purple-50/30 p-3 shadow-2xs space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                      <Users className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div>
+                                      <span className="text-[12px] font-extrabold text-purple-950 uppercase tracking-wide">
+                                        Người nhà đi kèm xe đón
+                                      </span>
+                                      <span className="text-[11px] text-purple-600/80 ml-2 hidden sm:inline">
+                                        (Tính vào số lượng chỗ trên xe đón)
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={f.coNguoiNha}
+                                      onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setF((s) => ({
+                                          ...s,
+                                          coNguoiNha: checked,
+                                          soNguoiNha: checked ? (s.soNguoiNha || 1) : 0,
+                                        }));
+                                      }}
+                                      className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
+                                    />
+                                    <span className="text-[12px] font-bold text-purple-900">
+                                      {f.coNguoiNha ? "Có người nhà đi cùng" : "Đi một mình"}
+                                    </span>
+                                  </label>
+                                </div>
+
+                                {f.coNguoiNha ? (
+                                  <div className="space-y-2.5 pt-1 animate-fade-in">
+                                    {/* Số lượng người nhà */}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-[11px] font-bold text-slate-600">Số lượng người nhà:</span>
+                                      <div className="inline-flex items-center gap-1">
+                                        {[1, 2, 3].map((cnt) => (
+                                          <button
+                                            key={cnt}
+                                            type="button"
+                                            onClick={() => setF((s) => ({ ...s, soNguoiNha: cnt }))}
+                                            className={`px-2.5 py-0.5 rounded-md text-[11.5px] font-bold transition-all cursor-pointer ${
+                                              f.soNguoiNha === cnt
+                                                ? "bg-purple-600 text-white shadow-2xs"
+                                                : "bg-white text-slate-700 border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50"
+                                            }`}
+                                          >
+                                            {cnt} người
+                                          </button>
+                                        ))}
+                                        <div className="inline-flex items-center gap-1 ml-2">
+                                          <span className="text-[11px] text-slate-400">Khác:</span>
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            value={f.soNguoiNha || 1}
+                                            onChange={(e) =>
+                                              setF((s) => ({ ...s, soNguoiNha: Math.max(1, parseInt(e.target.value) || 1) }))
+                                            }
+                                            className="w-12 h-6 text-center font-mono font-bold text-[11.5px] rounded border border-slate-300 bg-white"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Mối quan hệ + SĐT người nhà trên 2 cột */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                      {/* Mối quan hệ / Tên */}
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                          <label className="text-[11px] font-bold text-slate-700">Mối quan hệ / Tên:</label>
+                                          <div className="flex items-center gap-1">
+                                            {["Con gái", "Con trai", "Vợ", "Chồng", "Cháu"].map((tag) => (
+                                              <button
+                                                key={tag}
+                                                type="button"
+                                                onClick={() => setF((s) => ({ ...s, tenQuanHe: tag }))}
+                                                className="text-[10px] px-1.5 py-0.5 rounded bg-white hover:bg-purple-100 text-purple-900 border border-purple-200/80 cursor-pointer font-medium transition-colors"
+                                              >
+                                                {tag}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <input
+                                          type="text"
+                                          value={f.tenQuanHe}
+                                          onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
+                                          placeholder="VD: Con gái, Vợ, Chồng, Cháu..."
+                                          className="w-full h-8 px-2.5 text-[12px] font-medium text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-200 bg-white"
+                                        />
+                                      </div>
+
+                                      {/* SĐT người nhà */}
+                                      <div>
+                                        <div className="flex items-center gap-1 mb-1">
+                                          <Phone className="w-3 h-3 text-purple-600" />
+                                          <label className="text-[11px] font-bold text-slate-700">Số điện thoại người nhà:</label>
+                                        </div>
+                                        <input
+                                          type="tel"
+                                          value={f.sdtNguoiNha}
+                                          onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
+                                          placeholder="09xx xxx xxx"
+                                          className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-200 bg-white"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-[11.5px] text-slate-500 italic bg-white/70 px-2.5 py-1.5 rounded-lg border border-purple-100 flex items-center justify-between">
+                                    <span>Bệnh nhân đi một mình, không đăng ký chỗ cho người nhà.</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setF((s) => ({ ...s, coNguoiNha: true, soNguoiNha: s.soNguoiNha || 1 }))}
+                                      className="text-purple-700 font-bold hover:underline not-italic cursor-pointer text-[11px]"
+                                    >
+                                      + Thêm người nhà đi kèm xe
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="pt-3 border-t border-slate-200 text-[12px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300 animate-fade-in">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "HoiGiaDinh" ? "bg-purple-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
-                        <span>
-                          {f.nhom === "B"
-                            ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
-                            : f.nhom === "HoiGiaDinh"
-                              ? "Bệnh nhân hỏi lại gia đình — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại dặn dò/liên hệ người nhà vào ô ghi chú bên dưới."
-                              : f.nhom === "TheoDoi"
-                              ? "Bệnh nhân theo dõi tại nhà — Không cần xếp lịch đưa đón tại viện. Vui lòng nhập dặn dò tái khám vào ô ghi chú bên dưới."
-                              : "Vui lòng chọn quyết định điều trị của bệnh nhân."}
-                        </span>
+                      <div className="space-y-2 pt-3 border-t border-slate-200 animate-fade-in">
+                        <div className="text-[12px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300">
+                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "HoiGiaDinh" ? "bg-purple-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
+                          <span>
+                            {f.nhom === "B"
+                              ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
+                              : f.nhom === "HoiGiaDinh"
+                                ? "Bệnh nhân hỏi lại gia đình — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại dặn dò/liên hệ người nhà vào ô ghi chú bên dưới."
+                                : f.nhom === "TheoDoi"
+                                ? "Bệnh nhân theo dõi tại nhà — Không cần xếp lịch đưa đón tại viện. Vui lòng nhập dặn dò tái khám vào ô ghi chú bên dưới."
+                                : "Vui lòng chọn quyết định điều trị của bệnh nhân."}
+                          </span>
+                        </div>
+                        {f.nhom === "HoiGiaDinh" && (
+                          <div className="p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2">
+                            <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-purple-950">
+                              <Users className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Thông tin người nhà cần liên hệ lại:</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <input
+                                type="text"
+                                value={f.tenQuanHe}
+                                onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
+                                placeholder="Tên / Mối quan hệ (VD: Con gái, Vợ...)"
+                                className="w-full h-8 px-2.5 text-[12px] font-medium text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 bg-white"
+                              />
+                              <input
+                                type="tel"
+                                value={f.sdtNguoiNha}
+                                onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
+                                placeholder="SĐT người nhà: 09xx xxx xxx"
+                                className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 bg-white"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
