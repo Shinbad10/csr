@@ -870,50 +870,55 @@ export interface HoSo {
 }
 
 /**
- * Chuẩn hóa tên điểm đón / trạm y tế (loại bỏ hậu tố - Đoàn 1, [Đoàn 2],...)
+ * Chuẩn hóa tên điểm đón / trạm y tế (loại bỏ hậu tố - Đoàn 1, [Đoàn 2], [Đoàn 3]...)
  */
 export function cleanDiemDon(diemDon?: string | null): string {
   if (!diemDon) return "Chưa xác định điểm đón";
   return (
     diemDon
-      .replace(/\s*[-–—(]\s*(?:đoàn|doan)\s*[12]\s*\)?/gi, "")
-      .replace(/\s*\[\s*(?:đoàn|doan)\s*[12]\s*\]/gi, "")
+      .replace(/\s*[-–—(]\s*(?:đoàn|doan)\s*\d+\s*\)?/gi, "")
+      .replace(/\s*\[\s*(?:đoàn|doan)\s*\d+\s*\]/gi, "")
       .trim() || "Chưa xác định điểm đón"
   );
 }
 
 /**
- * Phân tích bệnh nhân thuộc Đoàn 1 (đi sớm) hay Đoàn 2
+ * Phân tích bệnh nhân thuộc Đoàn mấy (Đoàn 1, Đoàn 2, Đoàn 3,... linh động, mặc định 1)
  */
 export function parseDoanXe(p?: {
   ghiChuTuVan?: string | null;
   diemDon?: string | null;
   gioDon?: string | null;
-} | null): 1 | 2 {
+} | null): number {
   if (!p) return 1;
-  const note = (p.ghiChuTuVan || "").toLowerCase();
-  const diem = (p.diemDon || "").toLowerCase();
+  const note = p.ghiChuTuVan || "";
+  const diem = p.diemDon || "";
+  const combined = `${note} ${diem}`;
 
-  if (
-    note.includes("[đoàn 2]") ||
-    note.includes("[doan 2]") ||
-    note.includes("đoàn 2") ||
-    note.includes("doan 2") ||
-    diem.includes("đoàn 2") ||
-    diem.includes("doan 2")
-  ) {
-    return 2;
+  // 1. Kiểm tra tag chuẩn [Đoàn X] hoặc [Doan X]
+  const tagMatch = combined.match(/\[\s*(?:đoàn|doan)\s*(\d+)\s*\]/i);
+  if (tagMatch) {
+    const num = parseInt(tagMatch[1], 10);
+    if (!isNaN(num) && num > 0) return num;
   }
+
+  // 2. Kiểm tra từ khóa "Đoàn X" hoặc "Doan X"
+  const wordMatch = combined.match(/(?:đoàn|doan)\s*(\d+)/i);
+  if (wordMatch) {
+    const num = parseInt(wordMatch[1], 10);
+    if (!isNaN(num) && num > 0) return num;
+  }
+
   return 1;
 }
 
 /**
- * Xóa tag [Đoàn 1] / [Đoàn 2] khỏi ghi chú tư vấn để hiển thị sạch
+ * Xóa tag [Đoàn X] khỏi ghi chú tư vấn để hiển thị sạch
  */
 export function stripDoanXeTag(ghiChu?: string | null): string {
   if (!ghiChu) return "";
   return ghiChu
-    .replace(/\[\s*(?:đoàn|doan)\s*[12]\s*\]/gi, "")
+    .replace(/\[\s*(?:đoàn|doan)\s*\d+\s*\]/gi, "")
     .trim();
 }
 
@@ -922,7 +927,7 @@ export function stripDoanXeTag(ghiChu?: string | null): string {
  */
 export function formatGhiChuWithDoanXe(
   existingGhiChu: string | null | undefined,
-  targetDoan: 1 | 2
+  targetDoan: number
 ): string {
   const stripped = stripDoanXeTag(existingGhiChu);
   const tag = `[Đoàn ${targetDoan}]`;
@@ -930,18 +935,88 @@ export function formatGhiChuWithDoanXe(
 }
 
 /**
- * Đề xuất giờ đón kế tiếp cho Đoàn 2 (ví dụ 05:15 -> 06:30)
+ * Đề xuất giờ đón kế tiếp cho Đoàn tiếp theo (ví dụ 05:15 -> 06:15 / 06:30)
  */
-export function suggestNextTime(timeStr?: string | null): string {
+export function suggestNextTime(timeStr?: string | null, stepMinutes = 60): string {
   if (!timeStr || !timeStr.includes(":")) return "06:30";
   const [hStr, mStr] = timeStr.trim().split(":");
   const h = parseInt(hStr, 10);
   const m = parseInt(mStr, 10);
   if (isNaN(h) || isNaN(m)) return "06:30";
-  let totalMin = h * 60 + m + 75;
+  let totalMin = h * 60 + m + stepMinutes;
   totalMin = Math.round(totalMin / 15) * 15;
   const nextH = Math.floor(totalMin / 60) % 24;
   const nextM = totalMin % 60;
   return `${String(nextH).padStart(2, "0")}:${String(nextM).padStart(2, "0")}`;
 }
+
+/**
+ * Bảng màu đồng nhất cho các Đoàn xe (Đoàn 1, 2, 3, 4, 5...)
+ */
+export function getDoanColor(doan: number): {
+  bg: string;
+  text: string;
+  border: string;
+  activeBg: string;
+  ring: string;
+  badge: string;
+} {
+  switch (doan) {
+    case 1:
+      return {
+        bg: "bg-blue-50 text-blue-800",
+        text: "text-blue-700",
+        border: "border-blue-200",
+        activeBg: "bg-blue-600 text-white",
+        ring: "ring-blue-300",
+        badge: "bg-blue-100 text-blue-800 border-blue-200",
+      };
+    case 2:
+      return {
+        bg: "bg-purple-50 text-purple-800",
+        text: "text-purple-700",
+        border: "border-purple-200",
+        activeBg: "bg-purple-600 text-white",
+        ring: "ring-purple-300",
+        badge: "bg-purple-100 text-purple-800 border-purple-200",
+      };
+    case 3:
+      return {
+        bg: "bg-amber-50 text-amber-900",
+        text: "text-amber-700",
+        border: "border-amber-200",
+        activeBg: "bg-amber-600 text-white",
+        ring: "ring-amber-300",
+        badge: "bg-amber-100 text-amber-900 border-amber-200",
+      };
+    case 4:
+      return {
+        bg: "bg-emerald-50 text-emerald-900",
+        text: "text-emerald-700",
+        border: "border-emerald-200",
+        activeBg: "bg-emerald-600 text-white",
+        ring: "ring-emerald-300",
+        badge: "bg-emerald-100 text-emerald-900 border-emerald-200",
+      };
+    case 5:
+      return {
+        bg: "bg-rose-50 text-rose-900",
+        text: "text-rose-700",
+        border: "border-rose-200",
+        activeBg: "bg-rose-600 text-white",
+        ring: "ring-rose-300",
+        badge: "bg-rose-100 text-rose-900 border-rose-200",
+      };
+    default: {
+      const palette = [
+        { bg: "bg-cyan-50 text-cyan-900", text: "text-cyan-700", border: "border-cyan-200", activeBg: "bg-cyan-600 text-white", ring: "ring-cyan-300", badge: "bg-cyan-100 text-cyan-900 border-cyan-200" },
+        { bg: "bg-indigo-50 text-indigo-900", text: "text-indigo-700", border: "border-indigo-200", activeBg: "bg-indigo-600 text-white", ring: "ring-indigo-300", badge: "bg-indigo-100 text-indigo-900 border-indigo-200" },
+        { bg: "bg-teal-50 text-teal-900", text: "text-teal-700", border: "border-teal-200", activeBg: "bg-teal-600 text-white", ring: "ring-teal-300", badge: "bg-teal-100 text-teal-900 border-teal-200" },
+        { bg: "bg-orange-50 text-orange-900", text: "text-orange-700", border: "border-orange-200", activeBg: "bg-orange-600 text-white", ring: "ring-orange-300", badge: "bg-orange-100 text-orange-900 border-orange-200" },
+      ];
+      return palette[(doan - 6) % palette.length];
+    }
+  }
+}
+
 

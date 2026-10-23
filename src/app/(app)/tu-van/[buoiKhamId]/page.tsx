@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus, FileSpreadsheet } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus, FileSpreadsheet, Plus } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi, parseDoanXe, formatGhiChuWithDoanXe } from "@/lib/csr";
+import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi, parseDoanXe, formatGhiChuWithDoanXe, getDoanColor } from "@/lib/csr";
 import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
@@ -191,6 +191,19 @@ export default function TuVanSessionPage() {
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
   const dirty = JSON.stringify(f) !== baseline;
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
+
+  // Quản lý các đoàn xe linh hoạt (Đoàn 1, Đoàn 2, Đoàn 3...)
+  const [customConvoys, setCustomConvoys] = useState<number[]>([]);
+  const availableConvoys = useMemo(() => {
+    const set = new Set<number>([1, 2, ...customConvoys]);
+    const cur = parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon });
+    if (cur) set.add(cur);
+    patients.forEach((p) => {
+      const d = parseDoanXe(p);
+      if (d) set.add(d);
+    });
+    return Array.from(set).sort((a, b) => a - b);
+  }, [f.ghiChuTuVan, f.diemDon, patients, customConvoys]);
 
   // Nạp danh sách điểm đón và chuyến xe chưa qua ngày trên toàn hệ thống (không phân biệt đợt khám)
   const [activeDiemDonList, setActiveDiemDonList] = useState<string[]>([]);
@@ -858,42 +871,52 @@ export default function TuVanSessionPage() {
                             {f.diemDon && (
                               <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-fade-in">
                                 <span className="text-[11.5px] font-bold text-slate-700">Chuyến xe đón:</span>
-                                <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setF((s) => ({
-                                        ...s,
-                                        ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, 1),
-                                      }));
-                                    }}
-                                    className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                                      parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon }) === 1
-                                        ? "bg-blue-600 text-white shadow-2xs"
-                                        : "text-slate-600 hover:text-blue-700 hover:bg-white"
-                                    }`}
-                                  >
-                                    <Bus className="w-3.5 h-3.5" />
-                                    <span>Đoàn 1 (Chuyến sớm)</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setF((s) => ({
-                                        ...s,
-                                        ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, 2),
-                                      }));
-                                    }}
-                                    className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                                      parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon }) === 2
-                                        ? "bg-purple-600 text-white shadow-2xs"
-                                        : "text-slate-600 hover:text-purple-700 hover:bg-white"
-                                    }`}
-                                  >
-                                    <Bus className="w-3.5 h-3.5" />
-                                    <span>Đoàn 2 (Chuyến sau)</span>
-                                  </button>
+                                <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs items-center gap-0.5 flex-wrap">
+                                  {availableConvoys.map((num) => {
+                                    const curDoan = parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon });
+                                    const isSelected = curDoan === num;
+                                    const color = getDoanColor(num);
+                                    return (
+                                      <button
+                                        key={num}
+                                        type="button"
+                                        onClick={() => {
+                                          setF((s) => ({
+                                            ...s,
+                                            ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, num),
+                                          }));
+                                        }}
+                                        className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                          isSelected
+                                            ? `${color.activeBg} shadow-2xs`
+                                            : `text-slate-600 hover:${color.text} hover:bg-white`
+                                        }`}
+                                      >
+                                        <Bus className="w-3.5 h-3.5" />
+                                        <span>
+                                          Đoàn {num}
+                                          {num === 1 ? " (Chuyến sớm)" : num === 2 ? " (Chuyến sau)" : ""}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
                                 </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextNum = Math.max(...availableConvoys, 1) + 1;
+                                    setCustomConvoys((prev) => Array.from(new Set([...prev, nextNum])));
+                                    setF((s) => ({
+                                      ...s,
+                                      ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, nextNum),
+                                    }));
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                                  title="Thêm chuyến xe mới (Đoàn 3, Đoàn 4...)"
+                                >
+                                  <Plus className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>Thêm đoàn {Math.max(...availableConvoys, 1) + 1}</span>
+                                </button>
                               </div>
                             )}
                           </div>

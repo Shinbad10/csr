@@ -45,6 +45,7 @@ import {
   stripDoanXeTag,
   formatGhiChuWithDoanXe,
   suggestNextTime,
+  getDoanColor,
 } from "@/lib/csr";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
@@ -161,19 +162,20 @@ export default function DoanXePage() {
   const [stationLoading, setStationLoading] = useState<string | null>(null);
   const [collapsedStations, setCollapsedStations] = useState<Set<string>>(new Set());
 
-  // Lọc Đoàn 1 / Đoàn 2 theo từng trạm: { [stationKey]: "all" | 1 | 2 }
-  const [stationDoanFilter, setStationDoanFilter] = useState<Record<string, "all" | 1 | 2>>({});
+  // Lọc Đoàn theo từng trạm: { [stationKey]: "all" | number }
+  const [stationDoanFilter, setStationDoanFilter] = useState<Record<string, "all" | number>>({});
   const [switchingPatientId, setSwitchingPatientId] = useState<string | null>(null);
 
-  // Modal Tách / Thêm nhanh Đoàn 2 cho cả Trạm Y Tế
+  // Modal Tách / Thêm nhanh Đoàn cho cả Trạm Y Tế
   const [splitModalStation, setSplitModalStation] = useState<{
     key: string;
     diemDon: string;
     ngay: string;
     items: HoSo[];
-    doan1Gio?: string;
-    doan2Gio?: string;
+    existingDoans: number[];
+    defaultDoan1Gio?: string;
   } | null>(null);
+  const [splitTargetDoanNum, setSplitTargetDoanNum] = useState<number>(2);
   const [splitTargetGio, setSplitTargetGio] = useState("06:30");
   const [splitMode, setSplitMode] = useState<"half" | "manual" | "time_only">("half");
   const [splitSelectedPatientIds, setSplitSelectedPatientIds] = useState<Set<string>>(new Set());
@@ -184,7 +186,7 @@ export default function DoanXePage() {
   const [busFormDiem, setBusFormDiem] = useState("");
   const [busFormGio, setBusFormGio] = useState("");
   const [busFormDate, setBusFormDate] = useState("");
-  const [busFormDoanXe, setBusFormDoanXe] = useState<1 | 2>(1);
+  const [busFormDoanXe, setBusFormDoanXe] = useState<number>(1);
   const [busFormCoNguoiNha, setBusFormCoNguoiNha] = useState(false);
   const [busFormSoNguoiNha, setBusFormSoNguoiNha] = useState(1);
   const [busFormTenQuanHe, setBusFormTenQuanHe] = useState("");
@@ -280,8 +282,8 @@ export default function DoanXePage() {
     }
   };
 
-  // Chuyển nhanh bệnh nhân qua Đoàn 1 hoặc Đoàn 2 (1-click trực tiếp trên thẻ/dòng)
-  const handleQuickSwitchDoan = async (p: HoSo, targetDoan: 1 | 2, targetGio?: string) => {
+  // Chuyển nhanh bệnh nhân qua Đoàn bất kỳ (1-click trực tiếp trên thẻ/dòng)
+  const handleQuickSwitchDoan = async (p: HoSo, targetDoan: number, targetGio?: string) => {
     setSwitchingPatientId(p.id);
     const updatedGhiChu = formatGhiChuWithDoanXe(p.ghiChuTuVan, targetDoan);
     const baseDiem = cleanDiemDon(p.diemDon);
@@ -327,33 +329,38 @@ export default function DoanXePage() {
     }
   };
 
-  // Mở modal tách / thêm nhanh Đoàn 2 cho cả Trạm Y Tế
+  // Mở modal tách / thêm nhanh Đoàn cho cả Trạm Y Tế (linh động Đoàn 2, 3, 4...)
   const handleOpenSplitModal = (
     grp: { key: string; diemDon: string; ngay: string; items: HoSo[] },
-    d1Gio?: string,
-    d2Gio?: string
+    existingDoans: number[] = [1],
+    suggestedDoanNum?: number,
+    suggestedGio?: string
   ) => {
-    const defaultGio = d2Gio || (d1Gio ? suggestNextTime(d1Gio) : "06:30");
+    const nextDoanNum = suggestedDoanNum || (existingDoans.length > 0 ? Math.max(...existingDoans) + 1 : 2);
+    const itemWithTime = grp.items.find((it) => it.gioDon && it.gioDon.includes(":"));
+    const defaultGio = suggestedGio || (itemWithTime?.gioDon ? suggestNextTime(itemWithTime.gioDon) : "06:30");
     setSplitModalStation({
       ...grp,
-      doan1Gio: d1Gio,
-      doan2Gio: d2Gio,
+      existingDoans,
+      defaultDoan1Gio: itemWithTime?.gioDon || "05:15",
     });
+    setSplitTargetDoanNum(nextDoanNum);
     setSplitTargetGio(defaultGio);
     setSplitMode("half");
 
-    // Mặc định chọn 50% số bệnh nhân phía sau cho chế độ chia đều 2 xe
+    // Mặc định chọn 50% số bệnh nhân phía sau cho chế độ chia đều
     const halfCount = Math.floor(grp.items.length / 2);
     const bottomHalfIds = new Set(grp.items.slice(grp.items.length - halfCount).map((p) => p.id));
     setSplitSelectedPatientIds(bottomHalfIds);
   };
 
-  // Thực hiện tách hoặc tạo tuyến Đoàn 2 cho Trạm
+  // Thực hiện tách hoặc tạo tuyến Đoàn mới cho Trạm
   const handleExecuteSplitDoan = async () => {
     if (!splitModalStation) return;
     setSplittingInProgress(true);
     const stationName = splitModalStation.diemDon;
     const targetGio = splitTargetGio.trim() || "06:30";
+    const targetDoan = splitTargetDoanNum || 2;
 
     try {
       if (splitMode === "time_only") {
@@ -361,7 +368,7 @@ export default function DoanXePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tenDoan: `Tuyến ${stationName} - Đoàn 2`,
+            tenDoan: `Tuyến ${stationName} - Đoàn ${targetDoan}`,
             ngayDon:
               splitModalStation.ngay !== "CHUA_XEP_NGAY"
                 ? splitModalStation.ngay
@@ -371,7 +378,7 @@ export default function DoanXePage() {
         });
         addToast({
           type: "success",
-          message: `✓ Đã tạo mốc đón Đoàn 2 (${targetGio}) cho ${stationName}!`,
+          message: `✓ Đã tạo mốc đón Đoàn ${targetDoan} (${targetGio}) cho ${stationName}!`,
         });
         setSplitModalStation(null);
         return;
@@ -383,14 +390,14 @@ export default function DoanXePage() {
       if (patientsToMove.length === 0) {
         addToast({
           type: "info",
-          message: "Vui lòng chọn ít nhất 1 bệnh nhân để chuyển sang Đoàn 2",
+          message: `Vui lòng chọn ít nhất 1 bệnh nhân để chuyển sang Đoàn ${targetDoan}`,
         });
         setSplittingInProgress(false);
         return;
       }
 
       const updatePromises = patientsToMove.map((p) => {
-        const updatedGhiChu = formatGhiChuWithDoanXe(p.ghiChuTuVan, 2);
+        const updatedGhiChu = formatGhiChuWithDoanXe(p.ghiChuTuVan, targetDoan);
         return fetch(`/api/csr/hoso/${p.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -410,7 +417,7 @@ export default function DoanXePage() {
             return {
               ...it,
               gioDon: targetGio,
-              ghiChuTuVan: formatGhiChuWithDoanXe(it.ghiChuTuVan, 2),
+              ghiChuTuVan: formatGhiChuWithDoanXe(it.ghiChuTuVan, targetDoan),
             };
           }
           return it;
@@ -421,7 +428,7 @@ export default function DoanXePage() {
 
       addToast({
         type: "success",
-        message: `✓ Đã tách thành công ${patientsToMove.length} bệnh nhân sang Đoàn 2 (${targetGio}) tại ${stationName}!`,
+        message: `✓ Đã chuyển thành công ${patientsToMove.length} bệnh nhân sang Đoàn ${targetDoan} (${targetGio}) tại ${stationName}!`,
       });
 
       setSplitModalStation(null);
@@ -597,7 +604,7 @@ export default function DoanXePage() {
       return acc + (f.coDiCung ? f.soLuongDiCung : 0);
     }, 0);
     const totalDoan1 = data.filter((i) => parseDoanXe(i) === 1).length;
-    const totalDoan2 = data.filter((i) => parseDoanXe(i) === 2).length;
+    const totalDoan2 = data.filter((i) => parseDoanXe(i) > 1).length;
     return {
       total,
       daDon,
@@ -705,7 +712,7 @@ export default function DoanXePage() {
         "Giới tính": p.gioiTinh || "",
         "Năm sinh": p.namSinh || (p.ngaySinh ? new Date(p.ngaySinh).getFullYear() : ""),
         "Số điện thoại BN": p.sdt || "",
-        "Đoàn xe": doan === 1 ? "Đoàn 1 (đi sớm)" : "Đoàn 2",
+        "Đoàn xe": `Đoàn ${doan}${doan === 1 ? " (đi sớm)" : ""}`,
         "Người nhà đi kèm": nguoiNhaText,
         "SĐT người nhà": info.sdt || (info.hasNguoiNha ? p.sdtNguoiNha : ""),
         "Tổng số người lên xe": `${tongCho} (${tongCho > 1 ? `1 BN + ${info.soLuongDiCung} người nhà` : "1 BN"})`,
@@ -802,56 +809,25 @@ export default function DoanXePage() {
         cell: ({ row }) => {
           const p = row.original;
           const currentDoan = parseDoanXe(p);
-          const isSwitching = switchingPatientId === p.id;
+          const color = getDoanColor(currentDoan);
           return (
-            <div
-              data-no-row-click
-              className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs"
-            >
+            <div data-no-row-click className="inline-flex items-center gap-1.5 justify-center">
+              <span
+                className={`px-2.5 py-0.5 rounded-md text-[11px] font-black border ${color.badge} flex items-center gap-1 shadow-2xs`}
+              >
+                <Bus className="w-3 h-3" />
+                <span>
+                  Đoàn {currentDoan}
+                  {currentDoan === 1 ? " (sớm)" : ""}
+                </span>
+              </span>
               <button
                 type="button"
-                disabled={isSwitching}
-                onClick={() => currentDoan !== 1 && handleQuickSwitchDoan(p, 1)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                  currentDoan === 1
-                    ? "bg-blue-600 text-white shadow-2xs"
-                    : "text-slate-600 hover:text-blue-700 hover:bg-white"
-                }`}
-                title={
-                  currentDoan === 1
-                    ? "Đang ở Đoàn 1 (đi sớm)"
-                    : "Bấm để chuyển bệnh nhân sang Đoàn 1 nếu muốn đi sớm"
-                }
+                onClick={() => handleOpenAssignModal(p)}
+                className="p-1 rounded-md text-slate-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
+                title={`Đổi đoàn xe hoặc giờ đón cho ${p.hoTen}`}
               >
-                {isSwitching && currentDoan !== 1 ? (
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                ) : (
-                  <Bus className="w-2.5 h-2.5" />
-                )}
-                <span>Đoàn 1 (sớm)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isSwitching}
-                onClick={() => currentDoan !== 2 && handleQuickSwitchDoan(p, 2)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                  currentDoan === 2
-                    ? "bg-purple-600 text-white shadow-2xs"
-                    : "text-slate-600 hover:text-purple-700 hover:bg-white"
-                }`}
-                title={
-                  currentDoan === 2
-                    ? "Đang ở Đoàn 2"
-                    : "Bấm để chuyển bệnh nhân sang Đoàn 2"
-                }
-              >
-                {isSwitching && currentDoan !== 2 ? (
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                ) : (
-                  <Bus className="w-2.5 h-2.5" />
-                )}
-                <span>Đoàn 2</span>
+                <Edit3 className="w-3 h-3" />
               </button>
             </div>
           );
@@ -1126,7 +1102,7 @@ export default function DoanXePage() {
             {/* 3. Đoàn 2 (chuyến sau) */}
             <div className="p-2.5 rounded-xl bg-white border border-purple-200/90 shadow-2xs hover:border-purple-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-purple-900 flex items-center gap-1.5 truncate">
-                <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2 (sau)
+                <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2 & sau
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="font-mono text-[20px] font-black text-purple-700">{summary.totalDoan2}</span>
@@ -1364,30 +1340,27 @@ export default function DoanXePage() {
                 const isCollapsed = collapsedStations.has(stationKey);
                 const isStationLoading = stationLoading === stationKey;
 
-                // Tách Đoàn 1 và Đoàn 2
-                const doan1Items = grp.items.filter((it) => parseDoanXe(it) === 1);
-                const doan2Items = grp.items.filter((it) => parseDoanXe(it) === 2);
+                // Danh sách các đoàn xe hiện có tại trạm này
+                const presentDoans = Array.from(new Set(grp.items.map((it) => parseDoanXe(it)))).sort((a, b) => a - b);
+                const stationDoanList = presentDoans.length > 0 ? presentDoans : [1];
+                const displayDoanTabs = stationDoanList.includes(2) ? stationDoanList : [...stationDoanList, 2];
 
-                const doan1Times = Array.from(new Set(doan1Items.map((it) => it.gioDon?.trim()).filter(Boolean)));
-                const doan2Times = Array.from(new Set(doan2Items.map((it) => it.gioDon?.trim()).filter(Boolean)));
-                const doan1Gio = doan1Times[0] || "";
-                const doan2Gio = doan2Times[0] || "";
-
-                const doan1Family = doan1Items.reduce((acc, it) => {
-                  const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
-                  return acc + (f.coDiCung ? f.soLuongDiCung : 0);
-                }, 0);
-                const doan2Family = doan2Items.reduce((acc, it) => {
-                  const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
-                  return acc + (f.coDiCung ? f.soLuongDiCung : 0);
-                }, 0);
+                // Map số liệu cho từng đoàn
+                const doanStatsMap = new Map<number, { items: HoSo[]; gio: string; familyCount: number }>();
+                for (const dNum of displayDoanTabs) {
+                  const itms = grp.items.filter((it) => parseDoanXe(it) === dNum);
+                  const times = Array.from(new Set(itms.map((it) => it.gioDon?.trim()).filter(Boolean)));
+                  const fam = itms.reduce((acc, it) => {
+                    const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
+                    return acc + (f.coDiCung ? f.soLuongDiCung : 0);
+                  }, 0);
+                  doanStatsMap.set(dNum, { items: itms, gio: times[0] || "", familyCount: fam });
+                }
 
                 const displayedItems =
-                  currentDoanFilter === 1
-                    ? doan1Items
-                    : currentDoanFilter === 2
-                    ? doan2Items
-                    : grp.items;
+                  currentDoanFilter === "all"
+                    ? grp.items
+                    : grp.items.filter((it) => parseDoanXe(it) === currentDoanFilter);
 
                 const grpDaDon = grp.items.filter((i) => i.daDon || i.ngayDenBV).length;
                 const isAllDone = grpDaDon === grp.items.length && grp.items.length > 0;
@@ -1439,17 +1412,21 @@ export default function DoanXePage() {
                               )}
 
                               {/* Giờ đón nổi bật của từng đoàn */}
-                              {doan1Gio && (
-                                <span className="inline-flex items-center gap-1 font-mono text-[12px] font-black px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-900 border border-blue-200" title="Giờ đón Đoàn 1">
-                                  <Clock className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1: {doan1Gio}
-                                </span>
-                              )}
-                              {doan2Gio && (
-                                <span className="inline-flex items-center gap-1 font-mono text-[12px] font-black px-2.5 py-0.5 rounded-lg bg-purple-50 text-purple-900 border border-purple-200" title="Giờ đón Đoàn 2">
-                                  <Clock className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2: {doan2Gio}
-                                </span>
-                              )}
-                              {!doan1Gio && !doan2Gio && (
+                              {displayDoanTabs.map((dNum) => {
+                                const st = doanStatsMap.get(dNum);
+                                if (!st?.gio) return null;
+                                const c = getDoanColor(dNum);
+                                return (
+                                  <span
+                                    key={dNum}
+                                    className={`inline-flex items-center gap-1 font-mono text-[12px] font-black px-2.5 py-0.5 rounded-lg ${c.bg} border ${c.border}`}
+                                    title={`Giờ đón Đoàn ${dNum}`}
+                                  >
+                                    <Clock className={`w-3.5 h-3.5 ${c.text}`} /> Đoàn {dNum}: {st.gio}
+                                  </span>
+                                );
+                              })}
+                              {Array.from(doanStatsMap.values()).every((st) => !st.gio) && (
                                 <span className="inline-flex items-center gap-1 font-mono text-[12px] font-black px-2.5 py-0.5 rounded-lg bg-[var(--navy-soft)] text-[var(--navy)] border border-blue-200">
                                   <Clock className="w-3.5 h-3.5 text-[var(--navy)]" /> {grp.rawDiemDon || "Chưa xếp giờ"}
                                 </span>
@@ -1493,7 +1470,7 @@ export default function DoanXePage() {
                               );
                             })()}
 
-                            {/* Hàng chọn Đoàn 1 - Đoàn 2 tại trạm (Vị trí đóng khung đỏ người dùng vẽ) */}
+                            {/* Hàng chọn các Đoàn xe tại trạm (Linh hoạt: Đoàn 1, Đoàn 2, Đoàn 3...) */}
                             <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                               {/* Tab Tất cả */}
                               <button
@@ -1508,45 +1485,42 @@ export default function DoanXePage() {
                                 Tất cả ({grp.items.length})
                               </button>
 
-                              {/* Đoàn 1 (Ô đỏ 1) */}
-                              <button
-                                type="button"
-                                onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: 1 }))}
-                                className={`px-3 py-1 rounded-lg text-[12px] font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
-                                  currentDoanFilter === 1
-                                    ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                                    : "bg-blue-50/90 text-blue-900 border border-blue-200 hover:bg-blue-100"
-                                }`}
-                              >
-                                <Bus className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Đoàn 1 ({doan1Items.length} BN{doan1Family > 0 ? ` + ${doan1Family} NN` : ""})</span>
-                                {doan1Gio && <span className="font-mono text-[11px] font-black opacity-90 ml-0.5">({doan1Gio})</span>}
-                              </button>
+                              {/* Các Tab Đoàn xe linh hoạt */}
+                              {displayDoanTabs.map((dNum) => {
+                                const st = doanStatsMap.get(dNum) || { items: [], gio: "", familyCount: 0 };
+                                const color = getDoanColor(dNum);
+                                const isSelected = currentDoanFilter === dNum;
+                                return (
+                                  <button
+                                    key={dNum}
+                                    type="button"
+                                    onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: dNum }))}
+                                    className={`px-3 py-1 rounded-lg text-[12px] font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                                      isSelected
+                                        ? `${color.activeBg} ring-2 ${color.ring}`
+                                        : `${color.bg} ${color.border} border hover:opacity-90`
+                                    }`}
+                                  >
+                                    <Bus className="w-3.5 h-3.5" />
+                                    <span>
+                                      Đoàn {dNum} ({st.items.length} BN{st.familyCount > 0 ? ` + ${st.familyCount} NN` : ""})
+                                    </span>
+                                    {st.gio && (
+                                      <span className="font-mono text-[11px] font-black opacity-90 ml-0.5">({st.gio})</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
 
-                              {/* Đoàn 2 (Ô đỏ 2) */}
+                              {/* Nút Thêm / Tách nhanh Đoàn mới */}
                               <button
                                 type="button"
-                                onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: 2 }))}
-                                className={`px-3 py-1 rounded-lg text-[12px] font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
-                                  currentDoanFilter === 2
-                                    ? "bg-purple-600 text-white ring-2 ring-purple-300"
-                                    : "bg-purple-50/90 text-purple-900 border border-purple-200 hover:bg-purple-100"
-                                }`}
-                              >
-                                <Bus className="w-3.5 h-3.5 text-purple-600" />
-                                <span>Đoàn 2 ({doan2Items.length} BN{doan2Family > 0 ? ` + ${doan2Family} NN` : ""})</span>
-                                {doan2Gio && <span className="font-mono text-[11px] font-black opacity-90 ml-0.5">({doan2Gio})</span>}
-                              </button>
-
-                              {/* Nút Thêm / Tách nhanh Đoàn 2 ngay tại trạm */}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenSplitModal(grp, doan1Gio, doan2Gio)}
+                                onClick={() => handleOpenSplitModal(grp, stationDoanList)}
                                 className="px-2.5 py-1 rounded-lg text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-purple-950 border border-purple-300 shadow-2xs hover:border-purple-400 active:scale-95"
-                                title="Thiết lập nhanh hoặc tách bệnh nhân sang Đoàn 2 cho trạm này"
+                                title="Tách hoặc thêm nhanh đoàn xe mới cho trạm này"
                               >
                                 <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                                <span>{doan2Items.length === 0 ? "➕ Tách nhanh Đoàn 2" : "⚡ Chia lại 2 xe"}</span>
+                                <span>➕ Tách thêm đoàn</span>
                               </button>
                             </div>
                           </div>
@@ -1677,58 +1651,46 @@ export default function DoanXePage() {
                                         )}
                                       </div>
 
-                                      {/* Bộ chuyển Đoàn 1 / Đoàn 2 nhanh 1-click */}
+                                      {/* Bộ chuyển Đoàn nhanh 1-click */}
                                       <div className="pt-1 flex items-center gap-1.5 flex-wrap">
                                         {(() => {
                                           const currentDoan = parseDoanXe(p);
                                           const isSwitching = switchingPatientId === p.id;
                                           return (
-                                            <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs shrink-0">
-                                              <button
-                                                type="button"
-                                                disabled={isSwitching}
-                                                onClick={() => currentDoan !== 1 && handleQuickSwitchDoan(p, 1, doan1Gio)}
-                                                className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                                  currentDoan === 1
-                                                    ? "bg-blue-600 text-white shadow-2xs"
-                                                    : "text-slate-600 hover:text-blue-700 hover:bg-white"
-                                                }`}
-                                                title={
-                                                  currentDoan === 1
-                                                    ? "Bệnh nhân đang ở Đoàn 1 (đi sớm)"
-                                                    : "Bệnh nhân muốn đi sớm - Bấm để chuyển sang Đoàn 1"
-                                                }
-                                              >
-                                                {isSwitching && currentDoan !== 1 ? (
-                                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                                ) : (
-                                                  <Bus className="w-2.5 h-2.5 text-blue-500" />
-                                                )}
-                                                <span>Đoàn 1 (sớm)</span>
-                                              </button>
-
-                                              <button
-                                                type="button"
-                                                disabled={isSwitching}
-                                                onClick={() => currentDoan !== 2 && handleQuickSwitchDoan(p, 2, doan2Gio)}
-                                                className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
-                                                  currentDoan === 2
-                                                    ? "bg-purple-600 text-white shadow-2xs"
-                                                    : "text-slate-600 hover:text-purple-700 hover:bg-white"
-                                                }`}
-                                                title={
-                                                  currentDoan === 2
-                                                    ? "Bệnh nhân đang ở Đoàn 2"
-                                                    : "Bấm để chuyển bệnh nhân sang Đoàn 2"
-                                                }
-                                              >
-                                                {isSwitching && currentDoan !== 2 ? (
-                                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                                ) : (
-                                                  <Bus className="w-2.5 h-2.5 text-purple-500" />
-                                                )}
-                                                <span>Đoàn 2</span>
-                                              </button>
+                                            <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs shrink-0 flex-wrap gap-0.5">
+                                              {displayDoanTabs.map((dNum) => {
+                                                const isCurrent = currentDoan === dNum;
+                                                const dColor = getDoanColor(dNum);
+                                                const st = doanStatsMap.get(dNum);
+                                                return (
+                                                  <button
+                                                    key={dNum}
+                                                    type="button"
+                                                    disabled={isSwitching}
+                                                    onClick={() => !isCurrent && handleQuickSwitchDoan(p, dNum, st?.gio)}
+                                                    className={`px-2 py-0.5 rounded-md text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                                      isCurrent
+                                                        ? `${dColor.activeBg} shadow-2xs`
+                                                        : `text-slate-600 hover:${dColor.text} hover:bg-white`
+                                                    }`}
+                                                    title={
+                                                      isCurrent
+                                                        ? `Bệnh nhân đang ở Đoàn ${dNum}`
+                                                        : `Bấm để chuyển bệnh nhân sang Đoàn ${dNum}`
+                                                    }
+                                                  >
+                                                    {isSwitching && isCurrent ? (
+                                                      <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                                    ) : (
+                                                      <Bus className="w-2.5 h-2.5 opacity-80" />
+                                                    )}
+                                                    <span>
+                                                      Đoàn {dNum}
+                                                      {dNum === 1 ? " (sớm)" : ""}
+                                                    </span>
+                                                  </button>
+                                                );
+                                              })}
                                             </div>
                                           );
                                         })()}
@@ -1903,19 +1865,26 @@ export default function DoanXePage() {
                 const currentDoanFilter = stationDoanFilter[stationKey] || "all";
                 const isStationLoading = stationLoading === stationKey;
 
-                const doan1Items = grp.items.filter((it) => parseDoanXe(it) === 1);
-                const doan2Items = grp.items.filter((it) => parseDoanXe(it) === 2);
-                const doan1Times = Array.from(new Set(doan1Items.map((it) => it.gioDon?.trim()).filter(Boolean)));
-                const doan2Times = Array.from(new Set(doan2Items.map((it) => it.gioDon?.trim()).filter(Boolean)));
-                const doan1Gio = doan1Times[0] || "";
-                const doan2Gio = doan2Times[0] || "";
+                const presentDoans = Array.from(new Set(grp.items.map((it) => parseDoanXe(it)))).sort((a, b) => a - b);
+                const stationDoanList = presentDoans.length > 0 ? presentDoans : [1];
+                const displayDoanTabs = stationDoanList.includes(2) ? stationDoanList : [...stationDoanList, 2];
+
+                // Map số liệu cho từng đoàn
+                const doanStatsMap = new Map<number, { items: HoSo[]; gio: string; familyCount: number }>();
+                for (const dNum of displayDoanTabs) {
+                  const itms = grp.items.filter((it) => parseDoanXe(it) === dNum);
+                  const times = Array.from(new Set(itms.map((it) => it.gioDon?.trim()).filter(Boolean)));
+                  const fam = itms.reduce((acc, it) => {
+                    const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
+                    return acc + (f.coDiCung ? f.soLuongDiCung : 0);
+                  }, 0);
+                  doanStatsMap.set(dNum, { items: itms, gio: times[0] || "", familyCount: fam });
+                }
 
                 const displayedItems =
-                  currentDoanFilter === 1
-                    ? doan1Items
-                    : currentDoanFilter === 2
-                    ? doan2Items
-                    : grp.items;
+                  currentDoanFilter === "all"
+                    ? grp.items
+                    : grp.items.filter((it) => parseDoanXe(it) === currentDoanFilter);
 
                 const grpDaDon = grp.items.filter((i) => i.daDon || i.ngayDenBV).length;
                 const isAllDone = grpDaDon === grp.items.length && grp.items.length > 0;
@@ -1958,16 +1927,19 @@ export default function DoanXePage() {
                                   Chưa có ngày
                                 </span>
                               )}
-                              {doan1Gio && (
-                                <span className="font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 text-[11px]">
-                                  ⏰ Đ1: {doan1Gio}
-                                </span>
-                              )}
-                              {doan2Gio && (
-                                <span className="font-mono font-bold text-purple-900 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200 text-[11px]">
-                                  ⏰ Đ2: {doan2Gio}
-                                </span>
-                              )}
+                              {displayDoanTabs.map((dNum) => {
+                                const st = doanStatsMap.get(dNum);
+                                if (!st?.gio) return null;
+                                const c = getDoanColor(dNum);
+                                return (
+                                  <span
+                                    key={dNum}
+                                    className={`font-mono font-bold ${c.text} ${c.bg} px-1.5 py-0.2 rounded border ${c.border} text-[11px]`}
+                                  >
+                                    ⏰ Đ{dNum}: {st.gio}
+                                  </span>
+                                );
+                              })}
                               <span>•</span>
                               <span>{grp.items.length} BN</span>
                             </div>
@@ -1989,11 +1961,9 @@ export default function DoanXePage() {
                                 <CheckCheck className="w-3 h-3 text-emerald-700" />
                               )}
                               <span>
-                                {currentDoanFilter === 1
-                                  ? `Đón Đ1 (${filterUnboarded})`
-                                  : currentDoanFilter === 2
-                                  ? `Đón Đ2 (${filterUnboarded})`
-                                  : `Đón cả trạm`}
+                                {currentDoanFilter === "all"
+                                  ? "Đón cả trạm"
+                                  : `Đón Đ${currentDoanFilter} (${filterUnboarded})`}
                               </span>
                             </button>
                           ) : (
@@ -2004,7 +1974,7 @@ export default function DoanXePage() {
                         </div>
                       </div>
 
-                      {/* Tab lọc Đoàn 1 / Đoàn 2 trong Grid */}
+                      {/* Tab lọc Đoàn xe trong Grid */}
                       <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-[var(--line-soft)] flex-wrap">
                         <button
                           type="button"
@@ -2017,30 +1987,26 @@ export default function DoanXePage() {
                         >
                           Tất cả ({grp.items.length})
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: 1 }))}
-                          className={`px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 transition-all ${
-                            currentDoanFilter === 1
-                              ? "bg-blue-600 text-white"
-                              : "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100"
-                          }`}
-                        >
-                          <Bus className="w-3 h-3 text-blue-600" />
-                          <span>Đoàn 1 ({doan1Items.length})</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: 2 }))}
-                          className={`px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 transition-all ${
-                            currentDoanFilter === 2
-                              ? "bg-purple-600 text-white"
-                              : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
-                          }`}
-                        >
-                          <Bus className="w-3 h-3 text-purple-600" />
-                          <span>Đoàn 2 ({doan2Items.length})</span>
-                        </button>
+                        {displayDoanTabs.map((dNum) => {
+                          const st = doanStatsMap.get(dNum) || { items: [] };
+                          const c = getDoanColor(dNum);
+                          const isSel = currentDoanFilter === dNum;
+                          return (
+                            <button
+                              key={dNum}
+                              type="button"
+                              onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: dNum }))}
+                              className={`px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer flex items-center gap-1 transition-all ${
+                                isSel
+                                  ? `${c.activeBg} shadow-2xs`
+                                  : `${c.bg} ${c.border} border hover:opacity-90`
+                              }`}
+                            >
+                              <Bus className="w-3 h-3" />
+                              <span>Đoàn {dNum} ({st.items.length})</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -2106,33 +2072,28 @@ export default function DoanXePage() {
                                     const currentDoan = parseDoanXe(p);
                                     const isSwitching = switchingPatientId === p.id;
                                     return (
-                                      <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs">
-                                        <button
-                                          type="button"
-                                          disabled={isSwitching}
-                                          onClick={() => currentDoan !== 1 && handleQuickSwitchDoan(p, 1, doan1Gio)}
-                                          className={`px-1.5 py-0.5 rounded text-[10.5px] font-black cursor-pointer transition-all ${
-                                            currentDoan === 1
-                                              ? "bg-blue-600 text-white shadow-2xs"
-                                              : "text-slate-600 hover:text-blue-700"
-                                          }`}
-                                          title={currentDoan === 1 ? "Đang ở Đoàn 1" : "Chuyển sang Đoàn 1 (đi sớm)"}
-                                        >
-                                          {isSwitching && currentDoan !== 1 ? "..." : "Đ1 (sớm)"}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          disabled={isSwitching}
-                                          onClick={() => currentDoan !== 2 && handleQuickSwitchDoan(p, 2, doan2Gio)}
-                                          className={`px-1.5 py-0.5 rounded text-[10.5px] font-black cursor-pointer transition-all ${
-                                            currentDoan === 2
-                                              ? "bg-purple-600 text-white shadow-2xs"
-                                              : "text-slate-600 hover:text-purple-700"
-                                          }`}
-                                          title={currentDoan === 2 ? "Đang ở Đoàn 2" : "Chuyển sang Đoàn 2"}
-                                        >
-                                          {isSwitching && currentDoan !== 2 ? "..." : "Đ2"}
-                                        </button>
+                                      <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs flex-wrap gap-0.5">
+                                        {displayDoanTabs.map((dNum) => {
+                                          const isCurrent = currentDoan === dNum;
+                                          const dColor = getDoanColor(dNum);
+                                          const st = doanStatsMap.get(dNum);
+                                          return (
+                                            <button
+                                              key={dNum}
+                                              type="button"
+                                              disabled={isSwitching}
+                                              onClick={() => !isCurrent && handleQuickSwitchDoan(p, dNum, st?.gio)}
+                                              className={`px-1.5 py-0.5 rounded text-[10.5px] font-black cursor-pointer transition-all ${
+                                                isCurrent
+                                                  ? `${dColor.activeBg} shadow-2xs`
+                                                  : `text-slate-600 hover:${dColor.text}`
+                                              }`}
+                                              title={isCurrent ? `Đang ở Đoàn ${dNum}` : `Chuyển sang Đoàn ${dNum}`}
+                                            >
+                                              {isSwitching && isCurrent ? "..." : `Đ${dNum}${dNum === 1 ? " (sớm)" : ""}`}
+                                            </button>
+                                          );
+                                        })}
                                       </div>
                                     );
                                   })()}
@@ -2501,72 +2462,51 @@ export default function DoanXePage() {
                   (chọn đoàn phù hợp với nhu cầu đi sớm / đi sau của BN)
                 </span>
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setBusFormDoanXe(1)}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
-                    busFormDoanXe === 1
-                      ? "border-blue-600 bg-white ring-2 ring-blue-200 shadow-2xs"
-                      : "border-slate-200 bg-white/60 hover:bg-white text-slate-600"
-                  }`}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                      busFormDoanXe === 1
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    <Bus className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-[13px] text-blue-900">
-                        Đoàn 1 (Đi sớm)
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[1, 2, 3, 4].map((dNum) => {
+                  const isSel = busFormDoanXe === dNum;
+                  const c = getDoanColor(dNum);
+                  return (
+                    <button
+                      key={dNum}
+                      type="button"
+                      onClick={() => setBusFormDoanXe(dNum)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        isSel
+                          ? `${c.border} bg-white ring-2 ${c.ring} shadow-2xs`
+                          : "border-slate-200 bg-white/60 hover:bg-white text-slate-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full mb-1">
+                        <div
+                          className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                            isSel ? c.activeBg : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          <Bus className="w-3.5 h-3.5" />
+                        </div>
+                        {isSel && <Check className={`w-3.5 h-3.5 ${c.text} stroke-[3]`} />}
+                      </div>
+                      <span className={`font-extrabold text-[12.5px] ${isSel ? c.text : "text-slate-800"}`}>
+                        Đoàn {dNum}
                       </span>
-                      {busFormDoanXe === 1 && (
-                        <Check className="w-4 h-4 text-blue-600 stroke-[3]" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Bệnh nhân ưu tiên đi sớm đợt đầu
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setBusFormDoanXe(2)}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
-                    busFormDoanXe === 2
-                      ? "border-purple-600 bg-white ring-2 ring-purple-200 shadow-2xs"
-                      : "border-slate-200 bg-white/60 hover:bg-white text-slate-600"
-                  }`}
-                >
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                      busFormDoanXe === 2
-                        ? "bg-purple-600 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    <Bus className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-[13px] text-purple-900">
-                        Đoàn 2 (Đi sau)
+                      <span className="text-[10.5px] text-slate-400 mt-0.5">
+                        {dNum === 1 ? "Chuyến sớm" : dNum === 2 ? "Chuyến sau" : `Chuyến ${dNum}`}
                       </span>
-                      {busFormDoanXe === 2 && (
-                        <Check className="w-4 h-4 text-purple-600 stroke-[3]" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Đoàn tiếp theo của trạm y tế
-                    </p>
-                  </div>
-                </button>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+                <span className="text-[11.5px] text-slate-500 font-bold">Hoặc nhập số đoàn khác:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={busFormDoanXe}
+                  onChange={(e) => setBusFormDoanXe(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 h-7 text-center font-mono font-black text-[12px] rounded-lg border border-slate-300 bg-white"
+                />
               </div>
             </div>
 
@@ -2741,7 +2681,7 @@ export default function DoanXePage() {
         open={Boolean(splitModalStation)}
         onClose={() => !splittingInProgress && setSplitModalStation(null)}
         icon={Bus}
-        title={`Thiết lập & Tách nhanh Đoàn 2 — ${splitModalStation?.diemDon || ""}`}
+        title={`Thiết lập & Tách nhanh Đoàn ${splitTargetDoanNum} — ${splitModalStation?.diemDon || ""}`}
         subtitle={`Trạm có ${splitModalStation?.items.length || 0} bệnh nhân • Ngày đón: ${
           splitModalStation?.ngay && splitModalStation.ngay !== "CHUA_XEP_NGAY"
             ? fmtDate(splitModalStation.ngay)
@@ -2752,8 +2692,8 @@ export default function DoanXePage() {
           <div className="flex items-center justify-between w-full flex-wrap gap-2">
             <span className="text-[12px] text-slate-500 font-medium">
               {splitMode === "time_only"
-                ? "Chỉ tạo tuyến Đoàn 2 cho trạm"
-                : `Sẽ chuyển ${splitSelectedPatientIds.size} / ${splitModalStation?.items.length || 0} BN sang Đoàn 2`}
+                ? `Chỉ tạo tuyến Đoàn ${splitTargetDoanNum} cho trạm`
+                : `Sẽ chuyển ${splitSelectedPatientIds.size} / ${splitModalStation?.items.length || 0} BN sang Đoàn ${splitTargetDoanNum}`}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -2778,7 +2718,7 @@ export default function DoanXePage() {
                 ) : (
                   <Check className="w-4 h-4 stroke-[3]" />
                 )}
-                <span>Xác nhận tách sang Đoàn 2</span>
+                <span>Xác nhận tách sang Đoàn {splitTargetDoanNum}</span>
               </button>
             </div>
           </div>
@@ -2786,6 +2726,42 @@ export default function DoanXePage() {
       >
         {splitModalStation && (
           <div className="space-y-4">
+            {/* Lựa chọn số Đoàn xe muốn chuyển sang */}
+            <div className="flex items-center justify-between gap-2 flex-wrap bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+              <span className="text-[12px] font-extrabold text-slate-800">Tách / chuyển sang:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[2, 3, 4, 5, 6].map((dNum) => {
+                  const isSel = splitTargetDoanNum === dNum;
+                  const c = getDoanColor(dNum);
+                  return (
+                    <button
+                      key={dNum}
+                      type="button"
+                      onClick={() => setSplitTargetDoanNum(dNum)}
+                      className={`px-3 py-1 rounded-lg text-[12px] font-black transition-all cursor-pointer ${
+                        isSel
+                          ? `${c.activeBg} shadow-2xs ring-2 ${c.ring}`
+                          : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      Đoàn {dNum}
+                    </button>
+                  );
+                })}
+                <div className="inline-flex items-center gap-1 ml-1">
+                  <span className="text-[11px] text-slate-500 font-bold">Khác:</span>
+                  <input
+                    type="number"
+                    min="2"
+                    max="50"
+                    value={splitTargetDoanNum}
+                    onChange={(e) => setSplitTargetDoanNum(Math.max(2, parseInt(e.target.value) || 2))}
+                    className="w-12 h-7 text-center font-mono font-black text-[12px] rounded-lg border border-slate-300 bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Box thiết lập giờ đón của 2 đoàn */}
             <div className="p-3.5 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2795,17 +2771,17 @@ export default function DoanXePage() {
                     <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1 (Chuyến sớm)
                   </div>
                   <div className="text-[12.5px] font-mono font-black text-blue-700">
-                    Giờ xe đón: {splitModalStation.doan1Gio || "05:15"}
+                    Giờ xe đón: {splitModalStation.defaultDoan1Gio || "05:15"}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
-                    {splitModalStation.items.length - (splitMode === "time_only" ? 0 : splitSelectedPatientIds.size)} bệnh nhân
+                    {splitModalStation.items.length - (splitMode === "time_only" ? 0 : splitSelectedPatientIds.size)} bệnh nhân giữ lại
                   </div>
                 </div>
 
-                {/* Đoàn 2 */}
+                {/* Đoàn tách */}
                 <div className="p-2.5 rounded-lg bg-white border border-purple-300 shadow-2xs">
                   <div className="text-[11px] font-extrabold uppercase tracking-wider text-purple-900 flex items-center gap-1.5 mb-1">
-                    <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2 (Chuyến sau)
+                    <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn {splitTargetDoanNum} (Chuyến tách)
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[12px] font-bold text-slate-600">Giờ xe đón:</span>
@@ -2824,9 +2800,9 @@ export default function DoanXePage() {
                 </div>
               </div>
 
-              {/* Các chip giờ gợi ý cho Đoàn 2 */}
+              {/* Các chip giờ gợi ý cho Đoàn tách */}
               <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-purple-100">
-                <span className="text-[11px] text-slate-500 font-medium">Chọn nhanh giờ Đoàn 2:</span>
+                <span className="text-[11px] text-slate-500 font-medium">Chọn nhanh giờ Đoàn {splitTargetDoanNum}:</span>
                 {["05:45", "06:00", "06:30", "07:00", "07:30", "08:00"].map((timeTag) => (
                   <button
                     key={timeTag}
@@ -2921,7 +2897,7 @@ export default function DoanXePage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-[11.5px] px-1">
                   <span className="font-bold text-slate-700">
-                    Danh sách bệnh nhân trạm ({splitSelectedPatientIds.size}/{splitModalStation.items.length} chuyển sang Đoàn 2)
+                    Danh sách bệnh nhân trạm ({splitSelectedPatientIds.size}/{splitModalStation.items.length} chuyển sang Đoàn {splitTargetDoanNum})
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -2998,12 +2974,12 @@ export default function DoanXePage() {
                           {isSelected ? (
                             <span className="px-2 py-0.5 rounded-md text-[10.5px] font-black bg-purple-100 text-purple-900 border border-purple-200 flex items-center gap-1">
                               <Bus className="w-3 h-3 text-purple-600" />
-                              <span>Đoàn 2 ({splitTargetGio})</span>
+                              <span>Đoàn {splitTargetDoanNum} ({splitTargetGio})</span>
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-md text-[10.5px] font-bold bg-blue-50 text-blue-900 border border-blue-200 flex items-center gap-1">
                               <Bus className="w-3 h-3 text-blue-600" />
-                              <span>Đoàn 1 ({splitModalStation.doan1Gio || "05:15"})</span>
+                              <span>Đoàn 1 ({splitModalStation.defaultDoan1Gio || "05:15"})</span>
                             </span>
                           )}
                         </div>
