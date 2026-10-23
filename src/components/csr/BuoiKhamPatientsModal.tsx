@@ -74,7 +74,7 @@ export default function BuoiKhamPatientsModal({
     return () => window.removeEventListener("mousedown", h);
   }, [exportMenuOpen]);
 
-  const handleExport = async (format: "khamSucKhoe" | "default" = "khamSucKhoe") => {
+  const handleExport = async (format: "khamSucKhoe" | "default" | "rutGon" = "khamSucKhoe") => {
     if (!buoiKham?.id || exportingFormat) return;
     setExportingFormat(format);
     try {
@@ -101,7 +101,11 @@ export default function BuoiKhamPatientsModal({
       if (!filename) {
         const dateStr = buoiKham.ngayKham ? new Date(buoiKham.ngayKham).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
         const cleanXa = (buoiKham.xa || "KhamMat").replace(/[^a-zA-Z0-9_À-ɏḀ-ỿ]/g, "_");
-        filename = format === "khamSucKhoe" ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx` : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+        filename = format === "khamSucKhoe"
+          ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx`
+          : format === "rutGon"
+          ? `Danh_Sach_Rut_Gon_${cleanXa}_${dateStr}.xlsx`
+          : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
       }
       a.download = filename;
       document.body.appendChild(a);
@@ -114,6 +118,8 @@ export default function BuoiKhamPatientsModal({
         message:
           format === "khamSucKhoe"
             ? `Đã tải file khám sức khỏe ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu 101 cột)`
+            : format === "rutGon"
+            ? `Đã tải file rút gọn ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu XNĐ / KNM)`
             : `Đã tải file danh sách bệnh nhân ${buoiKham.xa || fmtBuoiKhamName(buoiKham)} (mẫu Google Sheet)`,
       });
     } catch (err) {
@@ -535,6 +541,7 @@ export default function BuoiKhamPatientsModal({
                   {exportMenuOpen && (
                     <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
                       {[
+                        { f: "rutGon" as const, label: "Mẫu Rút Gọn (XNĐ / KNM)", hint: "5 cột: TT, Tên, Năm sinh, SĐT, Ghi chú", icon: "text-amber-600" },
                         { f: "khamSucKhoe" as const, label: "Mẫu Khám Sức Khỏe (101 cột)", hint: "Mẫu chuẩn nộp HIS & trạm y tế", icon: "text-[var(--teal-deep)]" },
                         { f: "default" as const, label: "Mẫu Google Sheet (25 cột)", hint: "Danh sách khám sàng lọc", icon: "text-[var(--mute)]" },
                       ].map((o) => (

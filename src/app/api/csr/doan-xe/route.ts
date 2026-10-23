@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     }
 
     if (diemDon && diemDon !== "ALL") {
-      where.AND.push({ diemDon });
+      where.AND.push({ diemDon: { contains: diemDon } });
     }
 
     // Lọc theo ngày hẹn điều trị (YYYY-MM-DD)

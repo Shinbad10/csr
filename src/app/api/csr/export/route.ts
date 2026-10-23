@@ -4,6 +4,7 @@ import { authOptions, getWorkingCoSoId } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { HOSO_HEADER, hoSoToCells, KHAM_SUC_KHOE_HEADER, hoSoToKhamSucKhoeCells } from "@/lib/csr";
+import { buildRutGonExcelWorkbook } from "@/lib/exportRutGonExcel";
 import * as XLSX from "xlsx";
 
 import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
@@ -49,9 +50,56 @@ export async function GET(request: Request) {
           HOSO_CUA_DOT_CON_HIEU_LUC, // bỏ hồ sơ thuộc đợt khám đã xoá mềm
         ],
       },
-      include: { buoiKham: true, tuVanVien: { select: { hoTen: true } } },
+      include: {
+        buoiKham: true,
+        tuVanVien: { select: { hoTen: true } },
+      },
       orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }],
     });
+
+    if (format === "rutGon") {
+      const ids = rows.map((r) => r.id);
+      const CHUNK_SIZE = 500;
+      const nhatKyMap = new Map<string, Array<{ noiDung: string; ngay: Date }>>();
+
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const chunk = ids.slice(i, i + CHUNK_SIZE);
+        const logs = await getPrisma().nhatKyTheoDoi.findMany({
+          where: { hoSoId: { in: chunk } },
+          select: { hoSoId: true, noiDung: true, ngay: true },
+          orderBy: { ngay: "desc" },
+        });
+        for (const log of logs) {
+          if (!nhatKyMap.has(log.hoSoId)) {
+            nhatKyMap.set(log.hoSoId, []);
+          }
+          nhatKyMap.get(log.hoSoId)!.push({ noiDung: log.noiDung, ngay: log.ngay });
+        }
+      }
+
+      const rowsWithNhatKy = rows.map((r) => ({
+        ...r,
+        nhatKy: nhatKyMap.get(r.id) || [],
+      }));
+
+      const excelWb = await buildRutGonExcelWorkbook(rowsWithNhatKy, buoiKhamInfo);
+      const buf = await excelWb.xlsx.writeBuffer();
+
+      const dateStr = buoiKhamInfo?.ngayKham
+        ? new Date(buoiKhamInfo.ngayKham).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+      const cleanXa = (buoiKhamInfo?.xa || "RutGon").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
+      const fileName = `Danh_Sach_Rut_Gon_${cleanXa}_${dateStr}.xlsx`;
+      const asciiName = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, "_");
+
+      return new Response(buf as unknown as BodyInit, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+        },
+      });
+    }
 
     const isKhamSucKhoe = format === "khamSucKhoe";
     const headerRow = isKhamSucKhoe ? [...KHAM_SUC_KHOE_HEADER] : [...HOSO_HEADER];

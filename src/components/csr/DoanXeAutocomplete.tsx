@@ -20,7 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Modal from "@/components/layout/Modal";
-import { fmtDate } from "@/lib/csr";
+import { fmtDate, suggestNextTime } from "@/lib/csr";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 
@@ -94,6 +94,23 @@ export default function DoanXeAutocomplete({
     setNewStopDiem("");
     setNewStopGio("06:00");
     setShowAddStopModal(true);
+  };
+
+  // Nhân bản nhanh toàn bộ thông tin tuyến xe sang Đoàn 2 (cùng điểm đón, giờ đón tự lùi sau)
+  const handleCloneToNextDoan = (dx: DoanXeItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const cleanName = dx.tenDoan.replace(/\s*[-–—]\s*(?:Đoàn|Doan)\s*[12]/gi, "").trim();
+    setNewTenDoan(`${cleanName} - Đoàn 2`);
+    setNewNgayDon(dx.ngayDon);
+    setNewChangs(
+      dx.cacDiem.map((c, i) => ({
+        id: `c_${Date.now()}_${i}`,
+        diemDon: c.diemDon,
+        gioDon: suggestNextTime(c.gioDon),
+      }))
+    );
+    setSelectedChangIndex(0);
+    setShowCreateModal(true);
   };
 
   const handleSaveAddStop = async () => {
@@ -521,6 +538,15 @@ export default function DoanXeAutocomplete({
                   <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md hidden md:inline">
                     {dx.cacDiem.length} điểm đón
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleCloneToNextDoan(dx, e)}
+                    className="text-[11px] font-black text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs hover:border-purple-300 active:scale-95"
+                    title="Tạo nhanh Đoàn 2 cùng thông tin lộ trình này nhưng giờ đón muộn hơn"
+                  >
+                    <Sparkles className="w-3 h-3 text-purple-600" />
+                    <span>+ Đoàn 2</span>
+                  </button>
                 </div>
               </div>
 

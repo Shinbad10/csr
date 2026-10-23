@@ -59,6 +59,7 @@ const TRUONG_TUY_CHON = [
   "ghiChuMat2",
   "diemDon",
   "gioDon",
+  "ghiChuTuVan",
 ] as const;
 const TRUONG_BAT_BUOC = ["hoTen", "gioiTinh"] as const;
 

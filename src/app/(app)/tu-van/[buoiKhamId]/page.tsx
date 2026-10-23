@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
-import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal, Check, Save, X, Stethoscope, UserCog, ArrowLeft, Phone, PhoneCall, Send, Pencil, Clock, Bus, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
-import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi } from "@/lib/csr";
+import { parseDiag, ageOf, fmtDate, fmtTime, fmtBuoiKhamName, tomorrowISO, bhytLevel, statusOf, checkSurgeryTiming, type HoSo, fmtSinhTuoi, parseDoanXe, formatGhiChuWithDoanXe } from "@/lib/csr";
 import { DateField, StatusBadge, labelCls, Combobox } from "@/components/csr/fields";
 import { Skeleton3Column, SkeletonList } from "@/components/layout/Skeleton";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
@@ -32,6 +32,14 @@ const PHUONG_AN_TU_VAN = [
     activeClass: "bg-amber-50 text-amber-950 border-amber-600 font-extrabold",
     badgeClass: "bg-amber-600",
     tone: "bg-amber-500 text-white border-amber-500",
+  },
+  {
+    key: "HoiGiaDinh",
+    label: "Hỏi lại gia đình",
+    sub: "Chờ người nhà trao đổi & chốt sau",
+    activeClass: "bg-purple-50 text-purple-950 border-purple-600 font-extrabold",
+    badgeClass: "bg-purple-600",
+    tone: "bg-purple-500 text-white border-purple-500",
   },
   {
     key: "TheoDoi",
@@ -305,7 +313,7 @@ export default function TuVanSessionPage() {
           bhyt: f.bhyt,
           soTienBao: f.soTienBao ? Number(f.soTienBao) : null,
           nhom: f.nhom || null,
-          xacNhanDieuTri: f.nhom === "A" ? true : f.nhom === "B" ? false : null,
+          xacNhanDieuTri: f.nhom === "A" ? true : f.nhom === "B" || f.nhom === "HoiGiaDinh" ? false : null,
           ngayDieuTri: f.ngayHen || null,
           diemDon: f.diemDon,
           gioDon: f.gioDon,
@@ -375,6 +383,56 @@ export default function TuVanSessionPage() {
     { key: "nhomB", label: "Suy nghĩ (B)" },
   ];
 
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  const handleExportRutGon = async () => {
+    if (!buoiKhamId || exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      const res = await fetch(`/api/csr/export?buoiKhamId=${encodeURIComponent(buoiKhamId)}&format=rutGon`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Không thể xuất file");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disp = res.headers.get("Content-Disposition");
+      let filename = "";
+      if (disp) {
+        const matchStar = disp.match(/filename\*=UTF-8''([^;]+)/i);
+        if (matchStar) filename = decodeURIComponent(matchStar[1]);
+        else {
+          const matchPlain = disp.match(/filename="?([^";]+)"?/i);
+          if (matchPlain) filename = matchPlain[1];
+        }
+      }
+      if (!filename) {
+        const cleanXa = (buoiKham?.xa || "RutGon").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
+        filename = `Danh_Sach_Rut_Gon_${cleanXa}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast({
+        type: "success",
+        title: "Xuất file thành công",
+        message: `Đã tải file Excel rút gọn (5 cột kèm trạng thái XNĐ / KNM)`
+      });
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Lỗi xuất file",
+        message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel"
+      });
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-full min-h-0 flex flex-col gap-4">
@@ -399,6 +457,18 @@ export default function TuVanSessionPage() {
           </div>
         }
         description={buoiKham ? `Đợt khám: ${fmtBuoiKhamName(buoiKham)} · ${fmtDate(buoiKham.ngayKham)}` : "—"}
+        actions={
+          <button
+            type="button"
+            onClick={handleExportRutGon}
+            disabled={exportingExcel}
+            title="Xuất file Excel mẫu rút gọn (TT, Họ tên, Năm sinh, SĐT, Ghi chú XNĐ / KNM)"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-emerald-600/30 bg-emerald-50 text-[12.5px] font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
+          >
+            {exportingExcel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />}
+            <span>Xuất Excel rút gọn</span>
+          </button>
+        }
       />
 
       <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
@@ -499,6 +569,10 @@ export default function TuVanSessionPage() {
                             {p.nhom === "A" || p.xacNhanDieuTri === true ? (
                               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs">
                                 Đồng ý
+                              </span>
+                            ) : p.nhom === "HoiGiaDinh" ? (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300 shadow-2xs">
+                                Hỏi gia đình
                               </span>
                             ) : p.nhom === "B" || p.xacNhanDieuTri === false ? (
                               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
@@ -781,16 +855,59 @@ export default function TuVanSessionPage() {
                                 }));
                               }}
                             />
+                            {f.diemDon && (
+                              <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-fade-in">
+                                <span className="text-[11.5px] font-bold text-slate-700">Chuyến xe đón:</span>
+                                <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setF((s) => ({
+                                        ...s,
+                                        ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, 1),
+                                      }));
+                                    }}
+                                    className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                      parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon }) === 1
+                                        ? "bg-blue-600 text-white shadow-2xs"
+                                        : "text-slate-600 hover:text-blue-700 hover:bg-white"
+                                    }`}
+                                  >
+                                    <Bus className="w-3.5 h-3.5" />
+                                    <span>Đoàn 1 (Chuyến sớm)</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setF((s) => ({
+                                        ...s,
+                                        ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, 2),
+                                      }));
+                                    }}
+                                    className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                      parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon }) === 2
+                                        ? "bg-purple-600 text-white shadow-2xs"
+                                        : "text-slate-600 hover:text-purple-700 hover:bg-white"
+                                    }`}
+                                  >
+                                    <Bus className="w-3.5 h-3.5" />
+                                    <span>Đoàn 2 (Chuyến sau)</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div className="pt-3 border-t border-slate-200 text-[12px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300 animate-fade-in">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "HoiGiaDinh" ? "bg-purple-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
                         <span>
                           {f.nhom === "B"
                             ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
-                            : f.nhom === "TheoDoi"
+                            : f.nhom === "HoiGiaDinh"
+                              ? "Bệnh nhân hỏi lại gia đình — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại dặn dò/liên hệ người nhà vào ô ghi chú bên dưới."
+                              : f.nhom === "TheoDoi"
                               ? "Bệnh nhân theo dõi tại nhà — Không cần xếp lịch đưa đón tại viện. Vui lòng nhập dặn dò tái khám vào ô ghi chú bên dưới."
                               : "Vui lòng chọn quyết định điều trị của bệnh nhân."}
                         </span>
@@ -845,18 +962,24 @@ export default function TuVanSessionPage() {
                       {/* Mẫu gợi ý nhanh */}
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {[
-                          "Đã gọi - Hẹn gọi lại",
                           "Đã gọi - Đồng ý mổ",
-                          "Đã gọi - Cần suy nghĩ thêm",
+                          "Đã gọi - Không đồng ý mổ",
                           "Thuê bao / Không nghe máy",
-                          "Đã tư vấn qua người nhà",
                         ].map((tag) => {
                           const isSelected = callNote === tag;
                           return (
                             <button
                               key={tag}
                               type="button"
-                              onClick={() => setCallNote(isSelected ? "" : tag)}
+                              onClick={() => {
+                                const next = isSelected ? "" : tag;
+                                setCallNote(next);
+                                if (next === "Đã gọi - Đồng ý mổ" && !f.nhom) {
+                                  setF((s) => ({ ...s, nhom: "A", ngayHen: !s.ngayHen ? tomorrowISO() : s.ngayHen }));
+                                } else if (next === "Đã gọi - Không đồng ý mổ" && !f.nhom) {
+                                  setF((s) => ({ ...s, nhom: "B" }));
+                                }
+                              }}
                               className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs ${isSelected
                                   ? "bg-[#018a7f] text-white font-extrabold border-[#018a7f] shadow-xs"
                                   : "bg-white border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"

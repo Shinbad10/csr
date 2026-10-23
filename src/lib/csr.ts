@@ -868,3 +868,80 @@ export interface HoSo {
   createdAt?: string | null;
   updatedAt?: string | null; updatedBy?: string | null;
 }
+
+/**
+ * Chuẩn hóa tên điểm đón / trạm y tế (loại bỏ hậu tố - Đoàn 1, [Đoàn 2],...)
+ */
+export function cleanDiemDon(diemDon?: string | null): string {
+  if (!diemDon) return "Chưa xác định điểm đón";
+  return (
+    diemDon
+      .replace(/\s*[-–—(]\s*(?:đoàn|doan)\s*[12]\s*\)?/gi, "")
+      .replace(/\s*\[\s*(?:đoàn|doan)\s*[12]\s*\]/gi, "")
+      .trim() || "Chưa xác định điểm đón"
+  );
+}
+
+/**
+ * Phân tích bệnh nhân thuộc Đoàn 1 (đi sớm) hay Đoàn 2
+ */
+export function parseDoanXe(p?: {
+  ghiChuTuVan?: string | null;
+  diemDon?: string | null;
+  gioDon?: string | null;
+} | null): 1 | 2 {
+  if (!p) return 1;
+  const note = (p.ghiChuTuVan || "").toLowerCase();
+  const diem = (p.diemDon || "").toLowerCase();
+
+  if (
+    note.includes("[đoàn 2]") ||
+    note.includes("[doan 2]") ||
+    note.includes("đoàn 2") ||
+    note.includes("doan 2") ||
+    diem.includes("đoàn 2") ||
+    diem.includes("doan 2")
+  ) {
+    return 2;
+  }
+  return 1;
+}
+
+/**
+ * Xóa tag [Đoàn 1] / [Đoàn 2] khỏi ghi chú tư vấn để hiển thị sạch
+ */
+export function stripDoanXeTag(ghiChu?: string | null): string {
+  if (!ghiChu) return "";
+  return ghiChu
+    .replace(/\[\s*(?:đoàn|doan)\s*[12]\s*\]/gi, "")
+    .trim();
+}
+
+/**
+ * Định dạng ghi chú kèm tag [Đoàn X]
+ */
+export function formatGhiChuWithDoanXe(
+  existingGhiChu: string | null | undefined,
+  targetDoan: 1 | 2
+): string {
+  const stripped = stripDoanXeTag(existingGhiChu);
+  const tag = `[Đoàn ${targetDoan}]`;
+  return stripped ? `${tag} ${stripped}` : tag;
+}
+
+/**
+ * Đề xuất giờ đón kế tiếp cho Đoàn 2 (ví dụ 05:15 -> 06:30)
+ */
+export function suggestNextTime(timeStr?: string | null): string {
+  if (!timeStr || !timeStr.includes(":")) return "06:30";
+  const [hStr, mStr] = timeStr.trim().split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) return "06:30";
+  let totalMin = h * 60 + m + 75;
+  totalMin = Math.round(totalMin / 15) * 15;
+  const nextH = Math.floor(totalMin / 60) % 24;
+  const nextM = totalMin % 60;
+  return `${String(nextH).padStart(2, "0")}:${String(nextM).padStart(2, "0")}`;
+}
+

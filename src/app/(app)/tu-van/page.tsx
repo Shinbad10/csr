@@ -20,6 +20,7 @@ import {
   Send,
   Clock,
   Bus,
+  FileSpreadsheet,
 } from "lucide-react";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -35,6 +36,8 @@ import {
   checkSurgeryTiming,
   type HoSo,
   fmtSinhTuoi,
+  parseDoanXe,
+  formatGhiChuWithDoanXe,
 } from "@/lib/csr";
 import { StatusBadge, labelCls, Combobox, SectionHeader, Select, DateField } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
@@ -129,6 +132,13 @@ const PHUONG_AN_TU_VAN = [
     sub: "Cần tư vấn thêm & hẹn liên hệ lại",
     activeClass: "bg-amber-50/90 border-amber-500 text-amber-950 ring-2 ring-amber-500/30",
     badgeClass: "bg-amber-600 text-white",
+  },
+  {
+    key: "HoiGiaDinh",
+    label: "Hỏi lại gia đình",
+    sub: "Chờ người nhà trao đổi & chốt sau",
+    activeClass: "bg-purple-50/90 border-purple-500 text-purple-950 ring-2 ring-purple-500/30",
+    badgeClass: "bg-purple-600 text-white",
   },
   {
     key: "TheoDoi",
@@ -252,7 +262,7 @@ function isBenhLyPatient(p: HoSo): boolean {
 function getPatientCategoryPriority(p: HoSo): number {
   const hasCall = !!(p.nhatKy && p.nhatKy.length > 0);
   const isA = p.nhom === "A" || p.xacNhanDieuTri === true;
-  const isChuaDongY = !isA && (p.nhom === "B" || p.nhom === "TheoDoi" || p.xacNhanDieuTri === false);
+  const isChuaDongY = !isA && (p.nhom === "B" || p.nhom === "HoiGiaDinh" || p.nhom === "TheoDoi" || p.xacNhanDieuTri === false);
   if (isA) return hasCall ? 3 : 2;
   if (isChuaDongY) return hasCall ? 6 : 5;
   return hasCall ? 4 : 1; // chưa có quyết định
@@ -261,6 +271,7 @@ function getPatientCategoryPriority(p: HoSo): number {
 /** Trạng thái quyết định tư vấn của một hồ sơ → nhãn + tông màu. */
 function decisionOf(p: HoSo): { label: string; tone: Tone } | null {
   if (p.nhom === "A" || p.xacNhanDieuTri === true) return { label: "Đồng ý điều trị", tone: "teal" };
+  if (p.nhom === "HoiGiaDinh") return { label: "Hỏi gia đình", tone: "violet" };
   if (p.nhom === "B" || p.xacNhanDieuTri === false) return { label: "Cần suy nghĩ", tone: "amber" };
   if (p.nhom === "TheoDoi") return { label: "Theo dõi tại nhà", tone: "navy" };
   return null;
@@ -607,7 +618,7 @@ export default function TuVanSessionPage() {
           bhyt: f.bhyt,
           soTienBao: f.soTienBao ? Number(f.soTienBao) : null,
           nhom: f.nhom || null,
-          xacNhanDieuTri: f.nhom === "A" ? true : f.nhom === "B" ? false : null,
+          xacNhanDieuTri: f.nhom === "A" ? true : f.nhom === "B" || f.nhom === "HoiGiaDinh" ? false : null,
           ngayDieuTri: f.nhom === "A" ? (f.ngayHen || null) : null,
           diemDon: f.nhom === "A" ? (f.diemDon || null) : null,
           gioDon: f.nhom === "A" ? (f.gioDon || null) : null,
@@ -638,6 +649,57 @@ export default function TuVanSessionPage() {
     }
   };
 
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  const handleExportRutGon = async () => {
+    if (!selBk || exportingExcel) return;
+    setExportingExcel(true);
+    try {
+      const res = await fetch(`/api/csr/export?buoiKhamId=${encodeURIComponent(selBk)}&format=rutGon`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Không thể xuất file");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disp = res.headers.get("Content-Disposition");
+      let filename = "";
+      if (disp) {
+        const matchStar = disp.match(/filename\*=UTF-8''([^;]+)/i);
+        if (matchStar) filename = decodeURIComponent(matchStar[1]);
+        else {
+          const matchPlain = disp.match(/filename="?([^";]+)"?/i);
+          if (matchPlain) filename = matchPlain[1];
+        }
+      }
+      if (!filename) {
+        const curBk = bks.find((b) => b.id === selBk);
+        const cleanXa = (curBk?.xa || "RutGon").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
+        filename = `Danh_Sach_Rut_Gon_${cleanXa}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      addToast({
+        type: "success",
+        title: "Xuất file thành công",
+        message: `Đã tải file Excel rút gọn (5 cột kèm trạng thái XNĐ / KNM)`
+      });
+    } catch (err) {
+      addToast({
+        type: "error",
+        title: "Lỗi xuất file",
+        message: err instanceof Error ? err.message : "Có lỗi xảy ra khi xuất file Excel"
+      });
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   if (loading && !bks.length) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -654,33 +716,46 @@ export default function TuVanSessionPage() {
         actions={
           <div className="flex items-center gap-2 flex-wrap justify-end">
           {selBk && (
-            <div className="inline-flex">
+            <>
               <button
                 type="button"
-                onClick={reconcileCurrent}
-                disabled={reconciling}
-                title={
-                  curLog
-                    ? `Đối chiếu HIS gần nhất: ${fmtRelative(curLog.thoiDiem)} — ${curLog.found ?? 0}/${curLog.total ?? 0} khớp`
-                    : "Đối chiếu toàn bộ BN Nhóm A/B của đợt này với HIS"
-                }
-                className="inline-flex items-center gap-1.5 h-[34px] pl-3 pr-2.5 rounded-l-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12.5px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                onClick={handleExportRutGon}
+                disabled={exportingExcel}
+                title="Xuất file Excel mẫu rút gọn (TT, Họ tên, Năm sinh, SĐT, Ghi chú XNĐ / KNM)"
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-emerald-600/30 bg-emerald-50 text-[12.5px] font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
               >
-                {reconciling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                {reconciling ? "Đang đối chiếu…" : "Đối chiếu HIS"}
-                {!reconciling && curLog && (
-                  <span className="hidden sm:inline font-normal text-[11px] opacity-75">· {fmtRelative(curLog.thoiDiem)}</span>
-                )}
+                {exportingExcel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />}
+                <span>Xuất Excel rút gọn</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setShowHisHistory(true)}
-                title="Lịch sử đối chiếu HIS của đợt"
-                className="inline-flex items-center justify-center w-[34px] h-[34px] rounded-r-[10px] border border-l-0 border-[var(--navy)]/20 bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors cursor-pointer"
-              >
-                <History className="w-3.5 h-3.5" />
-              </button>
-            </div>
+
+              <div className="inline-flex">
+                <button
+                  type="button"
+                  onClick={reconcileCurrent}
+                  disabled={reconciling}
+                  title={
+                    curLog
+                      ? `Đối chiếu HIS gần nhất: ${fmtRelative(curLog.thoiDiem)} — ${curLog.found ?? 0}/${curLog.total ?? 0} khớp`
+                      : "Đối chiếu toàn bộ BN Nhóm A/B của đợt này với HIS"
+                  }
+                  className="inline-flex items-center gap-1.5 h-[34px] pl-3 pr-2.5 rounded-l-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12.5px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                >
+                  {reconciling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {reconciling ? "Đang đối chiếu…" : "Đối chiếu HIS"}
+                  {!reconciling && curLog && (
+                    <span className="hidden sm:inline font-normal text-[11px] opacity-75">· {fmtRelative(curLog.thoiDiem)}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowHisHistory(true)}
+                  title="Lịch sử đối chiếu HIS của đợt"
+                  className="inline-flex items-center justify-center w-[34px] h-[34px] rounded-r-[10px] border border-l-0 border-[var(--navy)]/20 bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors cursor-pointer"
+                >
+                  <History className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </>
           )}
           <button
             data-tour="tv-bk"
@@ -1152,10 +1227,10 @@ export default function TuVanSessionPage() {
                       </header>
 
                       <div className="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-5">
-                        <div data-tour="tv-nhom" className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div data-tour="tv-nhom" className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-2.5">
                           {PHUONG_AN_TU_VAN.map((opt) => {
                             const active = f.nhom === opt.key;
-                            const dot = opt.key === "A" ? "bg-[var(--teal)]" : opt.key === "B" ? "bg-[var(--amber)]" : "bg-[var(--navy)]";
+                            const dot = opt.key === "A" ? "bg-[var(--teal)]" : opt.key === "B" ? "bg-[var(--amber)]" : opt.key === "HoiGiaDinh" ? "bg-purple-500" : "bg-[var(--navy)]";
                             return (
                               <button
                                 key={opt.key}
@@ -1234,14 +1309,57 @@ export default function TuVanSessionPage() {
                                   setF((s) => ({ ...s, diemDon: val.diemDon, gioDon: val.gioDon, ngayHen: val.ngayHen || s.ngayHen }));
                                 }}
                               />
+                              {f.diemDon && (
+                                <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-fade-in">
+                                  <span className="text-[11.5px] font-bold text-[var(--ink-soft)]">Chuyến xe đón:</span>
+                                  <div className="inline-flex p-0.5 rounded-lg bg-[var(--surface-soft)] border border-[var(--line)] shadow-2xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setF((s) => ({
+                                          ...s,
+                                          ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, 1),
+                                        }));
+                                      }}
+                                      className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon }) === 1
+                                          ? "bg-blue-600 text-white shadow-2xs"
+                                          : "text-[var(--ink-soft)] hover:text-blue-700 hover:bg-white"
+                                      }`}
+                                    >
+                                      <Bus className="w-3.5 h-3.5" />
+                                      <span>Đoàn 1 (Chuyến sớm)</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setF((s) => ({
+                                          ...s,
+                                          ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, 2),
+                                        }));
+                                      }}
+                                      className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon }) === 2
+                                          ? "bg-purple-600 text-white shadow-2xs"
+                                          : "text-[var(--ink-soft)] hover:text-purple-700 hover:bg-white"
+                                      }`}
+                                    >
+                                      <Bus className="w-3.5 h-3.5" />
+                                      <span>Đoàn 2 (Chuyến sau)</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ) : (
                           <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-[10px] bg-[var(--surface-soft)] border border-dashed border-[var(--line-strong)] text-[12.5px] text-[var(--ink-soft)] animate-fade-in">
-                            <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${f.nhom === "B" ? "bg-[var(--amber)]" : f.nhom === "TheoDoi" ? "bg-[var(--navy)]" : "bg-[var(--mute-soft)]"}`} />
+                            <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${f.nhom === "B" ? "bg-[var(--amber)]" : f.nhom === "HoiGiaDinh" ? "bg-purple-500" : f.nhom === "TheoDoi" ? "bg-[var(--navy)]" : "bg-[var(--mute-soft)]"}`} />
                             <span>
                               {f.nhom === "B"
                                 ? "Bệnh nhân cần suy nghĩ thêm — lịch đón và viện phí tạm khóa. Ghi lý do / hẹn gọi lại vào ô ghi chú bên dưới."
+                                : f.nhom === "HoiGiaDinh"
+                                ? "Bệnh nhân hỏi lại gia đình — lịch đón và viện phí tạm khóa. Ghi dặn dò / liên hệ người nhà vào ô ghi chú bên dưới."
                                 : f.nhom === "TheoDoi"
                                 ? "Theo dõi tại nhà — không cần xếp lịch đưa đón. Ghi dặn dò tái khám vào ô ghi chú bên dưới."
                                 : "Chọn quyết định điều trị của bệnh nhân để tiếp tục."}
@@ -1278,13 +1396,21 @@ export default function TuVanSessionPage() {
                         {/* Ghi cuộc gọi mới */}
                         <div className="p-4 border-b border-[var(--line-soft)] space-y-2.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {["Đã gọi - Hẹn gọi lại", "Đã gọi - Đồng ý mổ", "Đã gọi - Cần suy nghĩ thêm", "Thuê bao / Không nghe máy", "Đã tư vấn qua người nhà"].map((tag) => {
+                            {["Đã gọi - Đồng ý mổ", "Đã gọi - Không đồng ý mổ", "Thuê bao / Không nghe máy"].map((tag) => {
                               const on = callNote === tag;
                               return (
                                 <button
                                   key={tag}
                                   type="button"
-                                  onClick={() => setCallNote(on ? "" : tag)}
+                                  onClick={() => {
+                                    const next = on ? "" : tag;
+                                    setCallNote(next);
+                                    if (next === "Đã gọi - Đồng ý mổ" && !f.nhom) {
+                                      setF((s) => ({ ...s, nhom: "A", ngayHen: !s.ngayHen ? tomorrowISO() : s.ngayHen }));
+                                    } else if (next === "Đã gọi - Không đồng ý mổ" && !f.nhom) {
+                                      setF((s) => ({ ...s, nhom: "B" }));
+                                    }
+                                  }}
                                   className={`h-7 px-2.5 rounded-lg border text-[11.5px] font-semibold transition-colors cursor-pointer ${
                                     on
                                       ? "bg-[var(--teal-soft)] border-[var(--teal)]/40 text-[var(--teal-deep)]"
