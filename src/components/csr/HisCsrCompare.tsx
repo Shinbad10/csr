@@ -313,12 +313,14 @@ export function XacNhanListModal({ entries, onClose }: { entries: XacNhanEntry[]
             namSinh: x.his.namSinh,
             cccd: x.his.cccd,
             sdt: x.his.sdt,
+            diaChi: x.his.diaChi,
             ngaySinh: "",
             matchedCsr: { ...x.csr, maBN: x.maBN },
           };
-          const fields = compareRows(r).filter((c) => !c.chiXem);
-          const lech = fields.filter((c) => c.kq === "lech").length;
-          const khop = fields.filter((c) => c.kq === "khop").length;
+          // Địa chỉ chỉ để đối chiếu bằng mắt (cách ghi HIS/CSR khác nhau nên không chấm khớp/lệch)
+          const fields = compareRows(r);
+          const lech = fields.filter((c) => !c.chiXem && c.kq === "lech").length;
+          const khop = fields.filter((c) => !c.chiXem && c.kq === "khop").length;
           const done = st === "xong";
           return (
             <div
@@ -372,9 +374,9 @@ export function XacNhanListModal({ entries, onClose }: { entries: XacNhanEntry[]
                       }`}
                     >
                       <span className="text-[11px] font-semibold text-[var(--mute)]">{c.k}</span>
-                      <span className={`truncate text-[var(--ink)] ${c.mono ? "font-mono" : ""}`}>{c.his || <span className="text-[var(--mute-soft)]">—</span>}</span>
-                      <span className="flex justify-center"><Dau kq={c.kq} /></span>
-                      <span className={`truncate ${c.kq === "lech" ? "text-[var(--rose)] font-semibold" : "text-[var(--ink)]"} ${c.mono ? "font-mono" : ""}`}>
+                      <span className={`${c.chiXem ? "leading-snug text-[12px]" : "truncate"} text-[var(--ink)] ${c.mono ? "font-mono" : ""}`}>{c.his || <span className="text-[var(--mute-soft)]">—</span>}</span>
+                      <span className="flex justify-center">{!c.chiXem && <Dau kq={c.kq} />}</span>
+                      <span className={`${c.chiXem ? "leading-snug text-[12px]" : "truncate"} ${c.kq === "lech" && !c.chiXem ? "text-[var(--rose)] font-semibold" : "text-[var(--ink)]"} ${c.mono ? "font-mono" : ""}`}>
                         {c.csr || <span className="text-[var(--mute-soft)]">—</span>}
                       </span>
                     </div>

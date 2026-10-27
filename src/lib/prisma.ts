@@ -3,7 +3,7 @@ import { PrismaClient as CloudClient } from "@prisma/client";
 import { PrismaClient as LocalClient } from "../../prisma-local/client";
 import { PrismaMssql } from "@prisma/adapter-mssql";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { getDbMode, setDbMode } from "./db-mode";
+import { getDbMode } from "./db-mode";
 
 const g = global as unknown as { cloudPrisma?: CloudClient; localPrisma?: LocalClient };
 
@@ -66,12 +66,14 @@ export function getLocalPrisma(): LocalClient {
   return prisma;
 }
 
-let isFallbackToLocal = false;
+/** Đang tạm dùng SQLite tới thời điểm này (ms) vì SQL Server vừa mất kết nối. */
+let fallbackUntil = 0;
+const FALLBACK_MS = 60_000;
 
 // Dùng ở mọi route handler. Hai schema giống nhau nên cast an toàn.
 // Nếu SQL Server không kết nối được (ETIMEOUT), tự động chuyển sang local SQLite (local.db)
 export function getPrisma(): CloudClient {
-  if (getDbMode() === "offline" || isFallbackToLocal) {
+  if (getDbMode() === "offline" || Date.now() < fallbackUntil) {
     return getLocalPrisma() as unknown as CloudClient;
   }
   const cloud = getCloudPrisma();
@@ -93,12 +95,13 @@ export function getPrisma(): CloudClient {
                     err?.code === "ECONNREFUSED" ||
                     errMsg.includes("Failed to connect") ||
                     errMsg.includes("ETIMEOUT");
-                  if (isConnError && !isFallbackToLocal) {
+                  if (isConnError) {
                     console.warn(
-                      "[Prisma] SQL Server không kết nối được (ETIMEOUT). Tự động chuyển sang SQLite (local.db)..."
+                      `[Prisma] SQL Server không kết nối được (${err?.code || "ETIMEOUT"}). Tạm dùng SQLite (local.db) ${FALLBACK_MS / 1000}s rồi thử lại SQL Server...`
                     );
-                    isFallbackToLocal = true;
-                    setDbMode("offline");
+                    // Tạm thời, KHÔNG vĩnh viễn: trước đây chỉ một lần timeout là dính offline tới khi khởi động
+                    // lại tiến trình, trong khi local.db thường thiếu cột mới → mọi trang báo "column does not exist".
+                    fallbackUntil = Date.now() + FALLBACK_MS;
                     const local = getLocalPrisma() as any;
                     const localModel = local[prop];
                     if (localModel && typeof localModel[modelProp] === "function") {

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft, Calendar as CalendarIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const labelCls = "block text-[11px] sm:text-[12px] font-bold text-[var(--ink-soft)] mb-1";
+export const labelCls = "block text-[13px] sm:text-[12px] font-semibold text-[var(--ink-soft)] mb-1.5 sm:mb-1";
 
 export interface PortalPos {
   top?: number;
@@ -111,7 +111,7 @@ export function Field({ label, required, children, hint }: { label: string; requ
   return (
     <label className="block">
       <div className="flex items-center justify-between mb-1">
-        <span className="block text-[11.5px] font-semibold text-[var(--ink-soft)]">
+        <span className="block text-[13px] sm:text-[11.5px] font-semibold text-[var(--ink-soft)]">
           {label} {required && <span className="text-[var(--rose)] font-bold">*</span>}
         </span>
         {hint && <span className="text-[11px] text-[var(--mute)] font-normal">{hint}</span>}
@@ -777,7 +777,7 @@ export function ChoiceRow({ options, value, onChange, render, disabled }: {
             type="button"
             onClick={() => !disabled && onChange(on ? "" : o)}
             disabled={disabled}
-            className={`h-7 sm:h-8 px-3 sm:px-3.5 rounded-[8px] text-[11.5px] sm:text-[12px] transition-all cursor-pointer select-none ${
+            className={`h-9 sm:h-8 px-3.5 rounded-[8px] text-[14px] sm:text-[12px] transition-all cursor-pointer select-none ${
               on
                 ? "bg-[var(--navy)] text-white font-semibold shadow-[var(--navy-shadow)]"
                 : "text-[var(--ink-soft)] font-semibold hover:text-[var(--ink)]"
@@ -805,7 +805,7 @@ export function PillGroup({ options, selected, onToggle, disabled }: {
             type="button"
             onClick={() => !disabled && onToggle(o)}
             disabled={disabled}
-            className={`inline-flex items-center gap-1 h-7 sm:h-8 px-2.5 sm:px-3 rounded-full text-[11px] sm:text-[12px] font-semibold border transition-colors cursor-pointer select-none active:scale-[0.98] ${
+            className={`inline-flex items-center gap-1 h-8 px-3 rounded-full text-[13.5px] sm:text-[12px] font-semibold border transition-colors cursor-pointer select-none active:scale-[0.98] ${
               on
                 ? "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/60"
                 : "bg-[var(--surface)] border-[var(--line-strong)] text-[var(--ink-soft)] hover:border-[var(--amber)]/50 hover:text-[var(--amber-deep)]"

@@ -893,12 +893,12 @@ export default function DoiChieuHisPage() {
         id: "maHIS",
         accessorKey: "maHIS",
         header: "Mã HIS",
-        size: 104,
+        size: 124,
         cell: ({ row }) => {
           const r = row.original;
           return (
             <div className="min-w-0 leading-tight">
-              <div className="font-mono text-[12px] font-bold whitespace-nowrap text-[var(--navy)]">{r.maHIS}</div>
+              <div className="font-mono text-[12px] font-bold whitespace-nowrap text-[var(--navy)]" title={r.maHIS}>{r.maHIS}</div>
               {r.phongMo && <div className="mt-1 truncate text-[10.5px] text-[var(--mute)]">{r.phongMo}</div>}
             </div>
           );
@@ -910,8 +910,7 @@ export default function DoiChieuHisPage() {
         id: "hoTen",
         accessorKey: "hoTen",
         header: "Bệnh nhân trên HIS",
-        size: 210,
-        meta: { flex: true },
+        size: 250,
         cell: ({ row }) => <HisSideCell r={row.original} />,
       },
       {
@@ -919,7 +918,7 @@ export default function DoiChieuHisPage() {
            thông tin cần nhìn là Mắt 1 / Mắt 2 và mắt nào. */
         id: "ngayMo",
         header: "Ca mổ",
-        size: 112,
+        size: 104,
         accessorFn: (r) => `${r.isMat2 || (r.lanMo && r.lanMo >= 2) ? 2 : 1}${r.ngayMoLocal || ""}`,
         cell: ({ row }) => {
           const r = row.original;
@@ -936,7 +935,7 @@ export default function DoiChieuHisPage() {
                   {ngay ? fmtDate(ngay).slice(0, 5) : "—"}
                 </span>
               )}
-              <div className="mt-1 flex items-center gap-1 whitespace-nowrap">
+              <div className="mt-1 flex flex-col items-start gap-0.5 whitespace-nowrap">
                 <span
                   className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-px text-[10px] font-bold ${
                     isSecondEye ? "bg-[#f3e8ff] text-[#7c3aed]" : "bg-[var(--surface-soft)] text-[var(--ink-soft)]"
@@ -946,7 +945,7 @@ export default function DoiChieuHisPage() {
                   {isSecondEye && <Eye className="h-2.5 w-2.5" />}
                   Mắt {isSecondEye ? 2 : 1}
                 </span>
-                {r.matMo && <span className="text-[10.5px] text-[var(--mute)] truncate">{r.matMo}</span>}
+                {r.matMo && <span className="text-[10.5px] text-[var(--mute)]">{r.matMo}</span>}
               </div>
             </div>
           );
@@ -959,7 +958,7 @@ export default function DoiChieuHisPage() {
         id: "dichVu",
         header: "Phẫu thuật",
         size: 240,
-        meta: { flex: true },
+        meta: { flex: true, noTruncate: true },
         cell: ({ row }) => {
           const r = row.original;
           const ten = String(r.tenDichVu || r.loaiPT || "");
@@ -968,18 +967,18 @@ export default function DoiChieuHisPage() {
           const diag = r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || r.chanDoan;
           return (
             <div className="min-w-0 leading-tight" title={[ten, diag && `Chẩn đoán: ${diag}`, r.bsDieuTri && `BS: ${r.bsDieuTri}`].filter(Boolean).join("\n")}>
-              <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-start gap-1.5 min-w-0">
                 {r.loaiPT && (
                   <span className="shrink-0 rounded-md bg-[var(--navy-50)] px-1.5 py-px text-[10px] font-bold text-[var(--navy)]">
                     {r.loaiPT}
                   </span>
                 )}
-                <span className="truncate text-[12.5px] font-medium text-[var(--ink)]">
+                <span className="line-clamp-2 whitespace-normal text-[12.5px] font-medium leading-snug text-[var(--ink)]">
                   {ngan || <span className="italic text-[var(--mute-soft)]">Chưa có tên DV</span>}
                 </span>
               </div>
               {(diag || r.bsDieuTri) && (
-                <div className="mt-1 truncate text-[11px] text-[var(--mute)]">
+                <div className="mt-1 line-clamp-2 whitespace-normal text-[11px] leading-snug text-[var(--mute)]">
                   {[diag, r.bsDieuTri && `BS. ${r.bsDieuTri}`].filter(Boolean).join(" · ")}
                 </div>
               )}
@@ -990,8 +989,7 @@ export default function DoiChieuHisPage() {
       {
         id: "doiChieu",
         header: "Hồ sơ CSR",
-        size: 260,
-        meta: { flex: true },
+        size: 290,
         cell: ({ row }) => {
           const r = row.original;
           if (r.cccdConflict) {

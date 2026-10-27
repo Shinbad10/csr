@@ -829,11 +829,13 @@ export async function batchCheckHISForPatients(
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
     const prisma = getPrisma();
-    const { tableName, cmndCol, bhytCol, sdtCol } = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, bhytCol, sdtCol, addrCol } = await getQLyCapTheColumns(pool);
 
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as CMND,` : `NULL as CMND,`;
     const bhytSelect = bhytCol ? `c.[${bhytCol}] as Sothe,` : `NULL as Sothe,`;
-    const sdtSelect = sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`;
+    // Kèm địa chỉ HIS để người dùng so với CSR khi xác nhận ca chỉ khớp tên + NS
+    const sdtSelect =
+      (sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`) + (addrCol ? ` c.[${addrCol}] as DiaChiHIS,` : ` NULL as DiaChiHIS,`);
 
     const checkOne = async (p: (typeof patients)[number]): Promise<any> => {
       try {
@@ -1041,8 +1043,13 @@ export async function batchCheckHISForPatients(
                     ngaySinh: (p as Record<string, unknown>).ngaySinh ?? null,
                     cccd: p.cccd || null,
                     sdt: (p as Record<string, unknown>).sdt ?? null,
+                    diaChi: ((p as Record<string, unknown>).diaChi as string) ?? null,
                   },
-                  his: { maHIS, hoTen: hoTenHIS, namSinh: namSinhHIS, cccd: hisCccd || null, sdt: String(matchedRow.Dienthoai || "").trim() || null },
+                  his: {
+                    maHIS, hoTen: hoTenHIS, namSinh: namSinhHIS, cccd: hisCccd || null,
+                    sdt: String(matchedRow.Dienthoai || "").trim() || null,
+                    diaChi: String(matchedRow.DiaChiHIS || "").trim() || null,
+                  },
                 }
               : undefined,
           isChoMo: dec.choMo, chiTiet,

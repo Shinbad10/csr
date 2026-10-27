@@ -2065,7 +2065,7 @@ export default function ExamPage() {
                       )}
                       {/* Chưa chọn "Có" thì chỉ để một dòng gợi ý — 15 chip mờ chiếm chỗ mà không dùng được */}
                       {isFieldOn(cfg, "loaiBenhSu") && lockLoaiBenhSu && (
-                        <p className="text-[11.5px] text-[var(--mute)]">
+                        <p className="text-[13px] sm:text-[11.5px] text-[var(--mute)]">
                           {f.benhSu === "Không" ? "Không có bệnh sử." : "Chưa ghi bệnh sử."} Chọn <b className="text-[var(--ink-soft)]">Có</b> để ghi loại bệnh sử (tăng huyết áp, đái tháo đường…).
                         </p>
                       )}
@@ -2122,8 +2122,8 @@ export default function ExamPage() {
                             <div key={e.mat} className={`rounded-[12px] border p-3 space-y-2.5 ${e.box}`}>
                               <div className="flex items-center gap-1.5">
                                 <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
-                                <span className="font-mono text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
-                                <span className="text-[11.5px] text-[var(--mute)]">· {e.ten}</span>
+                                <span className="font-mono text-[12.5px] sm:text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
+                                <span className="text-[13px] sm:text-[11.5px] text-[var(--mute)]">· {e.ten}</span>
                               </div>
                               <Select label="Thị lực" value={f[e.tl]} onChange={(v) => setF((s) => ({ ...s, [e.tl]: v }))} opts={THI_LUC} disabled={readOnly} />
                               <Field label="Độ kính">
@@ -2131,7 +2131,7 @@ export default function ExamPage() {
                                   value={f[e.dk]}
                                   onChange={(ev) => setF((s) => ({ ...s, [e.dk]: ev.target.value }))}
                                   className="input-field font-mono"
-                                  placeholder="VD: -2.50 / -0.75 x 180"
+                                  placeholder="VD: -2.50"
                                   disabled={readOnly}
                                 />
                               </Field>
@@ -2177,10 +2177,10 @@ export default function ExamPage() {
                     {isFieldOn(cfg, "chanDoan") && (
                       <div>
                         <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-                          <span className="text-[11.5px] font-semibold text-[var(--ink-soft)]">Chẩn đoán bệnh lý</span>
+                          <span className="text-[13px] sm:text-[11.5px] font-semibold text-[var(--ink-soft)]">Chẩn đoán bệnh lý</span>
                           {!readOnly && (
                             <div className="flex items-center gap-1 flex-wrap">
-                              <span className="text-[10.5px] text-[var(--mute)] mr-0.5">Nhanh:</span>
+                              <span className="text-[12px] sm:text-[10.5px] text-[var(--mute)] mr-0.5">Nhanh:</span>
                               {([
                                 ["Đục thủy tinh thể", "ĐTT 2 mắt"],
                                 ["Mộng", "Mộng 2 mắt"],
@@ -2193,7 +2193,7 @@ export default function ExamPage() {
                                     type="button"
                                     onClick={() => setBothEyes(diag)}
                                     title={`Chọn ${diag} cho cả 2 mắt`}
-                                    className={`h-6 px-2 rounded-md border text-[10.5px] font-semibold transition-colors cursor-pointer ${
+                                    className={`h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border text-[12.5px] sm:text-[10.5px] font-semibold transition-colors cursor-pointer ${
                                       on
                                         ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30"
                                         : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--line-strong)]"
@@ -2207,7 +2207,7 @@ export default function ExamPage() {
                                 type="button"
                                 onClick={copyMPtoMT}
                                 title="Sao chép chẩn đoán từ Mắt phải sang Mắt trái"
-                                className="h-6 px-2 rounded-md border border-[var(--line)] bg-[var(--surface)] text-[10.5px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
+                                className="h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border border-[var(--line)] bg-[var(--surface)] text-[12.5px] sm:text-[10.5px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
                               >
                                 MP → MT
                               </button>
@@ -2216,7 +2216,7 @@ export default function ExamPage() {
                                   type="button"
                                   onClick={clearBothEyes}
                                   title="Xoá chẩn đoán cả 2 mắt"
-                                  className="h-6 px-1.5 text-[10.5px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
+                                  className="h-8 sm:h-6 px-1.5 text-[12.5px] sm:text-[10.5px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
                                 >
                                   Xoá
                                 </button>
@@ -2233,9 +2233,9 @@ export default function ExamPage() {
                           ] as const).map((e) => (
                             <div key={e.mat} className="px-3 py-2">
                               <div className="flex items-start gap-3">
-                                <span className="w-[46px] shrink-0 h-7 flex items-center gap-1.5" title={e.ten}>
+                                <span className="w-[46px] shrink-0 h-8 sm:h-7 flex items-center gap-1.5" title={e.ten}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
-                                  <span className="font-mono text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
+                                  <span className="font-mono text-[12.5px] sm:text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
                                 </span>
                                 <div className="flex-1 flex flex-wrap gap-1.5">
                                   {CHAN_DOAN.map((o) => {
@@ -2246,7 +2246,7 @@ export default function ExamPage() {
                                         type="button"
                                         onClick={() => !readOnly && e.toggle(o)}
                                         disabled={readOnly}
-                                        className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full border text-[12px] transition-colors cursor-pointer ${
+                                        className={`inline-flex items-center gap-1 h-8 sm:h-7 px-3 sm:px-2.5 rounded-full border text-[13.5px] sm:text-[12px] transition-colors cursor-pointer ${
                                           on
                                             ? `${e.onCls} font-semibold`
                                             : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] font-medium hover:border-[var(--line-strong)] hover:text-[var(--ink)]"
@@ -2310,7 +2310,7 @@ export default function ExamPage() {
                                     key={doc}
                                     type="button"
                                     onClick={() => setF((s) => ({ ...s, bacSiChiDinh: doc }))}
-                                    className={`h-8 px-3 rounded-[9px] text-[12px] border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                                    className={`h-9 sm:h-8 px-3 rounded-[9px] text-[13.5px] sm:text-[12px] border transition-colors flex items-center gap-1.5 cursor-pointer ${
                                       active
                                         ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30 font-bold"
                                         : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] font-semibold hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
@@ -2328,7 +2328,7 @@ export default function ExamPage() {
                                 <button
                                   type="button"
                                   onClick={() => setF((s) => ({ ...s, bacSiChiDinh: "" }))}
-                                  className="h-8 px-2 text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] cursor-pointer"
+                                  className="h-9 sm:h-8 px-2 text-[13px] sm:text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] cursor-pointer"
                                 >
                                   + Bác sĩ khác
                                 </button>
@@ -2397,7 +2397,7 @@ export default function ExamPage() {
                                 type="button"
                                 disabled={readOnly}
                                 onClick={() => chon(v)}
-                                className={`flex items-center gap-2 h-9 px-3 rounded-[9px] border text-left text-[12px] transition-colors cursor-pointer disabled:opacity-60 ${
+                                className={`flex items-center gap-2 h-10 sm:h-9 px-3 rounded-[9px] border text-left text-[13.5px] sm:text-[12px] transition-colors cursor-pointer disabled:opacity-60 ${
                                   on ? `${onCls} font-semibold` : "border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
                                 }`}
                               >
@@ -2409,7 +2409,7 @@ export default function ExamPage() {
                             );
                           };
                           return (
-                            <div className="grid grid-cols-2 @lg:grid-cols-3 gap-1.5">
+                            <div className="grid grid-cols-2 @xl:grid-cols-3 gap-1.5">
                               {o("A", "Đồng ý điều trị tại BV", "teal")}
                               {o("TheoDoi", "Theo dõi tại nhà", "slate")}
                               {o("B", "Cần suy nghĩ thêm", "amber")}

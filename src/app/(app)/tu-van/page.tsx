@@ -1261,7 +1261,7 @@ export default function TuVanSessionPage() {
                     {/* Phương án điều trị */}
                     <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full min-h-0 overflow-hidden">
                       <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0">
-                        <h3 className="text-[14px] font-bold text-[var(--ink)]">
+                        <h3 className="font-serif text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
                           Phương án điều trị <span className="text-[var(--rose)]">*</span>
                         </h3>
                         <p className="text-[11.5px] text-[var(--mute)] mt-0.5">Quyết định của bệnh nhân sau khi được tư vấn</p>
@@ -1352,7 +1352,7 @@ export default function TuVanSessionPage() {
                               />
                               {f.diemDon && (
                                 <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-fade-in">
-                                  <span className="text-[11.5px] font-bold text-[var(--ink-soft)]">Chuyến xe đón:</span>
+                                  <span className="text-[11.5px] font-semibold text-[var(--ink-soft)]">Chuyến xe đón</span>
                                   <div className="inline-flex p-0.5 rounded-lg bg-[var(--surface-soft)] border border-[var(--line)] shadow-2xs items-center gap-0.5 flex-wrap">
                                     {availableConvoys.map((num) => {
                                       const curDoan = parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon });
@@ -1368,7 +1368,7 @@ export default function TuVanSessionPage() {
                                               ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, num),
                                             }));
                                           }}
-                                          className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                          className={`h-7 px-3 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                                             isSelected
                                               ? `${color.activeBg} shadow-2xs`
                                               : `text-[var(--ink-soft)] hover:${color.text} hover:bg-white`
@@ -1390,7 +1390,7 @@ export default function TuVanSessionPage() {
                                         ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, nextNum),
                                       }));
                                     }}
-                                    className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold text-[var(--ink-soft)] bg-white hover:bg-[var(--surface-hover)] border border-dashed border-[var(--line)] hover:border-[var(--line-strong)] transition-colors flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                                    className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] border border-dashed border-[var(--line-strong)] hover:border-[var(--navy)]/40 transition-colors flex items-center gap-1 cursor-pointer"
                                     title="Thêm chuyến xe mới (Đoàn 3, Đoàn 4...)"
                                   >
                                     <Plus className="w-3.5 h-3.5 text-[var(--mute)]" />
@@ -1399,137 +1399,110 @@ export default function TuVanSessionPage() {
                                 </div>
                               )}
 
-                              {/* Khu vực Người nhà đi kèm xe đón */}
-                              <div className="mt-3 pt-2.5 border-t border-[var(--line-soft)]">
-                                <div className="rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50/50 via-white to-purple-50/30 p-3 shadow-2xs space-y-2.5">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                                        <Users className="w-3.5 h-3.5" />
+                              {/* Người nhà đi kèm xe đón — thẻ trung tính cùng tông các khối khác (trước là gradient tím, chữ in hoa) */}
+                              <div className="mt-3 rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/50 overflow-hidden">
+                                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="w-7 h-7 rounded-[8px] bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center shrink-0">
+                                      <Users className="w-3.5 h-3.5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="text-[13px] font-semibold text-[var(--ink)]">Người nhà đi kèm xe đón</div>
+                                      <div className="text-[11px] text-[var(--mute)]">Tính vào số chỗ trên xe</div>
+                                    </div>
+                                  </div>
+                                  {/* Công tắc bật/tắt */}
+                                  <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={f.coNguoiNha}
+                                    onClick={() =>
+                                      setF((s) => ({ ...s, coNguoiNha: !s.coNguoiNha, soNguoiNha: !s.coNguoiNha ? s.soNguoiNha || 1 : 0 }))
+                                    }
+                                    className="inline-flex items-center gap-2 shrink-0 cursor-pointer select-none"
+                                  >
+                                    <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{f.coNguoiNha ? "Có người nhà" : "Đi một mình"}</span>
+                                    <span className={`relative w-9 h-5 rounded-full transition-colors ${f.coNguoiNha ? "bg-[var(--navy)]" : "bg-[var(--line-strong)]"}`}>
+                                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${f.coNguoiNha ? "left-[18px]" : "left-0.5"}`} />
+                                    </span>
+                                  </button>
+                                </div>
+
+                                {f.coNguoiNha && (
+                                  <div className="px-3.5 pb-3.5 pt-3 border-t border-[var(--line-soft)] bg-[var(--surface)] space-y-3 animate-fade-in">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-[11.5px] font-semibold text-[var(--ink-soft)] w-[86px] shrink-0">Số người</span>
+                                      <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5">
+                                        {[1, 2, 3].map((cnt) => (
+                                          <button
+                                            key={cnt}
+                                            type="button"
+                                            onClick={() => setF((s) => ({ ...s, soNguoiNha: cnt }))}
+                                            className={`h-7 px-3 rounded-[8px] text-[12px] transition-all cursor-pointer ${
+                                              f.soNguoiNha === cnt
+                                                ? "bg-[var(--navy)] text-white font-semibold shadow-[var(--navy-shadow)]"
+                                                : "text-[var(--ink-soft)] font-semibold hover:text-[var(--ink)]"
+                                            }`}
+                                          >
+                                            {cnt} người
+                                          </button>
+                                        ))}
                                       </div>
-                                      <div>
-                                        <span className="text-[12px] font-extrabold text-purple-950 uppercase tracking-wide">
-                                          Người nhà đi kèm xe đón
-                                        </span>
-                                        <span className="text-[11px] text-purple-600/80 ml-2 hidden sm:inline">
-                                          (Tính vào số lượng chỗ trên xe đón)
-                                        </span>
-                                      </div>
+                                      <label className="inline-flex items-center gap-1.5 text-[11.5px] text-[var(--mute)]">
+                                        Khác
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="10"
+                                          value={f.soNguoiNha || 1}
+                                          onChange={(e) => setF((s) => ({ ...s, soNguoiNha: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                          className={`${INPUT_CLS} w-14 h-8 px-2 text-center font-mono font-semibold`}
+                                        />
+                                      </label>
                                     </div>
 
-                                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                                      <input
-                                        type="checkbox"
-                                        checked={f.coNguoiNha}
-                                        onChange={(e) => {
-                                          const checked = e.target.checked;
-                                          setF((s) => ({
-                                            ...s,
-                                            coNguoiNha: checked,
-                                            soNguoiNha: checked ? (s.soNguoiNha || 1) : 0,
-                                          }));
-                                        }}
-                                        className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
-                                      />
-                                      <span className="text-[12px] font-bold text-purple-900">
-                                        {f.coNguoiNha ? "Có người nhà đi cùng" : "Đi một mình"}
-                                      </span>
-                                    </label>
-                                  </div>
-
-                                  {f.coNguoiNha ? (
-                                    <div className="space-y-2.5 pt-1 animate-fade-in">
-                                      {/* Số lượng người nhà */}
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[11px] font-bold text-[var(--ink-soft)]">Số lượng người nhà:</span>
-                                        <div className="inline-flex items-center gap-1">
-                                          {[1, 2, 3].map((cnt) => (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className={FIELD_LABEL}>Mối quan hệ / Tên</label>
+                                        <input
+                                          type="text"
+                                          value={f.tenQuanHe}
+                                          onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
+                                          placeholder="VD: Con gái, Vợ, Chồng…"
+                                          className={`${INPUT_CLS} h-9 px-3`}
+                                        />
+                                        <div className="mt-1.5 flex flex-wrap gap-1">
+                                          {["Con gái", "Con trai", "Vợ", "Chồng", "Cháu"].map((tag) => (
                                             <button
-                                              key={cnt}
+                                              key={tag}
                                               type="button"
-                                              onClick={() => setF((s) => ({ ...s, soNguoiNha: cnt }))}
-                                              className={`px-2.5 py-0.5 rounded-md text-[11.5px] font-bold transition-all cursor-pointer ${
-                                                f.soNguoiNha === cnt
-                                                  ? "bg-purple-600 text-white shadow-2xs"
-                                                  : "bg-white text-[var(--ink)] border border-[var(--line)] hover:border-purple-300 hover:bg-purple-50/50"
+                                              onClick={() => setF((s) => ({ ...s, tenQuanHe: tag }))}
+                                              className={`h-6 px-2 rounded-full border text-[11px] font-medium transition-colors cursor-pointer ${
+                                                f.tenQuanHe === tag
+                                                  ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30"
+                                                  : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--line-strong)]"
                                               }`}
                                             >
-                                              {cnt} người
+                                              {tag}
                                             </button>
                                           ))}
-                                          <div className="inline-flex items-center gap-1 ml-2">
-                                            <span className="text-[11px] text-[var(--mute)]">Khác:</span>
-                                            <input
-                                              type="number"
-                                              min="1"
-                                              max="10"
-                                              value={f.soNguoiNha || 1}
-                                              onChange={(e) =>
-                                                setF((s) => ({ ...s, soNguoiNha: Math.max(1, parseInt(e.target.value) || 1) }))
-                                              }
-                                              className="w-12 h-6 text-center font-mono font-bold text-[11.5px] rounded border border-slate-300 bg-white"
-                                            />
-                                          </div>
                                         </div>
                                       </div>
-
-                                      {/* Mối quan hệ + SĐT người nhà trên 2 cột */}
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                        {/* Mối quan hệ / Tên */}
-                                        <div>
-                                          <div className="flex items-center justify-between mb-1">
-                                            <label className="text-[11px] font-bold text-[var(--ink)]">Mối quan hệ / Tên:</label>
-                                            <div className="flex items-center gap-1">
-                                              {["Con gái", "Con trai", "Vợ", "Chồng", "Cháu"].map((tag) => (
-                                                <button
-                                                  key={tag}
-                                                  type="button"
-                                                  onClick={() => setF((s) => ({ ...s, tenQuanHe: tag }))}
-                                                  className="text-[10px] px-1.5 py-0.5 rounded bg-white hover:bg-purple-100 text-purple-900 border border-purple-200/80 cursor-pointer font-medium transition-colors"
-                                                >
-                                                  {tag}
-                                                </button>
-                                              ))}
-                                            </div>
-                                          </div>
-                                          <input
-                                            type="text"
-                                            value={f.tenQuanHe}
-                                            onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
-                                            placeholder="VD: Con gái, Vợ, Chồng, Cháu..."
-                                            className="w-full h-8 px-2.5 text-[12px] font-medium text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-200 bg-white"
-                                          />
-                                        </div>
-
-                                        {/* SĐT người nhà */}
-                                        <div>
-                                          <div className="flex items-center gap-1 mb-1">
-                                            <Phone className="w-3 h-3 text-purple-600" />
-                                            <label className="text-[11px] font-bold text-[var(--ink)]">Số điện thoại người nhà:</label>
-                                          </div>
-                                          <input
-                                            type="tel"
-                                            value={f.sdtNguoiNha}
-                                            onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
-                                            placeholder="09xx xxx xxx"
-                                            className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-200 bg-white"
-                                          />
-                                        </div>
+                                      <div>
+                                        <label className={FIELD_LABEL}>
+                                          <Phone className="w-3 h-3 text-[var(--navy)]" /> SĐT người nhà
+                                        </label>
+                                        <input
+                                          type="tel"
+                                          value={f.sdtNguoiNha}
+                                          onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
+                                          placeholder="09xx xxx xxx"
+                                          className={`${INPUT_CLS} h-9 px-3 font-mono font-semibold`}
+                                        />
                                       </div>
                                     </div>
-                                  ) : (
-                                    <div className="text-[11.5px] text-[var(--mute)] italic bg-white/70 px-2.5 py-1.5 rounded-lg border border-purple-100 flex items-center justify-between">
-                                      <span>Bệnh nhân đi một mình, không đăng ký chỗ cho người nhà.</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => setF((s) => ({ ...s, coNguoiNha: true, soNguoiNha: s.soNguoiNha || 1 }))}
-                                        className="text-purple-700 font-bold hover:underline not-italic cursor-pointer text-[11px]"
-                                      >
-                                        + Thêm người nhà đi kèm xe
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1548,10 +1521,10 @@ export default function TuVanSessionPage() {
                               </span>
                             </div>
                             {f.nhom === "HoiGiaDinh" && (
-                              <div className="p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2">
-                                <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-purple-950">
-                                  <Users className="w-3.5 h-3.5 text-purple-600" />
-                                  <span>Thông tin người nhà cần liên hệ lại:</span>
+                              <div className="p-3 rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/50 space-y-2">
+                                <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--ink)]">
+                                  <Users className="w-3.5 h-3.5 text-[var(--navy)]" />
+                                  <span>Người nhà cần liên hệ lại</span>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <input
@@ -1559,14 +1532,14 @@ export default function TuVanSessionPage() {
                                     value={f.tenQuanHe}
                                     onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
                                     placeholder="Tên / Mối quan hệ (VD: Con gái, Vợ...)"
-                                    className="w-full h-8 px-2.5 text-[12px] font-medium text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-purple-600 bg-white"
+                                    className={`${INPUT_CLS} h-9 px-3`}
                                   />
                                   <input
                                     type="tel"
                                     value={f.sdtNguoiNha}
                                     onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
                                     placeholder="SĐT người nhà: 09xx xxx xxx"
-                                    className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-purple-600 bg-white"
+                                    className={`${INPUT_CLS} h-9 px-3 font-mono font-semibold`}
                                   />
                                 </div>
                               </div>
@@ -1591,7 +1564,7 @@ export default function TuVanSessionPage() {
                     <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full min-h-0 overflow-hidden">
                       <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="text-[14px] font-bold text-[var(--ink)]">Nhật ký cuộc gọi</h3>
+                          <h3 className="font-serif text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Nhật ký cuộc gọi</h3>
                           <p className="text-[11.5px] text-[var(--mute)] mt-0.5">Ghi nhận các lần gọi chăm sóc bệnh nhân</p>
                         </div>
                         <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--line-soft)] text-[var(--ink-soft)] tabular-nums shrink-0">
@@ -1618,7 +1591,7 @@ export default function TuVanSessionPage() {
                                       setF((s) => ({ ...s, nhom: "B" }));
                                     }
                                   }}
-                                  className={`h-7 px-2.5 rounded-lg border text-[11.5px] font-semibold transition-colors cursor-pointer ${
+                                  className={`h-7 px-3 rounded-full border text-[11.5px] font-semibold transition-colors cursor-pointer ${
                                     on
                                       ? "bg-[var(--teal-soft)] border-[var(--teal)]/40 text-[var(--teal-deep)]"
                                       : "bg-[var(--surface)] border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:text-[var(--ink)]"

@@ -39,8 +39,8 @@ export interface XacNhanItem {
   ngayMo: string | null;
   tenDichVu: string | null;
   loaiPT: string | null;
-  csr: { hoTen: string; namSinh: number | string | null; ngaySinh: string | null; cccd: string | null; sdt: string | null };
-  his: { maHIS: string; hoTen: string; namSinh: string; cccd: string | null; sdt: string | null };
+  csr: { hoTen: string; namSinh: number | string | null; ngaySinh: string | null; cccd: string | null; sdt: string | null; diaChi?: string | null };
+  his: { maHIS: string; hoTen: string; namSinh: string; cccd: string | null; sdt: string | null; diaChi?: string | null };
 }
 
 export interface DoiChieuLog extends Partial<DoiChieuSummary> {
