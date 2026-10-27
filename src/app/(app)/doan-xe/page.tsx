@@ -48,7 +48,6 @@ import {
   type ThongTinNguoiNha,
   parseThongTinNguoiNha,
 } from "@/lib/csr";
-import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
@@ -906,295 +905,183 @@ export default function DoanXePage() {
   );
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface-bg)] overflow-y-auto">
-      {/* Page Header (Ẩn khi in) */}
-      <div className="print:hidden border-b border-[var(--line)] bg-white">
-        <div className="max-w-[1600px] mx-auto w-full">
-          <PageHeader
-            title={
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[var(--navy)] text-white flex items-center justify-center shadow-xs">
-                  <Bus className="w-5 h-5 text-[var(--teal)]" />
-                </div>
-                <div>
-                  Danh sách <span className="italic font-normal text-[var(--teal)]">đoàn xe đón</span>
-                </div>
-              </div>
-            }
-            description="Điều phối lộ trình xe, điểm đón, giờ đón và danh sách bệnh nhân điều trị phẫu thuật"
-            actions={
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Nút Chọn đợt khám */}
-                <button
-                  type="button"
-                  onClick={() => setShowBkModal(true)}
-                  className="btn btn-secondary px-3 py-1.5 text-[12px] font-bold h-[34px] rounded-lg border border-[var(--line)] bg-white hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)] cursor-pointer shadow-2xs"
-                >
-                  <CalendarDays className="w-4 h-4 text-[var(--teal-deep)] shrink-0" />
-                  <span className="truncate max-w-[150px] sm:max-w-[200px]">
-                    {selectedBkObj ? fmtBuoiKhamName(selectedBkObj) : "Tất cả đợt khám"}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-[var(--mute)]" />
-                </button>
+    <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg)] overflow-hidden print:overflow-visible print:block">
+      {/* ── Header trang: tiêu đề + đợt khám · dải chỉ số · thao tác ── */}
+      <div className="print:hidden shrink-0 bg-[var(--surface)] border-b border-[var(--line)]">
+        <div className="px-3 sm:px-5 py-2.5 flex flex-wrap xl:flex-nowrap items-center gap-x-5 gap-y-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
+              <Bus className="w-[18px] h-[18px] text-[var(--teal)]" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-serif text-[17px] font-semibold tracking-[-0.01em] text-[var(--ink)] leading-tight whitespace-nowrap">
+                Đoàn xe <span className="italic font-normal text-[var(--teal-deep)]">đón bệnh nhân</span>
+              </h1>
+              <button
+                type="button"
+                onClick={() => setShowBkModal(true)}
+                className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--mute)] hover:text-[var(--navy)] transition-colors cursor-pointer max-w-full"
+                title="Chọn đợt khám"
+              >
+                <CalendarDays className="w-3 h-3 text-[var(--teal-deep)] shrink-0" />
+                <span className="truncate max-w-[240px]">{selectedBkObj ? fmtBuoiKhamName(selectedBkObj) : "Tất cả đợt khám"}</span>
+                <ChevronDown className="w-3 h-3 shrink-0" />
+              </button>
+            </div>
+          </div>
 
-                {/* Nút Xuất Excel */}
-                <button
-                  type="button"
-                  onClick={exportExcel}
-                  className="btn btn-secondary px-3 py-1.5 text-[12px] font-bold h-[34px] rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  title="Xuất bảng Excel đoàn xe"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span className="hidden sm:inline">Xuất Excel</span>
-                </button>
+          {/* Dải chỉ số (ERP): một khối chia cột, số mono — điện thoại vuốt ngang */}
+          <div className="order-last xl:order-none w-full xl:w-auto xl:flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            <div className="flex items-stretch w-max xl:w-full rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/40 divide-x divide-[var(--line-soft)]">
+              {(() => {
+                const pct = (n: number) => `${summary.total > 0 ? Math.round((n / summary.total) * 100) : 0}%`;
+                return [
+                  {
+                    k: "Tổng BN đón",
+                    v: summary.total,
+                    sub: summary.totalNguoiNha > 0 ? `+${summary.totalNguoiNha} NN · ${summary.tongChoNgoi} chỗ` : "bệnh nhân",
+                    tone: "text-[var(--ink)]",
+                  },
+                  { k: "Đoàn 1", v: summary.totalDoan1, sub: pct(summary.totalDoan1), tone: "text-[var(--navy)]" },
+                  { k: "Đoàn 2+", v: summary.totalDoan2, sub: pct(summary.totalDoan2), tone: summary.totalDoan2 ? "text-[var(--navy)]" : "text-[var(--mute-soft)]" },
+                  { k: "Đã lên xe", v: summary.daDon, sub: pct(summary.daDon), tone: "text-[var(--teal-deep)]" },
+                  { k: "Chờ đón", v: summary.chuaDon, sub: "chưa lên xe", tone: summary.chuaDon ? "text-[var(--amber-deep)]" : "text-[var(--mute-soft)]" },
+                  { k: "Đã phẫu thuật", v: summary.daMo, sub: "ca", tone: "text-[var(--teal-deep)]" },
+                ].map((m) => (
+                  <div key={m.k} className="px-3.5 py-1.5 min-w-[118px] xl:min-w-0 xl:flex-1">
+                    <div className="font-mono text-[9.5px] font-semibold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">{m.k}</div>
+                    <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                      <span className={`font-mono text-[17px] font-bold leading-tight tabular-nums ${m.tone}`}>{m.v}</span>
+                      <span className="font-mono text-[10.5px] text-[var(--mute)]">{m.sub}</span>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
 
-                {/* Nút In danh sách */}
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="btn btn-secondary px-3 py-1.5 text-[12px] font-bold h-[34px] rounded-lg border border-[var(--line)] bg-white hover:bg-[var(--surface-hover)] text-[var(--ink)] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  title="In lệnh điều xe / danh sách đón xe"
-                >
-                  <Printer className="w-4 h-4 text-[var(--navy)] shrink-0" />
-                  <span className="hidden sm:inline">In danh sách</span>
-                </button>
-              </div>
-            }
+          <div className="flex items-center gap-2 ml-auto shrink-0">
+            <button
+              type="button"
+              onClick={exportExcel}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12.5px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+              title="Xuất bảng Excel đoàn xe"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Xuất Excel</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer whitespace-nowrap"
+              title="In lệnh điều xe / danh sách đón xe"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">In danh sách</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Thanh công cụ: tìm · trạng thái · ngày · điểm đón · chế độ xem ── */}
+      <div className="print:hidden shrink-0 bg-[var(--surface)] border-b border-[var(--line)] px-3 sm:px-5 py-2 flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-[260px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--mute)]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm tên, SĐT, địa chỉ, trạm đón…"
+            className="w-full h-8 pl-8 pr-7 rounded-[9px] border border-[var(--line)] bg-[var(--surface-soft)] text-[12.5px] text-[var(--ink)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition-all"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Dải chỉ số thống kê lộ trình xe chuẩn ERP (ERP Metric Ribbon) */}
-      <div className="border-b border-slate-200 bg-slate-50/70 shrink-0 print:hidden">
-        {/* Điện thoại: 6 ô chỉ số thành một hàng vuốt ngang (trước là lưới 2×3 chiếm nửa màn hình) */}
-        <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-6 py-2 sm:py-2.5">
-          <div className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
-            {/* 1. Tổng ca xếp xe */}
-            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 truncate">
-                  <Users className="w-3.5 h-3.5 text-[var(--navy)]" /> Tổng BN đón
-                </span>
-                {summary.totalNguoiNha > 0 && (
-                  <span className="text-[9px] font-black text-purple-700 bg-purple-50 px-1 rounded border border-purple-200">
-                    +{summary.totalNguoiNha} NN
-                  </span>
-                )}
-              </div>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[18px] sm:text-[20px] font-black text-[var(--navy)]">{summary.total}</span>
-                <span className="text-[11px] text-slate-400 font-medium truncate">
-                  {summary.totalNguoiNha > 0 ? `(${summary.tongChoNgoi} chỗ)` : "bệnh nhân"}
-                </span>
-              </div>
-            </div>
+        <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5 max-w-full overflow-x-auto no-scrollbar">
+          {[
+            { key: "all" as const, label: "Tất cả", n: summary.total },
+            { key: "chuaDon" as const, label: "Chờ đón", n: summary.chuaDon },
+            { key: "daDon" as const, label: "Đã lên xe", n: summary.daDon },
+            { key: "daMo" as const, label: "Đã mổ", n: summary.daMo },
+          ].map((tab) => {
+            const active = statusFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setStatusFilter(tab.key)}
+                className={`shrink-0 h-7 px-2.5 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  active ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                }`}
+              >
+                {tab.label}
+                <span className={`font-mono text-[10.5px] tabular-nums ${active ? "text-white/75" : "text-[var(--mute)]"}`}>{tab.n}</span>
+              </button>
+            );
+          })}
+        </div>
 
-            {/* 2. Đoàn 1 */}
-            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-blue-200/90 shadow-2xs hover:border-blue-300 transition-all">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5 truncate">
-                <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1
-              </div>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[18px] sm:text-[20px] font-black text-blue-700">{summary.totalDoan1}</span>
-                <span className="text-[11px] text-blue-600/80 font-bold truncate">
-                  ({summary.total > 0 ? Math.round((summary.totalDoan1 / summary.total) * 100) : 0}%)
-                </span>
-              </div>
-            </div>
-
-            {/* 3. Đoàn 2 trở lên */}
-            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-purple-200/90 shadow-2xs hover:border-purple-300 transition-all">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-purple-900 flex items-center gap-1.5 truncate">
-                <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2+
-              </div>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[18px] sm:text-[20px] font-black text-purple-700">{summary.totalDoan2}</span>
-                <span className="text-[11px] text-purple-600/80 font-bold truncate">
-                  ({summary.total > 0 ? Math.round((summary.totalDoan2 / summary.total) * 100) : 0}%)
-                </span>
-              </div>
-            </div>
-
-            {/* 4. Đã đón lên xe */}
-            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-sky-200/90 shadow-2xs hover:border-sky-300 transition-all">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-sky-900 flex items-center gap-1.5 truncate">
-                <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" /> Đã đón lên xe
-              </div>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[18px] sm:text-[20px] font-black text-sky-700">{summary.daDon}</span>
-                <span className="text-[11px] text-sky-600 font-bold truncate">
-                  ({summary.total > 0 ? Math.round((summary.daDon / summary.total) * 100) : 0}%)
-                </span>
-              </div>
-            </div>
-
-            {/* 5. Đang chờ đón */}
-            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-amber-200/90 shadow-2xs hover:border-amber-300 transition-all">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 truncate">
-                <Clock className="w-3.5 h-3.5 text-amber-600" /> Đang chờ đón
-              </div>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[18px] sm:text-[20px] font-black text-amber-700">{summary.chuaDon}</span>
-                <span className="text-[11px] text-amber-600/80 font-medium truncate">chưa lên xe</span>
-              </div>
-            </div>
-
-            {/* 6. Đã mổ tại viện */}
-            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-emerald-200/90 shadow-2xs hover:border-emerald-300 transition-all">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5 truncate">
-                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Đã phẫu thuật
-              </div>
-              <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[18px] sm:text-[20px] font-black text-emerald-700">{summary.daMo}</span>
-                <span className="text-[11px] text-emerald-600/80 font-medium truncate">ca đã mổ</span>
-              </div>
-            </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="h-8 px-2 min-w-0 flex-1 sm:flex-none rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer"
+          >
+            <option value="ALL">Tất cả ngày đón</option>
+            {uniqueDates.map((d) => (
+              <option key={d} value={d}>
+                {fmtDate(d)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={diemDonFilter}
+            onChange={(e) => setDiemDonFilter(e.target.value)}
+            className="h-8 px-2 min-w-0 flex-1 sm:flex-none sm:max-w-[220px] rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer truncate"
+          >
+            <option value="ALL">Tất cả điểm đón ({uniqueDiemDon.length})</option>
+            {uniqueDiemDon.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <div className="inline-flex shrink-0 p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5">
+            {([
+              ["grouped", List, "Lộ trình trạm"],
+              ["grid", LayoutGrid, "Lưới thẻ"],
+              ["table", TableIcon, "Bảng chi tiết"],
+            ] as const).map(([mode, Icon, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                title={label}
+                className={`h-7 px-2 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  viewMode === mode ? "bg-[var(--surface)] text-[var(--navy)] shadow-[var(--shadow-xs)]" : "text-[var(--mute)] hover:text-[var(--ink)]"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span className="hidden 2xl:inline">{label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Thanh công cụ tìm kiếm & bộ lọc lộ trình (Bounded max-w-7xl) */}
-      <div className="border-b border-[var(--line)] bg-white shrink-0 print:hidden">
-        <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-6 py-2 sm:py-3 space-y-2 sm:space-y-3">
-          <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
-            {/* Ô tìm kiếm */}
-            <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[240px] sm:max-w-[380px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm tên, SĐT, địa chỉ, trạm đón..."
-                className="w-full h-9 rounded-lg border border-[var(--line)] bg-[var(--surface-bg)] pl-9 pr-8 text-[13px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)]"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Filters + View Mode Switcher */}
-            <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-wrap sm:ml-auto">
-              {/* Chọn ngày đón */}
-              <div className="flex items-center gap-1.5 flex-1 min-w-0 sm:flex-none">
-                <select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="h-9 px-2 sm:px-3 min-w-0 flex-1 sm:flex-none rounded-lg border border-[var(--line)] bg-white text-[12px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer shadow-2xs"
-                >
-                  <option value="ALL">Tất cả ngày đón</option>
-                  {uniqueDates.map((d) => (
-                    <option key={d} value={d}>
-                      {fmtDate(d)}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Chọn điểm đón */}
-                <select
-                  value={diemDonFilter}
-                  onChange={(e) => setDiemDonFilter(e.target.value)}
-                  className="h-9 px-2 sm:px-3 min-w-0 flex-1 sm:flex-none rounded-lg border border-[var(--line)] bg-white text-[12px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer shadow-2xs sm:max-w-[210px] truncate"
-                >
-                  <option value="ALL">Tất cả điểm đón ({uniqueDiemDon.length})</option>
-                  {uniqueDiemDon.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* View Mode Switcher: Lộ trình trạm / Lưới thẻ / Bảng */}
-              <div className="flex items-center shrink-0 bg-[var(--surface-soft)] p-0.5 rounded-lg border border-[var(--line)]">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grouped")}
-                  title="Chế độ lộ trình trạm"
-                  className={`px-2.5 py-1 rounded-md text-[12px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    viewMode === "grouped"
-                      ? "bg-white text-[var(--navy)] shadow-2xs"
-                      : "text-[var(--mute)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  <List className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Lộ trình trạm</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  title="Chế độ lưới thẻ 2 cột"
-                  className={`px-2.5 py-1 rounded-md text-[12px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    viewMode === "grid"
-                      ? "bg-white text-[var(--navy)] shadow-2xs"
-                      : "text-[var(--mute)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Lưới thẻ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("table")}
-                  title="Chế độ bảng chi tiết"
-                  className={`px-2.5 py-1 rounded-md text-[12px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    viewMode === "table"
-                      ? "bg-white text-[var(--navy)] shadow-2xs"
-                      : "text-[var(--mute)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  <TableIcon className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Bảng chi tiết</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Dải Tab trạng thái + Toggle thu gọn trạm */}
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--line-soft)]">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar sm:flex-wrap text-[11.5px]">
-              {[
-                { key: "all" as const, label: "Tất cả", n: summary.total },
-                { key: "chuaDon" as const, label: "Đang chờ đón", n: summary.chuaDon },
-                { key: "daDon" as const, label: "Đã đón lên xe", n: summary.daDon },
-                { key: "daMo" as const, label: "Đã mổ xong", n: summary.daMo },
-              ].map((tab) => {
-                const active = statusFilter === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setStatusFilter(tab.key)}
-                    className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      active
-                        ? "bg-[var(--navy)] text-white shadow-2xs"
-                        : "bg-[var(--surface-soft)] text-[var(--ink-soft)] hover:bg-[var(--line-soft)] hover:text-[var(--ink)]"
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                    <span
-                      className={`font-mono text-[10.5px] px-1.5 rounded-full ${
-                        active ? "bg-white/20 text-white" : "bg-white text-[var(--mute)] border border-[var(--line)]"
-                      }`}
-                    >
-                      {tab.n}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* Vùng nội dung chính (Main Content Area - Bounded with max-w-7xl) */}
-      <div className="p-4 sm:p-6 flex-1 min-h-0">
-        <div className="max-w-[1600px] mx-auto w-full">
+      {/* ── Nội dung: Lộ trình trạm = sidebar + chi tiết cao hết màn hình; chế độ khác cuộn cả vùng ── */}
+      {(() => {
+        const sidebarMode = viewMode === "grouped" && !(loading && data.length === 0) && filteredList.length > 0;
+        return (
+      <div className={sidebarMode ? "flex-1 min-h-0 flex flex-col print:block" : "flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 print:overflow-visible"}>
+        <div className={sidebarMode ? "flex-1 min-h-0 flex flex-col" : "w-full"}>
           {loading && data.length === 0 ? (
             <div className="py-24 flex flex-col items-center justify-center text-[var(--mute)] space-y-3">
               <Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" />
@@ -1216,7 +1103,7 @@ export default function DoanXePage() {
             /* ============================================================
                CHẾ ĐỘ 1: LỘ TRÌNH TRẠM (DẠNG DANH SÁCH RÕ RÀNG, TỐI ƯU CỘT)
                ============================================================ */
-            <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-5 items-start">
+            <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
               {/* Sidebar điểm đón: nhóm theo ngày, tiến độ từng trạm, tìm & lọc nhanh */}
               {(() => {
                 const daDonCua = (g: (typeof groupedByDiemDon)[number]) => g.items.filter((it) => it.daDon || it.ngayDenBV).length;
@@ -1236,7 +1123,7 @@ export default function DoanXePage() {
                 }, {});
                 return (
                   <aside
-                    className={`${activeStationKey ? "hidden lg:flex" : "flex"} flex-col rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden lg:sticky lg:top-0 lg:max-h-[calc(100dvh-7rem)]`}
+                    className={`${activeStationKey ? "hidden lg:flex" : "flex"} flex-1 lg:flex-none min-h-0 flex-col bg-[var(--surface)] lg:border-r border-[var(--line)] overflow-hidden print:hidden`}
                   >
                     <div className="p-3 border-b border-[var(--line-soft)] space-y-2 shrink-0">
                       <div className="flex items-baseline justify-between gap-2">
@@ -1342,7 +1229,7 @@ export default function DoanXePage() {
               })()}
 
               {/* Chi tiết trạm đang chọn */}
-              <div className={`${activeStationKey ? "block" : "hidden lg:block"} min-w-0`}>
+              <div className={`${activeStationKey ? "block" : "hidden lg:block"} flex-1 lg:flex-none min-h-0 min-w-0 overflow-y-auto p-3 sm:p-5 print:overflow-visible`}>
                 <button
                   type="button"
                   onClick={() => setActiveStation(null)}
@@ -2079,6 +1966,8 @@ export default function DoanXePage() {
           )}
         </div>
       </div>
+        );
+      })()}
 
       {/* Modal Chọn Đợt Khám */}
       <Modal

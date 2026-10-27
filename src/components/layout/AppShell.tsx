@@ -21,7 +21,7 @@ interface AppShellProps {
 
 export default function AppShell({ children, initialUser, initialCoSo }: AppShellProps) {
   const pathname = usePathname();
-  const isFullBleed = pathname.startsWith("/kham/") || pathname.startsWith("/tu-van") || pathname.startsWith("/theo-doi") || pathname === "/buoi-kham";
+  const isFullBleed = pathname.startsWith("/kham/") || pathname.startsWith("/tu-van") || pathname.startsWith("/theo-doi") || pathname.startsWith("/doan-xe") || pathname === "/buoi-kham";
 
   return (
     <div className="flex flex-col h-[100dvh] max-h-[100dvh] bg-[var(--surface-bg)] overflow-hidden relative" suppressHydrationWarning>
