@@ -950,9 +950,14 @@ export default function BuoiKhamPage() {
               <div className="flex items-center gap-2 mt-0.5 min-w-0">
                 <span className="font-mono text-[10.5px] font-bold text-[var(--navy)] shrink-0">{fmtBuoiKhamCode(b.id)}</span>
                 {place && (
-                  <span className="flex items-center gap-1 text-[11px] text-[var(--mute)] min-w-0" title={place}>
+                  <span className="flex items-center gap-1 text-[11px] text-[var(--mute)] min-w-0 shrink-0 max-w-[45%]" title={place}>
                     <MapPin className="w-3 h-3 shrink-0" />
                     <span className="truncate">{place}</span>
+                  </span>
+                )}
+                {b.ghiChu?.trim() && b.ghiChu.trim() !== name && (
+                  <span className="truncate text-[11px] text-[var(--mute-soft)]" title={`Ghi chú: ${b.ghiChu}`}>
+                    · {b.ghiChu}
                   </span>
                 )}
               </div>

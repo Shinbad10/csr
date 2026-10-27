@@ -19,6 +19,8 @@ const FIELD_NAMES: Record<string, string> = {
   chanDoanKhac: "Chẩn đoán khác",
   khuyenNghi: "Khuyến nghị điều trị",
   thiLucMP: "Thị lực mắt phải",
+  doKinhMP: "Độ kính mắt phải",
+  doKinhMT: "Độ kính mắt trái",
   thiLucMT: "Thị lực mắt trái",
   nhom: "Phân nhóm điều trị",
   bhyt: "Mức hưởng BHYT",

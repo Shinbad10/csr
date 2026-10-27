@@ -96,6 +96,8 @@ model HoSoBenhNhan {
   // Lâm sàng (Tư vấn viên chép từ phiếu bác sĩ)
   thiLucMP     String?
   thiLucMT     String?
+  doKinhMP     String?  // độ kính mắt phải, vd. "-2.50", "+1.25 / -0.75 x 180"
+  doKinhMT     String?  // độ kính mắt trái
   matKham        String? // Mắt phải | Mắt trái | Hai mắt
   chanDoanMP     String? // JSON mảng chẩn đoán Mắt phải
   chanDoanKhacMP String? // Chẩn đoán khác Mắt phải

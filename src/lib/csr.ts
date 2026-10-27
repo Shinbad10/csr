@@ -330,9 +330,11 @@ export const fmtBuoiKhamName = (b?: { ghiChu?: string | null; diaDiem?: string |
   const ghiChu = (b.ghiChu || "").trim();
   const diaDiem = (b.diaDiem || "").trim();
   const xa = (b.xa || "").trim();
-  if (ghiChu && ghiChu.toLowerCase() !== "test" && ghiChu !== xa) return ghiChu;
+  // Địa điểm khám là tên chính của đợt. Ghi chú chỉ dùng khi thiếu địa điểm — nhiều cơ sở ghi danh
+  // sách thành viên đoàn vào ghi chú, đưa lên làm tên thì không nhận ra đợt ở đâu.
   if (diaDiem && diaDiem.toLowerCase() !== "test" && diaDiem !== xa) return diaDiem;
   if (xa) return `BV - Xã ${xa}`;
+  if (ghiChu && ghiChu.toLowerCase() !== "test") return ghiChu;
   return ghiChu || diaDiem || "Đợt khám";
 };
 
@@ -381,7 +383,7 @@ export interface HoSoExport {
   diaChi?: string | null; khuPho?: string | null; xaPhuong?: string | null;
   benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null;
   chieuCao?: string | null; canNang?: string | null;
-  thiLucMP?: string | null; thiLucMT?: string | null;
+  thiLucMP?: string | null; thiLucMT?: string | null; doKinhMP?: string | null; doKinhMT?: string | null;
   chanDoan: string; chanDoanKhac: string | null;
   chanDoanMP?: string | null; chanDoanKhacMP?: string | null;
   chanDoanMT?: string | null; chanDoanKhacMT?: string | null;
@@ -842,7 +844,7 @@ export interface HoSo {
   id: string; maBN: string; maBNHIS?: string | null; stt: number; buoiKhamId?: string; hoTen: string; gioiTinh: string;
   ngaySinh: string | null; namSinh: number | null; cccd: string | null; diaChi: string | null;
   sdt: string | null; sdtNguoiNha: string | null;
-  thiLucMP: string | null; thiLucMT: string | null;
+  thiLucMP: string | null; thiLucMT: string | null; doKinhMP?: string | null; doKinhMT?: string | null;
   matKham?: string | null;
   chanDoanMP?: string | null; chanDoanKhacMP?: string | null;
   chanDoanMT?: string | null; chanDoanKhacMT?: string | null;

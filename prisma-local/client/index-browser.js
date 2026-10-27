@@ -183,6 +183,8 @@ exports.Prisma.HoSoBenhNhanScalarFieldEnum = {
   xaPhuong: 'xaPhuong',
   thiLucMP: 'thiLucMP',
   thiLucMT: 'thiLucMT',
+  doKinhMP: 'doKinhMP',
+  doKinhMT: 'doKinhMT',
   matKham: 'matKham',
   chanDoanMP: 'chanDoanMP',
   chanDoanKhacMP: 'chanDoanKhacMP',

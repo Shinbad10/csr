@@ -5464,6 +5464,8 @@ export namespace Prisma {
     xaPhuong: string | null
     thiLucMP: string | null
     thiLucMT: string | null
+    doKinhMP: string | null
+    doKinhMT: string | null
     matKham: string | null
     chanDoanMP: string | null
     chanDoanKhacMP: string | null
@@ -5532,6 +5534,8 @@ export namespace Prisma {
     xaPhuong: string | null
     thiLucMP: string | null
     thiLucMT: string | null
+    doKinhMP: string | null
+    doKinhMT: string | null
     matKham: string | null
     chanDoanMP: string | null
     chanDoanKhacMP: string | null
@@ -5600,6 +5604,8 @@ export namespace Prisma {
     xaPhuong: number
     thiLucMP: number
     thiLucMT: number
+    doKinhMP: number
+    doKinhMT: number
     matKham: number
     chanDoanMP: number
     chanDoanKhacMP: number
@@ -5686,6 +5692,8 @@ export namespace Prisma {
     xaPhuong?: true
     thiLucMP?: true
     thiLucMT?: true
+    doKinhMP?: true
+    doKinhMT?: true
     matKham?: true
     chanDoanMP?: true
     chanDoanKhacMP?: true
@@ -5754,6 +5762,8 @@ export namespace Prisma {
     xaPhuong?: true
     thiLucMP?: true
     thiLucMT?: true
+    doKinhMP?: true
+    doKinhMT?: true
     matKham?: true
     chanDoanMP?: true
     chanDoanKhacMP?: true
@@ -5822,6 +5832,8 @@ export namespace Prisma {
     xaPhuong?: true
     thiLucMP?: true
     thiLucMT?: true
+    doKinhMP?: true
+    doKinhMT?: true
     matKham?: true
     chanDoanMP?: true
     chanDoanKhacMP?: true
@@ -5977,6 +5989,8 @@ export namespace Prisma {
     xaPhuong: string | null
     thiLucMP: string | null
     thiLucMT: string | null
+    doKinhMP: string | null
+    doKinhMT: string | null
     matKham: string | null
     chanDoanMP: string | null
     chanDoanKhacMP: string | null
@@ -6064,6 +6078,8 @@ export namespace Prisma {
     xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
+    doKinhMP?: boolean
+    doKinhMT?: boolean
     matKham?: boolean
     chanDoanMP?: boolean
     chanDoanKhacMP?: boolean
@@ -6139,6 +6155,8 @@ export namespace Prisma {
     xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
+    doKinhMP?: boolean
+    doKinhMT?: boolean
     matKham?: boolean
     chanDoanMP?: boolean
     chanDoanKhacMP?: boolean
@@ -6212,6 +6230,8 @@ export namespace Prisma {
     xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
+    doKinhMP?: boolean
+    doKinhMT?: boolean
     matKham?: boolean
     chanDoanMP?: boolean
     chanDoanKhacMP?: boolean
@@ -6285,6 +6305,8 @@ export namespace Prisma {
     xaPhuong?: boolean
     thiLucMP?: boolean
     thiLucMT?: boolean
+    doKinhMP?: boolean
+    doKinhMT?: boolean
     matKham?: boolean
     chanDoanMP?: boolean
     chanDoanKhacMP?: boolean
@@ -6333,7 +6355,7 @@ export namespace Prisma {
     syncStatus?: boolean
   }
 
-  export type HoSoBenhNhanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "maBN" | "maBNHIS" | "stt" | "buoiKhamId" | "coSoId" | "hoTen" | "gioiTinh" | "ngaySinh" | "namSinh" | "cccd" | "diaChi" | "sdt" | "sdtNguoiNha" | "mucHuongBHYT" | "khuPho" | "xaPhuong" | "thiLucMP" | "thiLucMT" | "matKham" | "chanDoanMP" | "chanDoanKhacMP" | "chanDoanMT" | "chanDoanKhacMT" | "chanDoan" | "chanDoanKhac" | "khuyenNghi" | "benhSu" | "loaiBenhSu" | "loaiBenhSuKhac" | "chieuCao" | "canNang" | "benhLy" | "loaiBenhLy" | "loaiBenhLyKhac" | "huongXuTri" | "huongXuTriKhac" | "bacSiChiDinh" | "nhanVienTuVan" | "xacNhanDieuTri" | "lyDoKhongDieuTri" | "diemKham" | "bhyt" | "tuVanVienMa" | "soTienBao" | "ngayDieuTri" | "diemDon" | "gioDon" | "nhom" | "nguoiPhuTrachMa" | "nguoiChotCuoiMa" | "ngayChot" | "daDon" | "ngayDenBV" | "ngayMoThucTe" | "soTienThucThu" | "trangThaiDieuTri" | "ngayTaiKham" | "ghiChuMat2" | "trangThai" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "syncStatus", ExtArgs["result"]["hoSoBenhNhan"]>
+  export type HoSoBenhNhanOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "maBN" | "maBNHIS" | "stt" | "buoiKhamId" | "coSoId" | "hoTen" | "gioiTinh" | "ngaySinh" | "namSinh" | "cccd" | "diaChi" | "sdt" | "sdtNguoiNha" | "mucHuongBHYT" | "khuPho" | "xaPhuong" | "thiLucMP" | "thiLucMT" | "doKinhMP" | "doKinhMT" | "matKham" | "chanDoanMP" | "chanDoanKhacMP" | "chanDoanMT" | "chanDoanKhacMT" | "chanDoan" | "chanDoanKhac" | "khuyenNghi" | "benhSu" | "loaiBenhSu" | "loaiBenhSuKhac" | "chieuCao" | "canNang" | "benhLy" | "loaiBenhLy" | "loaiBenhLyKhac" | "huongXuTri" | "huongXuTriKhac" | "bacSiChiDinh" | "nhanVienTuVan" | "xacNhanDieuTri" | "lyDoKhongDieuTri" | "diemKham" | "bhyt" | "tuVanVienMa" | "soTienBao" | "ngayDieuTri" | "diemDon" | "gioDon" | "nhom" | "nguoiPhuTrachMa" | "nguoiChotCuoiMa" | "ngayChot" | "daDon" | "ngayDenBV" | "ngayMoThucTe" | "soTienThucThu" | "trangThaiDieuTri" | "ngayTaiKham" | "ghiChuMat2" | "trangThai" | "createdAt" | "updatedAt" | "createdBy" | "updatedBy" | "syncStatus", ExtArgs["result"]["hoSoBenhNhan"]>
   export type HoSoBenhNhanInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     buoiKham?: boolean | BuoiKhamDefaultArgs<ExtArgs>
     coSo?: boolean | CoSoDefaultArgs<ExtArgs>
@@ -6388,6 +6410,8 @@ export namespace Prisma {
       xaPhuong: string | null
       thiLucMP: string | null
       thiLucMT: string | null
+      doKinhMP: string | null
+      doKinhMT: string | null
       matKham: string | null
       chanDoanMP: string | null
       chanDoanKhacMP: string | null
@@ -6882,6 +6906,8 @@ export namespace Prisma {
     readonly xaPhuong: FieldRef<"HoSoBenhNhan", 'String'>
     readonly thiLucMP: FieldRef<"HoSoBenhNhan", 'String'>
     readonly thiLucMT: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly doKinhMP: FieldRef<"HoSoBenhNhan", 'String'>
+    readonly doKinhMT: FieldRef<"HoSoBenhNhan", 'String'>
     readonly matKham: FieldRef<"HoSoBenhNhan", 'String'>
     readonly chanDoanMP: FieldRef<"HoSoBenhNhan", 'String'>
     readonly chanDoanKhacMP: FieldRef<"HoSoBenhNhan", 'String'>
@@ -11681,6 +11707,8 @@ export namespace Prisma {
     xaPhuong: 'xaPhuong',
     thiLucMP: 'thiLucMP',
     thiLucMT: 'thiLucMT',
+    doKinhMP: 'doKinhMP',
+    doKinhMT: 'doKinhMT',
     matKham: 'matKham',
     chanDoanMP: 'chanDoanMP',
     chanDoanKhacMP: 'chanDoanKhacMP',
@@ -12160,6 +12188,8 @@ export namespace Prisma {
     xaPhuong?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    doKinhMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    doKinhMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     matKham?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoanMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoanKhacMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -12234,6 +12264,8 @@ export namespace Prisma {
     xaPhuong?: SortOrderInput | SortOrder
     thiLucMP?: SortOrderInput | SortOrder
     thiLucMT?: SortOrderInput | SortOrder
+    doKinhMP?: SortOrderInput | SortOrder
+    doKinhMT?: SortOrderInput | SortOrder
     matKham?: SortOrderInput | SortOrder
     chanDoanMP?: SortOrderInput | SortOrder
     chanDoanKhacMP?: SortOrderInput | SortOrder
@@ -12311,6 +12343,8 @@ export namespace Prisma {
     xaPhuong?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    doKinhMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    doKinhMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     matKham?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoanMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoanKhacMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -12385,6 +12419,8 @@ export namespace Prisma {
     xaPhuong?: SortOrderInput | SortOrder
     thiLucMP?: SortOrderInput | SortOrder
     thiLucMT?: SortOrderInput | SortOrder
+    doKinhMP?: SortOrderInput | SortOrder
+    doKinhMT?: SortOrderInput | SortOrder
     matKham?: SortOrderInput | SortOrder
     chanDoanMP?: SortOrderInput | SortOrder
     chanDoanKhacMP?: SortOrderInput | SortOrder
@@ -12461,6 +12497,8 @@ export namespace Prisma {
     xaPhuong?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    doKinhMP?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
+    doKinhMT?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     matKham?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     chanDoanMP?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
     chanDoanKhacMP?: StringNullableWithAggregatesFilter<"HoSoBenhNhan"> | string | null
@@ -13102,6 +13140,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -13173,6 +13213,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -13240,6 +13282,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13311,6 +13355,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13380,6 +13426,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -13446,6 +13494,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13511,6 +13561,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14155,6 +14207,8 @@ export namespace Prisma {
     xaPhuong?: SortOrder
     thiLucMP?: SortOrder
     thiLucMT?: SortOrder
+    doKinhMP?: SortOrder
+    doKinhMT?: SortOrder
     matKham?: SortOrder
     chanDoanMP?: SortOrder
     chanDoanKhacMP?: SortOrder
@@ -14231,6 +14285,8 @@ export namespace Prisma {
     xaPhuong?: SortOrder
     thiLucMP?: SortOrder
     thiLucMT?: SortOrder
+    doKinhMP?: SortOrder
+    doKinhMT?: SortOrder
     matKham?: SortOrder
     chanDoanMP?: SortOrder
     chanDoanKhacMP?: SortOrder
@@ -14299,6 +14355,8 @@ export namespace Prisma {
     xaPhuong?: SortOrder
     thiLucMP?: SortOrder
     thiLucMT?: SortOrder
+    doKinhMP?: SortOrder
+    doKinhMT?: SortOrder
     matKham?: SortOrder
     chanDoanMP?: SortOrder
     chanDoanKhacMP?: SortOrder
@@ -15490,6 +15548,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -15559,6 +15619,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -15721,6 +15783,8 @@ export namespace Prisma {
     xaPhuong?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     thiLucMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    doKinhMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
+    doKinhMT?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     matKham?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoanMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
     chanDoanKhacMP?: StringNullableFilter<"HoSoBenhNhan"> | string | null
@@ -15875,6 +15939,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -15945,6 +16011,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -16020,6 +16088,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -16090,6 +16160,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -16165,6 +16237,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -16235,6 +16309,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -16562,6 +16638,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -16631,6 +16709,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -17266,6 +17346,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -17336,6 +17418,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -17453,6 +17537,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17523,6 +17609,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17656,6 +17744,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -17809,6 +17899,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17878,6 +17970,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17946,6 +18040,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18029,6 +18125,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -18096,6 +18194,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -18163,6 +18263,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -18283,6 +18385,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18353,6 +18457,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18421,6 +18527,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18486,6 +18594,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18556,6 +18666,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18624,6 +18736,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18689,6 +18803,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18759,6 +18875,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18827,6 +18945,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18917,6 +19037,8 @@ export namespace Prisma {
     xaPhuong?: string | null
     thiLucMP?: string | null
     thiLucMT?: string | null
+    doKinhMP?: string | null
+    doKinhMT?: string | null
     matKham?: string | null
     chanDoanMP?: string | null
     chanDoanKhacMP?: string | null
@@ -18983,6 +19105,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19052,6 +19176,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null
@@ -19120,6 +19246,8 @@ export namespace Prisma {
     xaPhuong?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMP?: NullableStringFieldUpdateOperationsInput | string | null
     thiLucMT?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMP?: NullableStringFieldUpdateOperationsInput | string | null
+    doKinhMT?: NullableStringFieldUpdateOperationsInput | string | null
     matKham?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanMP?: NullableStringFieldUpdateOperationsInput | string | null
     chanDoanKhacMP?: NullableStringFieldUpdateOperationsInput | string | null

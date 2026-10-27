@@ -37,6 +37,8 @@ interface BuoiKham { id: string; coSoId: string; coSo?: { id: string; ten: strin
 
 const CO_KHONG = ["Có", "Không"];
 /** Boolean? ⇄ "Có" / "Không" / "" cho ChoiceRow */
+/** Ý kiến cụ thể khi BN chưa đồng ý (thuộc Nhóm B) — chọn ở mục Ý kiến điều trị, lưu vào lyDoKhongDieuTri */
+const LY_DO_NHANH = ["Hỏi ý kiến gia đình", "Bận việc", "Hẹn hôm khác", "Không muốn chữa"];
 const boolToChoice = (v?: boolean | null) => (v == null ? "" : v ? "Có" : "Không");
 const choiceToBool = (v: string) => (v === "" ? null : v === "Có");
 const mucHuongFromThe = (bhyt?: string | null) => {
@@ -45,13 +47,13 @@ const mucHuongFromThe = (bhyt?: string | null) => {
 };
 
 const EMPTY = {
-  thiLucMP: "", thiLucMT: "", matKham: "",
+  thiLucMP: "", thiLucMT: "", doKinhMP: "", doKinhMT: "", matKham: "",
   chanDoanMP: [] as string[], chanDoanKhacMP: "",
   chanDoanMT: [] as string[], chanDoanKhacMT: "",
   chanDoan: [] as string[], chanDoanKhac: "",
   khuyenNghi: "", sdt: "", nhom: "",
   // Phiếu khám sàng lọc nhãn khoa
-  benhSu: "", loaiBenhSu: [] as string[], loaiBenhSuKhac: "",
+  benhSu: "Không", loaiBenhSu: [] as string[], loaiBenhSuKhac: "",
   chieuCao: "", canNang: "",
   benhLy: "", loaiBenhLy: [] as string[], loaiBenhLyKhac: "",
   huongXuTri: "", huongXuTriKhac: "",
@@ -899,6 +901,9 @@ export default function ExamPage() {
   const canCreateHoSo = can(userRole, "hoso.create");
   const canClinical = can(userRole, "hoso.clinical");
   const readOnly = !canCreateHoSo && !canClinical;
+  /* NV tư vấn mặc định = người đang đăng nhập. Phiên đăng nhập thường tải xong SAU khi hồ sơ được nạp,
+     nên không điền vào state lúc nạp mà dùng làm giá trị dự phòng khi hiển thị và khi lưu. */
+  const tenDangNhap = readOnly ? "" : session?.user?.name || "";
 
   /** Khuyến nghị hiệu lực: nếu bật "Hướng xử trí" thì suy từ đó, không thì dùng trường cũ. */
   const effKhuyenNghi = isFieldOn(cfg, "huongXuTri") ? huongXuTriToKhuyenNghi(f.huongXuTri) : f.khuyenNghi;
@@ -934,16 +939,19 @@ export default function ExamPage() {
 
     const next = {
       thiLucMP: p.thiLucMP || "", thiLucMT: p.thiLucMT || "",
+      doKinhMP: p.doKinhMP || "", doKinhMT: p.doKinhMT || "",
       matKham: p.matKham || "",
       chanDoanMP: cdMP, chanDoanKhacMP: cdKhacMP,
       chanDoanMT: cdMT, chanDoanKhacMT: cdKhacMT,
       chanDoan: parseDiag(p.chanDoan), chanDoanKhac: p.chanDoanKhac || "", khuyenNghi: p.khuyenNghi || "",
       sdt: p.sdt || "", nhom: p.nhom || "",
-      benhSu: boolToChoice(p.benhSu), loaiBenhSu: parseDiag(p.loaiBenhSu ?? "[]"), loaiBenhSuKhac: p.loaiBenhSuKhac || "",
+      // Chưa ghi bệnh sử → mặc định "Không" (đa số BN không có), chọn "Có" khi cần
+      benhSu: p.benhSu == null ? "Không" : boolToChoice(p.benhSu), loaiBenhSu: parseDiag(p.loaiBenhSu ?? "[]"), loaiBenhSuKhac: p.loaiBenhSuKhac || "",
       chieuCao: p.chieuCao || "", canNang: p.canNang || "",
       benhLy: p.benhLy || "", loaiBenhLy: parseDiag(p.loaiBenhLy ?? "[]"), loaiBenhLyKhac: p.loaiBenhLyKhac || "",
       huongXuTri: p.huongXuTri || "", huongXuTriKhac: p.huongXuTriKhac || "",
       bacSiChiDinh: p.bacSiChiDinh || (parseDoctorList(buoiKham?.bacSiKham).length === 1 ? parseDoctorList(buoiKham?.bacSiKham)[0] : ""),
+      // Chưa có ai tư vấn → mặc định người đang đăng nhập
       nhanVienTuVan: p.nhanVienTuVan || p.tuVanVien?.hoTen || "",
       xacNhanDieuTri: boolToChoice(p.xacNhanDieuTri), lyDoKhongDieuTri: p.lyDoKhongDieuTri || "",
       ngayDieuTri: p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "",
@@ -1117,7 +1125,10 @@ export default function ExamPage() {
 
     // Chỉ gửi các trường đang BẬT để không ghi đè dữ liệu của trường đã tắt
     const payload: Record<string, unknown> = { sdt: f.sdt || undefined, nhom: f.nhom || null };
-    if (on("thiLuc")) { payload.thiLucMP = f.thiLucMP; payload.thiLucMT = f.thiLucMT; }
+    if (on("thiLuc")) {
+      payload.thiLucMP = f.thiLucMP; payload.thiLucMT = f.thiLucMT;
+      payload.doKinhMP = f.doKinhMP.trim() || null; payload.doKinhMT = f.doKinhMT.trim() || null;
+    }
     if (on("chanDoan")) {
       const unified: string[] = [];
       f.chanDoanMP.forEach((d) => unified.push(d === "Khác" && f.chanDoanKhacMP ? `MP: ${f.chanDoanKhacMP}` : `${d} (MP)`));
@@ -1149,8 +1160,10 @@ export default function ExamPage() {
     const defaultDoc = teamDocs.length === 1 ? teamDocs[0] : null;
     payload.bacSiChiDinh = f.bacSiChiDinh || defaultDoc || selected.bacSiChiDinh || null;
     if (on("diemKham")) payload.diemKham = buoiKham?.diaDiem || null;
-    if (on("nhanVienTuVan")) payload.nhanVienTuVan = f.nhanVienTuVan || null;
+    if (on("nhanVienTuVan")) payload.nhanVienTuVan = f.nhanVienTuVan || tenDangNhap || null;
     if (on("xacNhanDieuTri")) { payload.xacNhanDieuTri = choiceToBool(f.xacNhanDieuTri); payload.lyDoKhongDieuTri = f.lyDoKhongDieuTri; }
+    // Lý do chưa đồng ý chọn ở mục Ý kiến điều trị — đồng ý điều trị thì xoá lý do cũ
+    else payload.lyDoKhongDieuTri = f.nhom === "A" ? null : f.lyDoKhongDieuTri || null;
     if (on("ngayDieuTri")) payload.ngayDieuTri = f.ngayDieuTri || null;
     payload.ghiChuTuVan = f.ghiChuTuVan || null;
 
@@ -1200,7 +1213,7 @@ export default function ExamPage() {
       sdt: f.sdt || undefined,
       bacSiChiDinh: f.bacSiChiDinh || defaultDoc || selected.bacSiChiDinh || null,
       diemKham: buoiKham?.diaDiem || null,
-      nhanVienTuVan: f.nhanVienTuVan || selected.nhanVienTuVan || null,
+      nhanVienTuVan: f.nhanVienTuVan || selected.nhanVienTuVan || tenDangNhap || null,
     };
 
     setSaving(true);
@@ -2050,8 +2063,13 @@ export default function ExamPage() {
                           <ChoiceRow options={CO_KHONG} value={f.benhSu} onChange={(v) => setF((s) => ({ ...s, benhSu: v, loaiBenhSu: v === "Có" ? s.loaiBenhSu : [] }))} disabled={readOnly} />
                         </div>
                       )}
-                      {/* Luôn hiện để thấy trước danh mục; chỉ mở khoá khi đã chọn "Có" */}
-                      {isFieldOn(cfg, "loaiBenhSu") && (
+                      {/* Chưa chọn "Có" thì chỉ để một dòng gợi ý — 15 chip mờ chiếm chỗ mà không dùng được */}
+                      {isFieldOn(cfg, "loaiBenhSu") && lockLoaiBenhSu && (
+                        <p className="text-[11.5px] text-[var(--mute)]">
+                          {f.benhSu === "Không" ? "Không có bệnh sử." : "Chưa ghi bệnh sử."} Chọn <b className="text-[var(--ink-soft)]">Có</b> để ghi loại bệnh sử (tăng huyết áp, đái tháo đường…).
+                        </p>
+                      )}
+                      {isFieldOn(cfg, "loaiBenhSu") && !lockLoaiBenhSu && (
                         <div>
                           <label className={labelCls}>
                             Loại bệnh sử {needLoaiBenhSu && <span className="text-[var(--rose)]">*</span>}{" "}
@@ -2079,23 +2097,48 @@ export default function ExamPage() {
                 {showChiSo && (
                   <div data-tour="kh-vision" className="@container card p-0 h-full flex flex-col">
                     <SectionHeader n={secNo.chiSo} accent={showDauHieu && showThiLuc ? "Dấu hiệu & thị lực" : showThiLuc ? "Đo thị lực" : "Dấu hiệu"} />
-                    <div className="p-3 sm:p-4 flex-1 space-y-2.5">
-                      <div className="grid grid-cols-1 @sm:grid-cols-2 gap-x-4 gap-y-2.5">
-                        {isFieldOn(cfg, "chieuCao") && (
-                          <Field label="Chiều cao (cm)">
-                            <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
-                          </Field>
-                        )}
-                        {isFieldOn(cfg, "canNang") && (
-                          <Field label="Cân nặng (kg)">
-                            <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55 (không số lẻ)" disabled={readOnly} />
-                          </Field>
-                        )}
-                        {showThiLuc && (<>
-                          <Select label="Thị lực mắt phải (MP)" value={f.thiLucMP} onChange={(v) => setF((s) => ({ ...s, thiLucMP: v }))} opts={THI_LUC} disabled={readOnly} />
-                          <Select label="Thị lực mắt trái (MT)" value={f.thiLucMT} onChange={(v) => setF((s) => ({ ...s, thiLucMT: v }))} opts={THI_LUC} disabled={readOnly} />
-                        </>)}
-                      </div>
+                    <div className="p-3 sm:p-4 flex-1 space-y-3">
+                      {(isFieldOn(cfg, "chieuCao") || isFieldOn(cfg, "canNang")) && (
+                        <div className="grid grid-cols-2 gap-3">
+                          {isFieldOn(cfg, "chieuCao") && (
+                            <Field label="Chiều cao (cm)">
+                              <input inputMode="numeric" value={f.chieuCao} onChange={(e) => setF((s) => ({ ...s, chieuCao: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 160" disabled={readOnly} />
+                            </Field>
+                          )}
+                          {isFieldOn(cfg, "canNang") && (
+                            <Field label="Cân nặng (kg)">
+                              <input inputMode="numeric" value={f.canNang} onChange={(e) => setF((s) => ({ ...s, canNang: e.target.value.replace(/[^\d]/g, "") }))} className="input-field font-mono" placeholder="VD: 55" disabled={readOnly} />
+                            </Field>
+                          )}
+                        </div>
+                      )}
+                      {/* Mỗi mắt một khối: thị lực + độ kính cạnh nhau, cùng màu với mục Kết luận (MP xanh ngọc · MT navy) */}
+                      {showThiLuc && (
+                        <div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+                          {([
+                            { mat: "MP", ten: "Mắt phải", tl: "thiLucMP", dk: "doKinhMP", dot: "bg-[var(--teal)]", box: "border-[var(--teal)]/25 bg-[var(--teal-softer)]" },
+                            { mat: "MT", ten: "Mắt trái", tl: "thiLucMT", dk: "doKinhMT", dot: "bg-[var(--navy)]", box: "border-[var(--navy)]/15 bg-[var(--navy-50)]/50" },
+                          ] as const).map((e) => (
+                            <div key={e.mat} className={`rounded-[12px] border p-3 space-y-2.5 ${e.box}`}>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
+                                <span className="font-mono text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
+                                <span className="text-[11.5px] text-[var(--mute)]">· {e.ten}</span>
+                              </div>
+                              <Select label="Thị lực" value={f[e.tl]} onChange={(v) => setF((s) => ({ ...s, [e.tl]: v }))} opts={THI_LUC} disabled={readOnly} />
+                              <Field label="Độ kính">
+                                <input
+                                  value={f[e.dk]}
+                                  onChange={(ev) => setF((s) => ({ ...s, [e.dk]: ev.target.value }))}
+                                  className="input-field font-mono"
+                                  placeholder="VD: -2.50 / -0.75 x 180"
+                                  disabled={readOnly}
+                                />
+                              </Field>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2129,157 +2172,105 @@ export default function ExamPage() {
                       </div>
                     )}
 
-                    {/* Chẩn đoán bệnh lý mắt (MP / MT) dạng trên - dưới gọn gàng */}
+                    {/* Chẩn đoán MP / MT: hai hàng trong MỘT khung kẻ dòng; chip đang chọn nền nhạt + chữ đậm
+                        (MP xanh ngọc · MT navy, cùng màu khối thị lực ở mục 02) thay cho khối màu đặc. */}
                     {isFieldOn(cfg, "chanDoan") && (
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <label className={labelCls}>
-                            Chẩn đoán bệnh lý <span className="font-normal text-[var(--mute)]">· MP / MT</span>
-                          </label>
+                      <div>
+                        <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                          <span className="text-[11.5px] font-semibold text-[var(--ink-soft)]">Chẩn đoán bệnh lý</span>
                           {!readOnly && (
-                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => setBothEyes("Đục thủy tinh thể")}
-                                className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs ${
-                                  f.chanDoanMP.includes("Đục thủy tinh thể") && f.chanDoanMT.includes("Đục thủy tinh thể")
-                                    ? "bg-emerald-700 text-white border-emerald-700"
-                                    : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50 hover:border-emerald-400"
-                                }`}
-                                title="Chọn Đục thủy tinh thể cho cả 2 mắt"
-                              >
-                                ĐTT 2 mắt
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setBothEyes("Mộng")}
-                                className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs ${
-                                  f.chanDoanMP.includes("Mộng") && f.chanDoanMT.includes("Mộng")
-                                    ? "bg-amber-700 text-white border-amber-700"
-                                    : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50 hover:border-amber-400"
-                                }`}
-                                title="Chọn Mộng cho cả 2 mắt"
-                              >
-                                Mộng 2 mắt
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setBothEyes("Đục bao sau")}
-                                className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border transition-all cursor-pointer shadow-2xs ${
-                                  f.chanDoanMP.includes("Đục bao sau") && f.chanDoanMT.includes("Đục bao sau")
-                                    ? "bg-indigo-700 text-white border-indigo-700"
-                                    : "bg-white text-[#475569] border-[#cbd5e1] hover:bg-slate-50 hover:border-indigo-400"
-                                }`}
-                                title="Chọn Đục bao sau cho cả 2 mắt"
-                              >
-                                Đục bao sau 2 mắt
-                              </button>
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="text-[10.5px] text-[var(--mute)] mr-0.5">Nhanh:</span>
+                              {([
+                                ["Đục thủy tinh thể", "ĐTT 2 mắt"],
+                                ["Mộng", "Mộng 2 mắt"],
+                                ["Đục bao sau", "Đục bao sau 2 mắt"],
+                              ] as const).map(([diag, nhan]) => {
+                                const on = f.chanDoanMP.includes(diag) && f.chanDoanMT.includes(diag);
+                                return (
+                                  <button
+                                    key={diag}
+                                    type="button"
+                                    onClick={() => setBothEyes(diag)}
+                                    title={`Chọn ${diag} cho cả 2 mắt`}
+                                    className={`h-6 px-2 rounded-md border text-[10.5px] font-semibold transition-colors cursor-pointer ${
+                                      on
+                                        ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30"
+                                        : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--line-strong)]"
+                                    }`}
+                                  >
+                                    {nhan}
+                                  </button>
+                                );
+                              })}
                               <button
                                 type="button"
                                 onClick={copyMPtoMT}
-                                className="px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold text-[#031da6] bg-[#eef2ff] border border-[#c7d2fe] hover:bg-[#e0e7ff] transition-all cursor-pointer shadow-2xs"
                                 title="Sao chép chẩn đoán từ Mắt phải sang Mắt trái"
+                                className="h-6 px-2 rounded-md border border-[var(--line)] bg-[var(--surface)] text-[10.5px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
                               >
-                                MP ➔ MT
+                                MP → MT
                               </button>
                               {(f.chanDoanMP.length > 0 || f.chanDoanMT.length > 0) && (
                                 <button
                                   type="button"
                                   onClick={clearBothEyes}
-                                  className="text-[10px] sm:text-[11px] text-[#94a3b8] hover:text-[var(--rose)] cursor-pointer ml-0.5"
-                                  title="Xóa chẩn đoán cả 2 mắt"
+                                  title="Xoá chẩn đoán cả 2 mắt"
+                                  className="h-6 px-1.5 text-[10.5px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
                                 >
-                                  Xóa
+                                  Xoá
                                 </button>
                               )}
                             </div>
                           )}
                         </div>
-
-                        {/* Dòng 1: MP (Mắt phải) */}
-                        <div className="p-1.5 sm:p-2 bg-emerald-50/40 rounded-lg sm:rounded-xl border border-emerald-200/70 space-y-1">
-                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span className="text-[11px] sm:text-[12px] font-extrabold text-emerald-900 shrink-0 flex items-center gap-1 min-w-[34px] px-1 py-0.5 rounded bg-emerald-100/60">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-2xs" />
-                              <span>MP</span>
-                            </span>
-                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap flex-1">
-                              {CHAN_DOAN.map((o) => {
-                                const on = f.chanDoanMP.includes(o);
-                                return (
-                                  <button
-                                    key={o}
-                                    type="button"
-                                    onClick={() => !readOnly && toggleChanDoanMP(o)}
-                                    disabled={readOnly}
-                                    className={`px-2 sm:px-2.5 py-0.8 sm:py-1 rounded-md sm:rounded-lg text-[11px] sm:text-[12px] font-semibold border transition-all cursor-pointer ${
-                                      on
-                                        ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs font-bold"
-                                        : "bg-white text-[#334155] border-[#cbd5e1] hover:bg-emerald-50 hover:border-emerald-300"
-                                    }`}
-                                  >
-                                    {o}
-                                    {on && !readOnly && <Check className="w-2.5 h-2.5 stroke-[3] inline ml-1" />}
-                                  </button>
-                                );
-                              })}
+                        <div className="rounded-[10px] border border-[var(--line)] divide-y divide-[var(--line-soft)] bg-[var(--surface)]">
+                          {([
+                            { mat: "MP", ten: "Mắt phải", ds: f.chanDoanMP, toggle: toggleChanDoanMP, khac: "chanDoanKhacMP", dot: "bg-[var(--teal)]",
+                              onCls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/50" },
+                            { mat: "MT", ten: "Mắt trái", ds: f.chanDoanMT, toggle: toggleChanDoanMT, khac: "chanDoanKhacMT", dot: "bg-[var(--navy)]",
+                              onCls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30" },
+                          ] as const).map((e) => (
+                            <div key={e.mat} className="px-3 py-2">
+                              <div className="flex items-start gap-3">
+                                <span className="w-[46px] shrink-0 h-7 flex items-center gap-1.5" title={e.ten}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
+                                  <span className="font-mono text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
+                                </span>
+                                <div className="flex-1 flex flex-wrap gap-1.5">
+                                  {CHAN_DOAN.map((o) => {
+                                    const on = e.ds.includes(o);
+                                    return (
+                                      <button
+                                        key={o}
+                                        type="button"
+                                        onClick={() => !readOnly && e.toggle(o)}
+                                        disabled={readOnly}
+                                        className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full border text-[12px] transition-colors cursor-pointer ${
+                                          on
+                                            ? `${e.onCls} font-semibold`
+                                            : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] font-medium hover:border-[var(--line-strong)] hover:text-[var(--ink)]"
+                                        }`}
+                                      >
+                                        {on && <Check className="w-3 h-3" strokeWidth={3} />}
+                                        {o}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              {e.ds.includes("Khác") && (
+                                <input
+                                  value={f[e.khac]}
+                                  onChange={(ev) => setF((s) => ({ ...s, [e.khac]: ev.target.value }))}
+                                  placeholder={`Ghi rõ chẩn đoán ${e.ten}…`}
+                                  className="input-field mt-1.5 ml-[58px] w-[calc(100%-58px)] h-8 text-[12px] animate-fade-in"
+                                  disabled={readOnly}
+                                  autoFocus
+                                />
+                              )}
                             </div>
-                          </div>
-                          {f.chanDoanMP.includes("Khác") && (
-                            <div className="pl-0 sm:pl-[44px] animate-fade-in pt-0.5">
-                              <input
-                                value={f.chanDoanKhacMP}
-                                onChange={(e) => setF((s) => ({ ...s, chanDoanKhacMP: e.target.value }))}
-                                placeholder="Ghi rõ chẩn đoán Mắt phải…"
-                                className="w-full h-7 sm:h-7.5 px-2 text-xs bg-white border border-emerald-300 rounded-md outline-hidden focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/20 text-[#0f172a]"
-                                disabled={readOnly}
-                                autoFocus
-                              />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Dòng 2: MT (Mắt trái) */}
-                        <div className="p-1.5 sm:p-2 bg-blue-50/40 rounded-lg sm:rounded-xl border border-blue-200/70 space-y-1">
-                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span className="text-[11px] sm:text-[12px] font-extrabold text-[#031da6] shrink-0 flex items-center gap-1 min-w-[34px] px-1 py-0.5 rounded bg-blue-100/60">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#031da6] shadow-2xs" />
-                              <span>MT</span>
-                            </span>
-                            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap flex-1">
-                              {CHAN_DOAN.map((o) => {
-                                const on = f.chanDoanMT.includes(o);
-                                return (
-                                  <button
-                                    key={o}
-                                    type="button"
-                                    onClick={() => !readOnly && toggleChanDoanMT(o)}
-                                    disabled={readOnly}
-                                    className={`px-2 sm:px-2.5 py-0.8 sm:py-1 rounded-md sm:rounded-lg text-[11px] sm:text-[12px] font-semibold border transition-all cursor-pointer ${
-                                      on
-                                        ? "bg-[#031da6] text-white border-[#031da6] shadow-2xs font-bold"
-                                        : "bg-white text-[#334155] border-[#cbd5e1] hover:bg-blue-50 hover:border-blue-300"
-                                    }`}
-                                  >
-                                    {o}
-                                    {on && !readOnly && <Check className="w-2.5 h-2.5 stroke-[3] inline ml-1" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          {f.chanDoanMT.includes("Khác") && (
-                            <div className="pl-0 sm:pl-[44px] animate-fade-in pt-0.5">
-                              <input
-                                value={f.chanDoanKhacMT}
-                                onChange={(e) => setF((s) => ({ ...s, chanDoanKhacMT: e.target.value }))}
-                                placeholder="Ghi rõ chẩn đoán Mắt trái…"
-                                className="w-full h-7 sm:h-7.5 px-2 text-xs bg-white border border-blue-300 rounded-md outline-hidden focus:border-[#031da6] focus:ring-1 focus:ring-[#031da6]/20 text-[#0f172a]"
-                                disabled={readOnly}
-                                autoFocus
-                              />
-                            </div>
-                          )}
+                          ))}
                         </div>
                       </div>
                     )}
@@ -2319,26 +2310,38 @@ export default function ExamPage() {
                                     key={doc}
                                     type="button"
                                     onClick={() => setF((s) => ({ ...s, bacSiChiDinh: doc }))}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    className={`h-8 px-3 rounded-[9px] text-[12px] border transition-colors flex items-center gap-1.5 cursor-pointer ${
                                       active
-                                        ? "bg-[#031da6] text-white shadow-xs scale-102 ring-2 ring-[#02b8a9]"
-                                        : "bg-[#f1f5f9] text-[#334155] hover:bg-[#e2e8f0] border border-[#cbd5e1]"
+                                        ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30 font-bold"
+                                        : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] font-semibold hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
                                     }`}
                                     disabled={readOnly}
                                   >
-                                    <UserCheck className={`w-3.5 h-3.5 ${active ? "text-[#02b8a9]" : "text-[#64748b]"}`} />
+                                    <UserCheck className={`w-3.5 h-3.5 ${active ? "text-[var(--teal-deep)]" : "text-[var(--mute)]"}`} />
                                     <span>{doc}</span>
-                                    {active && <Check className="w-3 h-3 text-[#02b8a9]" strokeWidth={3} />}
+                                    {active && <Check className="w-3 h-3 text-[var(--teal-deep)]" strokeWidth={3} />}
                                   </button>
                                 );
                               })}
+                              {/* Đã chọn bác sĩ trong đoàn thì không lặp lại ô chọn — bấm "Bác sĩ khác" để nhập tên khác */}
+                              {!readOnly && parseDoctorList(buoiKham?.bacSiKham).includes(f.bacSiChiDinh) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setF((s) => ({ ...s, bacSiChiDinh: "" }))}
+                                  className="h-8 px-2 text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] cursor-pointer"
+                                >
+                                  + Bác sĩ khác
+                                </button>
+                              )}
                             </div>
-                            <DoctorAutocomplete
-                              value={f.bacSiChiDinh}
-                              onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
-                              placeholder="Hoặc chọn / nhập bác sĩ khác..."
-                              disabled={readOnly}
-                            />
+                            {!parseDoctorList(buoiKham?.bacSiKham).includes(f.bacSiChiDinh) && (
+                              <DoctorAutocomplete
+                                value={f.bacSiChiDinh}
+                                onChange={(v) => setF((s) => ({ ...s, bacSiChiDinh: v }))}
+                                placeholder="Hoặc chọn / nhập bác sĩ khác..."
+                                disabled={readOnly}
+                              />
+                            )}
                           </div>
                         ) : (
                           <DoctorAutocomplete
@@ -2364,23 +2367,60 @@ export default function ExamPage() {
                 <div className="@container card p-0 h-full flex flex-col">
                   <SectionHeader n={secNo.tuVan} accent="Tư vấn & ghi chú" />
                   <div className="p-3 sm:p-4 flex-1 flex flex-col space-y-2.5">
-                    <div className="grid grid-cols-1 @lg:grid-cols-2 gap-x-4 gap-y-2.5">
+                    <div>
                       <div>
                         <label className={labelCls}>Ý kiến / Nguyện vọng điều trị</label>
-                        <ChoiceRow
-                          options={["A", "B", "TheoDoi"]}
-                          value={f.nhom}
-                          onChange={(v) => setF((s) => ({ ...s, nhom: v }))}
-                          render={(o) =>
-                            o === "A"
-                              ? "Đồng ý điều trị tại BV"
-                              : o === "B"
-                              ? "Cần suy nghĩ thêm"
-                              : "Theo dõi tại nhà"
-                          }
-                          disabled={readOnly}
-                        />
+                        {/* Ý kiến chia 2 nhóm cho dễ nhìn nhưng chỉ chọn 1. Các ý kiến "chưa đồng ý" đều thuộc Nhóm B —
+                            lưu nhom = "B" + lyDoKhongDieuTri = ý kiến cụ thể (trừ "Cần suy nghĩ thêm"). */}
+                        {(() => {
+                          const cur = f.nhom === "B" && LY_DO_NHANH.includes(f.lyDoKhongDieuTri) ? f.lyDoKhongDieuTri : f.nhom;
+                          const chon = (v: string) =>
+                            setF((s) =>
+                              s.nhom === v || (s.nhom === "B" && s.lyDoKhongDieuTri === v)
+                                ? { ...s, nhom: "", lyDoKhongDieuTri: LY_DO_NHANH.includes(s.lyDoKhongDieuTri) ? "" : s.lyDoKhongDieuTri }
+                                : LY_DO_NHANH.includes(v)
+                                ? { ...s, nhom: "B", lyDoKhongDieuTri: v }
+                                : { ...s, nhom: v, lyDoKhongDieuTri: LY_DO_NHANH.includes(s.lyDoKhongDieuTri) ? "" : s.lyDoKhongDieuTri }
+                            );
+                          const o = (v: string, nhan: string, tone: "teal" | "amber" | "slate") => {
+                            const on = cur === v;
+                            const onCls =
+                              tone === "teal"
+                                ? "border-[var(--teal)] bg-[var(--teal-softer)] text-[var(--teal-deep)]"
+                                : tone === "amber"
+                                ? "border-[var(--amber)] bg-[var(--amber-soft)] text-[var(--amber-deep)]"
+                                : "border-[var(--navy)]/40 bg-[var(--navy-50)] text-[var(--navy)]";
+                            const dot = tone === "teal" ? "border-[var(--teal-deep)]" : tone === "amber" ? "border-[var(--amber-deep)]" : "border-[var(--navy)]";
+                            return (
+                              <button
+                                key={v}
+                                type="button"
+                                disabled={readOnly}
+                                onClick={() => chon(v)}
+                                className={`flex items-center gap-2 h-9 px-3 rounded-[9px] border text-left text-[12px] transition-colors cursor-pointer disabled:opacity-60 ${
+                                  on ? `${onCls} font-semibold` : "border-[var(--line)] bg-[var(--surface)] text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
+                                }`}
+                              >
+                                <span className={`w-3.5 h-3.5 shrink-0 rounded-full border-[1.5px] flex items-center justify-center ${on ? dot : "border-[var(--line-strong)]"}`}>
+                                  {on && <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+                                </span>
+                                <span className="truncate">{nhan}</span>
+                              </button>
+                            );
+                          };
+                          return (
+                            <div className="grid grid-cols-2 @lg:grid-cols-3 gap-1.5">
+                              {o("A", "Đồng ý điều trị tại BV", "teal")}
+                              {o("TheoDoi", "Theo dõi tại nhà", "slate")}
+                              {o("B", "Cần suy nghĩ thêm", "amber")}
+                              {LY_DO_NHANH.map((t) => o(t, t, "amber"))}
+                            </div>
+                          );
+                        })()}
                       </div>
+
+                    {/* SĐT + NV tư vấn cùng một hàng */}
+                    <div className="mt-2.5 grid grid-cols-1 @lg:grid-cols-2 gap-x-4 gap-y-2.5">
                       <Field label="Số điện thoại" required={f.nhom === "A"}>
                         <input
                           value={f.sdt}
@@ -2390,31 +2430,32 @@ export default function ExamPage() {
                           disabled={readOnly}
                         />
                       </Field>
+                      {isFieldOn(cfg, "nhanVienTuVan") && (
+                        <Field label="Nhân viên tư vấn">
+                          <div className="relative flex items-center">
+                            <input
+                              value={f.nhanVienTuVan || tenDangNhap}
+                              onChange={(e) => setF((s) => ({ ...s, nhanVienTuVan: e.target.value }))}
+                              placeholder="Tên nhân viên tư vấn ca này..."
+                              className="input-field pr-24"
+                              disabled={readOnly}
+                            />
+                            {!readOnly && session?.user?.name && (f.nhanVienTuVan || tenDangNhap) !== session.user.name && (
+                              <button
+                                type="button"
+                                onClick={() => setF((s) => ({ ...s, nhanVienTuVan: session?.user?.name || "" }))}
+                                className="absolute right-1.5 px-2 py-0.5 rounded text-[10.5px] font-bold bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white transition-colors border border-[#c7d2fe] cursor-pointer"
+                                title="Gán tên tôi làm nhân viên tư vấn ca này"
+                              >
+                                Tôi tư vấn
+                              </button>
+                            )}
+                          </div>
+                        </Field>
+                      )}
                     </div>
 
-                    {isFieldOn(cfg, "nhanVienTuVan") && (
-                      <Field label="Nhân viên tư vấn">
-                        <div className="relative flex items-center">
-                          <input
-                            value={f.nhanVienTuVan}
-                            onChange={(e) => setF((s) => ({ ...s, nhanVienTuVan: e.target.value }))}
-                            placeholder="Tên nhân viên tư vấn ca này..."
-                            className="input-field pr-24"
-                            disabled={readOnly}
-                          />
-                          {!readOnly && session?.user?.name && f.nhanVienTuVan !== session.user.name && (
-                            <button
-                              type="button"
-                              onClick={() => setF((s) => ({ ...s, nhanVienTuVan: session?.user?.name || "" }))}
-                              className="absolute right-1.5 px-2 py-0.5 rounded text-[10.5px] font-bold bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white transition-colors border border-[#c7d2fe] cursor-pointer"
-                              title="Gán tên tôi làm nhân viên tư vấn ca này"
-                            >
-                              Tôi tư vấn
-                            </button>
-                          )}
-                        </div>
-                      </Field>
-                    )}
+                    </div>
 
                     <div className="flex-1 flex flex-col">
                       <Field label="Ghi chú tư vấn & dặn dò">
@@ -2519,7 +2560,7 @@ export default function ExamPage() {
                       type="button"
                       onClick={save}
                       disabled={saving || !dirty}
-                      className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                      className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:cursor-not-allowed disabled:pointer-events-none disabled:bg-none disabled:!bg-[var(--surface-soft)] disabled:!text-[var(--mute)] disabled:!border disabled:!border-[var(--line)] disabled:!shadow-none"
                     >
                       {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
                       <span>Lưu</span>
