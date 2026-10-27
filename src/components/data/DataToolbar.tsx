@@ -59,13 +59,13 @@ export function DataToolbar({
   return (
     <div
       className={cn(
-        'flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 lg:gap-3 px-3.5 py-3 lg:px-5 lg:py-2.5 border-b border-[var(--line-soft)] bg-[var(--surface)] shrink-0 z-[20] transition-colors',
+        'flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2 lg:gap-3 px-3 py-2 lg:px-5 lg:py-2.5 border-b border-[var(--line-soft)] bg-[var(--surface)] shrink-0 z-[20] transition-colors',
         className,
       )}
     >
       {/* ── SEARCH ROW ── */}
       <div className="flex items-center justify-between lg:justify-start gap-2 min-w-0 w-full lg:w-auto lg:flex-1">
-        <div className="relative w-full lg:w-auto lg:flex-1 lg:min-w-[220px] lg:max-w-[480px] h-9.5 lg:h-9 group">
+        <div className="relative flex-1 min-w-0 lg:w-auto lg:min-w-[220px] lg:max-w-[480px] h-9 group">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mute)] transition-colors group-focus-within:text-[var(--teal-deep)] pointer-events-none" />
           <input
             type="text"
@@ -73,7 +73,7 @@ export function DataToolbar({
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder={searchPlaceholder}
             className={cn(
-              'w-full h-9.5 lg:h-9 pl-9 pr-8 text-[13px] bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-xl outline-none transition-all duration-200',
+              'w-full h-9 pl-9 pr-8 text-[13px] bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-xl outline-none transition-all duration-200',
               'text-ellipsis placeholder:text-[var(--mute)] text-[var(--ink)] font-medium',
               'focus:border-[var(--teal)]/40 focus:bg-[var(--surface)] focus:shadow-[0_0_0_3px_var(--teal-soft)]',
             )}
@@ -92,10 +92,9 @@ export function DataToolbar({
         {filters && (
           <div className="hidden lg:flex items-center gap-1.5 min-w-0 overflow-x-auto no-scrollbar">{filters}</div>
         )}
-      </div>
 
-      {/* ── MOBILE ROW 2: View toggle & primary action ── */}
-      <div className="flex lg:hidden items-center justify-between gap-2 w-full pt-1">
+      {/* ── MOBILE: view toggle · lọc · thao tác chính chung hàng với ô tìm ── */}
+      <div className="flex lg:hidden items-center gap-1.5 shrink-0">
         <div className="flex items-center gap-1.5 shrink-0">
           {hasGridView && (
             <div className="flex items-center p-0.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--line-soft)] h-9">
@@ -135,8 +134,9 @@ export function DataToolbar({
         </div>
         {primaryAction && <div className="flex items-center gap-1.5 shrink-0">{primaryAction}</div>}
       </div>
+      </div>
 
-      {/* ── MOBILE ROW 3: swipeable filters ── */}
+      {/* ── MOBILE ROW 2: swipeable filters ── */}
       {filters && (
         <div className="flex lg:hidden items-center gap-1.5 w-full overflow-x-auto no-scrollbar py-1 border-t border-[var(--line-soft)]/60 mt-1">
           {filters}

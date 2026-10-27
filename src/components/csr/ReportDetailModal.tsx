@@ -294,7 +294,7 @@ export default function ReportDetailModal({
     const cols: ColumnDef<SessionItem>[] = [
       {
         id: "stt",
-        header: "STT",
+        header: "#",
         size: 48,
         enableSorting: false,
         enableColumnFilter: false,
@@ -305,7 +305,7 @@ export default function ReportDetailModal({
       {
         id: "ngayKham",
         header: "Ngày khám",
-        size: 108,
+        size: 124,
         accessorFn: (s) => fmtDate(s.ngayKham),
         sortingFn: (a, b) => String(a.original.ngayKham).localeCompare(String(b.original.ngayKham)),
         meta: { noTruncate: true },
@@ -442,7 +442,7 @@ export default function ReportDetailModal({
   const patientColumns = useMemo<ColumnDef<any>[]>(() => [
     {
       id: "stt",
-      header: "STT",
+      header: "#",
       size: 48,
       enableSorting: false,
       enableColumnFilter: false,
@@ -816,8 +816,8 @@ export default function ReportDetailModal({
         }
         subtitle={
           <span className="flex items-center gap-1.5 flex-wrap">
-            <span>{target.subtitle || "Danh sách chi tiết theo kỳ đang lọc"}</span>
-            <span className="text-[var(--mute-soft)]">·</span>
+            <span className="hidden sm:inline">{target.subtitle || "Danh sách chi tiết theo kỳ đang lọc"}</span>
+            <span className="hidden sm:inline text-[var(--mute-soft)]">·</span>
             <span className="text-[var(--navy)] font-semibold">{coSoName || "Tất cả cơ sở"}</span>
             <span className="text-[var(--mute-soft)]">·</span>
             <span className="inline-flex items-center gap-1 font-mono text-[11.5px] text-[var(--ink-soft)]">
