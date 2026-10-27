@@ -745,55 +745,57 @@ export default function DoanXeAutocomplete({
         /* B. NẾU LÀ DẠNG DROPDOWN (Dùng trong Form khám / tư vấn) */
         <>
           {isSelected ? (
-            <div className="h-11 px-3.5 rounded-xl border border-blue-200 bg-blue-50/60 flex items-center justify-between gap-2 transition-all shadow-xs">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#031da6] flex items-center justify-center shrink-0">
-                  {isTuTuc ? <Car className="w-4 h-4 text-slate-700" /> : <Bus className="w-4 h-4 text-[#031da6]" />}
-                </div>
+            /* Hai dòng: tên điểm đón + nút | giờ + ngày. Trước đây dồn một dòng cao cố định 44px nên
+               trên điện thoại ngày hẹn đè lên nút "Đổi đoàn". */
+            <div className="px-3 py-2.5 rounded-[12px] border border-[var(--navy)]/15 bg-[var(--navy-50)]/60 flex items-start gap-2.5 transition-all">
+              <div className="w-8 h-8 rounded-[9px] bg-[var(--surface)] border border-[var(--navy)]/15 flex items-center justify-center shrink-0">
+                {isTuTuc ? <Car className="w-4 h-4 text-[var(--ink-soft)]" /> : <Bus className="w-4 h-4 text-[var(--navy)]" />}
+              </div>
 
-                <span className="font-extrabold text-[13px] text-slate-900 truncate">
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-[var(--ink)] truncate leading-8" title={diemDon}>
                   {diemDon}
-                </span>
-
-                {gioDon && (
-                  <button
-                    type="button"
-                    onClick={() => !disabled && setIsEditingTime(!isEditingTime)}
-                    title="Bấm để đổi giờ xe đón bệnh nhân này"
-                    className="inline-flex items-center gap-1 font-mono text-[11.5px] font-black px-2 py-0.5 rounded-md bg-white text-[#031da6] border border-blue-300 shadow-2xs hover:border-[#031da6] hover:bg-blue-50 cursor-pointer shrink-0 transition-all active:scale-95"
-                  >
-                    <Clock className="w-3 h-3 text-[#031da6]" />
-                    <span>{gioDon}</span>
-                    <span className="text-[10px] text-slate-400 font-sans font-medium flex items-center ml-0.5">
-                      <Edit3 className="w-2.5 h-2.5 mr-0.5" />Đổi giờ
-                    </span>
-                  </button>
-                )}
-
-                {ngayHen && (
-                  <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-900 border border-indigo-200 shrink-0">
-                    <Calendar className="w-3 h-3 text-indigo-600" />
-                    <span>{fmtDate(ngayHen)}</span>
-                  </span>
+                </div>
+                {(gioDon || ngayHen) && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {gioDon && (
+                      <button
+                        type="button"
+                        onClick={() => !disabled && setIsEditingTime(!isEditingTime)}
+                        title="Bấm để đổi giờ xe đón bệnh nhân này"
+                        className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-[var(--surface)] border border-[var(--navy)]/25 font-mono text-[11.5px] font-bold text-[var(--navy)] hover:border-[var(--navy)] cursor-pointer transition-colors"
+                      >
+                        <Clock className="w-3 h-3" />
+                        <span>{gioDon}</span>
+                        {!disabled && <Edit3 className="w-2.5 h-2.5 text-[var(--mute)] ml-0.5" />}
+                      </button>
+                    )}
+                    {ngayHen && (
+                      <span className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-[var(--surface)] border border-[var(--line)] font-mono text-[11px] font-semibold text-[var(--ink-soft)]">
+                        <Calendar className="w-3 h-3 text-[var(--teal-deep)]" />
+                        <span>{fmtDate(ngayHen)}</span>
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
 
               {!disabled && (
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => {
                       setSearchQuery("");
                       setOpen(true);
                     }}
-                    className="px-2.5 py-1 text-[11.5px] font-bold text-[#031da6] hover:bg-white rounded-md border border-blue-200 transition-colors cursor-pointer shadow-2xs"
+                    className="h-8 px-2.5 text-[12px] font-semibold text-[var(--navy)] bg-[var(--surface)] hover:bg-[var(--navy)] hover:text-white rounded-[8px] border border-[var(--navy)]/20 transition-colors cursor-pointer whitespace-nowrap"
                   >
                     Đổi đoàn
                   </button>
                   <button
                     type="button"
                     onClick={() => onSelect({ diemDon: "", gioDon: "" })}
-                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-md hover:bg-white transition-colors cursor-pointer"
+                    className="w-8 h-8 flex items-center justify-center text-[var(--mute)] hover:text-[var(--rose)] rounded-[8px] hover:bg-[var(--surface)] transition-colors cursor-pointer"
                     title="Hủy chọn"
                   >
                     <X className="w-3.5 h-3.5" />

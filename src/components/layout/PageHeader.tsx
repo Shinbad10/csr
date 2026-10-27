@@ -42,14 +42,16 @@ export default function PageHeader({ title, description, actions }: PageHeaderPr
           <h1 className="font-serif text-[14.5px] sm:text-[16px] font-bold tracking-[-0.01em] text-[var(--ink)] leading-tight flex items-center flex-wrap">
             {renderEditorialTitle(title)}
           </h1>
+          {/* Mô tả chỉ hiện từ sm: trên điện thoại nó chiếm 2–3 dòng, đẩy nội dung chính xuống */}
           {description && (
-            <div className="text-[11px] sm:text-[11.5px] text-[var(--mute)] mt-0.5 flex items-center gap-1.5 flex-wrap font-medium">
+            <div className="hidden sm:flex text-[11.5px] text-[var(--mute)] mt-0.5 items-center gap-1.5 flex-wrap font-medium">
               {description}
             </div>
           )}
         </div>
         {actions && (
-          <div className="shrink-0 flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+          // Điện thoại: một hàng vuốt ngang thay vì xuống 2–3 dòng
+          <div className="shrink-0 min-w-0 flex items-center gap-1.5 sm:gap-2.5 overflow-x-auto sm:overflow-visible no-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap">
             {actions}
           </div>
         )}

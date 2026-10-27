@@ -48,7 +48,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { Badge, Fact, FIELD_LABEL, INPUT_CLS, type Tone } from "@/components/csr/ui";
 import { useHisReconcile, DoiChieuHistoryModal, fmtRelative, type DoiChieuLog } from "@/components/csr/HisReconcile";
-import { RefreshCw, History } from "lucide-react";
+import { RefreshCw, History, ChevronDown } from "lucide-react";
 
 type FilterKey = "" | "chuagoi" | "dagoi" | "nhomA" | "nhomB" | "daden" | "damo" | "damotruoc";
 
@@ -514,6 +514,8 @@ export default function TuVanSessionPage() {
   }, []);
 
   const patientsAbort = useRef<AbortController | null>(null);
+  /** Điện thoại: BHYT / CCCD / địa chỉ thu gọn sau nút "Thêm" để thẻ hồ sơ không chiếm nửa màn hình */
+  const [moThongTin, setMoThongTin] = useState(false);
   const fetchPatients = useCallback(
     async (keepSel?: string, forceForm = false) => {
       if (!selBk) {
@@ -773,7 +775,7 @@ export default function TuVanSessionPage() {
         title="Tư vấn điều trị"
         description="Tư vấn phương án điều trị, chi phí và lịch đón bệnh viện cho các ca bệnh lý từ đợt khám."
         actions={
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap sm:justify-end">
           {selBk && (
             <>
               <button
@@ -781,13 +783,14 @@ export default function TuVanSessionPage() {
                 onClick={handleExportRutGon}
                 disabled={exportingExcel}
                 title="Xuất file Excel mẫu rút gọn (TT, Họ tên, Năm sinh, SĐT, Ghi chú XNĐ / KNM)"
-                className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-emerald-600/30 bg-emerald-50 text-[12.5px] font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-emerald-600/30 bg-emerald-50 text-[12.5px] font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer disabled:opacity-60 shadow-2xs shrink-0 whitespace-nowrap"
               >
                 {exportingExcel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />}
-                <span>Xuất Excel rút gọn</span>
+                <span className="hidden sm:inline">Xuất Excel rút gọn</span>
+                <span className="sm:hidden">Excel</span>
               </button>
 
-              <div className="inline-flex">
+              <div className="inline-flex shrink-0 whitespace-nowrap">
                 <button
                   type="button"
                   onClick={reconcileCurrent}
@@ -800,7 +803,7 @@ export default function TuVanSessionPage() {
                   className="inline-flex items-center gap-1.5 h-[34px] pl-3 pr-2.5 rounded-l-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12.5px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                 >
                   {reconciling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  {reconciling ? "Đang đối chiếu…" : "Đối chiếu HIS"}
+                  {reconciling ? "Đang đối chiếu…" : <><span className="hidden sm:inline">Đối chiếu HIS</span><span className="sm:hidden">HIS</span></>}
                   {!reconciling && curLog && (
                     <span className="hidden sm:inline font-normal text-[11px] opacity-75">· {fmtRelative(curLog.thoiDiem)}</span>
                   )}
@@ -819,10 +822,10 @@ export default function TuVanSessionPage() {
           <button
             data-tour="tv-bk"
             onClick={() => setShowBkModal(true)}
-            className="btn btn-secondary px-3 py-1.5 text-[12px] sm:text-[12.5px] font-semibold min-h-[34px] rounded-lg border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)] text-left shadow-2xs cursor-pointer"
+            className="btn btn-secondary px-3 py-1.5 text-[12px] sm:text-[12.5px] font-semibold min-h-[34px] rounded-lg border border-[var(--line)] hover:bg-[var(--surface-hover)] transition-colors flex items-center gap-2 text-[var(--ink)] text-left shadow-2xs cursor-pointer shrink-0 min-w-0"
           >
             <CalendarDays className="w-4 h-4 shrink-0 text-[var(--teal-deep)]" />
-            <span className="truncate max-w-[200px] sm:max-w-none">
+            <span className="truncate max-w-[190px] sm:max-w-none">
               {selBk ? bkLabels[selBk] : "Chọn đợt khám..."}
             </span>
           </button>
@@ -1188,11 +1191,11 @@ export default function TuVanSessionPage() {
                     const tienSu = selected.benhSu ? parseDiags(selected.loaiBenhSu, selected.loaiBenhSuKhac).join(", ") || "Có tiền sử" : "";
                     const theTrang = [selected.chieuCao ? `${selected.chieuCao} cm` : null, selected.canNang ? `${selected.canNang} kg` : null].filter(Boolean).join(" · ");
                     return (
-                      <div className="bg-[var(--surface)] border-b border-[var(--line)] px-4 sm:px-6 py-3.5 shrink-0">
+                      <div className="bg-[var(--surface)] border-b border-[var(--line)] px-3 sm:px-6 py-2.5 sm:py-3.5 shrink-0">
                         {/* Danh tính + trạng thái | bác sĩ & chỉ định */}
-                        <div className="flex items-start justify-between gap-x-6 gap-y-2 flex-wrap">
-                          <div className="min-w-0 flex items-center gap-x-2.5 gap-y-1.5 flex-wrap">
-                            <h2 className="font-serif text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{selected.hoTen}</h2>
+                        <div className="flex items-start justify-between gap-x-6 gap-y-1.5 sm:gap-y-2 flex-wrap">
+                          <div className="min-w-0 flex items-center gap-x-2 sm:gap-x-2.5 gap-y-1 sm:gap-y-1.5 flex-wrap">
+                            <h2 className="font-serif text-[18px] sm:text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{selected.hoTen}</h2>
                             <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--navy-50)] text-[var(--navy)]">{selected.maBN}</span>
                             <span className="text-[12.5px] text-[var(--mute)]">{[selected.gioiTinh, fmtSinhTuoi(selected)].filter(Boolean).join(" · ")}</span>
                             <span className="hidden sm:block w-px h-4 bg-[var(--line)]" />
@@ -1216,7 +1219,7 @@ export default function TuVanSessionPage() {
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[12.5px]">
+                          <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[12px] sm:text-[12.5px]">
                             {selected.bacSiChiDinh && <Fact label="BS khám">BS. {selected.bacSiChiDinh}</Fact>}
                             <Fact label="Chỉ định">
                               <span className="font-semibold text-[var(--rose)]">{selected.khuyenNghi || selected.huongXuTri || "Phẫu thuật"}</span>
@@ -1225,7 +1228,7 @@ export default function TuVanSessionPage() {
                         </div>
 
                         {/* Chẩn đoán + lâm sàng (chỉ hiện trường có dữ liệu) */}
-                        <div className="mt-3 pt-3 border-t border-[var(--line-soft)] flex items-center gap-x-5 gap-y-2 flex-wrap">
+                        <div className="mt-2 pt-2 sm:mt-3 sm:pt-3 border-t border-[var(--line-soft)] flex items-center gap-x-5 gap-y-1.5 sm:gap-y-2 flex-wrap">
                           <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                             <span className="text-[11.5px] text-[var(--mute)] mr-0.5">Chẩn đoán</span>
                             {diagGroups.length ? (
@@ -1254,7 +1257,7 @@ export default function TuVanSessionPage() {
                         </div>
 
                         {/* Liên hệ */}
-                        <div className="mt-2 flex items-center gap-x-5 gap-y-1.5 flex-wrap">
+                        <div className="mt-1.5 sm:mt-2 flex items-center gap-x-5 gap-y-1.5 flex-wrap">
                           <Fact label="SĐT">
                             {selected.sdt ? (
                               <a href={`tel:${selected.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
@@ -1264,13 +1267,25 @@ export default function TuVanSessionPage() {
                               <span className="text-[var(--mute-soft)]">—</span>
                             )}
                           </Fact>
-                          {selected.bhyt && (
-                            <Fact label="BHYT">
-                              <span className="font-mono">{selected.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(selected.bhyt)})</span>
-                            </Fact>
+                          {(selected.bhyt || selected.cccd || selected.diaChi) && (
+                            <button
+                              type="button"
+                              onClick={() => setMoThongTin((v) => !v)}
+                              className="sm:hidden ml-auto inline-flex items-center gap-0.5 h-6 px-2 rounded-md border border-[var(--line)] text-[11px] font-semibold text-[var(--ink-soft)] cursor-pointer"
+                            >
+                              {moThongTin ? "Thu gọn" : "BHYT · CCCD · Địa chỉ"}
+                              <ChevronDown className={`w-3 h-3 transition-transform ${moThongTin ? "rotate-180" : ""}`} />
+                            </button>
                           )}
-                          {selected.cccd && <Fact label="CCCD"><span className="font-mono">{selected.cccd}</span></Fact>}
-                          {selected.diaChi && <Fact label="Địa chỉ"><span title={selected.diaChi}>{selected.diaChi}</span></Fact>}
+                          <div className={`${moThongTin ? "contents" : "hidden"} sm:contents`}>
+                            {selected.bhyt && (
+                              <Fact label="BHYT">
+                                <span className="font-mono">{selected.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(selected.bhyt)})</span>
+                              </Fact>
+                            )}
+                            {selected.cccd && <Fact label="CCCD"><span className="font-mono">{selected.cccd}</span></Fact>}
+                            {selected.diaChi && <Fact label="Địa chỉ"><span title={selected.diaChi}>{selected.diaChi}</span></Fact>}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1280,15 +1295,15 @@ export default function TuVanSessionPage() {
                   <div className="p-3 sm:p-5 lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_440px] 2xl:grid-cols-[1fr_500px] gap-3 sm:gap-4 items-start lg:items-stretch lg:overflow-hidden">
                     {/* Phương án điều trị */}
                     <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
-                      <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0">
-                        <h3 className="font-serif text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
+                      <header className="px-4 sm:px-5 py-2.5 sm:py-3.5 border-b border-[var(--line-soft)] shrink-0">
+                        <h3 className="font-serif text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
                           Phương án điều trị <span className="text-[var(--rose)]">*</span>
                         </h3>
-                        <p className="text-[11.5px] text-[var(--mute)] mt-0.5">Quyết định của bệnh nhân sau khi được tư vấn</p>
+                        <p className="hidden sm:block text-[11.5px] text-[var(--mute)] mt-0.5">Quyết định của bệnh nhân sau khi được tư vấn</p>
                       </header>
 
-                      <div className="p-4 sm:p-5 lg:flex-1 lg:overflow-y-auto custom-scrollbar space-y-5">
-                        <div data-tour="tv-nhom" className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-2.5">
+                      <div className="p-3 sm:p-5 lg:flex-1 lg:overflow-y-auto custom-scrollbar space-y-4 sm:space-y-5">
+                        <div data-tour="tv-nhom" className="grid grid-cols-2 2xl:grid-cols-4 gap-2 sm:gap-2.5">
                           {PHUONG_AN_TU_VAN.map((opt) => {
                             const active = f.nhom === opt.key;
                             const dot = opt.key === "A" ? "bg-[var(--teal)]" : opt.key === "B" ? "bg-[var(--amber)]" : opt.key === "HoiGiaDinh" ? "bg-purple-500" : "bg-[var(--navy)]";
@@ -1299,7 +1314,7 @@ export default function TuVanSessionPage() {
                                 onClick={() =>
                                   setF((s) => ({ ...s, nhom: opt.key, ngayHen: opt.key === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen }))
                                 }
-                                className={`relative p-3.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                                className={`relative px-2.5 py-2.5 sm:p-3.5 rounded-[12px] border text-left transition-all cursor-pointer ${
                                   active
                                     ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-[0_0_0_3px_var(--navy-100)]"
                                     : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)] hover:shadow-[var(--shadow-sm)]"
@@ -1307,14 +1322,14 @@ export default function TuVanSessionPage() {
                               >
                                 <div className="flex items-center gap-2">
                                   <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                                  <span className={`text-[13px] font-semibold ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>{opt.label}</span>
+                                  <span className={`text-[12.5px] sm:text-[13px] font-semibold leading-tight ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>{opt.label}</span>
                                   {active && (
                                     <span className="ml-auto w-[18px] h-[18px] rounded-full bg-[var(--navy)] flex items-center justify-center shrink-0">
                                       <Check className="w-3 h-3 text-white stroke-[3]" />
                                     </span>
                                   )}
                                 </div>
-                                <p className="mt-1 pl-4 text-[11.5px] leading-snug text-[var(--mute)]">{opt.sub}</p>
+                                <p className="hidden sm:block mt-1 pl-4 text-[11.5px] leading-snug text-[var(--mute)]">{opt.sub}</p>
                               </button>
                             );
                           })}
@@ -1582,10 +1597,10 @@ export default function TuVanSessionPage() {
 
                     {/* Nhật ký cuộc gọi */}
                     <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
-                      <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
+                      <header className="px-4 sm:px-5 py-2.5 sm:py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="font-serif text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Nhật ký cuộc gọi</h3>
-                          <p className="text-[11.5px] text-[var(--mute)] mt-0.5">Ghi nhận các lần gọi chăm sóc bệnh nhân</p>
+                          <h3 className="font-serif text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Nhật ký cuộc gọi</h3>
+                          <p className="hidden sm:block text-[11.5px] text-[var(--mute)] mt-0.5">Ghi nhận các lần gọi chăm sóc bệnh nhân</p>
                         </div>
                         <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--line-soft)] text-[var(--ink-soft)] tabular-nums shrink-0">
                           {selected.nhatKy?.length || 0} cuộc gọi
