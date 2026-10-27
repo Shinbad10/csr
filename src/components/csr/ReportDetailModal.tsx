@@ -827,7 +827,7 @@ export default function ReportDetailModal({
           </span>
         }
         icon={Icon}
-        maxWidth="w-[95vw] max-w-[95vw] h-[95vh] max-h-[95vh]!"
+        maxWidth="max-w-[1600px] h-full"
         noPadding
         bodyClassName="flex-1 min-h-0 flex flex-col overflow-hidden"
       >

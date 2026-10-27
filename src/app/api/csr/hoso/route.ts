@@ -17,8 +17,12 @@ import { DOT_KHAM_DA_XOA, HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 // Không dùng `coSo: true` / `tuVanVien: true`: nó gửi cả bhxhPass, hisPass, matKhauHash ra client
 // và lặp lại trên từng dòng (danh sách ~160 kB mỗi lần nạp).
 const RELATIONS_DANH_SACH = {
-  buoiKham: true,
-  coSo: { select: { id: true, ten: true, diaChi: true, cauHinhTruong: true } },
+  // Chỉ các trường danh sách thật sự hiển thị: trước đây gửi nguyên đợt khám (kèm log đối chiếu HIS)
+  // và cấu hình trường của cơ sở, lặp lại trên MỖI dòng hồ sơ.
+  buoiKham: {
+    select: { id: true, coSoId: true, ngayKham: true, xa: true, diaDiem: true, ghiChu: true, bacSiKham: true, trangThai: true },
+  },
+  coSo: { select: { id: true, ten: true } },
   tuVanVien: { select: { maNV: true, hoTen: true } },
   nhatKy: {
     select: { id: true, ngay: true, noiDung: true, nguoiGoi: { select: { hoTen: true } } },

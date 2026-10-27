@@ -184,7 +184,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(1,8,51,0.45)] backdrop-blur-sm p-2 sm:p-5 pointer-events-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(1,8,51,0.45)] backdrop-blur-sm modal-overlay pointer-events-auto"
       onClick={onClose}
     >
       <motion.div
@@ -192,7 +192,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 8 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-[var(--surface)] rounded-[var(--r-xl)] shadow-2xl w-full max-w-[1320px] max-h-[94vh] flex flex-col overflow-hidden border border-[var(--line-strong)]"
+        className="bg-[var(--surface)] rounded-[var(--r-xl)] shadow-2xl w-full max-w-[1320px] max-h-full flex flex-col overflow-hidden border border-[var(--line-strong)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -572,7 +572,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-3 sm:p-6 pointer-events-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs modal-overlay pointer-events-auto"
       onClick={onClose}
     >
       <motion.div
@@ -580,7 +580,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 6 }}
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[95%] max-w-[95%] min-w-[95%] max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-[1600px] max-h-full flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Editorial Navy Gradient & Teal Glow */}

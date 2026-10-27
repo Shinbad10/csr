@@ -90,11 +90,17 @@ export function getPrisma(): CloudClient {
                   return await modelMethod.apply(modelTarget, args);
                 } catch (err: any) {
                   const errMsg = String(err?.message || err);
+                  // Chỉ chuyển SQLite khi KHÔNG KẾT NỐI ĐƯỢC. Truy vấn chậm quá requestTimeout cũng mang mã
+                  // ETIMEOUT ("Request failed to complete in …ms") — trước đây bị coi là mất kết nối nên cả 60s
+                  // sau đó app đọc local.db (dữ liệu cũ, thiếu cột) dù SQL Server vẫn chạy bình thường.
+                  const isRequestTimeout = /request failed to complete|timeout: request/i.test(errMsg);
                   const isConnError =
-                    err?.code === "ETIMEOUT" ||
-                    err?.code === "ECONNREFUSED" ||
-                    errMsg.includes("Failed to connect") ||
-                    errMsg.includes("ETIMEOUT");
+                    !isRequestTimeout &&
+                    (err?.code === "ETIMEOUT" ||
+                      err?.code === "ECONNREFUSED" ||
+                      err?.code === "ESOCKET" ||
+                      errMsg.includes("Failed to connect") ||
+                      errMsg.includes("ETIMEOUT"));
                   if (isConnError) {
                     console.warn(
                       `[Prisma] SQL Server không kết nối được (${err?.code || "ETIMEOUT"}). Tạm dùng SQLite (local.db) ${FALLBACK_MS / 1000}s rồi thử lại SQL Server...`

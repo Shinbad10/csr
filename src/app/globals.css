@@ -464,3 +464,20 @@
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
 }
+
+/* Lớp phủ modal: chừa vùng an toàn của iPhone (tai thỏ / thanh trạng thái / thanh home) để header
+   modal không bị đè dưới đồng hồ, pin. Khung modal bên trong dùng max-h-full nên luôn vừa màn hình thật
+   (100vh trên Safari iOS cao hơn phần nhìn thấy). */
+@utility modal-overlay {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-left: max(0.5rem, env(safe-area-inset-left));
+  padding-right: max(0.5rem, env(safe-area-inset-right));
+  height: 100dvh;
+  @media (width >= 40rem) {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
