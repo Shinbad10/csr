@@ -2264,52 +2264,39 @@ export default function DoanXePage() {
         </div>
       </Modal>
 
-      {/* Modal Xếp xe / Đổi điểm đón & Thêm người nhà */}
+      {/* Modal Xếp xe / Đổi điểm đón & Thêm người nhà — company-ui: mục đánh số, đường kẻ mảnh, navy = thao tác */}
       <Modal
         open={Boolean(editingBusPatient)}
         onClose={() => setEditingBusPatient(null)}
         icon={Bus}
-        title="Xếp xe đón & Người nhà đi kèm"
-        subtitle={
-          editingBusPatient
-            ? `#${editingBusPatient.stt || ""} ${editingBusPatient.hoTen} • Lên lịch điều trị, điểm xe đón & người nhà đi kèm`
-            : ""
-        }
+        title="Xếp xe đón"
+        subtitle={editingBusPatient ? "Ngày hẹn điều trị, điểm & giờ đón, đoàn xe và người nhà đi kèm" : ""}
         maxWidth="max-w-[720px]"
         footer={
           editingBusPatient ? (
             <div className="flex items-center justify-between w-full gap-3 flex-wrap">
-              {/* Thông tin mốc đã chọn tóm tắt */}
-              <div className="flex items-center gap-2 min-w-0 text-[12.5px] flex-wrap">
+              <div className="flex items-center gap-2 min-w-0 text-[12px] flex-wrap">
                 {busFormDiem ? (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-[#031da6] font-bold text-[12px]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span className="truncate max-w-[180px] sm:max-w-[240px]">
-                      {busFormDiem}
-                    </span>
-                    <span className="font-mono px-1.5 py-0.5 rounded bg-white border border-blue-200 text-[11px]">
-                      ⏰ {busFormGio}
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-slate-400 font-medium italic text-[12px]">
-                    Chưa chọn điểm đón xe
+                  <span className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-semibold min-w-0">
+                    <Bus className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" />
+                    <span className="truncate max-w-[200px] sm:max-w-[260px]">{busFormDiem}</span>
+                    {busFormGio && <span className="font-mono text-[var(--mute)] font-normal">· {busFormGio}</span>}
+                    <span className="text-[var(--mute)] font-normal">· Đoàn {busFormDoanXe}</span>
                   </span>
+                ) : (
+                  <span className="text-[var(--amber-deep)] font-semibold">Chưa chọn điểm đón</span>
                 )}
-
                 {busFormCoNguoiNha && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-bold text-[11.5px]">
-                    <Users className="w-3.5 h-3.5 text-purple-600" />
-                    <span>+{busFormSoNguoiNha} người nhà</span>
+                  <span className="inline-flex items-center gap-1 h-8 px-2.5 rounded-[9px] bg-[var(--amber-soft)] text-[var(--amber-deep)] font-semibold">
+                    <Users className="w-3.5 h-3.5" />+{busFormSoNguoiNha} người nhà
                   </span>
                 )}
               </div>
-
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingBusPatient(null)}
-                  className="px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  className="h-9 px-4 text-[13px] font-semibold text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] rounded-[10px] transition-colors cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -2317,340 +2304,242 @@ export default function DoanXePage() {
                   type="button"
                   disabled={savingBus || !busFormDiem}
                   onClick={handleSaveBusAssignment}
-                  className="px-5 py-2 text-[13px] font-bold bg-[#031da6] hover:bg-[#020f5c] text-white rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
+                  className="h-9 px-4 text-[13px] font-semibold text-white rounded-[10px] bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] hover:brightness-110 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:shadow-none"
                 >
-                  {savingBus ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  ) : (
-                    <Check className="w-4 h-4 text-teal-300 stroke-[3]" />
-                  )}
-                  <span>Lưu thông tin đón</span>
+                  {savingBus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[2.5]" />}
+                  Lưu thông tin đón
                 </button>
               </div>
             </div>
           ) : undefined
         }
       >
-        {editingBusPatient && (
-          <div className="space-y-4">
-            {/* Thẻ tóm tắt thông tin bệnh nhân */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 border border-blue-100/90 shadow-2xs flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#031da6] text-white flex items-center justify-center font-bold text-[14px] shrink-0 shadow-xs">
-                  #{editingBusPatient.stt || "—"}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-serif text-[16px] font-bold text-slate-900 leading-tight">
-                      {editingBusPatient.hoTen}
-                    </span>
+        {editingBusPatient && (() => {
+          const MucDau = ({ so, ten, ghiChu, phai }: { so: string; ten: string; ghiChu?: string; phai?: React.ReactNode }) => (
+            <div className="flex items-center justify-between gap-3 mb-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-mono text-[10.5px] font-bold text-[var(--navy)] bg-[var(--navy-50)] w-6 h-5 rounded-[6px] flex items-center justify-center shrink-0">{so}</span>
+                <span className="text-[13px] font-semibold text-[var(--ink)]">{ten}</span>
+                {ghiChu && <span className="hidden sm:inline text-[11.5px] text-[var(--mute)] truncate">— {ghiChu}</span>}
+              </div>
+              {phai}
+            </div>
+          );
+          const INPUT = "w-full h-9 px-3 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition-all";
+          const CHIP = "h-7 px-2.5 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[11.5px] font-medium text-[var(--ink-soft)] hover:border-[var(--navy)]/40 hover:text-[var(--navy)] transition-colors cursor-pointer";
+          const doanToiDa = Math.max(3, busFormDoanXe);
+          return (
+            <div className="-mt-1 divide-y divide-[var(--line-soft)]">
+              {/* Bệnh nhân */}
+              <div className="pb-4 flex items-center gap-3 flex-wrap">
+                <span className="w-10 h-10 rounded-[10px] bg-[var(--navy-50)] text-[var(--navy)] font-mono text-[12px] font-bold flex items-center justify-center shrink-0">
+                  {String(editingBusPatient.stt ?? "—").padStart(2, "0")}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-serif text-[17px] font-semibold tracking-[-0.01em] text-[var(--ink)] leading-tight">{editingBusPatient.hoTen}</div>
+                  <div className="mt-0.5 flex items-center gap-x-3 gap-y-0.5 flex-wrap text-[12px] text-[var(--mute)]">
                     {editingBusPatient.sdt && (
-                      <a
-                        href={`tel:${editingBusPatient.sdt}`}
-                        className="inline-flex items-center gap-1 text-[11.5px] font-mono font-bold text-indigo-700 bg-white border border-indigo-200 px-2 py-0.5 rounded-lg hover:bg-indigo-50"
-                      >
+                      <a href={`tel:${editingBusPatient.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
                         <Phone className="w-3 h-3" />
-                        <span>{editingBusPatient.sdt}</span>
+                        {editingBusPatient.sdt}
                       </a>
                     )}
-                  </div>
-                  <div className="text-[12px] text-slate-500 mt-1 flex items-center gap-3 flex-wrap">
                     <span className="inline-flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Xã: <b>{editingBusPatient.buoiKham?.xa || "Chưa xác định"}</b></span>
+                      <MapPin className="w-3 h-3" />
+                      {editingBusPatient.buoiKham?.xa || "Chưa xác định xã"}
                     </span>
                     {editingBusPatient.buoiKham?.ngayKham && (
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Khám: {fmtDate(editingBusPatient.buoiKham.ngayKham)}</span>
+                      <span>
+                        Khám <span className="font-mono text-[var(--ink-soft)]">{fmtDate(editingBusPatient.buoiKham.ngayKham)}</span>
                       </span>
                     )}
                   </div>
                 </div>
+                {editingBusPatient.diemDon ? (
+                  <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11.5px] font-semibold max-w-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Đã xếp · {cleanDiemDon(editingBusPatient.diemDon)}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[11.5px] font-semibold">
+                    <AlertCircle className="w-3.5 h-3.5" /> Chưa xếp xe
+                  </span>
+                )}
               </div>
 
-              <div className="text-right shrink-0">
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                  Trạng thái hiện tại
-                </div>
-                <div className="text-[12.5px] font-bold mt-0.5">
-                  {editingBusPatient.diemDon ? (
-                    <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Đã xếp: {editingBusPatient.diemDon}</span>
-                    </span>
-                  ) : (
-                    <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Chưa xếp xe đón</span>
-                    </span>
-                  )}
-                </div>
+              {/* 01 Ngày hẹn */}
+              <div className="py-4">
+                <MucDau so="01" ten="Ngày hẹn điều trị tại bệnh viện" ghiChu="tự theo ngày đón khi chọn tuyến" />
+                <input type="date" value={busFormDate} onChange={(e) => setBusFormDate(e.target.value)} className={`${INPUT} font-mono sm:w-[220px]`} />
               </div>
-            </div>
 
-            {/* Bước 1: Ngày hẹn điều trị */}
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays className="w-4 h-4 text-[#031da6]" />
-                  <span>1. Ngày hẹn điều trị tại Bệnh viện</span>
-                </span>
-                <span className="text-[11px] text-slate-400 font-normal lowercase">
-                  (tự đồng bộ theo ngày đón của tuyến xe khi chọn bên dưới)
-                </span>
-              </label>
-              <input
-                type="date"
-                value={busFormDate}
-                onChange={(e) => setBusFormDate(e.target.value)}
-                className="w-full h-10 px-3.5 text-[13px] font-mono font-bold text-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 transition-all bg-white"
-              />
-            </div>
-
-            {/* Bước 2: Chọn đoàn xe & điểm đón dạng Inline */}
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Bus className="w-4 h-4 text-[#031da6]" />
-                <span>2. Chọn tuyến xe đón & Khung giờ đón</span>
-              </label>
-              <DoanXeAutocomplete
-                variant="inline"
-                diemDon={busFormDiem}
-                gioDon={busFormGio}
-                ngayHen={busFormDate}
-                buoiKhamXa={editingBusPatient.buoiKham?.xa || ""}
-                onSelect={(val) => {
-                  setBusFormDiem(cleanDiemDon(val.diemDon));
-                  setBusFormGio(val.gioDon);
-                  if (val.ngayHen) setBusFormDate(val.ngayHen);
-                }}
-              />
-            </div>
-
-            {/* Chọn đoàn xe đón: Đoàn 1 (đi sớm) hoặc Đoàn 2 */}
-            <div className="p-3.5 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/50 via-indigo-50/30 to-purple-50/30">
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Bus className="w-4 h-4 text-blue-600" />
-                  <span>Chọn đoàn xe đón tại trạm</span>
-                </span>
-                <span className="text-[11px] text-slate-500 font-normal">
-                  (chọn số thứ tự đoàn xe đón BN)
-                </span>
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[1, 2, 3, 4].map((dNum) => {
-                  const isSel = busFormDoanXe === dNum;
-                  const c = getDoanColor(dNum);
-                  return (
-                    <button
-                      key={dNum}
-                      type="button"
-                      onClick={() => setBusFormDoanXe(dNum)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                        isSel
-                          ? `${c.border} bg-white ring-2 ${c.ring} shadow-2xs`
-                          : "border-slate-200 bg-white/60 hover:bg-white text-slate-600"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full mb-1">
-                        <div
-                          className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                            isSel ? c.activeBg : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          <Bus className="w-3.5 h-3.5" />
-                        </div>
-                        {isSel && <Check className={`w-3.5 h-3.5 ${c.text} stroke-[3]`} />}
-                      </div>
-                      <span className={`font-extrabold text-[12.5px] ${isSel ? c.text : "text-slate-800"}`}>
-                        Đoàn {dNum}
-                      </span>
-                      <span className="text-[10.5px] text-slate-400 mt-0.5">
-                        Xe đoàn {dNum}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-                <span className="text-[11.5px] text-slate-500 font-bold">Hoặc nhập số đoàn khác:</span>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={busFormDoanXe}
-                  onChange={(e) => setBusFormDoanXe(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 h-7 text-center font-mono font-black text-[12px] rounded-lg border border-slate-300 bg-white"
+              {/* 02 Tuyến & giờ đón */}
+              <div className="py-4">
+                <MucDau so="02" ten="Điểm đón & giờ đón" />
+                <DoanXeAutocomplete
+                  variant="inline"
+                  diemDon={busFormDiem}
+                  gioDon={busFormGio}
+                  ngayHen={busFormDate}
+                  buoiKhamXa={editingBusPatient.buoiKham?.xa || ""}
+                  onSelect={(val) => {
+                    setBusFormDiem(cleanDiemDon(val.diemDon));
+                    setBusFormGio(val.gioDon);
+                    if (val.ngayHen) setBusFormDate(val.ngayHen);
+                  }}
                 />
               </div>
-            </div>
 
-            {/* Bước 3: Người nhà đi kèm xe đón */}
-            <div className="p-4 rounded-2xl border border-purple-200/90 bg-gradient-to-br from-purple-50/60 via-indigo-50/20 to-white shadow-2xs space-y-3.5">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <label className="text-[12px] font-black text-purple-950 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs shadow-2xs">
-                    <Users className="w-3.5 h-3.5" />
-                  </span>
-                  <span>3. Người nhà đi kèm xe</span>
-                </label>
-
-                {/* Switch / Toggle Có người nhà đi kèm */}
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={busFormCoNguoiNha}
-                    onChange={(e) => {
-                      setBusFormCoNguoiNha(e.target.checked);
-                      if (e.target.checked && busFormSoNguoiNha === 0) {
-                        setBusFormSoNguoiNha(1);
-                      }
-                    }}
-                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
-                  />
-                  <span className="text-[12.5px] font-bold text-purple-900">
-                    Có người nhà đi cùng xe
-                  </span>
-                </label>
+              {/* 03 Đoàn xe */}
+              <div className="py-4">
+                <MucDau so="03" ten="Đoàn xe tại điểm đón" ghiChu="bệnh nhân lên xe của đoàn nào" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5">
+                    {Array.from({ length: doanToiDa }, (_, i) => i + 1).map((dNum) => (
+                      <button
+                        key={dNum}
+                        type="button"
+                        onClick={() => setBusFormDoanXe(dNum)}
+                        className={`h-8 px-3 rounded-[8px] text-[12.5px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          busFormDoanXe === dNum ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                        }`}
+                      >
+                        <Bus className="w-3.5 h-3.5" />
+                        Đoàn {dNum}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setBusFormDoanXe(doanToiDa + 1)}
+                    className="h-9 px-2.5 rounded-[10px] border border-dashed border-[var(--line-strong)] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Đoàn {doanToiDa + 1}
+                  </button>
+                </div>
               </div>
 
-              {busFormCoNguoiNha ? (
-                <div className="space-y-3 pt-1 border-t border-purple-100">
-                  {/* Số lượng người đi cùng */}
-                  <div>
-                    <div className="text-[11.5px] font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                      <span>Số lượng người nhà đi cùng:</span>
-                      <span className="font-mono text-purple-700 font-extrabold text-[12px]">
-                        {busFormSoNguoiNha} người
+              {/* 04 Người nhà */}
+              <div className="py-4">
+                <MucDau
+                  so="04"
+                  ten="Người nhà đi kèm xe"
+                  ghiChu="tính vào số ghế"
+                  phai={
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={busFormCoNguoiNha}
+                      onClick={() => {
+                        const next = !busFormCoNguoiNha;
+                        setBusFormCoNguoiNha(next);
+                        if (next && busFormSoNguoiNha === 0) setBusFormSoNguoiNha(1);
+                      }}
+                      className="inline-flex items-center gap-2 shrink-0 cursor-pointer select-none"
+                    >
+                      <span className="text-[12px] font-semibold text-[var(--ink-soft)]">{busFormCoNguoiNha ? "Có người nhà" : "Đi một mình"}</span>
+                      <span className={`relative w-9 h-5 rounded-full transition-colors ${busFormCoNguoiNha ? "bg-[var(--navy)]" : "bg-[var(--line-strong)]"}`}>
+                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${busFormCoNguoiNha ? "left-[18px]" : "left-0.5"}`} />
                       </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {[1, 2, 3].map((num) => (
-                        <button
-                          key={num}
-                          type="button"
-                          onClick={() => setBusFormSoNguoiNha(num)}
-                          className={`px-3 py-1 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
-                            busFormSoNguoiNha === num
-                              ? "bg-purple-600 text-white shadow-2xs"
-                              : "bg-white text-slate-700 border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50"
-                          }`}
-                        >
-                          {num} người nhà
-                        </button>
-                      ))}
-                      <div className="inline-flex items-center gap-1 ml-auto">
-                        <span className="text-[11px] text-slate-500">Khác:</span>
+                    </button>
+                  }
+                />
+                {busFormCoNguoiNha && (
+                  <div className="space-y-3 animate-fade-in">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12px] font-semibold text-[var(--ink-soft)] w-[92px] shrink-0">Số người</span>
+                      <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5">
+                        {[1, 2, 3].map((num) => (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => setBusFormSoNguoiNha(num)}
+                            className={`h-7 px-3 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer ${
+                              busFormSoNguoiNha === num ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                            }`}
+                          >
+                            {num} người
+                          </button>
+                        ))}
+                      </div>
+                      <label className="inline-flex items-center gap-1.5 text-[11.5px] text-[var(--mute)]">
+                        Khác
                         <input
                           type="number"
                           min="1"
                           max="10"
                           value={busFormSoNguoiNha}
                           onChange={(e) => setBusFormSoNguoiNha(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-14 h-7 text-center font-mono font-bold text-[12px] rounded-lg border border-slate-300 bg-white"
+                          className={`${INPUT} !w-16 !h-8 !px-2 text-center font-mono font-semibold`}
+                        />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[12px] font-semibold text-[var(--ink-soft)] mb-1 block">Mối quan hệ / Tên</label>
+                        <input
+                          type="text"
+                          value={busFormTenQuanHe}
+                          onChange={(e) => setBusFormTenQuanHe(e.target.value)}
+                          placeholder="VD: Con gái, Vợ, Chồng…"
+                          className={INPUT}
+                        />
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {["Con gái", "Con trai", "Vợ", "Chồng", "Cháu", "Anh / Chị"].map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => setBusFormTenQuanHe(tag)}
+                              className={`${CHIP} !h-6 !px-2 !text-[11px] ${busFormTenQuanHe === tag ? "!bg-[var(--navy-50)] !text-[var(--navy)] !border-[var(--navy)]/30" : ""}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[12px] font-semibold text-[var(--ink-soft)] mb-1 flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-[var(--navy)]" /> SĐT người nhà
+                        </label>
+                        <input
+                          type="tel"
+                          value={busFormSdtNguoiNha}
+                          onChange={(e) => setBusFormSdtNguoiNha(e.target.value)}
+                          placeholder="09xx xxx xxx"
+                          className={`${INPUT} font-mono font-semibold`}
                         />
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Họ tên / Mối quan hệ */}
-                  <div>
-                    <label className="text-[11.5px] font-bold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>Mối quan hệ / Tên người nhà:</span>
-                      <span className="text-[10.5px] text-slate-400 font-normal">
-                        (VD: Con gái, Vợ, Chồng, Cháu...)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      value={busFormTenQuanHe}
-                      onChange={(e) => setBusFormTenQuanHe(e.target.value)}
-                      placeholder="Nhập tên hoặc mối quan hệ (VD: Con gái, Vợ...)"
-                      className="w-full h-9 px-3 text-[12.5px] font-medium text-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 bg-white"
-                    />
-                    {/* Quick suggestion chips */}
-                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      <span className="text-[10.5px] text-slate-400">Gợi ý nhanh:</span>
-                      {["Con gái", "Con trai", "Vợ", "Chồng", "Cháu", "Anh / Chị", "Người thân"].map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => setBusFormTenQuanHe(tag)}
-                          className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white hover:bg-purple-100 text-purple-900 border border-purple-200 cursor-pointer transition-colors"
-                        >
-                          + {tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* SĐT người nhà */}
-                  <div>
-                    <label className="text-[11.5px] font-bold text-slate-700 mb-1 flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-purple-600" />
-                      <span>Số điện thoại người nhà:</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={busFormSdtNguoiNha}
-                      onChange={(e) => setBusFormSdtNguoiNha(e.target.value)}
-                      placeholder="09xx xxx xxx"
-                      className="w-full h-9 px-3 text-[12.5px] font-mono font-bold text-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 bg-white"
-                    />
-                  </div>
+              {/* 05 Dặn dò */}
+              <div className="pt-4">
+                <MucDau so="05" ten="Dặn dò cho tài xế & điều phối" />
+                <input
+                  type="text"
+                  value={busFormGhiChu}
+                  onChange={(e) => setBusFormGhiChu(e.target.value)}
+                  placeholder="VD: Cần người dìu lên xe, say xe, mang CCCD & BHYT gốc…"
+                  className={INPUT}
+                />
+                <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                  {["Cần người dìu lên xe", "Say xe ngồi ghế đầu", "Đón đúng giờ", "Mang CCCD + BHYT gốc"].map((note) => (
+                    <button
+                      key={note}
+                      type="button"
+                      onClick={() => setBusFormGhiChu((prev) => (prev ? `${prev}, ${note}` : note))}
+                      className={CHIP}
+                    >
+                      + {note}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <div className="text-[12px] text-slate-500 italic bg-white/70 p-2.5 rounded-xl border border-slate-200/60 flex items-center justify-between">
-                  <span>Bệnh nhân đi một mình, không có người nhà đi cùng xe đón.</span>
-                  <button
-                    type="button"
-                    onClick={() => setBusFormCoNguoiNha(true)}
-                    className="text-purple-700 font-bold hover:underline not-italic cursor-pointer text-[11.5px]"
-                  >
-                    + Thêm người nhà
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Bước 4: Ghi chú dặn dò xe */}
-            <div>
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Edit3 className="w-3.5 h-3.5 text-[#031da6]" />
-                  <span>4. Dặn dò / Ghi chú xe đón</span>
-                </span>
-                <span className="text-[10.5px] text-slate-400 font-normal">
-                  (hiển thị cho tài xế & điều phối xe)
-                </span>
-              </label>
-              <input
-                type="text"
-                value={busFormGhiChu}
-                onChange={(e) => setBusFormGhiChu(e.target.value)}
-                placeholder="VD: Cần người dìu lên xe, say xe, mang CCCD & BHYT gốc..."
-                className="w-full h-9 px-3 text-[12.5px] font-medium text-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 bg-white"
-              />
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                <span className="text-[10.5px] text-slate-400">Gợi ý:</span>
-                {["Cần người dìu lên xe", "Say xe ngồi ghế đầu", "Đón đúng giờ", "Mang CCCD + BHYT gốc"].map((note) => (
-                  <button
-                    key={note}
-                    type="button"
-                    onClick={() =>
-                      setBusFormGhiChu((prev) => (prev ? `${prev}, ${note}` : note))
-                    }
-                    className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer transition-colors"
-                  >
-                    + {note}
-                  </button>
-                ))}
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* 3. MODAL THIẾT LẬP & TÁCH NHANH ĐOÀN 2 CHO CẢ TRẠM Y TẾ (CHUẨN ERP) */}

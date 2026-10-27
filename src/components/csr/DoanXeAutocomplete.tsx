@@ -16,8 +16,6 @@ import {
   AlertCircle,
   Edit3,
   Search,
-  Users,
-  Sparkles,
 } from "lucide-react";
 import Modal from "@/components/layout/Modal";
 import { fmtDate, suggestNextTime } from "@/lib/csr";
@@ -367,285 +365,184 @@ export default function DoanXeAutocomplete({
   };
 
   // Render danh sách đoàn xe & các điểm đón
+  // company-ui: thẻ trắng viền mảnh, navy = đang chọn / thao tác, mono cho giờ & số
   const renderRoutesList = (isInline: boolean) => (
     <div
-      className={`space-y-3 ${
-        isInline ? "max-h-[380px] overflow-y-auto pr-1" : "max-h-[340px] overflow-y-auto p-2 space-y-2.5"
-      } custom-scrollbar`}
+      className={`space-y-2.5 ${isInline ? "max-h-[380px] overflow-y-auto pr-1" : "max-h-[340px] overflow-y-auto p-2"} custom-scrollbar`}
     >
-      {/* 1. Tùy chọn Bệnh nhân Tự túc / Đi xe riêng */}
+      {/* 1. Tự túc / đi xe riêng */}
       {quickFilter !== "xa" && (
         <div
           onClick={() => {
-            onSelect({
-              diemDon: "Tự túc / Xe riêng",
-              gioDon: gioDon || "07:30",
-              ngayHen: ngayHen,
-            });
+            onSelect({ diemDon: "Tự túc / Xe riêng", gioDon: gioDon || "07:30", ngayHen: ngayHen });
             if (!isInline) setOpen(false);
           }}
-          className={`group rounded-xl border p-3 transition-all cursor-pointer flex items-center justify-between gap-3 ${
-            isTuTuc
-              ? "bg-blue-50/80 border-[#031da6] ring-1 ring-[#031da6] shadow-xs"
-              : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/70"
+          className={`rounded-[12px] border px-3 py-2.5 transition-all cursor-pointer flex items-center justify-between gap-3 flex-wrap ${
+            isTuTuc ? "border-[var(--navy)] bg-[var(--navy-50)]" : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
           }`}
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                isTuTuc ? "bg-[#031da6] text-white" : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span
+              className={`w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 ${
+                isTuTuc ? "bg-[var(--navy)] text-white" : "bg-[var(--surface-soft)] text-[var(--ink-soft)]"
               }`}
             >
-              <Car className="w-5 h-5" />
-            </div>
+              <Car className="w-4 h-4" />
+            </span>
             <div className="min-w-0">
-              <div className="font-bold text-[13.5px] text-slate-900 flex items-center gap-2">
-                <span>Bệnh nhân Tự túc / Đi xe riêng</span>
-                {isTuTuc && (
-                  <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-[#031da6]">
-                    Đang chọn
-                  </span>
-                )}
-              </div>
-              <p className="text-[12px] text-slate-500 truncate mt-0.5">
-                Bệnh nhân chủ động phương tiện đến bệnh viện theo giờ hẹn
-              </p>
+              <div className={`text-[13px] font-semibold ${isTuTuc ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>Tự túc / Đi xe riêng</div>
+              <p className="text-[11.5px] text-[var(--mute)] truncate">Bệnh nhân tự đến bệnh viện theo giờ hẹn</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1">
-              {["07:00", "07:30", "08:00"].map((t) => (
+          <div className="inline-flex p-0.5 rounded-[9px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5 shrink-0">
+            {["07:00", "07:30", "08:00"].map((t) => {
+              const on = isTuTuc && (gioDon === t || (!gioDon && t === "07:30"));
+              return (
                 <button
                   key={t}
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelect({
-                      diemDon: "Tự túc / Xe riêng",
-                      gioDon: t,
-                      ngayHen: ngayHen,
-                    });
+                    onSelect({ diemDon: "Tự túc / Xe riêng", gioDon: t, ngayHen: ngayHen });
                     if (!isInline) setOpen(false);
                   }}
-                  className={`text-[11px] font-mono font-bold px-2 py-1 rounded-md border transition-all cursor-pointer ${
-                    isTuTuc && (gioDon === t || (!gioDon && t === "07:30"))
-                      ? "bg-[#031da6] text-white border-[#031da6] shadow-xs"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                  className={`h-6 px-2 rounded-[7px] font-mono text-[11px] font-semibold transition-all cursor-pointer ${
+                    on ? "bg-[var(--navy)] text-white" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
                   }`}
                 >
                   {t}
                 </button>
-              ))}
-            </div>
-            {isTuTuc && (
-              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="py-8 flex flex-col items-center justify-center text-slate-400 gap-2">
-          <Loader2 className="w-5 h-5 animate-spin text-[#031da6]" />
-          <span className="text-[12.5px] font-medium">Đang tải danh sách các tuyến xe đón...</span>
+        <div className="py-8 flex flex-col items-center justify-center text-[var(--mute)] gap-2">
+          <Loader2 className="w-5 h-5 animate-spin text-[var(--navy)]" />
+          <span className="text-[12.5px]">Đang tải danh sách tuyến xe đón…</span>
         </div>
       ) : filteredDoanXe.length === 0 ? (
-        <div className="py-8 text-center text-slate-500 space-y-3 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-            <Bus className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[13px] font-semibold text-slate-700">Không tìm thấy đoàn xe phù hợp</p>
-            <p className="text-[12px] text-slate-400 mt-0.5">
-              Thử tìm kiếm với từ khóa khác hoặc tạo đoàn xe mới cho tuyến này
-            </p>
-          </div>
-          <div className="pt-1 flex items-center justify-center gap-2">
+        <div className="py-6 px-4 text-center rounded-[12px] border border-dashed border-[var(--line-strong)]">
+          <p className="text-[13px] font-semibold text-[var(--ink)]">Không tìm thấy tuyến xe phù hợp</p>
+          <p className="text-[12px] text-[var(--mute)] mt-0.5">Thử từ khoá khác hoặc tạo tuyến mới</p>
+          <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
             {searchQuery.trim() && (
               <button
                 type="button"
                 onClick={() => {
-                  onSelect({
-                    diemDon: searchQuery.trim(),
-                    gioDon: gioDon || "06:00",
-                    ngayHen,
-                  });
+                  onSelect({ diemDon: searchQuery.trim(), gioDon: gioDon || "06:00", ngayHen });
                   if (!isInline) setOpen(false);
                 }}
-                className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-[#031da6] border border-blue-200 hover:bg-blue-100 text-[12px] font-bold inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="h-8 px-3 rounded-[9px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[var(--navy)] text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <MapPin className="w-3.5 h-3.5" />
-                <span>Chọn điểm: &quot;{searchQuery.trim()}&quot; (06:00)</span>
+                Chọn điểm &quot;{searchQuery.trim()}&quot; · <span className="font-mono">06:00</span>
               </button>
             )}
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="px-3.5 py-1.5 rounded-xl bg-[#031da6] text-white hover:bg-[#02106a] text-[12px] font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              className="h-8 px-3 rounded-[9px] bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-[var(--navy-shadow)]"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Tạo đoàn xe mới</span>
+              <Plus className="w-3.5 h-3.5" /> Tạo tuyến xe mới
             </button>
           </div>
         </div>
       ) : (
         filteredDoanXe.map((dx) => {
+          const xaLower = buoiKhamXa?.toLowerCase() || "";
           const isXaMatch =
             buoiKhamXa &&
-            (dx.tenDoan.toLowerCase().includes(buoiKhamXa.toLowerCase()) ||
-              dx.cacDiem.some(
-                (c) =>
-                  c.diemDon.toLowerCase().includes(buoiKhamXa.toLowerCase()) ||
-                  (c.cacXa && c.cacXa.some((x) => x.toLowerCase().includes(buoiKhamXa.toLowerCase())))
-              ));
+            (dx.tenDoan.toLowerCase().includes(xaLower) ||
+              dx.cacDiem.some((c) => c.diemDon.toLowerCase().includes(xaLower) || (c.cacXa && c.cacXa.some((x) => x.toLowerCase().includes(xaLower)))));
 
           return (
-            <div
-              key={dx.id}
-              className={`rounded-2xl border transition-all overflow-hidden bg-white shadow-xs ${
-                isXaMatch ? "border-blue-200 ring-1 ring-blue-100" : "border-slate-200"
-              }`}
-            >
-              {/* Header tuyến xe */}
-              <div className="px-3.5 py-2.5 bg-gradient-to-r from-slate-50 to-blue-50/40 border-b border-slate-200/80 flex items-center justify-between gap-2">
+            <div key={dx.id} className="rounded-[12px] border border-[var(--line)] bg-[var(--surface)] overflow-hidden">
+              {/* Header tuyến */}
+              <div className="px-3 py-2 bg-[var(--surface-soft)]/60 border-b border-[var(--line-soft)] flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-blue-100/80 text-[#031da6] flex items-center justify-center shrink-0">
-                    <Bus className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-[13.5px] text-slate-900 truncate">
-                        {dx.tenDoan}
-                      </span>
-                      {isXaMatch && (
-                        <span className="hidden sm:inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <Sparkles className="w-3 h-3 text-emerald-600" />
-                          <span>Tuyến xã {buoiKhamXa}</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <Bus className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" />
+                  <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{dx.tenDoan}</span>
+                  {isXaMatch && (
+                    <span className="hidden sm:inline-flex h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[10.5px] font-semibold items-center">
+                      Cùng xã
+                    </span>
+                  )}
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
-                    <Calendar className="w-3 h-3 text-indigo-600" />
-                    <span>{fmtDate(dx.ngayDon)}</span>
+                <div className="flex items-center gap-2.5 shrink-0 text-[11.5px] text-[var(--mute)]">
+                  <span className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--ink-soft)]">
+                    <Calendar className="w-3 h-3 text-[var(--teal-deep)]" />
+                    {fmtDate(dx.ngayDon)}
                   </span>
-                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md hidden md:inline">
-                    {dx.cacDiem.length} điểm đón
+                  <span className="hidden md:inline">
+                    <span className="font-mono">{dx.cacDiem.length}</span> điểm
                   </span>
                   <button
                     type="button"
                     onClick={(e) => handleCloneToNextDoan(dx, e)}
-                    className="text-[11px] font-black text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs hover:border-purple-300 active:scale-95"
-                    title="Tạo nhanh Đoàn 2 cùng thông tin lộ trình này nhưng giờ đón muộn hơn"
+                    className="h-6 px-2 rounded-[7px] border border-[var(--line)] bg-[var(--surface)] text-[11px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors flex items-center gap-1 cursor-pointer"
+                    title="Tạo nhanh đoàn tiếp theo cùng lộ trình, giờ đón muộn hơn"
                   >
-                    <Sparkles className="w-3 h-3 text-purple-600" />
-                    <span>+ Đoàn 2</span>
+                    <Plus className="w-3 h-3" /> Đoàn sau
                   </button>
                 </div>
               </div>
 
-              {/* Danh sách các điểm đón trên xe */}
-              <div className="divide-y divide-slate-100">
+              {/* Các điểm đón của tuyến */}
+              <div className="divide-y divide-[var(--line-soft)]">
                 {dx.cacDiem.map((c) => {
                   const isMatch = diemDon === c.diemDon && gioDon === c.gioDon;
-
                   return (
                     <div
                       key={c.id}
                       onClick={() => {
-                        onSelect({
-                          diemDon: c.diemDon,
-                          gioDon: c.gioDon,
-                          ngayHen: dx.ngayDon,
-                        });
+                        onSelect({ diemDon: c.diemDon, gioDon: c.gioDon, ngayHen: dx.ngayDon });
                         if (!isInline) setOpen(false);
                       }}
-                      className={`px-3.5 py-2.5 transition-all flex items-center justify-between gap-3 cursor-pointer group ${
-                        isMatch
-                          ? "bg-blue-50/90 font-bold border-l-4 border-l-[#031da6]"
-                          : "hover:bg-slate-50/90 border-l-4 border-l-transparent"
+                      className={`pl-2.5 pr-3 py-2 flex items-center justify-between gap-3 cursor-pointer border-l-2 transition-colors ${
+                        isMatch ? "bg-[var(--navy-50)] border-l-[var(--navy)]" : "border-l-transparent hover:bg-[var(--surface-soft)]"
                       }`}
                     >
-                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                            isMatch
-                              ? "bg-emerald-500 text-white"
-                              : "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100"
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span
+                          className={`w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                            isMatch ? "border-[var(--navy)]" : "border-[var(--line-strong)]"
                           }`}
                         >
-                          <MapPin className="w-3 h-3" />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                              className={`text-[13px] leading-snug break-words ${
-                                isMatch ? "text-[#031da6] font-extrabold" : "text-slate-800 font-semibold"
-                              }`}
-                            >
-                              {c.diemDon}
-                            </span>
-                            {c.cacXa && c.cacXa.length > 0 && (
-                              <span className="text-[11px] font-medium text-slate-500 bg-slate-100/90 px-2 py-0.2 rounded-md">
-                                {c.cacXa.join(", ")}
-                              </span>
-                            )}
+                          {isMatch && <span className="w-2 h-2 rounded-full bg-[var(--navy)]" />}
+                        </span>
+                        <div className="min-w-0">
+                          <div className={`text-[13px] leading-snug break-words ${isMatch ? "text-[var(--navy)] font-semibold" : "text-[var(--ink)] font-medium"}`}>
+                            {c.diemDon}
                           </div>
+                          {c.cacXa && c.cacXa.length > 0 && <div className="text-[11px] text-[var(--mute)] truncate">{c.cacXa.join(", ")}</div>}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="flex items-center gap-3 shrink-0 text-[11.5px]">
                         {c.soBN !== undefined && c.soBN > 0 && (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-100/90 text-blue-900">
-                            <Users className="w-3 h-3" />
-                            <span>{c.soBN} BN</span>
+                          <span className="text-[var(--mute)]">
+                            <span className="font-mono font-semibold text-[var(--ink-soft)]">{c.soBN}</span> BN
                           </span>
                         )}
-
-                        <span
-                          className={`inline-flex items-center gap-1 font-mono text-[12px] font-extrabold px-2 py-0.5 rounded-md border shadow-2xs ${
-                            isMatch
-                              ? "bg-[#031da6] text-white border-[#031da6]"
-                              : "bg-white text-[#031da6] border-blue-200 group-hover:border-[#031da6]"
-                          }`}
-                        >
+                        <span className={`inline-flex items-center gap-1 font-mono text-[12px] font-semibold ${isMatch ? "text-[var(--navy)]" : "text-[var(--ink-soft)]"}`}>
                           <Clock className="w-3 h-3" />
-                          <span>{c.gioDon}</span>
+                          {c.gioDon}
                         </span>
-
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all shrink-0 ${
-                            isMatch
-                              ? "bg-emerald-500 border-emerald-500 text-white"
-                              : "border-slate-300 group-hover:border-slate-400 bg-white"
-                          }`}
-                        >
-                          {isMatch && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Nút thêm điểm đón / giờ mới cho tuyến */}
-              <div className="p-2 bg-slate-50/70 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={(e) => handleOpenAddStopModal(dx, e)}
-                  className="w-full py-1.5 text-[11.5px] font-bold text-[#031da6] hover:bg-blue-50/80 rounded-xl border border-dashed border-blue-200 hover:border-[#031da6] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Thêm điểm đón / giờ mới vào {dx.tenDoan}</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={(e) => handleOpenAddStopModal(dx, e)}
+                className="w-full h-8 border-t border-[var(--line-soft)] text-[11.5px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] hover:bg-[var(--surface-soft)] flex items-center justify-center gap-1 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Thêm điểm đón / giờ vào tuyến này
+              </button>
             </div>
           );
         })
@@ -657,85 +554,54 @@ export default function DoanXeAutocomplete({
     <div className="relative" ref={containerRef}>
       {/* A. NẾU LÀ DẠNG INLINE (Dùng trong Modal Xếp xe chuyên dụng) */}
       {variant === "inline" ? (
-        <div className="space-y-3">
-          {/* Thanh công cụ tìm kiếm & tạo mới */}
+        <div className="space-y-2.5">
+          {/* Tìm + tạo tuyến mới */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm đoàn xe, điểm đón, xã, khung giờ..."
-                className="w-full h-10 pl-9 pr-8 text-[13px] rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 font-medium text-slate-800 placeholder:text-slate-400 transition-all"
+                placeholder="Tìm tuyến, điểm đón, xã, giờ…"
+                className="w-full h-9 pl-8 pr-8 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
-
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="h-10 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#031da6] border border-blue-200 font-bold text-[12.5px] inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 active:scale-95"
+              className="h-9 px-3 rounded-[10px] border border-dashed border-[var(--line-strong)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Tạo đoàn xe mới</span>
+              <Plus className="w-3.5 h-3.5" /> Tạo tuyến xe mới
             </button>
           </div>
 
-          {/* Thanh filter tags */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar text-[11.5px] font-bold">
-            <button
-              type="button"
-              onClick={() => setQuickFilter("all")}
-              className={`px-3 py-1 rounded-lg border transition-all cursor-pointer ${
-                quickFilter === "all"
-                  ? "bg-[#031da6] text-white border-[#031da6]"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              Tất cả tuyến ({doanXeList.length})
-            </button>
-
-            {buoiKhamXa && (
+          {/* Lọc nhanh */}
+          <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5 max-w-full overflow-x-auto no-scrollbar">
+            {([
+              ["all", `Tất cả tuyến`, doanXeList.length],
+              ...(buoiKhamXa ? ([["xa", `Xã ${buoiKhamXa}`, routesForXaCount]] as const) : []),
+            ] as const).map(([k, label, n]) => (
               <button
+                key={k}
                 type="button"
-                onClick={() => setQuickFilter("xa")}
-                className={`px-3 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
-                  quickFilter === "xa"
-                    ? "bg-[#031da6] text-white border-[#031da6]"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                onClick={() => setQuickFilter(k as typeof quickFilter)}
+                className={`shrink-0 h-7 px-2.5 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  quickFilter === k ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
                 }`}
               >
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Tuyến xã {buoiKhamXa} ({routesForXaCount})</span>
+                {label}
+                <span className={`font-mono text-[10.5px] ${quickFilter === k ? "text-white/75" : "text-[var(--mute)]"}`}>{n}</span>
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                onSelect({
-                  diemDon: "Tự túc / Xe riêng",
-                  gioDon: gioDon || "07:30",
-                  ngayHen: ngayHen,
-                });
-              }}
-              className={`px-3 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
-                isTuTuc
-                  ? "bg-blue-50 text-[#031da6] border-[#031da6]"
-                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              <Car className="w-3 h-3" />
-              <span>Đi xe riêng / Tự túc</span>
-            </button>
+            ))}
           </div>
 
           {/* Danh sách các tuyến */}
