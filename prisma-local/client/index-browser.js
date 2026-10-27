@@ -265,6 +265,18 @@ exports.Prisma.DanhMucBenhVienScalarFieldEnum = {
   trangThai: 'trangThai'
 };
 
+exports.Prisma.DoanXeScalarFieldEnum = {
+  id: 'id',
+  coSoId: 'coSoId',
+  ngayDon: 'ngayDon',
+  diemDon: 'diemDon',
+  soDoan: 'soDoan',
+  soCho: 'soCho',
+  gioDon: 'gioDon',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -284,7 +296,8 @@ exports.Prisma.ModelName = {
   NhatKyTheoDoi: 'NhatKyTheoDoi',
   AuditLog: 'AuditLog',
   SyncQueue: 'SyncQueue',
-  DanhMucBenhVien: 'DanhMucBenhVien'
+  DanhMucBenhVien: 'DanhMucBenhVien',
+  DoanXe: 'DoanXe'
 };
 
 /**

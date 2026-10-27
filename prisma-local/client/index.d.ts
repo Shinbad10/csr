@@ -53,6 +53,11 @@ export type SyncQueue = $Result.DefaultSelection<Prisma.$SyncQueuePayload>
  * 
  */
 export type DanhMucBenhVien = $Result.DefaultSelection<Prisma.$DanhMucBenhVienPayload>
+/**
+ * Model DoanXe
+ * 
+ */
+export type DoanXe = $Result.DefaultSelection<Prisma.$DoanXePayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -254,6 +259,16 @@ export class PrismaClient<
     * ```
     */
   get danhMucBenhVien(): Prisma.DanhMucBenhVienDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.doanXe`: Exposes CRUD operations for the **DoanXe** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DoanXes
+    * const doanXes = await prisma.doanXe.findMany()
+    * ```
+    */
+  get doanXe(): Prisma.DoanXeDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -695,7 +710,8 @@ export namespace Prisma {
     NhatKyTheoDoi: 'NhatKyTheoDoi',
     AuditLog: 'AuditLog',
     SyncQueue: 'SyncQueue',
-    DanhMucBenhVien: 'DanhMucBenhVien'
+    DanhMucBenhVien: 'DanhMucBenhVien',
+    DoanXe: 'DoanXe'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -711,7 +727,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "coSo" | "nguoiDungCSR" | "buoiKham" | "hoSoBenhNhan" | "nhatKyTheoDoi" | "auditLog" | "syncQueue" | "danhMucBenhVien"
+      modelProps: "coSo" | "nguoiDungCSR" | "buoiKham" | "hoSoBenhNhan" | "nhatKyTheoDoi" | "auditLog" | "syncQueue" | "danhMucBenhVien" | "doanXe"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1307,6 +1323,80 @@ export namespace Prisma {
           }
         }
       }
+      DoanXe: {
+        payload: Prisma.$DoanXePayload<ExtArgs>
+        fields: Prisma.DoanXeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DoanXeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DoanXeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>
+          }
+          findFirst: {
+            args: Prisma.DoanXeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DoanXeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>
+          }
+          findMany: {
+            args: Prisma.DoanXeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>[]
+          }
+          create: {
+            args: Prisma.DoanXeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>
+          }
+          createMany: {
+            args: Prisma.DoanXeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DoanXeCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>[]
+          }
+          delete: {
+            args: Prisma.DoanXeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>
+          }
+          update: {
+            args: Prisma.DoanXeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>
+          }
+          deleteMany: {
+            args: Prisma.DoanXeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DoanXeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.DoanXeUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>[]
+          }
+          upsert: {
+            args: Prisma.DoanXeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DoanXePayload>
+          }
+          aggregate: {
+            args: Prisma.DoanXeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDoanXe>
+          }
+          groupBy: {
+            args: Prisma.DoanXeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DoanXeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DoanXeCountArgs<ExtArgs>
+            result: $Utils.Optional<DoanXeCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1423,6 +1513,7 @@ export namespace Prisma {
     auditLog?: AuditLogOmit
     syncQueue?: SyncQueueOmit
     danhMucBenhVien?: DanhMucBenhVienOmit
+    doanXe?: DoanXeOmit
   }
 
   /* Types for Logging */
@@ -11622,6 +11713,1094 @@ export namespace Prisma {
 
 
   /**
+   * Model DoanXe
+   */
+
+  export type AggregateDoanXe = {
+    _count: DoanXeCountAggregateOutputType | null
+    _avg: DoanXeAvgAggregateOutputType | null
+    _sum: DoanXeSumAggregateOutputType | null
+    _min: DoanXeMinAggregateOutputType | null
+    _max: DoanXeMaxAggregateOutputType | null
+  }
+
+  export type DoanXeAvgAggregateOutputType = {
+    soDoan: number | null
+    soCho: number | null
+  }
+
+  export type DoanXeSumAggregateOutputType = {
+    soDoan: number | null
+    soCho: number | null
+  }
+
+  export type DoanXeMinAggregateOutputType = {
+    id: string | null
+    coSoId: string | null
+    ngayDon: string | null
+    diemDon: string | null
+    soDoan: number | null
+    soCho: number | null
+    gioDon: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DoanXeMaxAggregateOutputType = {
+    id: string | null
+    coSoId: string | null
+    ngayDon: string | null
+    diemDon: string | null
+    soDoan: number | null
+    soCho: number | null
+    gioDon: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DoanXeCountAggregateOutputType = {
+    id: number
+    coSoId: number
+    ngayDon: number
+    diemDon: number
+    soDoan: number
+    soCho: number
+    gioDon: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DoanXeAvgAggregateInputType = {
+    soDoan?: true
+    soCho?: true
+  }
+
+  export type DoanXeSumAggregateInputType = {
+    soDoan?: true
+    soCho?: true
+  }
+
+  export type DoanXeMinAggregateInputType = {
+    id?: true
+    coSoId?: true
+    ngayDon?: true
+    diemDon?: true
+    soDoan?: true
+    soCho?: true
+    gioDon?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DoanXeMaxAggregateInputType = {
+    id?: true
+    coSoId?: true
+    ngayDon?: true
+    diemDon?: true
+    soDoan?: true
+    soCho?: true
+    gioDon?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DoanXeCountAggregateInputType = {
+    id?: true
+    coSoId?: true
+    ngayDon?: true
+    diemDon?: true
+    soDoan?: true
+    soCho?: true
+    gioDon?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DoanXeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DoanXe to aggregate.
+     */
+    where?: DoanXeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoanXes to fetch.
+     */
+    orderBy?: DoanXeOrderByWithRelationInput | DoanXeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DoanXeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoanXes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoanXes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DoanXes
+    **/
+    _count?: true | DoanXeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DoanXeAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DoanXeSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DoanXeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DoanXeMaxAggregateInputType
+  }
+
+  export type GetDoanXeAggregateType<T extends DoanXeAggregateArgs> = {
+        [P in keyof T & keyof AggregateDoanXe]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDoanXe[P]>
+      : GetScalarType<T[P], AggregateDoanXe[P]>
+  }
+
+
+
+
+  export type DoanXeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DoanXeWhereInput
+    orderBy?: DoanXeOrderByWithAggregationInput | DoanXeOrderByWithAggregationInput[]
+    by: DoanXeScalarFieldEnum[] | DoanXeScalarFieldEnum
+    having?: DoanXeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DoanXeCountAggregateInputType | true
+    _avg?: DoanXeAvgAggregateInputType
+    _sum?: DoanXeSumAggregateInputType
+    _min?: DoanXeMinAggregateInputType
+    _max?: DoanXeMaxAggregateInputType
+  }
+
+  export type DoanXeGroupByOutputType = {
+    id: string
+    coSoId: string
+    ngayDon: string
+    diemDon: string
+    soDoan: number
+    soCho: number
+    gioDon: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: DoanXeCountAggregateOutputType | null
+    _avg: DoanXeAvgAggregateOutputType | null
+    _sum: DoanXeSumAggregateOutputType | null
+    _min: DoanXeMinAggregateOutputType | null
+    _max: DoanXeMaxAggregateOutputType | null
+  }
+
+  type GetDoanXeGroupByPayload<T extends DoanXeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DoanXeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DoanXeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DoanXeGroupByOutputType[P]>
+            : GetScalarType<T[P], DoanXeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DoanXeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    coSoId?: boolean
+    ngayDon?: boolean
+    diemDon?: boolean
+    soDoan?: boolean
+    soCho?: boolean
+    gioDon?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["doanXe"]>
+
+  export type DoanXeSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    coSoId?: boolean
+    ngayDon?: boolean
+    diemDon?: boolean
+    soDoan?: boolean
+    soCho?: boolean
+    gioDon?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["doanXe"]>
+
+  export type DoanXeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    coSoId?: boolean
+    ngayDon?: boolean
+    diemDon?: boolean
+    soDoan?: boolean
+    soCho?: boolean
+    gioDon?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["doanXe"]>
+
+  export type DoanXeSelectScalar = {
+    id?: boolean
+    coSoId?: boolean
+    ngayDon?: boolean
+    diemDon?: boolean
+    soDoan?: boolean
+    soCho?: boolean
+    gioDon?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type DoanXeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "coSoId" | "ngayDon" | "diemDon" | "soDoan" | "soCho" | "gioDon" | "createdAt" | "updatedAt", ExtArgs["result"]["doanXe"]>
+
+  export type $DoanXePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DoanXe"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      coSoId: string
+      ngayDon: string
+      diemDon: string
+      soDoan: number
+      soCho: number
+      gioDon: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["doanXe"]>
+    composites: {}
+  }
+
+  type DoanXeGetPayload<S extends boolean | null | undefined | DoanXeDefaultArgs> = $Result.GetResult<Prisma.$DoanXePayload, S>
+
+  type DoanXeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<DoanXeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: DoanXeCountAggregateInputType | true
+    }
+
+  export interface DoanXeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DoanXe'], meta: { name: 'DoanXe' } }
+    /**
+     * Find zero or one DoanXe that matches the filter.
+     * @param {DoanXeFindUniqueArgs} args - Arguments to find a DoanXe
+     * @example
+     * // Get one DoanXe
+     * const doanXe = await prisma.doanXe.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DoanXeFindUniqueArgs>(args: SelectSubset<T, DoanXeFindUniqueArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one DoanXe that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {DoanXeFindUniqueOrThrowArgs} args - Arguments to find a DoanXe
+     * @example
+     * // Get one DoanXe
+     * const doanXe = await prisma.doanXe.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DoanXeFindUniqueOrThrowArgs>(args: SelectSubset<T, DoanXeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DoanXe that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeFindFirstArgs} args - Arguments to find a DoanXe
+     * @example
+     * // Get one DoanXe
+     * const doanXe = await prisma.doanXe.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DoanXeFindFirstArgs>(args?: SelectSubset<T, DoanXeFindFirstArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DoanXe that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeFindFirstOrThrowArgs} args - Arguments to find a DoanXe
+     * @example
+     * // Get one DoanXe
+     * const doanXe = await prisma.doanXe.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DoanXeFindFirstOrThrowArgs>(args?: SelectSubset<T, DoanXeFindFirstOrThrowArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more DoanXes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DoanXes
+     * const doanXes = await prisma.doanXe.findMany()
+     * 
+     * // Get first 10 DoanXes
+     * const doanXes = await prisma.doanXe.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const doanXeWithIdOnly = await prisma.doanXe.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DoanXeFindManyArgs>(args?: SelectSubset<T, DoanXeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a DoanXe.
+     * @param {DoanXeCreateArgs} args - Arguments to create a DoanXe.
+     * @example
+     * // Create one DoanXe
+     * const DoanXe = await prisma.doanXe.create({
+     *   data: {
+     *     // ... data to create a DoanXe
+     *   }
+     * })
+     * 
+     */
+    create<T extends DoanXeCreateArgs>(args: SelectSubset<T, DoanXeCreateArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many DoanXes.
+     * @param {DoanXeCreateManyArgs} args - Arguments to create many DoanXes.
+     * @example
+     * // Create many DoanXes
+     * const doanXe = await prisma.doanXe.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DoanXeCreateManyArgs>(args?: SelectSubset<T, DoanXeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DoanXes and returns the data saved in the database.
+     * @param {DoanXeCreateManyAndReturnArgs} args - Arguments to create many DoanXes.
+     * @example
+     * // Create many DoanXes
+     * const doanXe = await prisma.doanXe.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DoanXes and only return the `id`
+     * const doanXeWithIdOnly = await prisma.doanXe.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DoanXeCreateManyAndReturnArgs>(args?: SelectSubset<T, DoanXeCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a DoanXe.
+     * @param {DoanXeDeleteArgs} args - Arguments to delete one DoanXe.
+     * @example
+     * // Delete one DoanXe
+     * const DoanXe = await prisma.doanXe.delete({
+     *   where: {
+     *     // ... filter to delete one DoanXe
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DoanXeDeleteArgs>(args: SelectSubset<T, DoanXeDeleteArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one DoanXe.
+     * @param {DoanXeUpdateArgs} args - Arguments to update one DoanXe.
+     * @example
+     * // Update one DoanXe
+     * const doanXe = await prisma.doanXe.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DoanXeUpdateArgs>(args: SelectSubset<T, DoanXeUpdateArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more DoanXes.
+     * @param {DoanXeDeleteManyArgs} args - Arguments to filter DoanXes to delete.
+     * @example
+     * // Delete a few DoanXes
+     * const { count } = await prisma.doanXe.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DoanXeDeleteManyArgs>(args?: SelectSubset<T, DoanXeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DoanXes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DoanXes
+     * const doanXe = await prisma.doanXe.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DoanXeUpdateManyArgs>(args: SelectSubset<T, DoanXeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DoanXes and returns the data updated in the database.
+     * @param {DoanXeUpdateManyAndReturnArgs} args - Arguments to update many DoanXes.
+     * @example
+     * // Update many DoanXes
+     * const doanXe = await prisma.doanXe.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more DoanXes and only return the `id`
+     * const doanXeWithIdOnly = await prisma.doanXe.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends DoanXeUpdateManyAndReturnArgs>(args: SelectSubset<T, DoanXeUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one DoanXe.
+     * @param {DoanXeUpsertArgs} args - Arguments to update or create a DoanXe.
+     * @example
+     * // Update or create a DoanXe
+     * const doanXe = await prisma.doanXe.upsert({
+     *   create: {
+     *     // ... data to create a DoanXe
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DoanXe we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DoanXeUpsertArgs>(args: SelectSubset<T, DoanXeUpsertArgs<ExtArgs>>): Prisma__DoanXeClient<$Result.GetResult<Prisma.$DoanXePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of DoanXes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeCountArgs} args - Arguments to filter DoanXes to count.
+     * @example
+     * // Count the number of DoanXes
+     * const count = await prisma.doanXe.count({
+     *   where: {
+     *     // ... the filter for the DoanXes we want to count
+     *   }
+     * })
+    **/
+    count<T extends DoanXeCountArgs>(
+      args?: Subset<T, DoanXeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DoanXeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DoanXe.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DoanXeAggregateArgs>(args: Subset<T, DoanXeAggregateArgs>): Prisma.PrismaPromise<GetDoanXeAggregateType<T>>
+
+    /**
+     * Group by DoanXe.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DoanXeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DoanXeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DoanXeGroupByArgs['orderBy'] }
+        : { orderBy?: DoanXeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DoanXeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDoanXeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DoanXe model
+   */
+  readonly fields: DoanXeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DoanXe.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DoanXeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DoanXe model
+   */
+  interface DoanXeFieldRefs {
+    readonly id: FieldRef<"DoanXe", 'String'>
+    readonly coSoId: FieldRef<"DoanXe", 'String'>
+    readonly ngayDon: FieldRef<"DoanXe", 'String'>
+    readonly diemDon: FieldRef<"DoanXe", 'String'>
+    readonly soDoan: FieldRef<"DoanXe", 'Int'>
+    readonly soCho: FieldRef<"DoanXe", 'Int'>
+    readonly gioDon: FieldRef<"DoanXe", 'String'>
+    readonly createdAt: FieldRef<"DoanXe", 'DateTime'>
+    readonly updatedAt: FieldRef<"DoanXe", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DoanXe findUnique
+   */
+  export type DoanXeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * Filter, which DoanXe to fetch.
+     */
+    where: DoanXeWhereUniqueInput
+  }
+
+  /**
+   * DoanXe findUniqueOrThrow
+   */
+  export type DoanXeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * Filter, which DoanXe to fetch.
+     */
+    where: DoanXeWhereUniqueInput
+  }
+
+  /**
+   * DoanXe findFirst
+   */
+  export type DoanXeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * Filter, which DoanXe to fetch.
+     */
+    where?: DoanXeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoanXes to fetch.
+     */
+    orderBy?: DoanXeOrderByWithRelationInput | DoanXeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DoanXes.
+     */
+    cursor?: DoanXeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoanXes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoanXes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DoanXes.
+     */
+    distinct?: DoanXeScalarFieldEnum | DoanXeScalarFieldEnum[]
+  }
+
+  /**
+   * DoanXe findFirstOrThrow
+   */
+  export type DoanXeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * Filter, which DoanXe to fetch.
+     */
+    where?: DoanXeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoanXes to fetch.
+     */
+    orderBy?: DoanXeOrderByWithRelationInput | DoanXeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DoanXes.
+     */
+    cursor?: DoanXeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoanXes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoanXes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DoanXes.
+     */
+    distinct?: DoanXeScalarFieldEnum | DoanXeScalarFieldEnum[]
+  }
+
+  /**
+   * DoanXe findMany
+   */
+  export type DoanXeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * Filter, which DoanXes to fetch.
+     */
+    where?: DoanXeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DoanXes to fetch.
+     */
+    orderBy?: DoanXeOrderByWithRelationInput | DoanXeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DoanXes.
+     */
+    cursor?: DoanXeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DoanXes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DoanXes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DoanXes.
+     */
+    distinct?: DoanXeScalarFieldEnum | DoanXeScalarFieldEnum[]
+  }
+
+  /**
+   * DoanXe create
+   */
+  export type DoanXeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * The data needed to create a DoanXe.
+     */
+    data: XOR<DoanXeCreateInput, DoanXeUncheckedCreateInput>
+  }
+
+  /**
+   * DoanXe createMany
+   */
+  export type DoanXeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DoanXes.
+     */
+    data: DoanXeCreateManyInput | DoanXeCreateManyInput[]
+  }
+
+  /**
+   * DoanXe createManyAndReturn
+   */
+  export type DoanXeCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * The data used to create many DoanXes.
+     */
+    data: DoanXeCreateManyInput | DoanXeCreateManyInput[]
+  }
+
+  /**
+   * DoanXe update
+   */
+  export type DoanXeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * The data needed to update a DoanXe.
+     */
+    data: XOR<DoanXeUpdateInput, DoanXeUncheckedUpdateInput>
+    /**
+     * Choose, which DoanXe to update.
+     */
+    where: DoanXeWhereUniqueInput
+  }
+
+  /**
+   * DoanXe updateMany
+   */
+  export type DoanXeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DoanXes.
+     */
+    data: XOR<DoanXeUpdateManyMutationInput, DoanXeUncheckedUpdateManyInput>
+    /**
+     * Filter which DoanXes to update
+     */
+    where?: DoanXeWhereInput
+    /**
+     * Limit how many DoanXes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * DoanXe updateManyAndReturn
+   */
+  export type DoanXeUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * The data used to update DoanXes.
+     */
+    data: XOR<DoanXeUpdateManyMutationInput, DoanXeUncheckedUpdateManyInput>
+    /**
+     * Filter which DoanXes to update
+     */
+    where?: DoanXeWhereInput
+    /**
+     * Limit how many DoanXes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * DoanXe upsert
+   */
+  export type DoanXeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * The filter to search for the DoanXe to update in case it exists.
+     */
+    where: DoanXeWhereUniqueInput
+    /**
+     * In case the DoanXe found by the `where` argument doesn't exist, create a new DoanXe with this data.
+     */
+    create: XOR<DoanXeCreateInput, DoanXeUncheckedCreateInput>
+    /**
+     * In case the DoanXe was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DoanXeUpdateInput, DoanXeUncheckedUpdateInput>
+  }
+
+  /**
+   * DoanXe delete
+   */
+  export type DoanXeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+    /**
+     * Filter which DoanXe to delete.
+     */
+    where: DoanXeWhereUniqueInput
+  }
+
+  /**
+   * DoanXe deleteMany
+   */
+  export type DoanXeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DoanXes to delete
+     */
+    where?: DoanXeWhereInput
+    /**
+     * Limit how many DoanXes to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * DoanXe without action
+   */
+  export type DoanXeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DoanXe
+     */
+    select?: DoanXeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DoanXe
+     */
+    omit?: DoanXeOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -11802,6 +12981,21 @@ export namespace Prisma {
   };
 
   export type DanhMucBenhVienScalarFieldEnum = (typeof DanhMucBenhVienScalarFieldEnum)[keyof typeof DanhMucBenhVienScalarFieldEnum]
+
+
+  export const DoanXeScalarFieldEnum: {
+    id: 'id',
+    coSoId: 'coSoId',
+    ngayDon: 'ngayDon',
+    diemDon: 'diemDon',
+    soDoan: 'soDoan',
+    soCho: 'soCho',
+    gioDon: 'gioDon',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DoanXeScalarFieldEnum = (typeof DoanXeScalarFieldEnum)[keyof typeof DoanXeScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -12765,6 +13959,81 @@ export namespace Prisma {
     id?: IntWithAggregatesFilter<"DanhMucBenhVien"> | number
     ten?: StringWithAggregatesFilter<"DanhMucBenhVien"> | string
     trangThai?: StringWithAggregatesFilter<"DanhMucBenhVien"> | string
+  }
+
+  export type DoanXeWhereInput = {
+    AND?: DoanXeWhereInput | DoanXeWhereInput[]
+    OR?: DoanXeWhereInput[]
+    NOT?: DoanXeWhereInput | DoanXeWhereInput[]
+    id?: StringFilter<"DoanXe"> | string
+    coSoId?: StringFilter<"DoanXe"> | string
+    ngayDon?: StringFilter<"DoanXe"> | string
+    diemDon?: StringFilter<"DoanXe"> | string
+    soDoan?: IntFilter<"DoanXe"> | number
+    soCho?: IntFilter<"DoanXe"> | number
+    gioDon?: StringNullableFilter<"DoanXe"> | string | null
+    createdAt?: DateTimeFilter<"DoanXe"> | Date | string
+    updatedAt?: DateTimeFilter<"DoanXe"> | Date | string
+  }
+
+  export type DoanXeOrderByWithRelationInput = {
+    id?: SortOrder
+    coSoId?: SortOrder
+    ngayDon?: SortOrder
+    diemDon?: SortOrder
+    soDoan?: SortOrder
+    soCho?: SortOrder
+    gioDon?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoanXeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    coSoId_ngayDon_diemDon_soDoan?: DoanXeCoSoIdNgayDonDiemDonSoDoanCompoundUniqueInput
+    AND?: DoanXeWhereInput | DoanXeWhereInput[]
+    OR?: DoanXeWhereInput[]
+    NOT?: DoanXeWhereInput | DoanXeWhereInput[]
+    coSoId?: StringFilter<"DoanXe"> | string
+    ngayDon?: StringFilter<"DoanXe"> | string
+    diemDon?: StringFilter<"DoanXe"> | string
+    soDoan?: IntFilter<"DoanXe"> | number
+    soCho?: IntFilter<"DoanXe"> | number
+    gioDon?: StringNullableFilter<"DoanXe"> | string | null
+    createdAt?: DateTimeFilter<"DoanXe"> | Date | string
+    updatedAt?: DateTimeFilter<"DoanXe"> | Date | string
+  }, "id" | "coSoId_ngayDon_diemDon_soDoan">
+
+  export type DoanXeOrderByWithAggregationInput = {
+    id?: SortOrder
+    coSoId?: SortOrder
+    ngayDon?: SortOrder
+    diemDon?: SortOrder
+    soDoan?: SortOrder
+    soCho?: SortOrder
+    gioDon?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DoanXeCountOrderByAggregateInput
+    _avg?: DoanXeAvgOrderByAggregateInput
+    _max?: DoanXeMaxOrderByAggregateInput
+    _min?: DoanXeMinOrderByAggregateInput
+    _sum?: DoanXeSumOrderByAggregateInput
+  }
+
+  export type DoanXeScalarWhereWithAggregatesInput = {
+    AND?: DoanXeScalarWhereWithAggregatesInput | DoanXeScalarWhereWithAggregatesInput[]
+    OR?: DoanXeScalarWhereWithAggregatesInput[]
+    NOT?: DoanXeScalarWhereWithAggregatesInput | DoanXeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"DoanXe"> | string
+    coSoId?: StringWithAggregatesFilter<"DoanXe"> | string
+    ngayDon?: StringWithAggregatesFilter<"DoanXe"> | string
+    diemDon?: StringWithAggregatesFilter<"DoanXe"> | string
+    soDoan?: IntWithAggregatesFilter<"DoanXe"> | number
+    soCho?: IntWithAggregatesFilter<"DoanXe"> | number
+    gioDon?: StringNullableWithAggregatesFilter<"DoanXe"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"DoanXe"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DoanXe"> | Date | string
   }
 
   export type CoSoCreateInput = {
@@ -13824,6 +15093,90 @@ export namespace Prisma {
     trangThai?: StringFieldUpdateOperationsInput | string
   }
 
+  export type DoanXeCreateInput = {
+    id?: string
+    coSoId: string
+    ngayDon: string
+    diemDon: string
+    soDoan: number
+    soCho: number
+    gioDon?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoanXeUncheckedCreateInput = {
+    id?: string
+    coSoId: string
+    ngayDon: string
+    diemDon: string
+    soDoan: number
+    soCho: number
+    gioDon?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoanXeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    coSoId?: StringFieldUpdateOperationsInput | string
+    ngayDon?: StringFieldUpdateOperationsInput | string
+    diemDon?: StringFieldUpdateOperationsInput | string
+    soDoan?: IntFieldUpdateOperationsInput | number
+    soCho?: IntFieldUpdateOperationsInput | number
+    gioDon?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoanXeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    coSoId?: StringFieldUpdateOperationsInput | string
+    ngayDon?: StringFieldUpdateOperationsInput | string
+    diemDon?: StringFieldUpdateOperationsInput | string
+    soDoan?: IntFieldUpdateOperationsInput | number
+    soCho?: IntFieldUpdateOperationsInput | number
+    gioDon?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoanXeCreateManyInput = {
+    id?: string
+    coSoId: string
+    ngayDon: string
+    diemDon: string
+    soDoan: number
+    soCho: number
+    gioDon?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DoanXeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    coSoId?: StringFieldUpdateOperationsInput | string
+    ngayDon?: StringFieldUpdateOperationsInput | string
+    diemDon?: StringFieldUpdateOperationsInput | string
+    soDoan?: IntFieldUpdateOperationsInput | number
+    soCho?: IntFieldUpdateOperationsInput | number
+    gioDon?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DoanXeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    coSoId?: StringFieldUpdateOperationsInput | string
+    ngayDon?: StringFieldUpdateOperationsInput | string
+    diemDon?: StringFieldUpdateOperationsInput | string
+    soDoan?: IntFieldUpdateOperationsInput | number
+    soCho?: IntFieldUpdateOperationsInput | number
+    gioDon?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -14602,6 +15955,59 @@ export namespace Prisma {
 
   export type DanhMucBenhVienSumOrderByAggregateInput = {
     id?: SortOrder
+  }
+
+  export type DoanXeCoSoIdNgayDonDiemDonSoDoanCompoundUniqueInput = {
+    coSoId: string
+    ngayDon: string
+    diemDon: string
+    soDoan: number
+  }
+
+  export type DoanXeCountOrderByAggregateInput = {
+    id?: SortOrder
+    coSoId?: SortOrder
+    ngayDon?: SortOrder
+    diemDon?: SortOrder
+    soDoan?: SortOrder
+    soCho?: SortOrder
+    gioDon?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoanXeAvgOrderByAggregateInput = {
+    soDoan?: SortOrder
+    soCho?: SortOrder
+  }
+
+  export type DoanXeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    coSoId?: SortOrder
+    ngayDon?: SortOrder
+    diemDon?: SortOrder
+    soDoan?: SortOrder
+    soCho?: SortOrder
+    gioDon?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoanXeMinOrderByAggregateInput = {
+    id?: SortOrder
+    coSoId?: SortOrder
+    ngayDon?: SortOrder
+    diemDon?: SortOrder
+    soDoan?: SortOrder
+    soCho?: SortOrder
+    gioDon?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DoanXeSumOrderByAggregateInput = {
+    soDoan?: SortOrder
+    soCho?: SortOrder
   }
 
   export type BuoiKhamCreateNestedManyWithoutCoSoInput = {

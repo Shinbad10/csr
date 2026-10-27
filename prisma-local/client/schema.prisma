@@ -182,3 +182,20 @@ model DanhMucBenhVien {
   ten       String @unique
   trangThai String @default("active")
 }
+
+// Một đoàn xe tại một điểm đón trong một ngày: loại xe (số chỗ) và giờ đón.
+// Bệnh nhân thuộc đoàn nào vẫn ghi bằng tag [Đoàn N] trong HoSoBenhNhan.ghiChuTuVan.
+model DoanXe {
+  id        String   @id @default(cuid())
+  coSoId    String
+  ngayDon   String // YYYY-MM-DD, hoặc CHUA_XEP_NGAY
+  diemDon   String // tên điểm đón đã chuẩn hoá (cleanDiemDon)
+  soDoan    Int // 1, 2, 3…
+  soCho     Int // 4 | 7 | 16 | 29 | 35 | 45 — tính cả ghế tài xế
+  gioDon    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([coSoId, ngayDon, diemDon, soDoan])
+  @@index([coSoId, ngayDon])
+}
