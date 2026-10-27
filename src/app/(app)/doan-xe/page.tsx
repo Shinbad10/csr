@@ -923,7 +923,7 @@ export default function DoanXePage() {
     <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface-bg)] overflow-y-auto">
       {/* Page Header (Ẩn khi in) */}
       <div className="print:hidden border-b border-[var(--line)] bg-white">
-        <div className="max-w-7xl mx-auto w-full">
+        <div className="max-w-[1600px] mx-auto w-full">
           <PageHeader
             title={
               <div className="flex items-center gap-2.5">
@@ -981,7 +981,7 @@ export default function DoanXePage() {
       {/* Dải chỉ số thống kê lộ trình xe chuẩn ERP (ERP Metric Ribbon) */}
       <div className="border-b border-slate-200 bg-slate-50/70 shrink-0 print:hidden">
         {/* Điện thoại: 6 ô chỉ số thành một hàng vuốt ngang (trước là lưới 2×3 chiếm nửa màn hình) */}
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-2 sm:py-2.5">
+        <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-6 py-2 sm:py-2.5">
           <div className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
             {/* 1. Tổng ca xếp xe */}
             <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all">
@@ -1069,7 +1069,7 @@ export default function DoanXePage() {
 
       {/* Thanh công cụ tìm kiếm & bộ lọc lộ trình (Bounded max-w-7xl) */}
       <div className="border-b border-[var(--line)] bg-white shrink-0 print:hidden">
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-2 sm:py-3 space-y-2 sm:space-y-3">
+        <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-6 py-2 sm:py-3 space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
             {/* Ô tìm kiếm */}
             <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[240px] sm:max-w-[380px]">
@@ -1228,7 +1228,7 @@ export default function DoanXePage() {
 
       {/* Vùng nội dung chính (Main Content Area - Bounded with max-w-7xl) */}
       <div className="p-4 sm:p-6 flex-1 min-h-0">
-        <div className="max-w-7xl mx-auto w-full">
+        <div className="max-w-[1600px] mx-auto w-full">
           {loading && data.length === 0 ? (
             <div className="py-24 flex flex-col items-center justify-center text-[var(--mute)] space-y-3">
               <Loader2 className="w-8 h-8 animate-spin text-[var(--navy)]" />
@@ -1295,131 +1295,80 @@ export default function DoanXePage() {
                     key={stationKey}
                     className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden"
                   >
-                    {/* Header trạm — company-ui: serif tiêu đề, mono số liệu, teal = xong, amber = chờ, navy = thao tác */}
-                    <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-[var(--line-soft)]">
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-mono text-[12px] font-bold ${
-                            isAllDone ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]" : "bg-[var(--navy-50)] text-[var(--navy)]"
-                          }`}
-                        >
-                          {String(gIdx + 1).padStart(2, "0")}
+                    {/* Header trạm: tầng 1 = danh tính trạm | tiến độ · thao tác; tầng 2 = chọn đoàn */}
+                    <div className="px-3.5 sm:px-5 py-3 border-b border-[var(--line)] bg-[var(--surface-soft)]/50">
+                      <div className="flex flex-wrap lg:flex-nowrap items-center gap-x-5 gap-y-2.5">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 font-mono text-[12px] font-bold ${
+                              isAllDone ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]" : "bg-[var(--navy-50)] text-[var(--navy)]"
+                            }`}
+                          >
+                            {String(gIdx + 1).padStart(2, "0")}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-serif text-[16px] sm:text-[17px] font-semibold tracking-[-0.01em] text-[var(--ink)] leading-snug">
+                              {grp.diemDon}
+                            </h3>
+                            <div className="mt-0.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[11.5px] text-[var(--mute)]">
+                              {grp.ngay !== "CHUA_XEP_NGAY" ? (
+                                <span className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--ink-soft)]">
+                                  <Calendar className="w-3 h-3 text-[var(--teal-deep)]" />
+                                  {fmtDate(grp.ngay)}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 font-semibold text-[var(--amber-deep)]">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Chưa có ngày
+                                </span>
+                              )}
+                              {displayDoanTabs.map((dNum) => {
+                                const st = doanStatsMap.get(dNum);
+                                if (!st?.gio) return null;
+                                return (
+                                  <span key={dNum} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--ink-soft)]" title={`Giờ đón Đoàn ${dNum}`}>
+                                    <Clock className="w-3 h-3 text-[var(--navy)]" />
+                                    {displayDoanTabs.length > 1 ? `Đ${dNum} ` : ""}
+                                    {st.gio}
+                                  </span>
+                                );
+                              })}
+                              {Array.from(doanStatsMap.values()).every((st) => !st.gio) && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {grp.rawDiemDon || "Chưa xếp giờ"}
+                                </span>
+                              )}
+                              {grp.cacXa.length > 0 && (
+                                <span className="inline-flex items-center gap-1 min-w-0">
+                                  <MapPin className="w-3 h-3 shrink-0" />
+                                  <span className="font-semibold text-[var(--ink-soft)]">{grp.cacXa.join(", ")}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <h3 className="font-serif text-[16px] sm:text-[17px] font-semibold tracking-[-0.01em] text-[var(--ink)] leading-snug">
-                                {grp.diemDon}
-                              </h3>
-                              <div className="mt-1 flex items-center gap-x-3 gap-y-1 flex-wrap text-[11.5px] text-[var(--mute)]">
-                                {grp.ngay !== "CHUA_XEP_NGAY" ? (
-                                  <span className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--ink-soft)]">
-                                    <Calendar className="w-3 h-3 text-[var(--teal-deep)]" />
-                                    {fmtDate(grp.ngay)}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 font-semibold text-[var(--amber-deep)]">
-                                    <AlertCircle className="w-3 h-3" />
-                                    Chưa có ngày
-                                  </span>
-                                )}
-                                {displayDoanTabs.map((dNum) => {
-                                  const st = doanStatsMap.get(dNum);
-                                  if (!st?.gio) return null;
-                                  return (
-                                    <span key={dNum} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--ink-soft)]" title={`Giờ đón Đoàn ${dNum}`}>
-                                      <Clock className="w-3 h-3 text-[var(--navy)]" />
-                                      {displayDoanTabs.length > 1 ? `Đ${dNum} ` : ""}
-                                      {st.gio}
-                                    </span>
-                                  );
-                                })}
-                                {Array.from(doanStatsMap.values()).every((st) => !st.gio) && (
-                                  <span className="inline-flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {grp.rawDiemDon || "Chưa xếp giờ"}
-                                  </span>
-                                )}
-                                {grp.cacXa.length > 0 && (
-                                  <span className="min-w-0">
-                                    Xã <span className="font-semibold text-[var(--ink-soft)]">{grp.cacXa.join(", ")}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => toggleCollapse(stationKey)}
-                              className="w-8 h-8 shrink-0 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-soft)] flex items-center justify-center text-[var(--mute)] hover:text-[var(--ink)] transition-colors cursor-pointer"
-                              title={isCollapsed ? "Mở rộng danh sách" : "Thu gọn trạm"}
-                            >
-                              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                            </button>
-                          </div>
-
-                          {/* Tiến độ đón */}
-                          <div className="mt-2.5 flex items-center gap-2.5">
-                            <div className="flex-1 h-1.5 rounded-full bg-[var(--line-soft)] overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${isAllDone ? "bg-[var(--teal)]" : "bg-[var(--navy)]"}`}
-                                style={{ width: `${percentDone}%` }}
-                              />
-                            </div>
-                            <span className="font-mono text-[11.5px] font-semibold tabular-nums text-[var(--ink-soft)] shrink-0">
+                        {/* Tiến độ đón (điện thoại: xuống hàng riêng, full width) */}
+                        <div className="order-last lg:order-none w-full lg:w-[240px] shrink-0">
+                          <div className="flex items-baseline justify-between gap-2 text-[11.5px]">
+                            <span className="text-[var(--mute)]">Tiến độ đón</span>
+                            <span className="font-mono font-semibold tabular-nums text-[var(--ink)]">
                               {grpDaDon}/{grp.items.length}
-                              <span className="font-sans font-normal text-[var(--mute)]"> lên xe</span>
+                              <span className="text-[var(--mute)] font-normal"> · {percentDone}%</span>
                             </span>
-                            {stationFamilyCount > 0 && (
-                              <span className="text-[11px] text-[var(--mute)] shrink-0" title="Người nhà đi kèm — tính vào số chỗ">
-                                +<span className="font-mono">{stationFamilyCount}</span> NN · <span className="font-mono">{grp.items.length + stationFamilyCount}</span> chỗ
-                              </span>
-                            )}
+                          </div>
+                          <div className="mt-1 h-1.5 rounded-full bg-[var(--line-soft)] overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${isAllDone ? "bg-[var(--teal)]" : "bg-[var(--navy)]"}`}
+                              style={{ width: `${percentDone}%` }}
+                            />
                           </div>
                         </div>
-                      </div>
 
-                      {/* Chọn đoàn (segmented) · tách đoàn · đón cả trạm */}
-                      <div className="mt-3 flex items-center gap-2 flex-wrap">
-                        <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5 max-w-full overflow-x-auto no-scrollbar">
-                          {(["all", ...displayDoanTabs] as const).map((key) => {
-                            const isAll = key === "all";
-                            const st = isAll ? null : doanStatsMap.get(key as number);
-                            const n = isAll ? grp.items.length : st?.items.length || 0;
-                            const active = currentDoanFilter === key;
-                            return (
-                              <button
-                                key={String(key)}
-                                type="button"
-                                onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: key as "all" | number }))}
-                                title={!isAll && st?.familyCount ? `+ ${st.familyCount} người nhà` : undefined}
-                                className={`shrink-0 h-7 px-2.5 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                                  active
-                                    ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]"
-                                    : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
-                                }`}
-                              >
-                                {!isAll && <Bus className="w-3 h-3" />}
-                                {isAll ? "Tất cả" : `Đoàn ${key}`}
-                                <span className={`font-mono text-[10.5px] tabular-nums ${active ? "text-white/75" : n ? "text-[var(--mute)]" : "text-[var(--mute-soft)]"}`}>{n}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleOpenSplitModal(grp, stationDoanList)}
-                          className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] border border-dashed border-[var(--line-strong)] hover:border-[var(--navy)]/40 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
-                          title="Tách hoặc thêm nhanh đoàn xe mới cho trạm này"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Tách đoàn
-                        </button>
-
-                        <div className="ml-auto">
+                        <div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-0">
                           {isAllDone ? (
-                            <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11.5px] font-semibold">
+                            <span className="inline-flex items-center gap-1 h-8 px-2.5 rounded-[9px] bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[12px] font-semibold whitespace-nowrap">
                               <Check className="w-3.5 h-3.5 stroke-[3]" /> Đã đón đủ
                             </span>
                           ) : (
@@ -1437,13 +1386,75 @@ export default function DoanXePage() {
                               </button>
                             )
                           )}
+                          <button
+                            type="button"
+                            onClick={() => toggleCollapse(stationKey)}
+                            className="w-8 h-8 shrink-0 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-soft)] flex items-center justify-center text-[var(--mute)] hover:text-[var(--ink)] transition-colors cursor-pointer"
+                            title={isCollapsed ? "Mở rộng danh sách" : "Thu gọn trạm"}
+                          >
+                            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                          </button>
                         </div>
+                      </div>
+
+                      {/* Tầng 2: chọn đoàn · tách đoàn · số chỗ */}
+                      <div className="mt-2.5 sm:pl-12 flex items-center gap-2 flex-wrap">
+                        <div className="inline-flex p-0.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] gap-0.5 max-w-full overflow-x-auto no-scrollbar">
+                          {(["all", ...displayDoanTabs] as const).map((key) => {
+                            const isAll = key === "all";
+                            const st = isAll ? null : doanStatsMap.get(key as number);
+                            const n = isAll ? grp.items.length : st?.items.length || 0;
+                            const active = currentDoanFilter === key;
+                            return (
+                              <button
+                                key={String(key)}
+                                type="button"
+                                onClick={() => setStationDoanFilter((prev) => ({ ...prev, [stationKey]: key as "all" | number }))}
+                                title={!isAll && st?.familyCount ? `+ ${st.familyCount} người nhà` : undefined}
+                                className={`shrink-0 h-7 px-2.5 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                                  active ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                                }`}
+                              >
+                                {!isAll && <Bus className="w-3 h-3" />}
+                                {isAll ? "Tất cả" : `Đoàn ${key}`}
+                                <span className={`font-mono text-[10.5px] tabular-nums ${active ? "text-white/75" : n ? "text-[var(--mute)]" : "text-[var(--mute-soft)]"}`}>{n}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSplitModal(grp, stationDoanList)}
+                          className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] border border-dashed border-[var(--line-strong)] hover:border-[var(--navy)]/40 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                          title="Tách hoặc thêm nhanh đoàn xe mới cho trạm này"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Tách đoàn
+                        </button>
+                        <span className="ml-auto text-[11.5px] text-[var(--mute)] whitespace-nowrap">
+                          <span className="font-mono font-semibold text-[var(--ink-soft)]">{grp.items.length}</span> BN
+                          {stationFamilyCount > 0 && (
+                            <>
+                              {" "}+ <span className="font-mono font-semibold text-[var(--ink-soft)]">{stationFamilyCount}</span> người nhà ={" "}
+                              <span className="font-mono font-semibold text-[var(--ink)]">{grp.items.length + stationFamilyCount}</span> chỗ
+                            </>
+                          )}
+                        </span>
                       </div>
                     </div>
 
                     {/* Danh sách hành khách trong trạm */}
                     {!isCollapsed && (
                       <div className="divide-y divide-[var(--line-soft)]">
+                        {displayedItems.length > 0 && (
+                          <div className="hidden lg:grid grid-cols-[24px_minmax(0,1fr)] lg:grid-cols-[28px_minmax(0,1.15fr)_176px_minmax(0,1fr)_minmax(0,1.5fr)_196px] gap-x-3 lg:gap-x-5 gap-y-1.5 items-start lg:items-center px-5 py-2 bg-[var(--surface-soft)]/40 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--mute)]">
+                            <span>#</span>
+                            <span>Bệnh nhân</span>
+                            <span>Đoàn</span>
+                            <span>Liên hệ</span>
+                            <span>Địa chỉ · Dặn dò</span>
+                            <span className="text-right">Thao tác</span>
+                          </div>
+                        )}
                         {displayedItems.length === 0 ? (
                           <div className="px-4 py-6 text-center text-[12.5px] text-[var(--mute)] flex flex-col items-center justify-center gap-1.5">
                             <Bus className="w-5 h-5 text-[var(--mute-soft)]" />
@@ -1467,151 +1478,157 @@ export default function DoanXePage() {
                             const chuaXepXe = !p.diemDon || p.diemDon === "Chưa xác định điểm đón";
 
                             return (
-                              <div key={p.id} className="px-3.5 sm:px-5 py-3 transition-colors hover:bg-[var(--surface-soft)]">
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-center">
-                                  {/* Bệnh nhân + chọn đoàn */}
-                                  <div className="md:col-span-4 flex items-start gap-2.5 min-w-0">
-                                    <span className="font-mono text-[11px] font-semibold text-[var(--mute)] tabular-nums w-6 shrink-0 pt-[3px]">
-                                      {String(p.stt ?? pIdx + 1).padStart(2, "0")}
-                                    </span>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <span className="text-[14px] font-semibold text-[var(--ink)] truncate">{p.hoTen}</span>
-                                        {isMo && (
-                                          <span className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[10.5px] font-semibold shrink-0">
-                                            <Check className="w-3 h-3 stroke-[3]" /> Đã mổ
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="mt-0.5 text-[12px] text-[var(--mute)] flex items-center gap-x-1.5 flex-wrap">
-                                        <span>{[p.gioiTinh || "—", fmtSinhTuoi(p)].filter(Boolean).join(" · ")}</span>
-                                        {p.ngayDieuTri && (
-                                          <span className="text-[var(--ink-soft)]">
-                                            · Hẹn <span className="font-mono font-semibold">{fmtDate(p.ngayDieuTri)}</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="mt-1.5 inline-flex p-0.5 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5">
-                                        {displayDoanTabs.map((dNum) => {
-                                          const isCurrent = currentDoan === dNum;
-                                          const st = doanStatsMap.get(dNum);
-                                          return (
-                                            <button
-                                              key={dNum}
-                                              type="button"
-                                              disabled={isSwitching}
-                                              onClick={() => !isCurrent && handleQuickSwitchDoan(p, dNum, st?.gio)}
-                                              className={`h-6 px-2 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                                                isCurrent ? "bg-[var(--navy)] text-white" : "text-[var(--mute)] hover:text-[var(--ink)]"
-                                              }`}
-                                              title={isCurrent ? `Bệnh nhân đang ở Đoàn ${dNum}` : `Bấm để chuyển bệnh nhân sang Đoàn ${dNum}`}
-                                            >
-                                              {isSwitching && isCurrent ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Bus className="w-2.5 h-2.5" />}
-                                              Đoàn {dNum}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  </div>
+                              <div key={p.id} className="grid grid-cols-[24px_minmax(0,1fr)] lg:grid-cols-[28px_minmax(0,1.15fr)_176px_minmax(0,1fr)_minmax(0,1.5fr)_196px] gap-x-3 lg:gap-x-5 gap-y-1.5 items-start lg:items-center px-3.5 sm:px-5 py-2.5 transition-colors hover:bg-[var(--surface-soft)]">
+                                {/* # */}
+                                <span className="font-mono text-[11px] font-semibold text-[var(--mute)] tabular-nums pt-[3px] lg:pt-0">
+                                  {String(p.stt ?? pIdx + 1).padStart(2, "0")}
+                                </span>
 
-                                  {/* Liên lạc · địa chỉ · dặn dò */}
-                                  <div className="md:col-span-5 space-y-1 min-w-0 pl-[34px] md:pl-0 text-[12px]">
-                                    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-                                      {p.sdt ? (
-                                        <a href={`tel:${p.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline shrink-0">
-                                          <Phone className="w-3 h-3" />
-                                          {p.sdt}
-                                        </a>
-                                      ) : (
-                                        <span className="text-[var(--mute-soft)]">Không có SĐT</span>
-                                      )}
-                                      {nn.hasNguoiNha ? (
-                                        <span className="inline-flex items-center gap-1 text-[var(--ink-soft)] min-w-0 flex-wrap">
-                                          <Users className="w-3 h-3 text-[var(--mute)] shrink-0" />
-                                          <span className="font-semibold">{nn.coDiCung ? `Kèm ${nn.soLuongDiCung} NN` : "Người nhà"}</span>
-                                          {nn.tenQuanHe && <span>· {nn.tenQuanHe}</span>}
-                                          {nn.sdt && (
-                                            <a href={`tel:${nn.sdt}`} className="font-mono text-[var(--navy)] hover:underline" title="Gọi cho người nhà">
-                                              · {nn.sdt}
-                                            </a>
-                                          )}
-                                          <button
-                                            type="button"
-                                            onClick={() => handleOpenAssignModal(p)}
-                                            className="p-0.5 text-[var(--mute-soft)] hover:text-[var(--navy)] cursor-pointer transition-colors"
-                                            title="Sửa thông tin người nhà"
-                                          >
-                                            <Edit3 className="w-3 h-3" />
-                                          </button>
-                                        </span>
-                                      ) : (
+                                {/* Bệnh nhân */}
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-[13.5px] font-semibold text-[var(--ink)] truncate">{p.hoTen}</span>
+                                    {isMo && (
+                                      <span className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[10.5px] font-semibold shrink-0">
+                                        <Check className="w-3 h-3 stroke-[3]" /> Đã mổ
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-0.5 text-[11.5px] text-[var(--mute)] flex items-center gap-x-1.5 flex-wrap">
+                                    <span>{[p.gioiTinh || "—", fmtSinhTuoi(p)].filter(Boolean).join(" · ")}</span>
+                                    {p.ngayDieuTri && (
+                                      <span className="text-[var(--ink-soft)]">
+                                        · Hẹn <span className="font-mono font-semibold">{fmtDate(p.ngayDieuTri)}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Đoàn */}
+                                <div className="col-start-2 lg:col-start-auto">
+                                  <div className="inline-flex p-0.5 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5 flex-wrap">
+                                    {displayDoanTabs.map((dNum) => {
+                                      const isCurrent = currentDoan === dNum;
+                                      const st = doanStatsMap.get(dNum);
+                                      return (
                                         <button
+                                          key={dNum}
                                           type="button"
-                                          onClick={() => handleOpenAssignModal(p, true)}
-                                          className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] transition-colors cursor-pointer"
-                                          title="Điền thêm thông tin người nhà đi kèm"
+                                          disabled={isSwitching}
+                                          onClick={() => !isCurrent && handleQuickSwitchDoan(p, dNum, st?.gio)}
+                                          className={`h-6 px-2 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                                            isCurrent ? "bg-[var(--navy)] text-white" : "text-[var(--mute)] hover:text-[var(--ink)]"
+                                          }`}
+                                          title={isCurrent ? `Bệnh nhân đang ở Đoàn ${dNum}` : `Bấm để chuyển bệnh nhân sang Đoàn ${dNum}`}
                                         >
-                                          <UserPlus className="w-3 h-3" /> Người nhà
+                                          {isSwitching && isCurrent ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Bus className="w-2.5 h-2.5" />}
+                                          Đoàn {dNum}
                                         </button>
-                                      )}
-                                    </div>
-                                    {p.diaChi && (
-                                      <div className="text-[var(--mute)] flex items-center gap-1 min-w-0">
-                                        <MapPin className="w-3 h-3 text-[var(--mute-soft)] shrink-0" />
-                                        <span className="truncate">{p.diaChi}</span>
-                                      </div>
-                                    )}
-                                    {danDo && (
-                                      <div className="inline-flex items-center gap-1 max-w-full px-2 py-0.5 rounded-md bg-[var(--amber-soft)] text-[11.5px] text-[var(--amber-deep)]">
-                                        <span className="font-semibold shrink-0">Dặn dò:</span>
-                                        <span className="truncate">{danDo}</span>
-                                      </div>
-                                    )}
+                                      );
+                                    })}
                                   </div>
+                                </div>
 
-                                  {/* Thao tác đón */}
-                                  <div className="md:col-span-3 flex items-center justify-end gap-1.5 pl-[34px] md:pl-0">
-                                    {chuaXepXe ? (
+                                {/* Liên hệ */}
+                                <div className="col-start-2 lg:col-start-auto min-w-0 text-[12px] flex lg:flex-col items-center lg:items-start gap-x-3 gap-y-0.5 flex-wrap">
+                                  {p.sdt ? (
+                                    <a href={`tel:${p.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
+                                      <Phone className="w-3 h-3" />
+                                      {p.sdt}
+                                    </a>
+                                  ) : (
+                                    <span className="text-[var(--mute-soft)]">Không có SĐT</span>
+                                  )}
+                                  {nn.hasNguoiNha ? (
+                                    <span className="inline-flex items-center gap-1 text-[11.5px] text-[var(--ink-soft)] min-w-0 flex-wrap">
+                                      <Users className="w-3 h-3 text-[var(--mute)] shrink-0" />
+                                      <span className="font-semibold">{nn.coDiCung ? `Kèm ${nn.soLuongDiCung} NN` : "Người nhà"}</span>
+                                      {nn.tenQuanHe && <span className="truncate">· {nn.tenQuanHe}</span>}
+                                      {nn.sdt && (
+                                        <a href={`tel:${nn.sdt}`} className="font-mono text-[var(--navy)] hover:underline" title="Gọi cho người nhà">
+                                          · {nn.sdt}
+                                        </a>
+                                      )}
                                       <button
                                         type="button"
                                         onClick={() => handleOpenAssignModal(p)}
-                                        className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold border border-[var(--amber)]/40 bg-[var(--amber-soft)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-colors cursor-pointer flex items-center gap-1 shrink-0"
-                                        title="Xếp điểm đón và giờ xe đón cho bệnh nhân này"
+                                        className="p-0.5 text-[var(--mute-soft)] hover:text-[var(--navy)] cursor-pointer transition-colors"
+                                        title="Sửa thông tin người nhà"
                                       >
-                                        <Bus className="w-3.5 h-3.5" /> Xếp xe
+                                        <Edit3 className="w-3 h-3" />
                                       </button>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenAssignModal(p)}
-                                        className="w-8 h-8 rounded-[9px] border border-[var(--line)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
-                                        title="Đổi điểm đón / giờ xe đón"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
+                                    </span>
+                                  ) : (
                                     <button
                                       type="button"
-                                      disabled={checkingInId === p.id}
-                                      onClick={() => toggleCheckIn(p)}
-                                      title={isDaDen ? "Đã lên xe — bấm để huỷ đánh dấu" : "Đánh dấu bệnh nhân đã lên xe"}
-                                      className={`h-8 px-3 rounded-[9px] text-[12px] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                                        isDaDen
-                                          ? "border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
-                                          : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
-                                      }`}
+                                      onClick={() => handleOpenAssignModal(p, true)}
+                                      className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] transition-colors cursor-pointer"
+                                      title="Điền thêm thông tin người nhà đi kèm"
                                     >
-                                      {checkingInId === p.id ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      ) : isDaDen ? (
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                      ) : (
-                                        <Bus className="w-3.5 h-3.5 text-[var(--teal)]" />
-                                      )}
-                                      {isDaDen ? "Đã lên xe" : "Đón lên xe"}
+                                      <UserPlus className="w-3 h-3" /> Người nhà
                                     </button>
-                                  </div>
+                                  )}
+                                </div>
+
+                                {/* Địa chỉ · dặn dò */}
+                                <div className="col-start-2 lg:col-start-auto min-w-0 space-y-1 text-[12px]">
+                                  {p.diaChi ? (
+                                    <div className="text-[var(--ink-soft)] flex items-center gap-1 min-w-0" title={p.diaChi}>
+                                      <MapPin className="w-3 h-3 text-[var(--mute-soft)] shrink-0" />
+                                      <span className="truncate">{p.diaChi}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="hidden lg:inline text-[var(--mute-soft)]">—</span>
+                                  )}
+                                  {danDo && (
+                                    <div className="inline-flex items-center gap-1 max-w-full px-2 py-0.5 rounded-md bg-[var(--amber-soft)] text-[11.5px] text-[var(--amber-deep)]" title={danDo}>
+                                      <span className="font-semibold shrink-0">Dặn dò:</span>
+                                      <span className="truncate">{danDo}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Thao tác */}
+                                <div className="col-start-2 lg:col-start-auto flex items-center justify-end gap-1.5 pt-1 lg:pt-0">
+                                  {chuaXepXe ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenAssignModal(p)}
+                                      className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold border border-[var(--amber)]/40 bg-[var(--amber-soft)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                                      title="Xếp điểm đón và giờ xe đón cho bệnh nhân này"
+                                    >
+                                      <Bus className="w-3.5 h-3.5" /> Xếp xe
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenAssignModal(p)}
+                                      className="w-8 h-8 rounded-[9px] border border-[var(--line)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                                      title="Đổi điểm đón / giờ xe đón"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    disabled={checkingInId === p.id}
+                                    onClick={() => toggleCheckIn(p)}
+                                    title={isDaDen ? "Đã lên xe — bấm để huỷ đánh dấu" : "Đánh dấu bệnh nhân đã lên xe"}
+                                    className={`h-8 w-[112px] justify-center rounded-[9px] text-[12px] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                      isDaDen
+                                        ? "border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
+                                        : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
+                                    }`}
+                                  >
+                                    {checkingInId === p.id ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : isDaDen ? (
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <Bus className="w-3.5 h-3.5 text-[var(--teal)]" />
+                                    )}
+                                    {isDaDen ? "Đã lên xe" : "Đón lên xe"}
+                                  </button>
                                 </div>
                               </div>
                             );
