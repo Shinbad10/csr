@@ -889,6 +889,8 @@ export function cleanDiemDon(diemDon?: string | null): string {
  */
 /** Loại xe đón (số chỗ, tính cả ghế tài xế). */
 export const LOAI_XE = [4, 7, 16, 29, 35, 45] as const;
+/** Đoàn chưa chọn xe được coi là xe 16 chỗ. */
+export const XE_MAC_DINH = 16;
 
 /** Một ô trên sơ đồ ghế: số ghế khách (1…n), ghế tài xế, hoặc khoảng trống (lối đi / cần số). */
 export type OGhe = number | "taiXe" | null;

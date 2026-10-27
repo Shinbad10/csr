@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bus, Check, Loader2, Pencil } from "lucide-react";
 import Modal from "@/components/layout/Modal";
 import { LOAI_XE, soDoGhe, type OGhe } from "@/lib/csr";
@@ -27,21 +27,16 @@ export function SoDoXe({
   soCho,
   gioDon,
   nguoi,
-  onChonXe,
   onSuaXe,
-  dangLuu,
 }: {
   soDoan: number;
-  soCho: number | null;
+  soCho: number;
   gioDon?: string | null;
   nguoi: NguoiTrenXe[];
-  /** Chọn nhanh loại xe khi đoàn chưa có xe */
-  onChonXe: (soCho: number) => void;
   onSuaXe: () => void;
-  dangLuu?: boolean;
 }) {
-  const so = soCho ? soDoGhe(soCho) : null;
-  const quaTai = so ? Math.max(0, nguoi.length - so.soGheKhach) : 0;
+  const so = soDoGhe(soCho);
+  const quaTai = Math.max(0, nguoi.length - so.soGheKhach);
   const soBN = nguoi.filter((n) => n.loai === "bn").length;
 
   return (
@@ -53,7 +48,7 @@ export function SoDoXe({
         <div className="min-w-0">
           <div className="text-[13px] font-semibold text-[var(--ink)]">
             Đoàn {soDoan}
-            {soCho ? <span className="font-normal text-[var(--mute)]"> · Xe {soCho} chỗ</span> : null}
+            <span className="font-normal text-[var(--mute)]"> · Xe {soCho} chỗ</span>
             {gioDon ? <span className="font-mono font-normal text-[var(--mute)]"> · {gioDon}</span> : null}
           </div>
           <div className="text-[11px] text-[var(--mute)]">
@@ -65,7 +60,7 @@ export function SoDoXe({
             )}
           </div>
         </div>
-        {so && (
+        {(
           <span
             className={`ml-auto font-mono text-[12px] font-semibold tabular-nums px-2 py-0.5 rounded-md ${
               quaTai ? "bg-[var(--rose-soft)] text-[var(--rose)]" : nguoi.length === so.soGheKhach ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]" : "bg-[var(--surface-soft)] text-[var(--ink-soft)]"
@@ -78,32 +73,14 @@ export function SoDoXe({
         <button
           type="button"
           onClick={onSuaXe}
-          className={`${so ? "" : "ml-auto"} w-7 h-7 rounded-[8px] border border-[var(--line)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 flex items-center justify-center cursor-pointer transition-colors`}
+          className={`w-7 h-7 rounded-[8px] border border-[var(--line)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 flex items-center justify-center cursor-pointer transition-colors`}
           title="Đổi loại xe / giờ đón"
         >
           <Pencil className="w-3 h-3" />
         </button>
       </header>
 
-      {!so ? (
-        <div className="px-4 py-6 text-center">
-          <p className="text-[12.5px] text-[var(--amber-deep)] font-semibold">Đoàn chưa chọn xe</p>
-          <p className="text-[11.5px] text-[var(--mute)] mt-0.5">Chọn loại xe để xếp ghế cho {nguoi.length} người</p>
-          <div className="mt-3 flex items-center justify-center gap-1.5 flex-wrap">
-            {LOAI_XE.map((n) => (
-              <button
-                key={n}
-                type="button"
-                disabled={dangLuu}
-                onClick={() => onChonXe(n)}
-                className="h-8 px-3 rounded-[9px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] hover:border-[var(--navy)] hover:text-[var(--navy)] cursor-pointer transition-colors disabled:opacity-50"
-              >
-                <span className="font-mono">{n}</span> chỗ
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
+      {(
         <div className="p-4 overflow-x-auto">
           {/* Thân xe: đầu xe ở trên */}
           <div className="mx-auto w-max rounded-t-[28px] rounded-b-[14px] border-2 border-[var(--line-strong)] bg-[var(--surface-soft)]/50 px-3 pt-2 pb-3">
@@ -185,7 +162,7 @@ function Ghe({ o, nguoi }: { o: OGhe; nguoi?: NguoiTrenXe }) {
   );
 }
 
-/** Hộp chọn loại xe + giờ đón cho một đoàn (thêm đoàn mới hoặc đổi xe). */
+/** Hộp chọn loại xe + giờ đón cho một đoàn (thêm đoàn mới hoặc đổi xe). Render kèm `key` theo đoàn để mỗi lần mở là form mới. */
 export function ChonXeModal({
   open,
   onClose,
@@ -206,12 +183,6 @@ export function ChonXeModal({
   const [soCho, setSoCho] = useState<number | null>(soChoBanDau ?? null);
   const [gioDon, setGioDon] = useState(gioDonBanDau || "");
   const [luu, setLuu] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setSoCho(soChoBanDau ?? null);
-    setGioDon(gioDonBanDau || "");
-  }, [open, soChoBanDau, gioDonBanDau]);
 
   return (
     <Modal

@@ -47,6 +47,7 @@ import {
   getDoanColor,
   type ThongTinNguoiNha,
   parseThongTinNguoiNha,
+  XE_MAC_DINH,
 } from "@/lib/csr";
 import Modal from "@/components/layout/Modal";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
@@ -82,7 +83,6 @@ export default function DoanXePage() {
   const [xeList, setXeList] = useState<XeDoan[]>([]);
   const [chuaCoBangXe, setChuaCoBangXe] = useState(false);
   const [chonXe, setChonXe] = useState<{ coSoId: string; ngayDon: string; diemDon: string; soDoan: number; soCho: number | null; gioDon: string | null; moi: boolean } | null>(null);
-  const [luuXeKey, setLuuXeKey] = useState<string | null>(null);
   const [cheDoTram, setCheDoTram] = useState<"ds" | "ghe">("ds");
   // Lộ trình trạm dạng sidebar: trạm đang xem + bộ lọc danh sách trạm
   const [activeStation, setActiveStation] = useState<string | null>(null);
@@ -424,8 +424,6 @@ export default function DoanXePage() {
 
   /** Lưu loại xe (+ giờ đón) cho một đoàn của một điểm đón */
   const luuXe = async (v: { coSoId: string; ngayDon: string; diemDon: string; soDoan: number; soCho: number; gioDon?: string | null }) => {
-    const key = `${v.ngayDon}___${v.diemDon}___${v.soDoan}`;
-    setLuuXeKey(key);
     try {
       const res = await fetch("/api/csr/doan-xe/xe", {
         method: "POST",
@@ -439,8 +437,9 @@ export default function DoanXePage() {
       }
       await loadXe();
       return true;
-    } finally {
-      setLuuXeKey(null);
+    } catch {
+      addToast({ type: "error", message: "Mất kết nối máy chủ" });
+      return false;
     }
   };
 
@@ -1257,17 +1256,15 @@ export default function DoanXePage() {
                                     {gio && <span className="font-mono text-[10.5px] text-[var(--mute)] shrink-0">{gio}</span>}
                                   </div>
                                   {(() => {
-                                    const xeG = xeList.filter((x) => x.ngayDon === g.ngay && x.diemDon === g.diemDon).sort((a, b) => a.soDoan - b.soDoan);
+                                    const xeG = xeList.filter((x) => x.ngayDon === g.ngay && x.diemDon === g.diemDon);
+                                    const doanG = Array.from(new Set([...g.items.map((it) => parseDoanXe(it)), ...xeG.map((x) => x.soDoan)])).sort((a, b) => a - b);
+                                    const soChoG = doanG.map((d) => xeG.find((x) => x.soDoan === d)?.soCho ?? XE_MAC_DINH);
                                     return (
                                       <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--mute)] min-w-0">
-                                        {xeG.length ? (
-                                          <span className="inline-flex items-center gap-1 shrink-0 text-[var(--ink-soft)]">
-                                            <Bus className="w-3 h-3 text-[var(--mute)]" />
-                                            <span className="font-mono">{xeG.map((x) => x.soCho).join(" + ")}</span> chỗ
-                                          </span>
-                                        ) : (
-                                          <span className="shrink-0 font-semibold text-[var(--amber-deep)]">Chưa chọn xe</span>
-                                        )}
+                                        <span className="inline-flex items-center gap-1 shrink-0 text-[var(--ink-soft)]">
+                                          <Bus className="w-3 h-3 text-[var(--mute)]" />
+                                          <span className="font-mono">{soChoG.join(" + ")}</span> chỗ
+                                        </span>
                                         {g.cacXa.length > 0 && <span className="truncate">· {g.cacXa.join(", ")}</span>}
                                       </div>
                                     );
@@ -1311,6 +1308,7 @@ export default function DoanXePage() {
                 const xeTram = xeList.filter((x) => x.ngayDon === grp.ngay && x.diemDon === grp.diemDon);
                 const displayDoanTabs = Array.from(new Set([...stationDoanList, ...xeTram.map((x) => x.soDoan)])).sort((a, b) => a - b);
                 const xeCuaDoan = (d: number) => xeTram.find((x) => x.soDoan === d) || null;
+                const soChoCua = (d: number) => xeCuaDoan(d)?.soCho ?? XE_MAC_DINH;
                 const coSoTram = grp.items[0]?.coSoId || "";
                 // Ghế ngồi của một đoàn: bệnh nhân theo STT, người nhà đi kèm ngồi ngay sau
                 const nguoiTrenXe = (d: number): NguoiTrenXe[] => {
@@ -1472,8 +1470,10 @@ export default function DoanXePage() {
                         </button>
                         {displayDoanTabs.map((dNum) => {
                           const xe = xeCuaDoan(dNum);
+                          const soCho = soChoCua(dNum);
                           const nguoi = nguoiTrenXe(dNum).length;
-                          const ghe = xe ? xe.soCho - 1 : 0;
+                          const ghe = soCho - 1;
+                          const gio = xe?.gioDon || doanStatsMap.get(dNum)?.gio;
                           const active = currentDoanFilter === dNum;
                           return (
                             <div
@@ -1489,22 +1489,16 @@ export default function DoanXePage() {
                               <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className={`text-[12px] font-semibold ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>Đoàn {dNum}</span>
-                                  {xe && (
-                                    <span
-                                      className={`font-mono text-[10.5px] font-semibold tabular-nums ${nguoi > ghe ? "text-[var(--rose)]" : "text-[var(--mute)]"}`}
-                                      title="Ghế đã dùng / ghế chở khách"
-                                    >
-                                      {nguoi}/{ghe}
-                                    </span>
-                                  )}
+                                  <span
+                                    className={`font-mono text-[10.5px] font-semibold tabular-nums ${nguoi > ghe ? "text-[var(--rose)]" : "text-[var(--mute)]"}`}
+                                    title="Ghế đã dùng / ghế chở khách"
+                                  >
+                                    {nguoi}/{ghe}
+                                  </span>
                                 </div>
-                                {xe ? (
-                                  <div className="text-[11px] text-[var(--mute)] whitespace-nowrap">
-                                    Xe <span className="font-mono">{xe.soCho}</span> chỗ{xe.gioDon ? <> · <span className="font-mono">{xe.gioDon}</span></> : null}
-                                  </div>
-                                ) : (
-                                  <div className="text-[11px] font-semibold text-[var(--amber-deep)] whitespace-nowrap">Chưa chọn xe</div>
-                                )}
+                                <div className="text-[11px] text-[var(--mute)] whitespace-nowrap">
+                                  Xe <span className="font-mono">{soCho}</span> chỗ{gio ? <> · <span className="font-mono">{gio}</span></> : null}
+                                </div>
                               </div>
                               <button
                                 type="button"
@@ -1515,17 +1509,15 @@ export default function DoanXePage() {
                                     ngayDon: grp.ngay,
                                     diemDon: grp.diemDon,
                                     soDoan: dNum,
-                                    soCho: xe?.soCho ?? null,
-                                    gioDon: xe?.gioDon ?? doanStatsMap.get(dNum)?.gio ?? null,
+                                    soCho,
+                                    gioDon: gio ?? null,
                                     moi: false,
                                   });
                                 }}
-                                className={`w-7 h-7 rounded-[8px] flex items-center justify-center cursor-pointer transition-colors ${
-                                  xe ? "text-[var(--mute-soft)] hover:text-[var(--navy)] hover:bg-[var(--surface)]" : "bg-[var(--amber-soft)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white"
-                                }`}
-                                title={xe ? "Đổi loại xe / giờ đón" : "Chọn xe cho đoàn"}
+                                className="w-7 h-7 rounded-[8px] flex items-center justify-center cursor-pointer transition-colors text-[var(--mute-soft)] hover:text-[var(--navy)] hover:bg-[var(--surface)]"
+                                title="Đổi loại xe / giờ đón"
                               >
-                                {xe ? <Edit3 className="w-3 h-3" /> : <Bus className="w-3.5 h-3.5" />}
+                                <Edit3 className="w-3 h-3" />
                               </button>
                             </div>
                           );
@@ -1538,7 +1530,7 @@ export default function DoanXePage() {
                               ngayDon: grp.ngay,
                               diemDon: grp.diemDon,
                               soDoan: Math.max(0, ...displayDoanTabs) + 1,
-                              soCho: null,
+                              soCho: XE_MAC_DINH,
                               gioDon: null,
                               moi: true,
                             })
@@ -1593,20 +1585,16 @@ export default function DoanXePage() {
                               <SoDoXe
                                 key={dNum}
                                 soDoan={dNum}
-                                soCho={xe?.soCho ?? null}
+                                soCho={soChoCua(dNum)}
                                 gioDon={xe?.gioDon ?? doanStatsMap.get(dNum)?.gio ?? null}
                                 nguoi={nguoiTrenXe(dNum)}
-                                dangLuu={luuXeKey === `${grp.ngay}___${grp.diemDon}___${dNum}`}
-                                onChonXe={(soCho) =>
-                                  luuXe({ coSoId: coSoTram, ngayDon: grp.ngay, diemDon: grp.diemDon, soDoan: dNum, soCho, gioDon: doanStatsMap.get(dNum)?.gio || null })
-                                }
                                 onSuaXe={() =>
                                   setChonXe({
                                     coSoId: coSoTram,
                                     ngayDon: grp.ngay,
                                     diemDon: grp.diemDon,
                                     soDoan: dNum,
-                                    soCho: xe?.soCho ?? null,
+                                    soCho: soChoCua(dNum),
                                     gioDon: xe?.gioDon ?? doanStatsMap.get(dNum)?.gio ?? null,
                                     moi: false,
                                   })
@@ -2165,8 +2153,10 @@ export default function DoanXePage() {
         );
       })()}
 
+      {chonXe && (
       <ChonXeModal
-        open={Boolean(chonXe)}
+        key={`${chonXe.ngayDon}___${chonXe.diemDon}___${chonXe.soDoan}`}
+        open
         onClose={() => setChonXe(null)}
         tieuDe={chonXe ? (chonXe.moi ? `Thêm Đoàn ${chonXe.soDoan}` : `Xe của Đoàn ${chonXe.soDoan}`) : ""}
         moTa={
@@ -2187,6 +2177,7 @@ export default function DoanXePage() {
           }
         }}
       />
+      )}
 
       {/* Modal Chọn Đợt Khám */}
       <Modal
