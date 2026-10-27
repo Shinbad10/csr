@@ -1176,7 +1176,9 @@ export default function TuVanSessionPage() {
           <main className="flex-1 min-w-0 flex flex-col min-h-0 bg-[var(--bg)] overflow-hidden">
             {selected ? (
               <>
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {/* Dưới lg: thẻ hồ sơ + hai thẻ cuộn chung một khối (trước đây hai thẻ bị ép vào phần còn lại
+                    của màn hình điện thoại → dẹt, cắt nội dung, không vuốt được). Từ lg: mỗi cột cuộn riêng. */}
+                <div className="flex-1 flex flex-col min-h-0 overflow-y-auto lg:overflow-hidden">
                   {/* 1. Thẻ hồ sơ: danh tính + trạng thái + tóm tắt lâm sàng */}
                   {(() => {
                     const timing = checkSurgeryTiming(selected, currentBkDate);
@@ -1275,9 +1277,9 @@ export default function TuVanSessionPage() {
                   })()}
 
                   {/* 2. Hai cột: phương án điều trị | nhật ký cuộc gọi */}
-                  <div className="p-4 sm:p-5 flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_440px] 2xl:grid-cols-[1fr_500px] gap-4 items-stretch overflow-y-auto lg:overflow-hidden">
+                  <div className="p-3 sm:p-5 lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_440px] 2xl:grid-cols-[1fr_500px] gap-3 sm:gap-4 items-start lg:items-stretch lg:overflow-hidden">
                     {/* Phương án điều trị */}
-                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full min-h-0 overflow-hidden">
+                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
                       <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0">
                         <h3 className="font-serif text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
                           Phương án điều trị <span className="text-[var(--rose)]">*</span>
@@ -1285,7 +1287,7 @@ export default function TuVanSessionPage() {
                         <p className="text-[11.5px] text-[var(--mute)] mt-0.5">Quyết định của bệnh nhân sau khi được tư vấn</p>
                       </header>
 
-                      <div className="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-5">
+                      <div className="p-4 sm:p-5 lg:flex-1 lg:overflow-y-auto custom-scrollbar space-y-5">
                         <div data-tour="tv-nhom" className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-2.5">
                           {PHUONG_AN_TU_VAN.map((opt) => {
                             const active = f.nhom === opt.key;
@@ -1579,7 +1581,7 @@ export default function TuVanSessionPage() {
                     </section>
 
                     {/* Nhật ký cuộc gọi */}
-                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full min-h-0 overflow-hidden">
+                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
                       <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <h3 className="font-serif text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Nhật ký cuộc gọi</h3>
@@ -1590,7 +1592,7 @@ export default function TuVanSessionPage() {
                         </span>
                       </header>
 
-                      <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar">
                         {/* Ghi cuộc gọi mới */}
                         <div className="p-4 border-b border-[var(--line-soft)] space-y-2.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
