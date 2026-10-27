@@ -50,6 +50,7 @@ import {
   XE_MAC_DINH,
 } from "@/lib/csr";
 import Modal from "@/components/layout/Modal";
+import PageHeader from "@/components/layout/PageHeader";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
 import { SoDoXe, ChonXeModal, type NguoiTrenXe } from "@/components/csr/SoDoXe";
 import { Dropdown } from "@/components/csr/fields";
@@ -949,32 +950,48 @@ export default function DoanXePage() {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg)] overflow-hidden print:overflow-visible print:block">
-      {/* ── Header trang: tiêu đề + đợt khám · dải chỉ số · thao tác ── */}
-      <div className="print:hidden shrink-0 bg-[var(--surface)] border-b border-[var(--line)]">
-        <div className="px-3 sm:px-5 py-2.5 flex flex-wrap xl:flex-nowrap items-center gap-x-5 gap-y-2.5">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
-              <Bus className="w-[18px] h-[18px] text-[var(--teal)]" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-serif text-[17px] font-semibold tracking-[-0.01em] text-[var(--ink)] leading-tight whitespace-nowrap">
-                Đoàn xe <span className="italic font-normal text-[var(--teal-deep)]">đón bệnh nhân</span>
-              </h1>
-              <button
-                type="button"
-                onClick={() => setShowBkModal(true)}
-                className="mt-0.5 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--mute)] hover:text-[var(--navy)] transition-colors cursor-pointer max-w-full"
-                title="Chọn đợt khám"
-              >
-                <CalendarDays className="w-3 h-3 text-[var(--teal-deep)] shrink-0" />
-                <span className="truncate max-w-[240px]">{selectedBkObj ? fmtBuoiKhamName(selectedBkObj) : "Tất cả đợt khám"}</span>
-                <ChevronDown className="w-3 h-3 shrink-0" />
-              </button>
-            </div>
-          </div>
-
+      {/* ── Header chung: tiêu đề · đợt khám + thao tác; hàng dưới là dải chỉ số ── */}
+      <PageHeader
+        className="print:hidden shrink-0"
+        icon={Bus}
+        title="Đoàn xe"
+        accent="đón bệnh nhân"
+        description="Điều phối điểm đón, giờ đón, xe và ghế ngồi cho bệnh nhân điều trị tại viện"
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => setShowBkModal(true)}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer min-w-0"
+              title="Chọn đợt khám"
+            >
+              <CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)] shrink-0" />
+              <span className="truncate max-w-[200px] sm:max-w-[260px]">{selectedBkObj ? fmtBuoiKhamName(selectedBkObj) : "Tất cả đợt khám"}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[var(--mute)] shrink-0" />
+            </button>
+            <button
+              type="button"
+              onClick={exportExcel}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12.5px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+              title="Xuất bảng Excel đoàn xe"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Xuất Excel</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer whitespace-nowrap"
+              title="In lệnh điều xe / danh sách đón xe"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">In danh sách</span>
+            </button>
+          </>
+        }
+      >
           {/* Dải chỉ số (ERP): một khối chia cột, số mono — điện thoại vuốt ngang */}
-          <div className="order-last xl:order-none w-full xl:w-auto xl:flex-1 min-w-0 overflow-x-auto no-scrollbar">
+          <div className="min-w-0 overflow-x-auto no-scrollbar">
             <div className="flex items-stretch w-max xl:w-full rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/40 divide-x divide-[var(--line-soft)]">
               {(() => {
                 const pct = (n: number) => `${summary.total > 0 ? Math.round((n / summary.total) * 100) : 0}%`;
@@ -1002,29 +1019,7 @@ export default function DoanXePage() {
               })()}
             </div>
           </div>
-
-          <div className="flex items-center gap-2 ml-auto shrink-0">
-            <button
-              type="button"
-              onClick={exportExcel}
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12.5px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer whitespace-nowrap"
-              title="Xuất bảng Excel đoàn xe"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Xuất Excel</span>
-            </button>
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer whitespace-nowrap"
-              title="In lệnh điều xe / danh sách đón xe"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">In danh sách</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      </PageHeader>
 
       {/* ── Thanh công cụ: tìm · trạng thái · ngày · điểm đón · chế độ xem ── */}
       <div className="print:hidden shrink-0 bg-[var(--surface)] border-b border-[var(--line)] px-3 sm:px-5 py-2 flex flex-wrap items-center gap-2">

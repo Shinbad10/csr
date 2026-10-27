@@ -232,34 +232,30 @@ function BaoCaoSkeleton() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Tiêu đề & Hành động */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[var(--line)] shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif text-2xl font-bold text-[var(--ink)] tracking-tight">
-              Báo cáo & Thống kê CSR
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)]">
-              {stats?.coSoName || "Đơn vị"}
-            </span>
-          </div>
-          <p className="text-xs text-[var(--mute)] mt-1 font-medium flex items-center gap-1.5">
+      {/* Tiêu đề & Hành động — header chung */}
+      <PageHeader
+        icon={TrendingUp}
+        title="Báo cáo"
+        accent="& thống kê"
+        badge={stats?.coSoName || "Đơn vị"}
+        description={
+          <>
             <span>Trung tâm điều hành & phân tích số liệu khám sàng lọc mắt cộng đồng</span>
-            <span className="text-teal-600 font-bold hidden sm:inline">• Nhấp vào từng mục để xem danh sách chi tiết</span>
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-[var(--teal-deep)] font-semibold">· Nhấp vào từng mục để xem danh sách chi tiết</span>
+          </>
+        }
+        actions={
+        <div className="flex w-full md:w-auto flex-wrap items-center gap-2">
           {/* Bộ lọc thời gian giống bên Bảng điều khiển */}
-          <DateRangeFilter value={range} onChange={setRange} className="w-full sm:w-auto" />
+          <DateRangeFilter value={range} onChange={setRange} className="flex-1 min-w-[220px] md:flex-none md:w-auto" />
           <button
             type="button"
             onClick={() => loadStats()}
             title="Làm mới dữ liệu"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] bg-white px-3 text-xs font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)] transition-colors shadow-xs cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] bg-white px-2.5 sm:px-3 text-xs font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)] transition-colors shadow-xs cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[var(--navy)]" : ""}`} />
-            Làm mới
+            <span className="hidden sm:inline">Làm mới</span>
           </button>
 
           {/* Nút Google Sheet */}
@@ -268,7 +264,7 @@ function BaoCaoSkeleton() {
               href={stats.sheetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-[var(--line-strong)] bg-white text-[var(--ink)] hover:bg-[var(--surface-soft)] transition-all shadow-xs cursor-pointer"
+              className="inline-flex h-9 items-center gap-1.5 px-3 text-xs font-bold rounded-xl border border-[var(--line-strong)] bg-white text-[var(--ink)] hover:bg-[var(--surface-soft)] transition-all shadow-xs cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Google Sheet
             </a>
@@ -278,13 +274,14 @@ function BaoCaoSkeleton() {
           <button
             onClick={() => exportExcel()}
             disabled={exporting}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-[var(--navy)] hover:bg-[var(--navy-deep)] text-white shadow-xs hover:shadow transition-all cursor-pointer disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 px-3.5 text-xs font-bold rounded-xl bg-[var(--navy)] hover:bg-[var(--navy-deep)] text-white shadow-xs hover:shadow transition-all cursor-pointer disabled:opacity-50"
           >
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4 text-teal-300" />}
-            Xuất Excel Tổng hợp
+            Xuất Excel<span className="hidden sm:inline"> Tổng hợp</span>
           </button>
         </div>
-      </div>
+        }
+      />
 
       {stats ? (
         <>

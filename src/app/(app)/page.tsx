@@ -33,6 +33,7 @@ import { DataView, DataTable, DataPagination } from "@/components/data";
 import DateRangeFilter, { resolvePreset, type DateRange } from "@/components/csr/DateRangeFilter";
 import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
 import AnimatedNumber from "@/components/csr/AnimatedNumber";
+import PageHeader from "@/components/layout/PageHeader";
 
 interface SessionRow {
   id: string;
@@ -465,42 +466,35 @@ export default function Dashboard() {
         className="flex flex-col gap-4 pb-10"
       >
         {/* ── TIÊU ĐỀ + BỘ LỌC ── */}
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div className="flex items-start gap-3.5">
-            <span className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] shadow-[var(--navy-shadow)]">
-              <LayoutDashboard className="h-5 w-5" />
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Tổng quan"
+          accent="tầm soát"
+          badge={
+            <span className="inline-flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] animate-pulse" />
+              Thời gian thực
             </span>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase font-bold tracking-[0.14em] text-[var(--teal-deep)] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] animate-pulse" />
-                  Báo cáo thống kê CSR · Thời gian thực
-                </span>
-              </div>
-              <h1 className="font-serif text-[22px] sm:text-[25px] font-bold leading-tight tracking-[-0.02em] text-[var(--ink)]">
-                Tổng quan <em className="italic font-normal text-[var(--navy)]">Tầm soát</em>
-              </h1>
-              <p className="mt-0.5 text-[12.5px] text-[var(--mute)]">
-                Tình hình bệnh nhân từ tiếp nhận cộng đồng đến phẫu thuật tại viện
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <DateRangeFilter value={range} onChange={setRange} className="w-full sm:w-auto" />
+          }
+          description="Tình hình bệnh nhân từ tiếp nhận cộng đồng đến phẫu thuật tại viện"
+          actions={
+          <div className="flex w-full md:w-auto items-center gap-2">
+            <DateRangeFilter value={range} onChange={setRange} className="flex-1 min-w-0 md:flex-none md:w-auto" />
             <button
               type="button"
               onClick={() => {
                 setRefreshing(true);
                 loadStats();
               }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-[12px] font-bold text-[var(--ink-soft)] shadow-xs transition-all hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] hover:text-[var(--navy)] active:scale-95 cursor-pointer"
+              title="Làm mới"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-2.5 sm:px-3 text-[12px] font-bold text-[var(--ink-soft)] shadow-xs transition-all hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] hover:text-[var(--navy)] active:scale-95 cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[var(--navy)]" : "text-[var(--mute)]"}`} />
-              <span>Làm mới</span>
+              <span className="hidden sm:inline">Làm mới</span>
             </button>
           </div>
-        </div>
+          }
+        />
 
         {/* ── DẢI KPI ── */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

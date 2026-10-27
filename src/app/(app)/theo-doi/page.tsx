@@ -651,10 +651,12 @@ export default function TheoDoiPage() {
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg)] overflow-hidden h-full">
       <PageHeader
-        title="Theo dõi & Chăm sóc A/B"
+        icon={PhoneCall}
+        title="Theo dõi"
+        accent="& chăm sóc A/B"
         description="Theo dõi nhóm B (chăm sóc) và nhóm A (nhắc lịch & cập nhật điều trị tại BV)."
         actions={
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap sm:justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap md:justify-end">
             {hasHisConfig && selBk && (
               <div className="inline-flex shrink-0">
                 <button

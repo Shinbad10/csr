@@ -1447,7 +1447,9 @@ export default function DoiChieuHisPage() {
     return (
       <div className="space-y-6 pb-16">
         <PageHeader
-          title="Đối chiếu máy chủ HIS"
+          icon={Database}
+          title="Đối chiếu"
+          accent="dữ liệu HIS"
           description="Quét & đồng bộ tự động giữa danh sách tầm soát CSR và hệ thống HIS bệnh viện."
         />
         <div className="card p-10 text-center max-w-2xl mx-auto space-y-4 my-8 bg-white border border-[var(--line)] rounded-2xl shadow-sm">
@@ -1473,19 +1475,19 @@ export default function DoiChieuHisPage() {
 
   return (
     <div className="space-y-2.5 pb-12">
-      {/* Header & Tabs tinh gọn chuẩn Company UI */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <h1 className="text-lg sm:text-xl font-black text-[var(--ink)] tracking-tight">Đối chiếu dữ liệu HIS</h1>
-          <p className="text-xs text-[var(--mute)]">Theo dõi ca mổ & đối chiếu bệnh nhân tầm soát CSR với máy chủ HIS</p>
-        </div>
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <div className="flex items-center gap-1.5 bg-[var(--teal-soft)] border border-[var(--teal)]/25 px-2.5 py-1 rounded-lg">
-            <span className="w-2 h-2 rounded-full bg-[var(--teal)] animate-pulse" />
-            <span className="text-[11px] font-bold text-[var(--teal-deep)]">HIS SQL Sẵn sàng</span>
-          </div>
-        </div>
-      </div>
+      {/* Header chung */}
+      <PageHeader
+        icon={Database}
+        title="Đối chiếu"
+        accent="dữ liệu HIS"
+        badge={
+          <span className="inline-flex items-center gap-1 text-[var(--teal-deep)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] animate-pulse" />
+            HIS sẵn sàng
+          </span>
+        }
+        description="Theo dõi ca mổ & đối chiếu bệnh nhân tầm soát CSR với máy chủ HIS"
+      />
 
       {/* Tabs tinh gọn */}
       <div data-tour="his-tabs" className="flex items-center">

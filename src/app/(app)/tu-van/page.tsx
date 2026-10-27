@@ -772,10 +772,12 @@ export default function TuVanSessionPage() {
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-[var(--bg)] overflow-hidden h-full">
       <PageHeader
-        title="Tư vấn điều trị"
+        icon={Stethoscope}
+        title="Tư vấn"
+        accent="điều trị"
         description="Tư vấn phương án điều trị, chi phí và lịch đón bệnh viện cho các ca bệnh lý từ đợt khám."
         actions={
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap sm:justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap md:justify-end">
           {selBk && (
             <>
               <button
