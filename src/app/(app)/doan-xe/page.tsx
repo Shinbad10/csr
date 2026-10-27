@@ -1668,7 +1668,13 @@ export default function DoanXePage() {
 
                                 {/* Đoàn */}
                                 <div className="col-start-2 lg:col-start-auto">
-                                  <div className="inline-flex p-0.5 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5 flex-wrap">
+                                  {/* Trạm chỉ 1 đoàn: chữ nhạt, khỏi lặp chip navy đặc trên mọi dòng */}
+                                  {displayDoanTabs.length <= 1 ? (
+                                    <span className="inline-flex items-center gap-1 text-[11.5px] text-[var(--mute)]">
+                                      <Bus className="w-3 h-3" /> Đoàn {currentDoan}
+                                    </span>
+                                  ) : (
+                                  <div className="inline-flex p-0.5 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line-soft)] gap-0.5 flex-wrap">
                                     {displayDoanTabs.map((dNum) => {
                                       const isCurrent = currentDoan === dNum;
                                       const st = doanStatsMap.get(dNum);
@@ -1679,7 +1685,7 @@ export default function DoanXePage() {
                                           disabled={isSwitching}
                                           onClick={() => !isCurrent && handleQuickSwitchDoan(p, dNum, st?.gio)}
                                           className={`h-6 px-2 rounded-[6px] text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                                            isCurrent ? "bg-[var(--navy)] text-white" : "text-[var(--mute)] hover:text-[var(--ink)]"
+                                            isCurrent ? "bg-[var(--surface)] text-[var(--navy)] shadow-[var(--shadow-xs)]" : "text-[var(--mute)] hover:text-[var(--ink)]"
                                           }`}
                                           title={isCurrent ? `Bệnh nhân đang ở Đoàn ${dNum}` : `Bấm để chuyển bệnh nhân sang Đoàn ${dNum}`}
                                         >
@@ -1689,6 +1695,7 @@ export default function DoanXePage() {
                                       );
                                     })}
                                   </div>
+                                  )}
                                 </div>
 
                                 {/* Liên hệ */}
@@ -1735,7 +1742,7 @@ export default function DoanXePage() {
                                 {/* Địa chỉ · dặn dò */}
                                 <div className="col-start-2 lg:col-start-auto min-w-0 space-y-1 text-[12px]">
                                   {p.diaChi ? (
-                                    <div className="text-[var(--ink-soft)] flex items-center gap-1 min-w-0" title={p.diaChi}>
+                                    <div className="text-[var(--mute)] flex items-center gap-1 min-w-0" title={p.diaChi}>
                                       <MapPin className="w-3 h-3 text-[var(--mute-soft)] shrink-0" />
                                       <span className="truncate">{p.diaChi}</span>
                                     </div>
@@ -1743,8 +1750,8 @@ export default function DoanXePage() {
                                     <span className="hidden lg:inline text-[var(--mute-soft)]">—</span>
                                   )}
                                   {danDo && (
-                                    <div className="inline-flex items-center gap-1 max-w-full px-2 py-0.5 rounded-md bg-[var(--amber-soft)] text-[11.5px] text-[var(--amber-deep)]" title={danDo}>
-                                      <span className="font-semibold shrink-0">Dặn dò:</span>
+                                    <div className="flex items-center gap-1 min-w-0 text-[11.5px] text-[var(--amber-deep)]" title={danDo}>
+                                      <span className="w-1 h-1 rounded-full bg-[var(--amber)] shrink-0" />
                                       <span className="truncate">{danDo}</span>
                                     </div>
                                   )}
@@ -1765,7 +1772,7 @@ export default function DoanXePage() {
                                     <button
                                       type="button"
                                       onClick={() => handleOpenAssignModal(p)}
-                                      className="w-8 h-8 rounded-[9px] border border-[var(--line)] text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                                      className="w-8 h-8 rounded-[9px] text-[var(--mute-soft)] hover:text-[var(--navy)] hover:bg-[var(--surface-soft)] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                                       title="Đổi điểm đón / giờ xe đón"
                                     >
                                       <Edit3 className="w-3.5 h-3.5" />
@@ -1778,7 +1785,8 @@ export default function DoanXePage() {
                                     title={isDaDen ? "Đã lên xe — bấm để huỷ đánh dấu" : "Đánh dấu bệnh nhân đã lên xe"}
                                     className={`h-8 w-[112px] justify-center rounded-[9px] text-[12px] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                                       isDaDen
-                                        ? "border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
+                                        ? // Đã xong: chữ teal không nền — chỉ ca còn chờ mới nổi bật
+                                          "text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
                                         : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
                                     }`}
                                   >
