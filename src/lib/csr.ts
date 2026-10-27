@@ -841,7 +841,7 @@ export const statusOf = (t?: string | null) =>
   STATUS[t || ""] || { label: t || "—", cls: "bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" };
 
 export interface HoSo {
-  id: string; maBN: string; maBNHIS?: string | null; stt: number; buoiKhamId?: string; hoTen: string; gioiTinh: string;
+  id: string; maBN: string; maBNHIS?: string | null; stt: number; buoiKhamId?: string; coSoId?: string; hoTen: string; gioiTinh: string;
   ngaySinh: string | null; namSinh: number | null; cccd: string | null; diaChi: string | null;
   sdt: string | null; sdtNguoiNha: string | null;
   thiLucMP: string | null; thiLucMT: string | null; doKinhMP?: string | null; doKinhMT?: string | null;
@@ -887,6 +887,51 @@ export function cleanDiemDon(diemDon?: string | null): string {
 /**
  * Phân tích bệnh nhân thuộc Đoàn mấy (Đoàn 1, Đoàn 2, Đoàn 3,... linh động, mặc định 1)
  */
+/** Loại xe đón (số chỗ, tính cả ghế tài xế). */
+export const LOAI_XE = [4, 7, 16, 29, 35, 45] as const;
+
+/** Một ô trên sơ đồ ghế: số ghế khách (1…n), ghế tài xế, hoặc khoảng trống (lối đi / cần số). */
+export type OGhe = number | "taiXe" | null;
+
+/**
+ * Sơ đồ ghế của xe `soCho` chỗ (nhìn từ trên, đầu xe ở trên, tài xế bên trái).
+ * Hàng đầu: tài xế + 1 ghế (xe ≤ 7 chỗ) hoặc 2 ghế phụ. Các hàng sau: xe ≤ 7 chỗ 3 ghế liền,
+ * xe 16 chỗ 2 + lối đi + 1, xe ≥ 29 chỗ 2 + lối đi + 2; hàng cuối dư 1 ghế thì thành băng ghế liền.
+ */
+export function soDoGhe(soCho: number): { hang: OGhe[][]; soGheKhach: number } {
+  const soGheKhach = Math.max(0, soCho - 1);
+  const xeNho = soCho <= 7;
+  const cot = xeNho ? 3 : soCho <= 16 ? 4 : 5;
+  const loiDi = xeNho ? -1 : 2; // vị trí cột lối đi
+  const gheMoiHang = loiDi >= 0 ? cot - 1 : cot;
+
+  const hang: OGhe[][] = [];
+  let so = 0;
+  const truoc = Math.min(xeNho ? 1 : 2, soGheKhach);
+  const dau: OGhe[] = Array(cot).fill(null);
+  dau[0] = "taiXe";
+  for (let i = 0; i < truoc; i++) dau[cot - truoc + i] = ++so;
+  hang.push(dau);
+
+  while (so < soGheKhach) {
+    const conLai = soGheKhach - so;
+    const row: OGhe[] = Array(cot).fill(null);
+    if (loiDi >= 0 && conLai === gheMoiHang + 1) {
+      for (let c = 0; c < cot; c++) row[c] = ++so; // băng ghế cuối
+    } else {
+      const n = Math.min(gheMoiHang, conLai);
+      let dat = 0;
+      for (let c = 0; c < cot && dat < n; c++) {
+        if (c === loiDi) continue;
+        row[c] = ++so;
+        dat++;
+      }
+    }
+    hang.push(row);
+  }
+  return { hang, soGheKhach };
+}
+
 export function parseDoanXe(p?: {
   ghiChuTuVan?: string | null;
   diemDon?: string | null;

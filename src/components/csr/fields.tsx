@@ -144,8 +144,10 @@ export function Select({ label, value, onChange, opts, req, mono = true, placeho
 }
 
 // Dropdown tùy biến theo design system (thay <select> mặc định của trình duyệt).
-export function Dropdown({ value, onChange, options, placeholder = "Chọn…", mono, labels, disabled }: {
+export function Dropdown({ value, onChange, options, placeholder = "Chọn…", mono, labels, disabled, size = "md" }: {
   value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string; mono?: boolean; labels?: Record<string, string>; disabled?: boolean;
+  /** sm: cao 32px cho thanh công cụ / bộ lọc */
+  size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -192,7 +194,7 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
         type="button"
         onClick={toggle}
         disabled={disabled}
-        className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none h-10 text-[13px] px-3 transition-colors ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)] cursor-not-allowed" : ""}`}
+        className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none ${size === "sm" ? "!h-8 !text-[12px] !px-2.5 !rounded-[9px] font-semibold" : "h-10 text-[13px] px-3"} transition-colors ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)] cursor-not-allowed" : ""}`}
       >
         <span className={`${value ? `text-[var(--ink)] font-medium ${mono && !labels ? "font-mono" : ""}` : "text-[var(--mute-soft)]"} truncate`}>
           {value ? disp(value) : placeholder}
