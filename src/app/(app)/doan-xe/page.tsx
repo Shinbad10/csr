@@ -1357,8 +1357,10 @@ export default function DoanXePage() {
                 return (
                   <div
                     key={stationKey}
-                    className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden"
+                    className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-clip"
                   >
+                    {/* Header trạm + tiêu đề cột dính trên cùng khi cuộn (overflow-clip thay overflow-hidden để sticky chạy) */}
+                    <div className="sticky top-0 z-20 bg-[var(--surface)]">
                     {/* Header trạm: tầng 1 = danh tính trạm | tiến độ · thao tác; tầng 2 = chọn đoàn */}
                     <div className="px-3.5 sm:px-5 py-3 border-b border-[var(--line)] bg-[var(--surface-soft)]/50">
                       <div className="flex flex-wrap lg:flex-nowrap items-center gap-x-5 gap-y-2.5">
@@ -1573,6 +1575,17 @@ export default function DoanXePage() {
                         </div>
                       </div>
                     </div>
+                    {cheDoTram === "ds" && displayedItems.length > 0 && (
+                      <div className="hidden lg:grid lg:grid-cols-[28px_minmax(0,1.15fr)_176px_minmax(0,1fr)_minmax(0,1.5fr)_196px] gap-x-5 items-center px-5 py-2 border-b border-[var(--line)] bg-[var(--surface-soft)] font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--mute)]">
+                        <span>#</span>
+                        <span>Bệnh nhân</span>
+                        <span>Đoàn</span>
+                        <span>Liên hệ</span>
+                        <span>Địa chỉ · Dặn dò</span>
+                        <span className="text-right">Thao tác</span>
+                      </div>
+                    )}
+                    </div>
 
                     {/* Sơ đồ ghế từng đoàn */}
                     {cheDoTram === "ghe" && (
@@ -1608,16 +1621,6 @@ export default function DoanXePage() {
                     {/* Danh sách hành khách trong trạm */}
                     {!isCollapsed && cheDoTram === "ds" && (
                       <div className="divide-y divide-[var(--line-soft)]">
-                        {displayedItems.length > 0 && (
-                          <div className="hidden lg:grid grid-cols-[24px_minmax(0,1fr)] lg:grid-cols-[28px_minmax(0,1.15fr)_176px_minmax(0,1fr)_minmax(0,1.5fr)_196px] gap-x-3 lg:gap-x-5 gap-y-1.5 items-start lg:items-center px-5 py-2 bg-[var(--surface-soft)]/40 font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--mute)]">
-                            <span>#</span>
-                            <span>Bệnh nhân</span>
-                            <span>Đoàn</span>
-                            <span>Liên hệ</span>
-                            <span>Địa chỉ · Dặn dò</span>
-                            <span className="text-right">Thao tác</span>
-                          </div>
-                        )}
                         {displayedItems.length === 0 ? (
                           <div className="px-4 py-6 text-center text-[12.5px] text-[var(--mute)] flex flex-col items-center justify-center gap-1.5">
                             <Bus className="w-5 h-5 text-[var(--mute-soft)]" />
