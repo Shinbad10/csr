@@ -16,7 +16,6 @@ import {
   RotateCcw,
   Loader2,
   ChevronDown,
-  ChevronUp,
   Navigation,
   CheckCircle2,
   AlertCircle,
@@ -31,7 +30,7 @@ import {
   Sparkles,
   ChevronRight,
   Edit3,
-  UserPlus, Plus
+  UserPlus, Plus, ChevronLeft
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -77,7 +76,10 @@ export default function DoanXePage() {
 
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [stationLoading, setStationLoading] = useState<string | null>(null);
-  const [collapsedStations, setCollapsedStations] = useState<Set<string>>(new Set());
+  // Lộ trình trạm dạng sidebar: trạm đang xem + bộ lọc danh sách trạm
+  const [activeStation, setActiveStation] = useState<string | null>(null);
+  const [stationQuery, setStationQuery] = useState("");
+  const [stationTinhTrang, setStationTinhTrang] = useState<"all" | "cho" | "du">("all");
 
   // Lọc Đoàn theo từng trạm: { [stationKey]: "all" | number }
   const [stationDoanFilter, setStationDoanFilter] = useState<Record<string, "all" | number>>({});
@@ -582,24 +584,8 @@ export default function DoanXePage() {
     });
   }, [filteredList]);
 
-  // Toggle thu gọn/mở rộng trạm
-  const toggleCollapse = (key: string) => {
-    setCollapsedStations((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const collapseAll = () => {
-    const allKeys = new Set(groupedByDiemDon.map((g) => g.key));
-    setCollapsedStations(allKeys);
-  };
-
-  const expandAll = () => {
-    setCollapsedStations(new Set());
-  };
+  const activeStationKey = activeStation && groupedByDiemDon.some((g) => g.key === activeStation) ? activeStation : null;
+  const shownStationKey = activeStationKey ?? groupedByDiemDon[0]?.key ?? null;
 
   // Helper kiểm tra số điện thoại người nhà hợp lệ
   const hasFamilyPhone = (s?: string | null) => {
@@ -1202,26 +1188,6 @@ export default function DoanXePage() {
               })}
             </div>
 
-            {/* Nút thu gọn / mở rộng các trạm */}
-            {viewMode !== "table" && groupedByDiemDon.length > 0 && (
-              <div className="hidden sm:flex items-center gap-1 shrink-0 text-[11px] text-[var(--mute)]">
-                <button
-                  type="button"
-                  onClick={expandAll}
-                  className="hover:text-[var(--navy)] cursor-pointer font-bold px-1.5 py-0.5"
-                >
-                  Mở rộng tất cả
-                </button>
-                <span>·</span>
-                <button
-                  type="button"
-                  onClick={collapseAll}
-                  className="hover:text-[var(--navy)] cursor-pointer font-bold px-1.5 py-0.5"
-                >
-                  Thu gọn tất cả
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1250,11 +1216,145 @@ export default function DoanXePage() {
             /* ============================================================
                CHẾ ĐỘ 1: LỘ TRÌNH TRẠM (DẠNG DANH SÁCH RÕ RÀNG, TỐI ƯU CỘT)
                ============================================================ */
-            <div className="space-y-5">
+            <div className="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-5 items-start">
+              {/* Sidebar điểm đón: nhóm theo ngày, tiến độ từng trạm, tìm & lọc nhanh */}
+              {(() => {
+                const daDonCua = (g: (typeof groupedByDiemDon)[number]) => g.items.filter((it) => it.daDon || it.ngayDenBV).length;
+                const q = stationQuery.trim().toLowerCase();
+                const nDu = groupedByDiemDon.filter((g) => daDonCua(g) >= g.items.length).length;
+                const rows = groupedByDiemDon
+                  .map((g, i) => ({ g, i, done: daDonCua(g) }))
+                  .filter(({ g, done }) => {
+                    if (q && !`${g.diemDon} ${g.cacXa.join(" ")}`.toLowerCase().includes(q)) return false;
+                    if (stationTinhTrang === "cho" && done >= g.items.length) return false;
+                    if (stationTinhTrang === "du" && done < g.items.length) return false;
+                    return true;
+                  });
+                const soTramTheoNgay = rows.reduce<Record<string, number>>((acc, r) => {
+                  acc[r.g.ngay] = (acc[r.g.ngay] || 0) + 1;
+                  return acc;
+                }, {});
+                return (
+                  <aside
+                    className={`${activeStationKey ? "hidden lg:flex" : "flex"} flex-col rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden lg:sticky lg:top-0 lg:max-h-[calc(100dvh-7rem)]`}
+                  >
+                    <div className="p-3 border-b border-[var(--line-soft)] space-y-2 shrink-0">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h3 className="font-serif text-[15px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Điểm đón</h3>
+                        <span className="font-mono text-[11px] text-[var(--mute)] tabular-nums">
+                          {rows.length}/{groupedByDiemDon.length} trạm
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--mute)]" />
+                        <input
+                          value={stationQuery}
+                          onChange={(e) => setStationQuery(e.target.value)}
+                          placeholder="Tìm trạm, xã…"
+                          className="w-full h-8 pl-8 pr-7 rounded-[9px] border border-[var(--line)] bg-[var(--surface-soft)] text-[12.5px] text-[var(--ink)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)]"
+                        />
+                        {stationQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setStationQuery("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 p-0.5 rounded-[9px] bg-[var(--surface-soft)] border border-[var(--line)] gap-0.5">
+                        {([
+                          ["all", "Tất cả", groupedByDiemDon.length],
+                          ["cho", "Còn chờ", groupedByDiemDon.length - nDu],
+                          ["du", "Đã đủ", nDu],
+                        ] as const).map(([k, label, n]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => setStationTinhTrang(k)}
+                            className={`h-7 rounded-[7px] text-[11.5px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                              stationTinhTrang === k ? "bg-[var(--navy)] text-white" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                            }`}
+                          >
+                            {label}
+                            <span className={`font-mono text-[10px] ${stationTinhTrang === k ? "text-white/75" : "text-[var(--mute)]"}`}>{n}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      {rows.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-[12.5px] text-[var(--mute)]">Không có điểm đón phù hợp.</div>
+                      ) : (
+                        rows.map(({ g, i, done }, idx) => {
+                          const isActive = g.key === shownStationKey;
+                          const isDone = done >= g.items.length;
+                          const pct = g.items.length ? Math.round((done / g.items.length) * 100) : 0;
+                          const gio = g.items.map((it) => it.gioDon?.trim()).find(Boolean);
+                          const ngayMoi = idx === 0 || rows[idx - 1].g.ngay !== g.ngay;
+                          return (
+                            <div key={g.key}>
+                              {ngayMoi && (
+                                <div className="sticky top-0 z-[1] px-3 py-1.5 bg-[var(--surface-soft)] border-b border-[var(--line-soft)] flex items-center justify-between font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--mute)]">
+                                  <span>{g.ngay === "CHUA_XEP_NGAY" ? "Chưa có ngày" : fmtDate(g.ngay)}</span>
+                                  <span>{soTramTheoNgay[g.ngay]} trạm</span>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setActiveStation(g.key)}
+                                className={`w-full text-left px-3 py-2.5 flex items-start gap-2.5 border-l-2 border-b border-b-[var(--line-soft)] transition-colors cursor-pointer ${
+                                  isActive ? "bg-[var(--navy-50)] border-l-[var(--navy)]" : "border-l-transparent hover:bg-[var(--surface-soft)]"
+                                }`}
+                              >
+                                <span
+                                  className={`mt-0.5 w-6 h-6 rounded-[7px] font-mono text-[10.5px] font-bold flex items-center justify-center shrink-0 ${
+                                    isDone ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]" : "bg-[var(--navy-50)] text-[var(--navy)]"
+                                  }`}
+                                >
+                                  {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : String(i + 1).padStart(2, "0")}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className={`text-[13px] font-semibold truncate ${isActive ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>{g.diemDon}</span>
+                                    <span className="font-mono text-[11px] font-semibold tabular-nums text-[var(--ink-soft)] shrink-0">
+                                      {done}/{g.items.length}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <div className="flex-1 h-1 rounded-full bg-[var(--line-soft)] overflow-hidden">
+                                      <div className={`h-full rounded-full ${isDone ? "bg-[var(--teal)]" : "bg-[var(--navy)]"}`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                    {gio && <span className="font-mono text-[10.5px] text-[var(--mute)] shrink-0">{gio}</span>}
+                                  </div>
+                                  {g.cacXa.length > 0 && <div className="mt-0.5 text-[11px] text-[var(--mute)] truncate">{g.cacXa.join(", ")}</div>}
+                                </div>
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </aside>
+                );
+              })()}
+
+              {/* Chi tiết trạm đang chọn */}
+              <div className={`${activeStationKey ? "block" : "hidden lg:block"} min-w-0`}>
+                <button
+                  type="button"
+                  onClick={() => setActiveStation(null)}
+                  className="lg:hidden mb-2.5 inline-flex items-center gap-1 h-8 px-2.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" /> Điểm đón
+                </button>
               {groupedByDiemDon.map((grp, gIdx) => {
                 const stationKey = grp.key;
+                if (stationKey !== shownStationKey) return null;
                 const currentDoanFilter = stationDoanFilter[stationKey] || "all";
-                const isCollapsed = collapsedStations.has(stationKey);
+                const isCollapsed = false; // xem một trạm mỗi lần → luôn mở
                 const isStationLoading = stationLoading === stationKey;
 
                 // Danh sách các đoàn xe hiện có tại trạm này
@@ -1386,14 +1486,6 @@ export default function DoanXePage() {
                               </button>
                             )
                           )}
-                          <button
-                            type="button"
-                            onClick={() => toggleCollapse(stationKey)}
-                            className="w-8 h-8 shrink-0 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-soft)] flex items-center justify-center text-[var(--mute)] hover:text-[var(--ink)] transition-colors cursor-pointer"
-                            title={isCollapsed ? "Mở rộng danh sách" : "Thu gọn trạm"}
-                          >
-                            {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                          </button>
                         </div>
                       </div>
 
@@ -1639,6 +1731,7 @@ export default function DoanXePage() {
                   </div>
                 );
               })}
+              </div>
             </div>
           ) : viewMode === "grid" ? (
             /* ============================================================
