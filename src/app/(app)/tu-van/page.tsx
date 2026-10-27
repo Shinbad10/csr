@@ -1115,12 +1115,13 @@ export default function TuVanSessionPage() {
                         if (window.innerWidth < 1280) setShowList(false);
                       }}
                       className={`relative w-full text-left px-4 py-3 transition-colors cursor-pointer before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ${stripe} ${
-                        active ? "bg-[var(--navy-50)]" : "hover:bg-[var(--surface-soft)]"
+                        // Đang chọn: nền navy nhạt + viền navy bao quanh (vạch trái vẫn là màu tình trạng ca)
+                        active ? "bg-[var(--navy-50)] shadow-[inset_0_0_0_1.5px_var(--navy)] z-[1]" : "hover:bg-[var(--surface-soft)]"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex items-baseline gap-2">
-                          <span className="font-mono text-[11px] text-[var(--mute)] tabular-nums shrink-0">{String(p.stt ?? idx + 1).padStart(2, "0")}</span>
+                          <span className={`font-mono text-[11px] tabular-nums shrink-0 ${active ? "text-[var(--navy)] font-bold" : "text-[var(--mute)]"}`}>{String(p.stt ?? idx + 1).padStart(2, "0")}</span>
                           <span className={`text-[13.5px] font-semibold truncate ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>{p.hoTen}</span>
                         </div>
                         {decision && <Badge tone={decision.tone}>{decision.label.replace(" điều trị", "").replace(" tại nhà", "")}</Badge>}

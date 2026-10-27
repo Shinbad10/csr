@@ -1226,8 +1226,9 @@ export default function DoanXePage() {
                               <button
                                 type="button"
                                 onClick={() => setActiveStation(g.key)}
-                                className={`w-full text-left px-3 py-2.5 flex items-start gap-2.5 border-l-2 border-b border-b-[var(--line-soft)] transition-colors cursor-pointer ${
-                                  isActive ? "bg-[var(--navy-50)] border-l-[var(--navy)]" : "border-l-transparent hover:bg-[var(--surface-soft)]"
+                                className={`w-full text-left px-3 py-2.5 flex items-start gap-2.5 border-b border-b-[var(--line-soft)] transition-colors cursor-pointer ${
+                                  // Đang chọn: nền navy nhạt + viền navy bao quanh, cùng kiểu danh sách bệnh nhân ở Tư vấn
+                                  isActive ? "bg-[var(--navy-50)] shadow-[inset_0_0_0_1.5px_var(--navy)]" : "hover:bg-[var(--surface-soft)]"
                                 }`}
                               >
                                 <span
