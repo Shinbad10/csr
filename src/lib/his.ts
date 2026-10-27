@@ -1672,7 +1672,7 @@ const PHACO_WAIT_MS = 1500;
 type PhacoEntry = { at: number; data?: unknown; pending?: Promise<unknown> };
 const phacoCache = new Map<string, PhacoEntry>();
 
-async function cachedPhaco<T>(key: string, empty: () => T, load: () => Promise<T>): Promise<T> {
+async function cachedPhaco<T>(key: string, empty: () => T, load: () => Promise<T>, waitMs = PHACO_WAIT_MS): Promise<T> {
   let entry = phacoCache.get(key);
   if (entry?.data !== undefined && Date.now() - entry.at < PHACO_TTL_MS) return entry.data as T;
   if (!entry?.pending) {
@@ -1690,7 +1690,7 @@ async function cachedPhaco<T>(key: string, empty: () => T, load: () => Promise<T
     entry = e;
   }
   if (entry.data !== undefined) return entry.data as T; // bản cũ — đang làm mới ngầm
-  const timeout = new Promise<T>((resolve) => setTimeout(() => resolve(empty()), PHACO_WAIT_MS));
+  const timeout = new Promise<T>((resolve) => setTimeout(() => resolve(empty()), waitMs));
   return Promise.race([entry.pending as Promise<T>, timeout]);
 }
 
@@ -1799,11 +1799,13 @@ async function loadPhaco2LanStats(coSoId?: string): Promise<Map<string, number>>
 /**
  * Lấy danh sách ID bệnh nhân trong 1 đợt khám (hoặc toàn bộ) đã mổ Phaco 2 lần (Mắt 2)
  */
-export async function fetchPhaco2LanPatientIds(buoiKhamId?: string, coSoId?: string): Promise<Set<string>> {
+/** `waitMs`: chờ HIS tối đa bao lâu khi chưa có cache (hết hạn thì trả rỗng, truy vấn vẫn chạy ngầm để lần sau có). */
+export async function fetchPhaco2LanPatientIds(buoiKhamId?: string, coSoId?: string, waitMs?: number): Promise<Set<string>> {
   return cachedPhaco(
     `ids|${coSoId || "*"}|${buoiKhamId || ""}`,
     () => new Set<string>(),
-    () => loadPhaco2LanPatientIds(buoiKhamId, coSoId)
+    () => loadPhaco2LanPatientIds(buoiKhamId, coSoId),
+    waitMs
   );
 }
 

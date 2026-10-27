@@ -56,9 +56,17 @@ export async function GET(request: Request) {
       ],
     };
 
-    const phaco2LanIdsPromise = buoiKhamId
-      ? fetchPhaco2LanPatientIds(buoiKhamId, coSoId || undefined)
-      : Promise.resolve(new Set<string>());
+    // Danh sách là màn hình mở nhiều nhất: không giữ response tới 1,5s chờ HIS. Chưa có cache thì
+    // trả ngay (nhãn "Phaco 2 lần" hiện ở lần nạp sau), truy vấn HIS vẫn chạy ngầm và được cache 5 phút.
+    const tHis = Date.now();
+    let hisMs = 0;
+    const phaco2LanIdsPromise = (
+      buoiKhamId ? fetchPhaco2LanPatientIds(buoiKhamId, coSoId || undefined, 300) : Promise.resolve(new Set<string>())
+    ).then((ids) => {
+      hisMs = Date.now() - tHis;
+      return ids;
+    });
+    const tDb = Date.now();
 
     if (isPaginated) {
       const page = Math.max(1, parseInt(sp.get("page") || "1", 10));
@@ -100,7 +108,10 @@ export async function GET(request: Request) {
       ...h,
       isPhaco2Lan: phaco2LanIds.has(h.id),
     }));
-    return NextResponse.json(mappedData);
+    // Xem trong DevTools → Network → Timing: tách thời gian DB / HIS khỏi thời gian mạng
+    return NextResponse.json(mappedData, {
+      headers: { "Server-Timing": `db;dur=${Date.now() - tDb}, his;dur=${hisMs}, rows;desc="${data.length}"` },
+    });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }
