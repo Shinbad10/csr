@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { XacNhanListModal, type XacNhanEntry } from "./HisCsrCompare";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
@@ -133,7 +134,7 @@ export function useHisReconcile({
           addToast({
             type: "success",
             title: "Đã đối chiếu HIS",
-            message: `${t.name}: tìm thấy ${log.found ?? 0}/${log.total ?? 0} BN, ${log.surgery ?? 0} ca mổ sau khám${log.choMo ? `, ${log.choMo} ca chờ mổ` : ""}${log.surgeryPrior ? ` (+${log.surgeryPrior} mổ trước)` : ""} — ${fmtDuration(log.durationMs)}`,
+            message: `${t.name}: tìm thấy ${log.found ?? 0}/${log.total ?? 0} BN, ${log.surgery ?? 0} ca mổ sau khám${log.canXacNhan ? `, ${log.canXacNhan} ca cần xác nhận` : ""}${log.choMo ? `, ${log.choMo} ca chờ mổ` : ""}${log.surgeryPrior ? ` (+${log.surgeryPrior} mổ trước)` : ""} — ${fmtDuration(log.durationMs)}`,
           });
         }
         onFinishRef.current();
@@ -238,6 +239,8 @@ export function HisReconcilePanel({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  /** Ca cần xác nhận đang mở trong hộp danh sách (của một đợt hoặc tất cả) */
+  const [xemXacNhan, setXemXacNhan] = useState<XacNhanEntry[] | null>(null);
   const running = !!bulk && !bulk.finishedAt;
 
   // Đồng hồ chạy — cập nhật mỗi giây khi đang đối chiếu
@@ -253,8 +256,12 @@ export function HisReconcilePanel({
   const sum = (k: "total" | "found" | "surgery" | "surgeryPrior") => logs.reduce((s, l) => s + (l[k] ?? 0), 0);
   const errors = bulk.items.filter((i) => i.status === "error").length;
   const elapsed = Math.max(0, (bulk.finishedAt ?? now) - bulk.startedAt) / 1000;
+  const canXacNhanCua = (it: (typeof bulk.items)[number]): XacNhanEntry[] =>
+    (it.log?.canXacNhanDs || []).map((x) => ({ dot: it.name, x }));
+  const tatCaXacNhan = bulk.items.flatMap(canXacNhanCua);
 
   return (
+    <>
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -343,6 +350,16 @@ export function HisReconcilePanel({
                         <>
                           <b className="text-[var(--navy)]">{it.log.found ?? 0}</b>/{it.log.total ?? 0}
                           {(it.log.surgery ?? 0) > 0 && <span className="text-[var(--teal-deep)]"> · {it.log.surgery} mổ</span>}
+                          {canXacNhanCua(it).length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setXemXacNhan(canXacNhanCua(it))}
+                              className="ml-1 rounded px-1 font-bold text-[var(--amber-deep)] bg-[var(--amber-soft)] hover:bg-[var(--amber)] hover:text-white cursor-pointer"
+                              title="Có mổ trên HIS nhưng chỉ khớp Họ tên + Năm sinh — bấm để so và xác nhận"
+                            >
+                              {canXacNhanCua(it).length} cần xác nhận
+                            </button>
+                          )}
                           {(it.log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {it.log.choMo} chờ mổ</span>}
                           {(it.log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{it.log.surgeryPrior} trước</span>}
                         </>
@@ -355,6 +372,21 @@ export function HisReconcilePanel({
               })}
             </ul>
           </>
+        )}
+
+        {!running && tatCaXacNhan.length > 0 && (
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-[var(--line)] bg-[var(--amber-soft)]">
+            <span className="text-[11.5px] text-[var(--amber-deep)]">
+              <b className="font-mono">{tatCaXacNhan.length}</b> ca có mổ nhưng chỉ khớp Họ tên + Năm sinh — chưa tính tiến độ
+            </span>
+            <button
+              type="button"
+              onClick={() => setXemXacNhan(tatCaXacNhan)}
+              className="shrink-0 h-7 px-2.5 rounded-[8px] text-[11.5px] font-bold text-white bg-[var(--amber)] hover:bg-[var(--amber-deep)] cursor-pointer"
+            >
+              Xem &amp; xác nhận
+            </button>
+          </div>
         )}
 
         {running && (
@@ -371,6 +403,8 @@ export function HisReconcilePanel({
         )}
       </motion.div>
     </AnimatePresence>
+    {xemXacNhan && <XacNhanListModal entries={xemXacNhan} onClose={() => setXemXacNhan(null)} />}
+    </>
   );
 }
 
@@ -402,7 +436,7 @@ export function DoiChieuCell({
     : `${fmtDateTime(log.thoiDiem)} · ${log.nguoiThucHien || log.nguoiDung}\nTìm thấy ${log.found ?? 0}/${log.total ?? 0} BN` +
       (legacy
         ? "\nLần đối chiếu cũ chưa tách ca mổ trước ngày khám — đối chiếu lại để cập nhật"
-        : ` · ${log.surgery ?? 0} ca mổ sau khám${log.choMo ? ` · ${log.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""}${log.surgeryPrior ? ` · ${log.surgeryPrior} ca đã mổ trước ngày khám` : ""}`);
+        : ` · ${log.surgery ?? 0} ca mổ sau khám${log.canXacNhan ? ` · ${log.canXacNhan} ca có mổ nhưng chỉ khớp Họ tên + Năm sinh — xác nhận ở trang Đối chiếu dữ liệu HIS` : ""}${log.choMo ? ` · ${log.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""}${log.surgeryPrior ? ` · ${log.surgeryPrior} ca đã mổ trước ngày khám` : ""}`);
 
   return (
     <button
@@ -428,6 +462,7 @@ export function DoiChieuCell({
               <>
                 {" · "}
                 <span className={log.surgery ? "text-[var(--teal-deep)] font-semibold" : undefined}>{log.surgery ?? 0} mổ</span>
+                {(log.canXacNhan ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {log.canXacNhan} cần xác nhận</span>}
                 {(log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {log.choMo} chờ</span>}
                 {(log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{log.surgeryPrior} trước</span>}
               </>

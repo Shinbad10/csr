@@ -118,7 +118,7 @@ export function DataTable<TData>({
         <thead className={cn(stickyHeader && 'sticky top-0 z-[10] shadow-[0_1px_6px_rgba(0,0,0,0.08)]')}>
           {table.getHeaderGroups().map((hg) => (
             <React.Fragment key={hg.id}>
-              <tr className={cn('border-b', headerVariant === 'navy' ? 'border-white/10' : 'border-[var(--line-strong)]')}>
+              <tr className={cn('border-b', headerVariant === 'navy' ? 'border-white/10' : 'border-[var(--line)]')}>
                 {hg.headers.map((header) => {
                   const meta = header.column.columnDef.meta as { align?: string; flex?: boolean; width?: string } | undefined;
                   const align = meta?.align ?? 'left';
@@ -139,10 +139,10 @@ export function DataTable<TData>({
                       className={cn(
                         headerVariant === 'navy'
                           ? 'bg-[var(--navy)] text-white border-r border-white/10'
-                          : 'bg-[var(--surface-soft)] text-[var(--ink-soft)] font-mono border-r border-[var(--line-soft)]',
+                          : 'bg-[var(--surface-soft)] text-[var(--mute)] font-mono',
                         'group transition-colors duration-200',
-                        dense ? 'px-3 py-2 text-[10.5px]' : 'px-3 py-2.5 text-[11px]',
-                        'font-bold tracking-[0.06em] uppercase',
+                        dense ? 'px-3.5 py-2.5 text-[10px]' : 'px-3.5 py-3 text-[10px]',
+                        'font-bold tracking-[0.12em] uppercase first:pl-[18px]',
                         isLast && 'border-r-0',
                         canSort && (headerVariant === 'navy'
                           ? 'cursor-pointer select-none hover:bg-[var(--navy-deep)]'
@@ -291,11 +291,11 @@ export function DataTable<TData>({
             <tr>
               <td colSpan={visibleColumns.length} className="py-20 text-center bg-[var(--surface)]">
                 <div className="flex flex-col items-center justify-center gap-3">
-                  <div className="w-16 h-16 rounded-full bg-[var(--surface-soft)] flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-[14px] bg-[var(--surface-soft)] flex items-center justify-center">
                     <EmptyIcon className="w-6 h-6 text-[var(--mute)]" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold text-[var(--ink)]">{emptyTitle}</h3>
+                    <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)]">{emptyTitle}</h3>
                     {emptyDesc && <p className="text-[13px] text-[var(--mute)] mt-1">{emptyDesc}</p>}
                   </div>
                 </div>
@@ -330,7 +330,6 @@ function DataTableRowInternal<TData>({
   dense,
   onRowClick,
   rowClassName,
-  lastColumnId,
 }: RowProps<TData>) {
   return (
     <motion.tr
@@ -352,8 +351,8 @@ function DataTableRowInternal<TData>({
       className={cn(
         'group transition-colors duration-150',
         striped && idx % 2 === 1
-          ? 'bg-[var(--surface-soft)] hover:bg-[var(--teal-softer)]'
-          : 'bg-[var(--surface)] hover:bg-[var(--teal-softer)]',
+          ? 'bg-[var(--surface-soft)]/60 hover:bg-[var(--surface-soft)]'
+          : 'bg-[var(--surface)] hover:bg-[var(--surface-soft)]',
         onRowClick && 'cursor-pointer',
         rowClassName?.(row.original, idx),
       )}
@@ -361,7 +360,6 @@ function DataTableRowInternal<TData>({
       {row.getVisibleCells().map((cell) => {
         const meta = cell.column.columnDef.meta as { align?: string; flex?: boolean; width?: string; noTruncate?: boolean } | undefined;
         const align = meta?.align ?? 'left';
-        const isLast = cell.column.id === lastColumnId;
         const isActions = cell.column.id === 'actions';
         const noTruncate = isActions || meta?.noTruncate;
         const size = cell.column.getSize();
@@ -374,11 +372,9 @@ function DataTableRowInternal<TData>({
               minWidth: `${size}px`,
             }}
             className={cn(
-              dense ? 'px-3 py-2' : 'px-3 py-3',
-              'text-[13px] text-[var(--ink-soft)] font-medium align-middle border-r border-transparent transition-colors',
+              dense ? 'px-3.5 py-2.5' : 'px-3.5 py-3',
+              'first:pl-[18px] text-[13px] text-[var(--ink-soft)] font-medium align-middle transition-colors',
               !noTruncate && 'overflow-hidden',
-              'group-hover:border-[var(--line-soft)]',
-              isLast && 'group-hover:border-r-0',
             )}
           >
             <div className={cn(!noTruncate && 'truncate')}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>

@@ -21,10 +21,26 @@ export interface DoiChieuSummary {
   surgeryPrior: number;
   /** Đã nhập viện / có DV phẫu thuật nhưng chưa có trong sổ phòng mổ — chưa tính là đã mổ. */
   choMo?: number;
+  /** Có ca mổ trên HIS nhưng chỉ khớp Họ tên + Năm sinh — chờ người dùng xác nhận, chưa tính tiến độ. */
+  canXacNhan?: number;
   exactMatch: number;
   partialMatch: number;
   errors: number;
   durationMs: number;
+}
+
+/** Ca có mổ trên HIS nhưng chỉ khớp Họ tên + Năm sinh — đủ thông tin hai phía để xác nhận tại chỗ. */
+export interface XacNhanItem {
+  hoSoId: string;
+  maBN: string | null;
+  ngayKham: string | null;
+  /** Điểm khám của đợt */
+  diaDiem: string | null;
+  ngayMo: string | null;
+  tenDichVu: string | null;
+  loaiPT: string | null;
+  csr: { hoTen: string; namSinh: number | string | null; ngaySinh: string | null; cccd: string | null; sdt: string | null };
+  his: { maHIS: string; hoTen: string; namSinh: string; cccd: string | null; sdt: string | null };
 }
 
 export interface DoiChieuLog extends Partial<DoiChieuSummary> {
@@ -36,6 +52,8 @@ export interface DoiChieuLog extends Partial<DoiChieuSummary> {
   kieu: DoiChieuKieu;
   trangThai: "thanh_cong" | "loi" | "bo_qua";
   loi?: string | null;
+  /** Chỉ có trong phản hồi ngay sau khi đối chiếu (không lưu vào lịch sử — cột log giới hạn độ dài). */
+  canXacNhanDs?: XacNhanItem[];
 }
 
 
@@ -66,7 +84,7 @@ export async function reconcileBuoiKham(
   buoiKhamId: string,
   user: { id: string; name?: string | null },
   kieu: DoiChieuKieu,
-): Promise<{ log: DoiChieuLog; coSoId: string | null }> {
+): Promise<{ log: DoiChieuLog; coSoId: string | null; canXacNhanDs: XacNhanItem[] }> {
   const prisma = getPrisma();
   const started = Date.now();
 
@@ -85,17 +103,20 @@ export async function reconcileBuoiKham(
   });
 
   let payload: Record<string, unknown>;
+  let canXacNhanDs: XacNhanItem[] = [];
   if (patients.length === 0) {
     payload = { total: 0, found: 0, surgery: 0, surgeryPrior: 0, exactMatch: 0, partialMatch: 0, errors: 0, trangThai: "bo_qua", loi: "Đợt khám không có BN Nhóm A/B cần đối chiếu" };
   } else {
     try {
       const results = await batchCheckHISForPatients(buoiKham.coSoId, patients);
+      canXacNhanDs = results.filter((r) => r.xacNhan).map((r) => r.xacNhan as XacNhanItem);
       payload = {
         total: results.length,
         found: results.filter((r) => r.found).length,
         surgery: results.filter((r) => r.isDaMo).length,
         surgeryPrior: results.filter((r) => r.isDaMoTruoc).length,
         choMo: results.filter((r) => r.isChoMo).length,
+        canXacNhan: results.filter((r) => r.isCanXacNhan).length,
         exactMatch: results.filter((r) => r.matchType === "exact").length,
         partialMatch: results.filter((r) => r.found && r.matchType === "partial").length,
         errors: results.filter((r) => r.error).length,
@@ -118,7 +139,7 @@ export async function reconcileBuoiKham(
     },
   });
 
-  return { log: parseDoiChieuLog(row), coSoId: buoiKham.coSoId };
+  return { log: parseDoiChieuLog(row), coSoId: buoiKham.coSoId, canXacNhanDs };
 }
 
 /** Lần đối chiếu gần nhất của từng đợt khám (một truy vấn cho cả danh sách). */

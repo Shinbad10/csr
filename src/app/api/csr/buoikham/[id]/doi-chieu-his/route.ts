@@ -40,7 +40,7 @@ export async function POST(request: Request, { params }: Ctx) {
   const kieu: DoiChieuKieu = body?.kieu === "hang_loat" ? "hang_loat" : "don_le";
 
   try {
-    const { log, coSoId } = await reconcileBuoiKham(id, { id: session.user.id, name: session.user.name }, kieu);
+    const { log, coSoId, canXacNhanDs } = await reconcileBuoiKham(id, { id: session.user.id, name: session.user.name }, kieu);
 
     if ((log.found ?? 0) > 0) {
       broadcastEvent({ type: "hoso_change", action: "update", coSoId: coSoId ?? undefined, buoiKhamId: id });
@@ -48,7 +48,7 @@ export async function POST(request: Request, { params }: Ctx) {
     // Luôn báo để danh sách cập nhật "đối chiếu gần nhất" ở các máy khác
     broadcastEvent({ type: "buoikham_change", action: "update", coSoId: coSoId ?? undefined, buoiKhamId: id });
 
-    return NextResponse.json(log, { status: log.trangThai === "loi" ? 502 : 200 });
+    return NextResponse.json({ ...log, canXacNhanDs }, { status: log.trangThai === "loi" ? 502 : 200 });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi server" }, { status: 500 });
   }

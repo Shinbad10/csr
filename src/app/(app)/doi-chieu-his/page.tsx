@@ -17,6 +17,7 @@ import { Dropdown } from "@/components/csr/fields";
 import { DataView, DataTable, DataPagination } from "@/components/data";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useCurrentFacility } from "@/lib/useFacility";
+import { CsrSideCell, HisSideCell, HisCsrCompareModal } from "@/components/csr/HisCsrCompare";
 
 // Dữ liệu đối chiếu HIS trả về không có schema cố định — dùng bản ghi mở.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -106,6 +107,8 @@ export default function DoiChieuHisPage() {
   const [revSummary, setRevSummary] = useState<any>(null);
   const [hasScannedRev, setHasScannedRev] = useState<boolean>(false);
   const [linkingId, setLinkingId] = useState<string | null>(null);
+  /** Ca chỉ khớp Họ tên + Năm sinh đang mở hộp so sánh HIS ↔ CSR để xác nhận */
+  const [compareRow, setCompareRow] = useState<HisRow | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   // Filter states cho Tab 2 (Lọc theo ngày, từ khóa, trạng thái)
@@ -890,17 +893,13 @@ export default function DoiChieuHisPage() {
         id: "maHIS",
         accessorKey: "maHIS",
         header: "Mã HIS",
-        size: 98,
+        size: 104,
         cell: ({ row }) => {
           const r = row.original;
           return (
-            <div className="min-w-0">
-              <span className="rounded-md border border-[var(--navy-100)] bg-[var(--navy-50)] px-1.5 py-0.5 font-mono text-[11.5px] font-bold whitespace-nowrap text-[var(--navy)]">
-                {r.maHIS}
-              </span>
-              {r.phongMo && (
-                <div className="mt-0.5 truncate font-mono text-[10px] text-[var(--mute)]">{r.phongMo}</div>
-              )}
+            <div className="min-w-0 leading-tight">
+              <div className="font-mono text-[12px] font-bold whitespace-nowrap text-[var(--navy)]">{r.maHIS}</div>
+              {r.phongMo && <div className="mt-1 truncate text-[10.5px] text-[var(--mute)]">{r.phongMo}</div>}
             </div>
           );
         },
@@ -911,141 +910,88 @@ export default function DoiChieuHisPage() {
         id: "hoTen",
         accessorKey: "hoTen",
         header: "Bệnh nhân trên HIS",
-        size: 215,
+        size: 210,
         meta: { flex: true },
-        cell: ({ row }) => {
-          const r = row.original;
-          const age = r.namSinh ? new Date().getFullYear() - Number(r.namSinh) : null;
-          return (
-            <div className="min-w-0 leading-tight">
-              <div className="truncate text-[13px] font-bold text-[var(--ink)]">{r.hoTen}</div>
-              <div className="mt-0.5 truncate text-[11px] text-[var(--mute)]">
-                {r.namSinh ? `${r.namSinh}${age ? ` · ${age}t` : ""}` : "—"}
-                {r.gioiTinh ? ` · ${r.gioiTinh}` : ""}
-              </div>
-              {(r.cccd || r.sdt || r.bhyt) && (
-                <div
-                  className="mt-0.5 truncate font-mono text-[10.5px] text-[var(--mute)]"
-                  title={[r.cccd && `CCCD: ${r.cccd}`, r.bhyt && `BHYT: ${r.bhyt}`, r.sdt && `SĐT: ${r.sdt}`]
-                    .filter(Boolean)
-                    .join(" · ")}
-                >
-                  {[r.cccd, r.bhyt, r.sdt].filter(Boolean).join(" · ")}
-                </div>
-              )}
-            </div>
-          );
-        },
+        cell: ({ row }) => <HisSideCell r={row.original} />,
       },
       {
+        /* Ngày + Mắt chung một cột: tab này xem theo 1 ngày nên ngày gần như giống nhau,
+           thông tin cần nhìn là Mắt 1 / Mắt 2 và mắt nào. */
         id: "ngayMo",
-        header: "Ngày mổ",
-        size: 95,
-        // Sắp xếp trên chuỗi "YYYY-MM-DD HH:mm:ss" — thứ tự chuỗi trùng thứ tự thời gian.
-        accessorFn: (r) => r.ngayMoLocal || "",
-        cell: ({ row }) => {
-          const ngay = hisNgay(row.original);
-          if (row.original.choMo) {
-            return (
-              <span className="inline-flex items-center gap-1 rounded border border-[var(--amber)]/40 bg-[var(--amber-soft)] px-1.5 py-0.5 text-[10.5px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
-                <Clock className="h-3 w-3 shrink-0" /> Chờ mổ
-              </span>
-            );
-          }
-          return (
-            <span className="font-mono text-xs font-semibold text-[var(--ink)] whitespace-nowrap">
-              {ngay ? fmtDate(ngay) : "—"}
-            </span>
-          );
-        },
-      },
-      {
-        id: "lanMo",
-        header: "Mắt",
-        size: 96,
-        // Sắp xếp được để dồn nhanh các ca Mắt 2 lên đầu.
-        accessorFn: (r) => (r.isMat2 || (r.lanMo && r.lanMo >= 2) ? 2 : 1),
+        header: "Ca mổ",
+        size: 112,
+        accessorFn: (r) => `${r.isMat2 || (r.lanMo && r.lanMo >= 2) ? 2 : 1}${r.ngayMoLocal || ""}`,
         cell: ({ row }) => {
           const r = row.original;
+          const ngay = hisNgay(r);
           const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
           return (
-            <div className="leading-tight">
-              <span
-                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold ${
-                  isSecondEye
-                    ? "border border-purple-300 bg-purple-100 text-purple-900"
-                    : "border border-[var(--line-strong)] bg-[var(--surface-soft)] text-[var(--ink-soft)]"
-                }`}
-                title={r.lanMo ? `Lần mổ thứ ${r.lanMo}` : undefined}
-              >
-                {isSecondEye && <Eye className="h-3 w-3 shrink-0 text-purple-700" />}
-                Mắt {isSecondEye ? 2 : 1}
-              </span>
-              {r.matMo && (
-                <div className="mt-0.5 truncate text-[10.5px] font-semibold text-teal-800">{r.matMo}</div>
+            <div className="leading-tight min-w-0">
+              {r.choMo ? (
+                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--amber-soft)] px-1.5 py-0.5 text-[10.5px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
+                  <Clock className="h-3 w-3 shrink-0" /> Chờ mổ
+                </span>
+              ) : (
+                <span className="font-mono text-[12px] font-semibold text-[var(--ink)] whitespace-nowrap">
+                  {ngay ? fmtDate(ngay).slice(0, 5) : "—"}
+                </span>
               )}
+              <div className="mt-1 flex items-center gap-1 whitespace-nowrap">
+                <span
+                  className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-px text-[10px] font-bold ${
+                    isSecondEye ? "bg-[#f3e8ff] text-[#7c3aed]" : "bg-[var(--surface-soft)] text-[var(--ink-soft)]"
+                  }`}
+                  title={r.lanMo ? `Lần mổ thứ ${r.lanMo}` : undefined}
+                >
+                  {isSecondEye && <Eye className="h-2.5 w-2.5" />}
+                  Mắt {isSecondEye ? 2 : 1}
+                </span>
+                {r.matMo && <span className="text-[10.5px] text-[var(--mute)] truncate">{r.matMo}</span>}
+              </div>
             </div>
           );
         },
       },
       {
-        /* Gộp Khoa / Bác sĩ vào cột dịch vụ — hai thông tin luôn đi cùng nhau,
-           tách riêng chỉ tốn thêm 150px mà cột kia thường trống. */
+        /* Tên DV HIS rất dài ("Phẫu thuật tán nhuyễn thể thủy tinh bằng siêu âm (Phaco) có hoặc
+           không đặt IOL_ IOL Mini 4") — loại PT đã có nhãn riêng nên chỉ hiện phần IOL; chẩn đoán
+           (thường trống) gộp vào dòng phụ thay vì chiếm hẳn một cột. */
         id: "dichVu",
         header: "Phẫu thuật",
-        size: 250,
+        size: 240,
         meta: { flex: true },
         cell: ({ row }) => {
           const r = row.original;
-          const ten = r.tenDichVu || r.loaiPT;
+          const ten = String(r.tenDichVu || r.loaiPT || "");
+          const iol = ten.match(/IOL[_\s:-]*(?:IOL\s*)?\(?([^()]+?)\)?\s*$/i)?.[1]?.trim();
+          const ngan = iol && !/^có hoặc không/i.test(iol) ? `IOL ${iol}` : ten;
+          const diag = r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || r.chanDoan;
           return (
-            <div className="min-w-0 leading-tight">
-              <div className="flex items-center gap-1.5">
+            <div className="min-w-0 leading-tight" title={[ten, diag && `Chẩn đoán: ${diag}`, r.bsDieuTri && `BS: ${r.bsDieuTri}`].filter(Boolean).join("\n")}>
+              <div className="flex items-center gap-1.5 min-w-0">
                 {r.loaiPT && (
-                  <span className="shrink-0 rounded border border-blue-200 bg-blue-50 px-1.5 py-px text-[9.5px] font-extrabold uppercase tracking-wide text-blue-800">
+                  <span className="shrink-0 rounded-md bg-[var(--navy-50)] px-1.5 py-px text-[10px] font-bold text-[var(--navy)]">
                     {r.loaiPT}
                   </span>
                 )}
-                <span className="truncate text-[11px] font-bold text-[var(--navy)]" title={r.khoaMo || ""}>
-                  {r.khoaMo || "Phòng mổ"}
+                <span className="truncate text-[12.5px] font-medium text-[var(--ink)]">
+                  {ngan || <span className="italic text-[var(--mute-soft)]">Chưa có tên DV</span>}
                 </span>
               </div>
-              <div className="mt-0.5 line-clamp-2 text-[11.5px] font-medium text-[var(--ink)]" title={ten || ""}>
-                {ten || <span className="italic text-[var(--mute-soft)]">Chưa có tên DV</span>}
-              </div>
-              {r.bsDieuTri && (
-                <div
-                  className="mt-0.5 truncate text-[10.5px] font-semibold text-emerald-800"
-                  title={`BS: ${r.bsDieuTri}`}
-                >
-                  BS. {r.bsDieuTri}
+              {(diag || r.bsDieuTri) && (
+                <div className="mt-1 truncate text-[11px] text-[var(--mute)]">
+                  {[diag, r.bsDieuTri && `BS. ${r.bsDieuTri}`].filter(Boolean).join(" · ")}
                 </div>
               )}
-            </div>
-          );
-        },
-      },
-      {
-        id: "chanDoan",
-        header: "Chẩn đoán HIS",
-        size: 175,
-        cell: ({ row }) => {
-          const r = row.original;
-          const diag = r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || r.chanDoan;
-          return (
-            <div
-              className="text-xs text-[var(--ink-soft)] line-clamp-2 leading-relaxed"
-              title={diag || "—"}
-            >
-              {diag || <span className="text-[var(--mute-soft)]">—</span>}
             </div>
           );
         },
       },
       {
         id: "doiChieu",
-        header: "Đối chiếu CSR",
-        size: 230,
+        header: "Hồ sơ CSR",
+        size: 260,
+        meta: { flex: true },
         cell: ({ row }) => {
           const r = row.original;
           if (r.cccdConflict) {
@@ -1067,47 +1013,7 @@ export default function DoiChieuHisPage() {
               </span>
             );
           }
-          const m = r.matchedCsr;
-          const isBhyt = m.matchReason?.includes("BHYT");
-          const isSecondEye = Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
-          const isPartial = m.matchType === "partial" || m.isKhuyetCccd;
-          return (
-            <div className="text-xs space-y-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${
-                    m.matchType === "exact"
-                      ? isBhyt
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border-amber-300"
-                  }`}
-                >
-                  {isPartial ? "⚠ Khuyết CCCD (Tên + NS)" : (m.matchReason || "Khớp hồ sơ")}
-                </span>
-                <span className="font-mono font-bold text-[var(--navy)]">{m.maBN}</span>
-                {m.nhom && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                      m.nhom === "A" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    Nhóm {m.nhom}
-                  </span>
-                )}
-              </div>
-              <div className="text-[11px] text-[var(--mute)] truncate">
-                {m.buoiKham?.xa ? `Đợt: ${m.buoiKham.xa}` : (m.buoiKham?.diaDiem || "—")}
-                {m.buoiKham?.ngayKham ? ` (${fmtDate(m.buoiKham.ngayKham)})` : ""}
-              </div>
-              {isSecondEye && (
-                <div className="text-[10.5px] font-semibold text-purple-700 flex items-center gap-1 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                  <Eye className="w-3 h-3 text-purple-600 shrink-0" />
-                  <span className="truncate">Ghi nhận vào Ghi chú Mắt 2</span>
-                </div>
-              )}
-            </div>
-          );
+          return <CsrSideCell r={r} />;
         },
       },
       {
@@ -1144,9 +1050,9 @@ export default function DoiChieuHisPage() {
               <button
                 type="button"
                 data-no-row-click
-                onClick={() => linkDailyPatient(r, true)}
+                onClick={() => setCompareRow(r)}
                 disabled={linkingId === r.matchedCsr.id}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50"
+                className="h-8 px-3 whitespace-nowrap bg-[var(--amber)] hover:bg-[var(--amber-deep)] text-white text-[12px] font-semibold rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                 title="1 trong 2 bên khuyết CCCD: Bấm xác nhận sau khi kiểm tra đúng bệnh nhân"
               >
                 {linkingId === r.matchedCsr.id ? (
@@ -1154,7 +1060,7 @@ export default function DoiChieuHisPage() {
                 ) : (
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 )}
-                <span>Xác nhận đã mổ</span>
+                <span>Xác nhận mổ</span>
               </button>
             );
           }
@@ -1162,12 +1068,8 @@ export default function DoiChieuHisPage() {
           if (isLinked && (!isSecondEye || hasMat2Note)) {
             return (
               <span
-                className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border ${
-                  isSecondEye
-                    ? "bg-purple-50 text-purple-800 border-purple-200"
-                    : isPartial
-                    ? "bg-amber-50 text-amber-800 border-amber-300"
-                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                className={`inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold ${
+                  isSecondEye ? "text-[#7c3aed]" : isPartial ? "text-[var(--amber-deep)]" : "text-[var(--teal-deep)]"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1182,10 +1084,8 @@ export default function DoiChieuHisPage() {
               data-no-row-click
               onClick={() => linkDailyPatient(r, false)}
               disabled={linkingId === r.matchedCsr.id}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50 ${
-                isSecondEye
-                  ? "bg-purple-600 hover:bg-purple-700 text-white"
-                  : "btn btn-success"
+              className={`h-8 px-3 whitespace-nowrap text-[12px] font-semibold rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 text-white ${
+                isSecondEye ? "bg-[#7c3aed] hover:bg-[#6d28d9]" : "bg-[var(--teal-deep)] hover:bg-[var(--teal)]"
               }`}
             >
               {linkingId === r.matchedCsr.id ? (
@@ -1195,7 +1095,7 @@ export default function DoiChieuHisPage() {
               ) : (
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
               )}
-              <span>{isSecondEye ? "Lưu Mắt 2" : "Đánh dấu Đã mổ"}</span>
+              <span>{isSecondEye ? "Lưu Mắt 2" : "Đánh dấu mổ"}</span>
             </button>
           );
         },
@@ -2255,6 +2155,16 @@ export default function DoiChieuHisPage() {
           )}
         </div>
       )}
+      <HisCsrCompareModal
+        row={compareRow}
+        loading={Boolean(compareRow && linkingId === compareRow.matchedCsr?.id)}
+        onClose={() => setCompareRow(null)}
+        onConfirm={async () => {
+          if (!compareRow) return;
+          await linkDailyPatient(compareRow, true);
+          setCompareRow(null);
+        }}
+      />
     </div>
   );
 }

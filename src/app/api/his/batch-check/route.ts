@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       surgery: results.filter((r) => r.isDaMo).length,
       surgeryPrior: results.filter((r) => r.isDaMoTruoc).length,
       choMo: results.filter((r) => r.isChoMo).length,
+      canXacNhan: results.filter((r) => r.isCanXacNhan).length,
       exactMatch: results.filter((r) => r.matchType === "exact").length,
       partialMatch: results.filter((r) => r.matchType === "partial" && r.found).length,
       surgeryExact: results.filter((r) => r.isDaMo && r.matchType === "exact").length,

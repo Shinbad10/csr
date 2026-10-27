@@ -1,6 +1,7 @@
 import sql from "mssql";
 import { getPrisma } from "./prisma";
 import { triggerSync } from "./syncWorker";
+import { isReportValidSurgery } from "./csr";
 import { decryptSecret } from "./secret";
 import { autoEncryptCoSo } from "./coso";
 
@@ -455,12 +456,17 @@ async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
   bhytCol: string | null;
   addrCol: string | null;
   sdtCol: string | null;
+  /** Ngày / tháng sinh tách cột (QLyCapThe.Ngaysinh, Thangsinh) — để so ngày sinh đầy đủ với CSR */
+  ngaySinhCol: string | null;
+  thangSinhCol: string | null;
 }> {
   let tableName = "QLyCapThe";
   let cmndCol: string | null = null;
   let bhytCol: string | null = null;
   let addrCol: string | null = null;
   let sdtCol: string | null = null;
+  let ngaySinhCol: string | null = null;
+  let thangSinhCol: string | null = null;
 
   try {
     const colRes = await pool.request().query(`
@@ -513,11 +519,16 @@ async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
       findCol([
         "Dienthoai", "DienThoai", "SDT", "SoDienThoai", "Phone", "Mobile", "Tel"
       ]) || null;
+
+    // Chỉ khớp đúng tên cột — so gần đúng dễ dính nhầm cột khác (vd. ngày sinh người thân)
+    const exactCol = (name: string) => tableCols.find((col) => col.toLowerCase() === name.toLowerCase()) || null;
+    ngaySinhCol = exactCol("Ngaysinh");
+    thangSinhCol = exactCol("Thangsinh");
   } catch (err) {
     console.error("Error inspecting QLyCapThe columns:", err);
   }
 
-  return { tableName, cmndCol, bhytCol, addrCol, sdtCol };
+  return { tableName, cmndCol, bhytCol, addrCol, sdtCol, ngaySinhCol, thangSinhCol };
 }
 
 export async function checkHISForPatient(
@@ -1001,10 +1012,40 @@ export async function batchCheckHISForPatients(
           await prisma.syncQueue.create({ data: { hoSoId: p.id } });
         } catch {}
 
+        const duocTinh = matchType === "exact" || isReportValidSurgery({ ...p, ...updateData });
         return {
           id: p.id, hoTen: p.hoTen, found: true, matchType, matchReason, maHIS, cccdHIS: hisCccd, bhytHIS: hisBhyt,
           // Ca mổ SAU ngày khám (tính tiến độ CSR) tách khỏi ca mổ TRƯỚC đó; chờ mổ = nhập viện / có DV PT, chưa vào sổ mổ
-          hasSurgery, isDaMo: dec.daMo, isDaMoTruoc: dec.daMoTruoc, isChoMo: dec.choMo, chiTiet,
+          hasSurgery,
+          // Chỉ khớp Họ tên + Năm sinh thì KHÔNG tự ghi "Đã mổ" (xem trên) → đếm riêng là cần xác nhận,
+          // để số "mổ" của lần đối chiếu khớp với cột Tiến độ mổ
+          // Cùng quy tắc với cột "Tiến độ mổ" (isReportValidSurgery): ca chỉ khớp tên + NS chỉ tính khi
+          // người dùng đã bấm xác nhận — trạng thái "Đã mổ" do bản đối chiếu cũ tự đánh thì chưa tính
+          isDaMo: dec.daMo && duocTinh,
+          isDaMoTruoc: dec.daMoTruoc && duocTinh,
+          isCanXacNhan: (dec.daMo || dec.daMoTruoc) && !duocTinh,
+          // Đủ thông tin hai phía để người dùng so và xác nhận ngay trong bảng tiến trình đối chiếu
+          xacNhan:
+            (dec.daMo || dec.daMoTruoc) && !duocTinh
+              ? {
+                  hoSoId: p.id,
+                  maBN: (p as Record<string, unknown>).maBN ?? null,
+                  ngayKham: p.buoiKham?.ngayKham ?? null,
+                  diaDiem: ((p.buoiKham as Record<string, unknown> | null | undefined)?.diaDiem as string) ?? null,
+                  ngayMo: dec.ngayMo ? dec.ngayMo.toISOString() : null,
+                  tenDichVu: surgDetail?.tenDichVu || null,
+                  loaiPT: surgDetail?.loaiPhauThuat || null,
+                  csr: {
+                    hoTen: p.hoTen,
+                    namSinh: p.namSinh,
+                    ngaySinh: (p as Record<string, unknown>).ngaySinh ?? null,
+                    cccd: p.cccd || null,
+                    sdt: (p as Record<string, unknown>).sdt ?? null,
+                  },
+                  his: { maHIS, hoTen: hoTenHIS, namSinh: namSinhHIS, cccd: hisCccd || null, sdt: String(matchedRow.Dienthoai || "").trim() || null },
+                }
+              : undefined,
+          isChoMo: dec.choMo, chiTiet,
         };
       } catch (e: any) {
         return { id: p.id, hoTen: p.hoTen, found: false, error: e?.message || "Lỗi khi tra cứu BN này" };
@@ -1139,6 +1180,15 @@ export async function searchHIS(coSoId: string, keyword: string) {
   }
 }
 
+/** Ngày sinh HIS tách 3 cột (ngày, tháng, năm) → "dd/mm/yyyy"; thiếu ngày/tháng thì "". */
+function hisNgaySinh(ngay: unknown, thang: unknown, nam: unknown): string {
+  const d = parseInt(String(ngay ?? ""), 10);
+  const m = parseInt(String(thang ?? ""), 10);
+  const y = parseInt(String(nam ?? ""), 10);
+  if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12 && y > 1900)) return "";
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+}
+
 /** Nhóm phẫu thuật hiển thị từ tên dịch vụ HIS. */
 function phanLoaiPT(ten: string): string {
   if (/phaco/i.test(ten)) return "Phaco";
@@ -1179,10 +1229,15 @@ export async function getHISSurgeryList(
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { tableName, cmndCol, bhytCol, sdtCol } = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, bhytCol, sdtCol, addrCol, ngaySinhCol, thangSinhCol } = await getQLyCapTheColumns(pool);
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as cccd,` : `NULL as cccd,`;
     const bhytSelect = bhytCol ? `c.[${bhytCol}] as bhyt,` : `NULL as bhyt,`;
-    const sdtSelect = sdtCol ? `c.[${sdtCol}] as sdt,` : `NULL as sdt,`;
+    // Địa chỉ + ngày/tháng sinh: để người dùng so từng trường HIS ↔ CSR trước khi xác nhận
+    const sdtSelect =
+      (sdtCol ? `c.[${sdtCol}] as sdt,` : `NULL as sdt,`) +
+      (addrCol ? ` c.[${addrCol}] as diaChi,` : ` NULL as diaChi,`) +
+      (ngaySinhCol ? ` c.[${ngaySinhCol}] as ngaySinhNgay,` : ` NULL as ngaySinhNgay,`) +
+      (thangSinhCol ? ` c.[${thangSinhCol}] as ngaySinhThang,` : ` NULL as ngaySinhThang,`);
 
     let monthFilter = "";
     const req = pool.request();
@@ -1399,6 +1454,9 @@ export async function getHISSurgeryList(
         cccd: String(r.cccd || "").trim(),
         bhyt: String(r.bhyt || "").trim(),
         sdt: String(r.sdt || "").trim(),
+        diaChi: String(r.diaChi || "").trim(),
+        /** "dd/mm/yyyy" khi HIS có ngày + tháng sinh, ngược lại để trống (chỉ có năm sinh) */
+        ngaySinh: hisNgaySinh(r.ngaySinhNgay, r.ngaySinhThang, r.namSinh),
         ngayMo: r.ngayMo ? new Date(r.ngayMo).toISOString() : null,
         /** "YYYY-MM-DD HH:mm:ss" đúng giờ HIS lưu — dùng cái này để hiển thị,
          *  `ngayMo` (ISO) chỉ giữ lại cho code cũ còn tham chiếu. */

@@ -171,6 +171,11 @@ export async function POST(request: Request) {
             cccd: matched.cccd || null,
             bhyt: matched.bhyt || null,
             sdt: matched.sdt,
+            // Thêm để so từng trường với HIS trước khi xác nhận
+            ngaySinh: matched.ngaySinh,
+            gioiTinh: matched.gioiTinh,
+            diaChi: matched.diaChi || null,
+            matKham: matched.matKham || null,
             buoiKham: matched.buoiKham
               ? {
                   ngayKham: matched.buoiKham.ngayKham,
