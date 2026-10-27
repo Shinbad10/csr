@@ -8,6 +8,12 @@ import { LOAI_XE } from "@/lib/csr";
 // Đoàn xe của từng điểm đón: loại xe (số chỗ) + giờ đón. Bệnh nhân thuộc đoàn nào vẫn ghi bằng
 // tag [Đoàn N] trên hồ sơ — bảng này chỉ thêm thông tin về chiếc xe của đoàn đó.
 
+/** Tiến trình đang chạy còn giữ Prisma Client sinh trước khi có model DoanXe (vd. `next dev` chưa khởi động lại). */
+function chuaCoModel() {
+  return !(getPrisma() as unknown as Record<string, unknown>).doanXe;
+}
+const LOI_CHUA_CO_MODEL = "Server đang dùng Prisma Client cũ (chưa có DoanXe) — khởi động lại server";
+
 /** DB chưa chạy prisma/manual/004_doan_xe.sql → coi như chưa có xe nào, trang vẫn chạy. */
 function chuaCoBang(e: unknown) {
   const msg = String((e as Error)?.message || e);
@@ -20,6 +26,7 @@ export async function GET(request: Request) {
 
   const sp = new URL(request.url).searchParams;
   const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
+  if (chuaCoModel()) return NextResponse.json({ items: [], chuaCoBang: true, error: LOI_CHUA_CO_MODEL });
   try {
     const items = await getPrisma().doanXe.findMany({
       where: coSoId ? { coSoId } : {},
@@ -49,6 +56,7 @@ export async function POST(request: Request) {
   if (!ngayDon || !diemDon) return NextResponse.json({ error: "Thiếu ngày đón hoặc điểm đón" }, { status: 400 });
   if (!Number.isInteger(soDoan) || soDoan < 1) return NextResponse.json({ error: "Số đoàn không hợp lệ" }, { status: 400 });
   if (!(LOAI_XE as readonly number[]).includes(soCho)) return NextResponse.json({ error: "Loại xe không hợp lệ" }, { status: 400 });
+  if (chuaCoModel()) return NextResponse.json({ error: LOI_CHUA_CO_MODEL }, { status: 503 });
 
   try {
     const xe = await getPrisma().doanXe.upsert({
@@ -72,6 +80,7 @@ export async function DELETE(request: Request) {
 
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Thiếu id" }, { status: 400 });
+  if (chuaCoModel()) return NextResponse.json({ error: LOI_CHUA_CO_MODEL }, { status: 503 });
   try {
     const xe = await getPrisma().doanXe.delete({ where: { id } });
     broadcastEvent({ type: "hoso_change", action: "update", coSoId: xe.coSoId, data: { action: "doan_xe", id } });
