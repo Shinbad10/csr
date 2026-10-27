@@ -1277,16 +1277,16 @@ export default function DoanXePage() {
               })()}
 
               {/* Chi tiết trạm đang chọn */}
-              <div className={`${activeStationKey ? "block" : "hidden lg:block"} flex-1 lg:flex-none min-h-0 min-w-0 overflow-y-auto p-3 sm:p-5 print:overflow-visible`}>
+              <div className={`${activeStationKey ? "block" : "hidden lg:block"} flex-1 lg:flex-none min-h-0 min-w-0 overflow-y-auto bg-[var(--surface)] print:overflow-visible`}>
                 <button
                   type="button"
                   onClick={() => setActiveStation(null)}
-                  className="lg:hidden mb-2.5 inline-flex items-center gap-1 h-8 px-2.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] cursor-pointer"
+                  className="lg:hidden m-3 mb-0 inline-flex items-center gap-1 h-8 px-2.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" /> Điểm đón
                 </button>
                 {chuaCoBangXe && (
-                  <div className="mb-3 rounded-[10px] border border-[var(--amber)]/40 bg-[var(--amber-soft)] px-3 py-2 text-[12px] text-[var(--amber-deep)]">
+                  <div className="m-3 rounded-[10px] border border-[var(--amber)]/40 bg-[var(--amber-soft)] px-3 py-2 text-[12px] text-[var(--amber-deep)]">
                     CSDL chưa có bảng <b className="font-mono">DoanXe</b> nên chưa lưu được loại xe — cần chạy{" "}
                     <span className="font-mono">prisma/manual/004_doan_xe.sql</span>.
                   </div>
@@ -1353,7 +1353,7 @@ export default function DoanXePage() {
                 return (
                   <div
                     key={stationKey}
-                    className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-clip"
+                    className="bg-[var(--surface)] min-h-full lg:mt-0"
                   >
                     {/* Header trạm + tiêu đề cột dính trên cùng khi cuộn (overflow-clip thay overflow-hidden để sticky chạy) */}
                     <div className="sticky top-0 z-20 bg-[var(--surface)]">
