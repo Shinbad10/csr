@@ -20,10 +20,10 @@ import {
   Send,
   Clock,
   Bus,
-  Plus,
   FileSpreadsheet,
 } from "lucide-react";
 import DoanXeAutocomplete from "@/components/csr/DoanXeAutocomplete";
+import ChonDoanXe from "@/components/csr/ChonDoanXe";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -39,7 +39,6 @@ import {
   fmtSinhTuoi,
   parseDoanXe,
   formatGhiChuWithDoanXe,
-  getDoanColor,
   parseThongTinNguoiNha,
   formatThongTinNguoiNha,
 } from "@/lib/csr";
@@ -332,19 +331,6 @@ export default function TuVanSessionPage() {
   }, [bks, bkSearch]);
 
   const selected = useMemo(() => patients.find((p) => p.id === selId) || null, [patients, selId]);
-  
-  // Quản lý các đoàn xe linh hoạt (Đoàn 1, Đoàn 2, Đoàn 3...)
-  const [customConvoys, setCustomConvoys] = useState<number[]>([]);
-  const availableConvoys = useMemo(() => {
-    const set = new Set<number>([1, 2, ...customConvoys]);
-    const cur = parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon });
-    if (cur) set.add(cur);
-    patients.forEach((p) => {
-      const d = parseDoanXe(p);
-      if (d) set.add(d);
-    });
-    return Array.from(set).sort((a, b) => a - b);
-  }, [f.ghiChuTuVan, f.diemDon, patients, customConvoys]);
   
   // Nạp danh sách điểm đón và chuyến xe chưa qua ngày trên toàn hệ thống (không phân biệt đợt khám)
   const [activeDiemDonList, setActiveDiemDonList] = useState<string[]>([]);
@@ -1387,53 +1373,18 @@ export default function TuVanSessionPage() {
                                   setF((s) => ({ ...s, diemDon: val.diemDon, gioDon: val.gioDon, ngayHen: val.ngayHen || s.ngayHen }));
                                 }}
                               />
-                              {f.diemDon && (
-                                <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-fade-in">
-                                  <span className="text-[11.5px] font-semibold text-[var(--ink-soft)]">Chuyến xe đón</span>
-                                  <div className="inline-flex p-0.5 rounded-lg bg-[var(--surface-soft)] border border-[var(--line)] shadow-2xs items-center gap-0.5 flex-wrap">
-                                    {availableConvoys.map((num) => {
-                                      const curDoan = parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon });
-                                      const isSelected = curDoan === num;
-                                      const color = getDoanColor(num);
-                                      return (
-                                        <button
-                                          key={num}
-                                          type="button"
-                                          onClick={() => {
-                                            setF((s) => ({
-                                              ...s,
-                                              ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, num),
-                                            }));
-                                          }}
-                                          className={`h-7 px-3 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                            isSelected
-                                              ? `${color.activeBg} shadow-2xs`
-                                              : `text-[var(--ink-soft)] hover:${color.text} hover:bg-white`
-                                          }`}
-                                        >
-                                          <Bus className="w-3.5 h-3.5" />
-                                          <span>Đoàn {num}</span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const nextNum = Math.max(...availableConvoys, 1) + 1;
-                                      setCustomConvoys((prev) => Array.from(new Set([...prev, nextNum])));
-                                      setF((s) => ({
-                                        ...s,
-                                        ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, nextNum),
-                                      }));
-                                    }}
-                                    className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] border border-dashed border-[var(--line-strong)] hover:border-[var(--navy)]/40 transition-colors flex items-center gap-1 cursor-pointer"
-                                    title="Thêm chuyến xe mới (Đoàn 3, Đoàn 4...)"
-                                  >
-                                    <Plus className="w-3.5 h-3.5 text-[var(--mute)]" />
-                                    <span>Thêm đoàn {Math.max(...availableConvoys, 1) + 1}</span>
-                                  </button>
-                                </div>
+                              {/* Đoàn xe tại trạm — cùng dữ liệu xe/ghế với trang Đoàn xe */}
+                              {f.diemDon && f.ngayHen && !/tự túc|xe riêng/i.test(f.diemDon) && (
+                                <ChonDoanXe
+                                  ngayDon={f.ngayHen}
+                                  diemDon={f.diemDon}
+                                  coSoId={selected.coSoId}
+                                  hoSoId={selected.id}
+                                  doanHienTai={parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon })}
+                                  soChoCuaBN={1 + (f.coNguoiNha ? f.soNguoiNha || 1 : 0)}
+                                  gioDon={f.gioDon}
+                                  onChonDoan={(num) => setF((s) => ({ ...s, ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, num) }))}
+                                />
                               )}
 
                               {/* Người nhà đi kèm xe đón — thẻ trung tính cùng tông các khối khác (trước là gradient tím, chữ in hoa) */}
