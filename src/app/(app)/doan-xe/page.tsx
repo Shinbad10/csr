@@ -980,10 +980,11 @@ export default function DoanXePage() {
 
       {/* Dải chỉ số thống kê lộ trình xe chuẩn ERP (ERP Metric Ribbon) */}
       <div className="border-b border-slate-200 bg-slate-50/70 shrink-0 print:hidden">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-2.5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+        {/* Điện thoại: 6 ô chỉ số thành một hàng vuốt ngang (trước là lưới 2×3 chiếm nửa màn hình) */}
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-2 sm:py-2.5">
+          <div className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
             {/* 1. Tổng ca xếp xe */}
-            <div className="p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all">
+            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center justify-between">
                 <span className="flex items-center gap-1.5 truncate">
                   <Users className="w-3.5 h-3.5 text-[var(--navy)]" /> Tổng BN đón
@@ -995,7 +996,7 @@ export default function DoanXePage() {
                 )}
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[20px] font-black text-[var(--navy)]">{summary.total}</span>
+                <span className="font-mono text-[18px] sm:text-[20px] font-black text-[var(--navy)]">{summary.total}</span>
                 <span className="text-[11px] text-slate-400 font-medium truncate">
                   {summary.totalNguoiNha > 0 ? `(${summary.tongChoNgoi} chỗ)` : "bệnh nhân"}
                 </span>
@@ -1003,12 +1004,12 @@ export default function DoanXePage() {
             </div>
 
             {/* 2. Đoàn 1 */}
-            <div className="p-2.5 rounded-xl bg-white border border-blue-200/90 shadow-2xs hover:border-blue-300 transition-all">
+            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-blue-200/90 shadow-2xs hover:border-blue-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-blue-900 flex items-center gap-1.5 truncate">
                 <Bus className="w-3.5 h-3.5 text-blue-600" /> Đoàn 1
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[20px] font-black text-blue-700">{summary.totalDoan1}</span>
+                <span className="font-mono text-[18px] sm:text-[20px] font-black text-blue-700">{summary.totalDoan1}</span>
                 <span className="text-[11px] text-blue-600/80 font-bold truncate">
                   ({summary.total > 0 ? Math.round((summary.totalDoan1 / summary.total) * 100) : 0}%)
                 </span>
@@ -1016,12 +1017,12 @@ export default function DoanXePage() {
             </div>
 
             {/* 3. Đoàn 2 trở lên */}
-            <div className="p-2.5 rounded-xl bg-white border border-purple-200/90 shadow-2xs hover:border-purple-300 transition-all">
+            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-purple-200/90 shadow-2xs hover:border-purple-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-purple-900 flex items-center gap-1.5 truncate">
                 <Bus className="w-3.5 h-3.5 text-purple-600" /> Đoàn 2+
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[20px] font-black text-purple-700">{summary.totalDoan2}</span>
+                <span className="font-mono text-[18px] sm:text-[20px] font-black text-purple-700">{summary.totalDoan2}</span>
                 <span className="text-[11px] text-purple-600/80 font-bold truncate">
                   ({summary.total > 0 ? Math.round((summary.totalDoan2 / summary.total) * 100) : 0}%)
                 </span>
@@ -1029,12 +1030,12 @@ export default function DoanXePage() {
             </div>
 
             {/* 4. Đã đón lên xe */}
-            <div className="p-2.5 rounded-xl bg-white border border-sky-200/90 shadow-2xs hover:border-sky-300 transition-all">
+            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-sky-200/90 shadow-2xs hover:border-sky-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-sky-900 flex items-center gap-1.5 truncate">
                 <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" /> Đã đón lên xe
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[20px] font-black text-sky-700">{summary.daDon}</span>
+                <span className="font-mono text-[18px] sm:text-[20px] font-black text-sky-700">{summary.daDon}</span>
                 <span className="text-[11px] text-sky-600 font-bold truncate">
                   ({summary.total > 0 ? Math.round((summary.daDon / summary.total) * 100) : 0}%)
                 </span>
@@ -1042,23 +1043,23 @@ export default function DoanXePage() {
             </div>
 
             {/* 5. Đang chờ đón */}
-            <div className="p-2.5 rounded-xl bg-white border border-amber-200/90 shadow-2xs hover:border-amber-300 transition-all">
+            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-amber-200/90 shadow-2xs hover:border-amber-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 truncate">
                 <Clock className="w-3.5 h-3.5 text-amber-600" /> Đang chờ đón
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[20px] font-black text-amber-700">{summary.chuaDon}</span>
+                <span className="font-mono text-[18px] sm:text-[20px] font-black text-amber-700">{summary.chuaDon}</span>
                 <span className="text-[11px] text-amber-600/80 font-medium truncate">chưa lên xe</span>
               </div>
             </div>
 
             {/* 6. Đã mổ tại viện */}
-            <div className="p-2.5 rounded-xl bg-white border border-emerald-200/90 shadow-2xs hover:border-emerald-300 transition-all">
+            <div className="shrink-0 min-w-[138px] sm:min-w-0 p-2 sm:p-2.5 rounded-xl bg-white border border-emerald-200/90 shadow-2xs hover:border-emerald-300 transition-all">
               <div className="text-[10.5px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1.5 truncate">
                 <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Đã phẫu thuật
               </div>
               <div className="flex items-baseline gap-1.5 mt-1">
-                <span className="font-mono text-[20px] font-black text-emerald-700">{summary.daMo}</span>
+                <span className="font-mono text-[18px] sm:text-[20px] font-black text-emerald-700">{summary.daMo}</span>
                 <span className="text-[11px] text-emerald-600/80 font-medium truncate">ca đã mổ</span>
               </div>
             </div>
@@ -1068,10 +1069,10 @@ export default function DoanXePage() {
 
       {/* Thanh công cụ tìm kiếm & bộ lọc lộ trình (Bounded max-w-7xl) */}
       <div className="border-b border-[var(--line)] bg-white shrink-0 print:hidden">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-3 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-2 sm:py-3 space-y-2 sm:space-y-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
             {/* Ô tìm kiếm */}
-            <div className="relative flex-1 min-w-[240px] max-w-[380px]">
+            <div className="relative w-full sm:w-auto sm:flex-1 sm:min-w-[240px] sm:max-w-[380px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
               <input
                 value={search}
@@ -1091,13 +1092,13 @@ export default function DoanXePage() {
             </div>
 
             {/* Filters + View Mode Switcher */}
-            <div className="flex items-center gap-2 flex-wrap ml-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto sm:flex-wrap sm:ml-auto">
               {/* Chọn ngày đón */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-1 min-w-0 sm:flex-none">
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-[var(--line)] bg-white text-[12px] font-bold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer shadow-2xs"
+                  className="h-9 px-2 sm:px-3 min-w-0 flex-1 sm:flex-none rounded-lg border border-[var(--line)] bg-white text-[12px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer shadow-2xs"
                 >
                   <option value="ALL">📅 Tất cả ngày đón</option>
                   {uniqueDates.map((d) => (
@@ -1111,7 +1112,7 @@ export default function DoanXePage() {
                 <select
                   value={diemDonFilter}
                   onChange={(e) => setDiemDonFilter(e.target.value)}
-                  className="h-9 px-3 rounded-lg border border-[var(--line)] bg-white text-[12px] font-bold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer shadow-2xs max-w-[210px] truncate"
+                  className="h-9 px-2 sm:px-3 min-w-0 flex-1 sm:flex-none rounded-lg border border-[var(--line)] bg-white text-[12px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] cursor-pointer shadow-2xs sm:max-w-[210px] truncate"
                 >
                   <option value="ALL">📍 Tất cả điểm đón ({uniqueDiemDon.length})</option>
                   {uniqueDiemDon.map((d) => (
@@ -1123,7 +1124,7 @@ export default function DoanXePage() {
               </div>
 
               {/* View Mode Switcher: Lộ trình trạm / Lưới thẻ / Bảng */}
-              <div className="flex items-center bg-[var(--surface-soft)] p-0.5 rounded-lg border border-[var(--line)]">
+              <div className="flex items-center shrink-0 bg-[var(--surface-soft)] p-0.5 rounded-lg border border-[var(--line)]">
                 <button
                   type="button"
                   onClick={() => setViewMode("grouped")}
@@ -1168,8 +1169,8 @@ export default function DoanXePage() {
           </div>
 
           {/* Dải Tab trạng thái + Toggle thu gọn trạm */}
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--line-soft)] flex-wrap">
-            <div className="flex items-center gap-1.5 flex-wrap text-[11.5px]">
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--line-soft)]">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar sm:flex-wrap text-[11.5px]">
               {[
                 { key: "all" as const, label: "Tất cả", n: summary.total },
                 { key: "chuaDon" as const, label: "Đang chờ đón", n: summary.chuaDon },
@@ -1182,7 +1183,7 @@ export default function DoanXePage() {
                     key={tab.key}
                     type="button"
                     onClick={() => setStatusFilter(tab.key)}
-                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                       active
                         ? "bg-[var(--navy)] text-white shadow-2xs"
                         : "bg-[var(--surface-soft)] text-[var(--ink-soft)] hover:bg-[var(--line-soft)] hover:text-[var(--ink)]"
@@ -1203,7 +1204,7 @@ export default function DoanXePage() {
 
             {/* Nút thu gọn / mở rộng các trạm */}
             {viewMode !== "table" && groupedByDiemDon.length > 0 && (
-              <div className="flex items-center gap-1 text-[11px] text-[var(--mute)]">
+              <div className="hidden sm:flex items-center gap-1 shrink-0 text-[11px] text-[var(--mute)]">
                 <button
                   type="button"
                   onClick={expandAll}

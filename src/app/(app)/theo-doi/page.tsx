@@ -23,7 +23,7 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle2,
-  History,
+  History, ChevronDown
 } from "lucide-react";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
@@ -94,6 +94,7 @@ export default function TheoDoiPage() {
 
   const { addToast } = useToast();
   const [tab, setTab] = useState<"A" | "B">("A");
+  const [moThongTin, setMoThongTin] = useState(false);
   const [rows, setRows] = useState<HoSo[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -653,9 +654,9 @@ export default function TheoDoiPage() {
         title="Theo dõi & Chăm sóc A/B"
         description="Theo dõi nhóm B (chăm sóc) và nhóm A (nhắc lịch & cập nhật điều trị tại BV)."
         actions={
-          <div className="flex items-center gap-2 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-nowrap sm:flex-wrap sm:justify-end">
             {hasHisConfig && selBk && (
-              <div className="inline-flex">
+              <div className="inline-flex shrink-0">
                 <button
                   type="button"
                   onClick={reconcileCurrent}
@@ -668,7 +669,7 @@ export default function TheoDoiPage() {
                   className={`${BTN_SOFT.navy} rounded-r-none`}
                 >
                   {reconciling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  {reconciling ? "Đang đối chiếu…" : "Đối chiếu HIS"}
+                  {reconciling ? "Đang đối chiếu…" : <><span className="hidden sm:inline">Đối chiếu HIS</span><span className="sm:hidden">HIS</span></>}
                   {!reconciling && curLog && <span className="hidden sm:inline font-normal text-[11px] opacity-75">· {fmtRelative(curLog.thoiDiem)}</span>}
                 </button>
                 <button
@@ -682,12 +683,12 @@ export default function TheoDoiPage() {
               </div>
             )}
             {hasHisConfig && (
-              <Link href="/doi-chieu-his" className={BTN_SOFT.ghost}>
+              <Link href="/doi-chieu-his" className={`${BTN_SOFT.ghost} shrink-0`} title="Tra cứu HIS">
                 <Search className="w-3.5 h-3.5" />
-                Tra cứu HIS
+                <span className="hidden sm:inline">Tra cứu HIS</span>
               </Link>
             )}
-            <button data-tour="td-bk" onClick={() => setShowBkModal(true)} className={BTN_SOFT.ghost}>
+            <button data-tour="td-bk" onClick={() => setShowBkModal(true)} className={`${BTN_SOFT.ghost} shrink-0 min-w-0`}>
               <CalendarDays className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
               <span className="truncate max-w-[160px] sm:max-w-[260px] text-[var(--ink)]">{selBk ? bkLabels[selBk] : "Chọn đợt khám…"}</span>
             </button>
@@ -696,8 +697,8 @@ export default function TheoDoiPage() {
       />
 
       {/* Dải chỉ số */}
-      <div className="px-3 sm:px-5 py-3 border-b border-[var(--line)] shrink-0 overflow-x-auto no-scrollbar">
-        <div className="grid grid-cols-5 gap-2.5 min-w-[640px]">
+      <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-[var(--line)] shrink-0 overflow-x-auto no-scrollbar">
+        <div className="grid grid-cols-5 gap-2 sm:gap-2.5 min-w-[600px]">
           {[
             { k: "Tổng bệnh nhân", v: stats.tong, tone: "text-[var(--ink)]", bar: "var(--navy)" },
             { k: "Chỉ định A/B", v: stats.chiDinh, sub: `/ ${stats.tong}`, tone: "text-[var(--navy)]", bar: "var(--navy)" },
@@ -705,11 +706,11 @@ export default function TheoDoiPage() {
             { k: "Nhóm A · chưa đến", v: stats.chuaDen, tone: "text-[var(--amber-deep)]", bar: "var(--amber)" },
             { k: "Nhóm A · quá hạn", v: stats.quaHan, tone: stats.quaHan ? "text-[var(--rose)]" : "text-[var(--mute-soft)]", bar: "var(--rose)" },
           ].map((s) => (
-            <div key={s.k} className="relative pl-3.5 pr-3 py-2 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-xs)] overflow-hidden">
+            <div key={s.k} className="relative pl-3 sm:pl-3.5 pr-2.5 sm:pr-3 py-1.5 sm:py-2 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-xs)] overflow-hidden">
               <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: s.bar }} />
               <div className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">{s.k}</div>
               <div className="flex items-baseline gap-1 mt-0.5">
-                <span className={`font-mono text-[19px] font-bold leading-tight tabular-nums ${s.tone}`}>{s.v}</span>
+                <span className={`font-mono text-[17px] sm:text-[19px] font-bold leading-tight tabular-nums ${s.tone}`}>{s.v}</span>
                 {s.sub && <span className="font-mono text-[11px] text-[var(--mute)]">{s.sub}</span>}
               </div>
             </div>
@@ -899,10 +900,10 @@ export default function TheoDoiPage() {
               <>
                 <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
                   {/* Thẻ hồ sơ */}
-                  <div className="bg-[var(--surface)] border-b border-[var(--line)] px-4 sm:px-6 py-3.5 shrink-0">
-                    <div className="flex items-start justify-between gap-x-6 gap-y-2 flex-wrap">
-                      <div className="min-w-0 flex items-center gap-x-2.5 gap-y-1.5 flex-wrap">
-                        <h2 className="font-serif text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{sel.hoTen}</h2>
+                  <div className="bg-[var(--surface)] border-b border-[var(--line)] px-3 sm:px-6 py-2.5 sm:py-3.5 shrink-0">
+                    <div className="flex items-start justify-between gap-x-6 gap-y-1.5 sm:gap-y-2 flex-wrap">
+                      <div className="min-w-0 flex items-center gap-x-2 sm:gap-x-2.5 gap-y-1 sm:gap-y-1.5 flex-wrap">
+                        <h2 className="font-serif text-[18px] sm:text-[21px] font-semibold tracking-[-0.02em] text-[var(--ink)] leading-tight">{sel.hoTen}</h2>
                         <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--navy-50)] text-[var(--navy)]">{sel.maBN}</span>
                         {sel.maBNHIS && <span className="font-mono text-[11.5px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--teal-soft)] text-[var(--teal-deep)]">HIS {sel.maBNHIS}</span>}
                         <span className="text-[12.5px] text-[var(--mute)]">{[sel.gioiTinh, fmtSinhTuoi(sel)].filter(Boolean).join(" · ")}</span>
@@ -920,7 +921,7 @@ export default function TheoDoiPage() {
                         </div>
                       )}
                     </div>
-                    <div className="mt-2.5 pt-2.5 border-t border-[var(--line-soft)] flex items-center gap-x-5 gap-y-1.5 flex-wrap">
+                    <div className="mt-2 pt-2 sm:mt-2.5 sm:pt-2.5 border-t border-[var(--line-soft)] flex items-center gap-x-5 gap-y-1.5 flex-wrap">
                       <Fact label="SĐT">
                         {sel.sdt ? (
                           <a href={`tel:${sel.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
@@ -930,19 +931,32 @@ export default function TheoDoiPage() {
                           <span className="text-[var(--mute-soft)]">—</span>
                         )}
                       </Fact>
-                      {sel.bhyt && (
-                        <Fact label="BHYT">
-                          <span className="font-mono">{sel.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(sel.bhyt)})</span>
-                        </Fact>
-                      )}
-                      {sel.cccd && <Fact label="CCCD"><span className="font-mono">{sel.cccd}</span></Fact>}
                       {sel.ngayDieuTri && <Fact label="Hẹn mổ (tư vấn)"><span className="font-mono">{fmtDate(sel.ngayDieuTri)}</span></Fact>}
-                      {sel.diaChi && <Fact label="Địa chỉ"><span title={sel.diaChi}>{sel.diaChi}</span></Fact>}
+                      {/* Điện thoại: BHYT / CCCD / địa chỉ thu gọn sau nút để thẻ hồ sơ không chiếm nửa màn hình */}
+                      {(sel.bhyt || sel.cccd || sel.diaChi) && (
+                        <button
+                          type="button"
+                          onClick={() => setMoThongTin((v) => !v)}
+                          className="sm:hidden ml-auto inline-flex items-center gap-0.5 h-6 px-2 rounded-md border border-[var(--line)] text-[11px] font-semibold text-[var(--ink-soft)] cursor-pointer"
+                        >
+                          {moThongTin ? "Thu gọn" : "BHYT · CCCD · Địa chỉ"}
+                          <ChevronDown className={`w-3 h-3 transition-transform ${moThongTin ? "rotate-180" : ""}`} />
+                        </button>
+                      )}
+                      <div className={`${moThongTin ? "contents" : "hidden"} sm:contents`}>
+                        {sel.bhyt && (
+                          <Fact label="BHYT">
+                            <span className="font-mono">{sel.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(sel.bhyt)})</span>
+                          </Fact>
+                        )}
+                        {sel.cccd && <Fact label="CCCD"><span className="font-mono">{sel.cccd}</span></Fact>}
+                        {sel.diaChi && <Fact label="Địa chỉ"><span title={sel.diaChi}>{sel.diaChi}</span></Fact>}
+                      </div>
                     </div>
                   </div>
 
                   {/* Hai cột: nhật ký | điều trị */}
-                  <div className={`p-4 sm:p-5 flex-1 min-h-0 grid gap-4 items-start ${tab === "A" ? "grid-cols-1 xl:grid-cols-[380px_1fr]" : "grid-cols-1 max-w-[760px]"}`}>
+                  <div className={`p-3 sm:p-5 flex-1 min-h-0 grid gap-3 sm:gap-4 items-start ${tab === "A" ? "grid-cols-1 xl:grid-cols-[380px_1fr]" : "grid-cols-1 max-w-[760px]"}`}>
                     {/* Nhật ký liên hệ */}
                     <WorkCard
                       title="Nhật ký liên hệ"
@@ -953,7 +967,7 @@ export default function TheoDoiPage() {
                         </span>
                       }
                     >
-                      <div data-tour="td-note" className="p-4 space-y-2.5 border-b border-[var(--line-soft)]">
+                      <div data-tour="td-note" className="p-3 sm:p-4 space-y-2 sm:space-y-2.5 border-b border-[var(--line-soft)]">
                         {tab === "B" && (
                           <div>
                             <label className={FIELD_LABEL}>Trạng thái follow-up</label>
@@ -963,8 +977,8 @@ export default function TheoDoiPage() {
                         <textarea
                           value={note}
                           onChange={(e) => setNote(e.target.value)}
-                          rows={3}
-                          className={`${INPUT_CLS} p-3 resize-none`}
+                          rows={2}
+                          className={`${INPUT_CLS} p-3 resize-none sm:min-h-[84px]`}
                           placeholder="Kết quả gọi điện, ý kiến bệnh nhân…"
                         />
                         <div className="flex justify-end">
@@ -974,9 +988,9 @@ export default function TheoDoiPage() {
                           </button>
                         </div>
                       </div>
-                      <div className="p-4">
+                      <div className="p-3 sm:p-4">
                         {(sel.nhatKy || []).length === 0 ? (
-                          <div className="flex flex-col items-center text-center py-6 gap-1.5 text-[12.5px] text-[var(--mute)]">
+                          <div className="flex sm:flex-col items-center justify-center text-center py-1 sm:py-6 gap-1.5 text-[12px] sm:text-[12.5px] text-[var(--mute)]">
                             <PhoneCall className="w-5 h-5 text-[var(--mute-soft)]" />
                             Chưa có lịch sử liên hệ.
                           </div>
@@ -999,7 +1013,7 @@ export default function TheoDoiPage() {
 
                     {/* Tiếp nhận & điều trị tại BV (nhóm A) */}
                     {tab === "A" && (
-                      <WorkCard title="Tiếp nhận & điều trị tại bệnh viện" desc="Cập nhật khi bệnh nhân đến viện, mổ, tái khám" bodyClassName="p-5 space-y-5">
+                      <WorkCard title="Tiếp nhận & điều trị tại bệnh viện" desc="Cập nhật khi bệnh nhân đến viện, mổ, tái khám" bodyClassName="p-3 sm:p-5 space-y-4 sm:space-y-5">
                         <div data-tour="td-treat" className="contents" />
                         {/* Đã đến BV */}
                         <button

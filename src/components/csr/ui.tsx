@@ -67,10 +67,10 @@ export function WorkCard({
 }) {
   return (
     <section className={`bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col min-h-0 overflow-hidden ${className}`}>
-      <header className="px-5 py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
+      <header className="px-4 sm:px-5 py-2.5 sm:py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-[14px] font-bold text-[var(--ink)]">{title}</h3>
-          {desc && <p className="text-[11.5px] text-[var(--mute)] mt-0.5">{desc}</p>}
+          <h3 className="font-serif text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{title}</h3>
+          {desc && <p className="hidden sm:block text-[11.5px] text-[var(--mute)] mt-0.5">{desc}</p>}
         </div>
         {aside}
       </header>
