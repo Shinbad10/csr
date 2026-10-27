@@ -374,8 +374,11 @@ export default function TuVanSessionPage() {
     loadActiveDoanXe();
   }, [loadActiveDoanXe]);
 
+  // Nhiều sự kiện liền nhau (đang nhập hàng loạt) chỉ nạp lại một lần
+  const doanXeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useRealtimeEvent(["hoso_change", "buoikham_change"], () => {
-    loadActiveDoanXe();
+    if (doanXeTimer.current) clearTimeout(doanXeTimer.current);
+    doanXeTimer.current = setTimeout(loadActiveDoanXe, 800);
   });
 
   const uniqueDiemDon = useMemo(() => {
@@ -510,14 +513,27 @@ export default function TuVanSessionPage() {
     setBaseline(JSON.stringify(next));
   }, []);
 
+  const patientsAbort = useRef<AbortController | null>(null);
   const fetchPatients = useCallback(
     async (keepSel?: string, forceForm = false) => {
       if (!selBk) {
         setPatients([]);
         return;
       }
-      const res = await fetch(`/api/csr/hoso?buoiKhamId=${selBk}&search=${encodeURIComponent(search)}`);
-      const all: HoSo[] = res.ok ? await res.json() : [];
+      // Huỷ request trước: đổi đợt liên tục thì kết quả đợt cũ về sau sẽ ghi đè danh sách đợt mới
+      patientsAbort.current?.abort();
+      const ac = new AbortController();
+      patientsAbort.current = ac;
+      let all: HoSo[];
+      try {
+        const res = await fetch(`/api/csr/hoso?buoiKhamId=${encodeURIComponent(selBk)}&search=${encodeURIComponent(search)}`, {
+          signal: ac.signal,
+        });
+        all = res.ok ? await res.json() : [];
+      } catch {
+        return; // bị huỷ
+      }
+      if (ac.signal.aborted) return;
       // Tải tất cả các bệnh nhân có chẩn đoán bệnh lý
       const data = all.filter(isBenhLyPatient);
       setPatients(data);
@@ -575,6 +591,7 @@ export default function TuVanSessionPage() {
   }, [search]);
 
   // Cập nhật danh sách tư vấn thời gian thực (SSE)
+  const patientsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useRealtimeEvent(["hoso_change", "buoikham_change", "nhatky_change"], (evt) => {
     if (evt.type === "buoikham_change") {
       fetch("/api/csr/buoikham")
@@ -584,7 +601,8 @@ export default function TuVanSessionPage() {
         });
     }
     if (selBk && (evt.type === "hoso_change" || evt.type === "nhatky_change")) {
-      fetchPatients(selId ?? undefined, false);
+      if (patientsTimer.current) clearTimeout(patientsTimer.current);
+      patientsTimer.current = setTimeout(() => fetchPatients(selId ?? undefined, false), 500);
     }
   }, [selBk, selId, fetchPatients]);
 
