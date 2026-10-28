@@ -172,7 +172,13 @@ function renderSheet(ws: ExcelJS.Worksheet, ds: TiepNhanPatient[]) {
   hangTieuDeMuc(ws, "DANH SÁCH ĐĂNG KÝ");
   hangTieuDeCot(ws, "Người tư vấn", false);
   dangKy.forEach((p, i) => {
-    const row = ws.addRow([...coSo(p, i, nguoiTuVan(p)), "", p.xaPhuong || "", stripDoanXeTag(p.ghiChuTuVan)]);
+    // Địa điểm / Tên phường xã = của đợt tầm soát mà bệnh nhân tham gia
+    const row = ws.addRow([
+      ...coSo(p, i, nguoiTuVan(p)),
+      p.buoiKham?.diaDiem?.trim() || "",
+      p.buoiKham?.xa?.trim() || p.xaPhuong || "",
+      stripDoanXeTag(p.ghiChuTuVan),
+    ]);
     row.height = 20;
     for (let c = 1; c <= SO_COT; c++) oKe(row.getCell(c), c === 14 ? "left" : "center");
   });
