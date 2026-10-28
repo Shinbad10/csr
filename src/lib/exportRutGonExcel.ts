@@ -41,18 +41,11 @@ export function determineConciseStatus(p: RutGonPatient): {
     return { text: "HẾT HẠN BH", type: "HET_HAN_BH" };
   }
 
+  // Phương án đã chốt trên phiếu tư vấn mà KHÔNG phải đồng ý mổ
+  const daChotChuaDongY = (!!p.nhom && p.nhom !== "A") || p.xacNhanDieuTri === false;
+
   if (latestLog) {
     const lLower = latestLog.toLowerCase();
-    if (
-      lLower.includes("đồng ý mổ") ||
-      lLower.includes("dong y mo") ||
-      lLower.includes("xác nhận đi") ||
-      lLower.includes("xac nhan di") ||
-      lLower === "xnđ" ||
-      lLower === "xnd"
-    ) {
-      return { text: "XNĐ", type: "XND" };
-    }
     if (
       lLower.includes("thuê bao") ||
       lLower.includes("thue bao") ||
@@ -62,11 +55,8 @@ export function determineConciseStatus(p: RutGonPatient): {
     ) {
       return { text: "KNM", type: "KNM" };
     }
-    if (
-      lLower.includes("không đồng ý") ||
-      lLower.includes("khong dong y") ||
-      lLower.includes("từ chối")
-    ) {
+    // Phải xét PHỦ ĐỊNH trước: "Đã gọi - Không đồng ý mổ" cũng chứa cụm "đồng ý mổ"
+    if (/(không|khong|chưa|chua)\s+(đồng ý|dong y)|từ chối|tu choi/.test(lLower)) {
       return { text: "Không đồng ý mổ", type: "OTHER" };
     }
     if (
@@ -77,6 +67,17 @@ export function determineConciseStatus(p: RutGonPatient): {
     ) {
       return { text: "Hỏi lại gia đình", type: "OTHER" };
     }
+    if (
+      !daChotChuaDongY &&
+      (lLower.includes("đồng ý mổ") ||
+        lLower.includes("dong y mo") ||
+        lLower.includes("xác nhận đi") ||
+        lLower.includes("xac nhan di") ||
+        lLower === "xnđ" ||
+        lLower === "xnd")
+    ) {
+      return { text: "XNĐ", type: "XND" };
+    }
   }
 
   if (p.nhom === "A" || p.xacNhanDieuTri === true) {
@@ -84,6 +85,12 @@ export function determineConciseStatus(p: RutGonPatient): {
   }
   if (p.nhom === "HoiGiaDinh") {
     return { text: "Hỏi lại gia đình", type: "OTHER" };
+  }
+  if (p.nhom === "B") {
+    return { text: p.lyDoKhongDieuTri?.trim() || "Cần suy nghĩ thêm", type: "OTHER" };
+  }
+  if (p.nhom === "TheoDoi") {
+    return { text: "Theo dõi tại nhà", type: "OTHER" };
   }
   if (p.xacNhanDieuTri === false) {
     return { text: p.lyDoKhongDieuTri?.trim() || "Không đồng ý mổ", type: "OTHER" };
