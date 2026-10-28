@@ -871,6 +871,38 @@ export interface HoSo {
   updatedAt?: string | null; updatedBy?: string | null;
 }
 
+/** Ngày (YYYY-MM-DD) theo giờ Việt Nam. */
+export function ngayVN(d?: Date | string | null): string {
+  if (!d) return "";
+  const x = new Date(d);
+  if (isNaN(x.getTime())) return "";
+  return x.toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+}
+
+/** Ngày xe đón của bệnh nhân (= ngày hẹn điều trị), cùng cách nhóm trạm ở trang Đoàn xe. */
+export function ngayXeDon(p: { ngayDieuTri?: string | Date | null }): string {
+  return p.ngayDieuTri ? new Date(p.ngayDieuTri).toISOString().slice(0, 10) : "";
+}
+
+export type TrangThaiLenXe = "daLen" | "cho" | "huy";
+
+/**
+ * Trạng thái ghế của bệnh nhân trên đoàn xe:
+ * - daLen: đã bấm đón, HOẶC có đến viện / mổ ĐÚNG NGÀY xe đón (đến mà không mổ vẫn tính là có đến);
+ * - huy:   ngày đón đã qua mà chưa lên xe (kể cả đến viện / mổ vào ngày khác — tự đi) → huỷ ghế, không tính chỗ;
+ * - cho:   chưa tới ngày đón (hoặc chưa có ngày) và chưa lên xe.
+ */
+export function trangThaiLenXe(
+  p: { daDon?: boolean | null; ngayDenBV?: string | Date | null; ngayMoThucTe?: string | Date | null; ngayDieuTri?: string | Date | null },
+  homNay: string = ngayVN(new Date())
+): TrangThaiLenXe {
+  if (p.daDon) return "daLen";
+  const nd = ngayXeDon(p);
+  if (nd && (ngayVN(p.ngayDenBV) === nd || ngayVN(p.ngayMoThucTe) === nd)) return "daLen";
+  if (nd && nd < homNay) return "huy";
+  return "cho";
+}
+
 /**
  * Chuẩn hóa tên điểm đón / trạm y tế (loại bỏ hậu tố - Đoàn 1, [Đoàn 2], [Đoàn 3]...)
  */

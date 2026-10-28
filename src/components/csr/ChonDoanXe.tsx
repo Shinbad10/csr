@@ -2,13 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Pencil, Plus } from "lucide-react";
-import { cleanDiemDon, parseDoanXe, parseThongTinNguoiNha, XE_MAC_DINH, fmtDate } from "@/lib/csr";
+import { cleanDiemDon, parseDoanXe, parseThongTinNguoiNha, XE_MAC_DINH, fmtDate, trangThaiLenXe } from "@/lib/csr";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { useToast } from "@/components/providers/ToastProvider";
 import { ChonXeModal } from "@/components/csr/SoDoXe";
 
 type XeDoan = { id: string; ngayDon: string; diemDon: string; soDoan: number; soCho: number; gioDon: string | null };
-type HoSoTram = { id: string; diemDon?: string | null; gioDon?: string | null; ghiChuTuVan?: string | null; sdtNguoiNha?: string | null };
+type HoSoTram = {
+  id: string;
+  diemDon?: string | null;
+  gioDon?: string | null;
+  ghiChuTuVan?: string | null;
+  sdtNguoiNha?: string | null;
+  daDon?: boolean | null;
+  ngayDenBV?: string | null;
+  ngayMoThucTe?: string | null;
+  ngayDieuTri?: string | null;
+};
 
 /**
  * Chọn đoàn xe cho một bệnh nhân tại điểm đón + ngày đón — cùng dữ liệu với trang Đoàn xe:
@@ -84,6 +94,7 @@ export default function ChonDoanXe({
     let n = 0;
     for (const it of items) {
       if (it.id === hoSoId || parseDoanXe(it) !== d) continue;
+      if (trangThaiLenXe(it) === "huy") continue; // quá ngày chưa lên xe → ghế đã huỷ
       const nn = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
       n += 1 + (nn.coDiCung ? nn.soLuongDiCung : 0);
     }

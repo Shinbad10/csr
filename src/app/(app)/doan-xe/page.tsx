@@ -48,6 +48,9 @@ import {
   type ThongTinNguoiNha,
   parseThongTinNguoiNha,
   XE_MAC_DINH,
+  trangThaiLenXe,
+  ngayXeDon,
+  ngayVN,
 } from "@/lib/csr";
 import Modal from "@/components/layout/Modal";
 import PageHeader from "@/components/layout/PageHeader";
@@ -58,7 +61,7 @@ import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/d
 import type { ColumnDef } from "@tanstack/react-table";
 import * as XLSX from "xlsx";
 
-type StatusFilter = "all" | "chuaDon" | "daDon" | "daMo";
+type StatusFilter = "all" | "chuaDon" | "daDon" | "huy" | "daMo";
 type ViewMode = "grouped" | "grid" | "table";
 
 export default function DoanXePage() {
@@ -446,10 +449,13 @@ export default function DoanXePage() {
 
   // Toggle Check-in Đã đón / Chưa đón cho 1 cá nhân
   const toggleCheckIn = async (patient: HoSo) => {
-    const nextState = !patient.daDon;
+    const nextState = trangThaiLenXe(patient) !== "daLen";
     setCheckingInId(patient.id);
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      // Lên xe = đến viện đúng ngày xe đón (đánh dấu bù cho ca đã qua ngày cũng ghi đúng ngày đó)
+      const homNay = ngayVN(new Date());
+      const nd = ngayXeDon(patient);
+      const today = nd && nd < homNay ? nd : homNay;
       const res = await fetch(`/api/csr/hoso/${patient.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -483,16 +489,14 @@ export default function DoanXePage() {
 
   // Điểm danh đón TẤT CẢ bệnh nhân tại trạm trong 1 click
   const checkInAllStation = async (items: HoSo[], stationKey: string) => {
-    const unboarded = items.filter(
-      (p) => !p.daDon && !p.ngayDenBV && p.trangThaiDieuTri !== "Đã mổ" && !p.ngayMoThucTe
-    );
+    const unboarded = items.filter((p) => trangThaiLenXe(p) === "cho");
     if (unboarded.length === 0) {
       addToast({ type: "info", message: "Tất cả bệnh nhân tại trạm này đã được đón lên xe" });
       return;
     }
 
     setStationLoading(stationKey);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = ngayVN(new Date());
 
     try {
       const results = await Promise.all(
@@ -546,10 +550,11 @@ export default function DoanXePage() {
   const filteredList = useMemo(() => {
     return data.filter((p) => {
       const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe) || p.trangThai === "DaMoHauPhau";
-      const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || isMo;
+      const tt = trangThaiLenXe(p);
 
-      if (statusFilter === "chuaDon" && isDaDen) return false;
-      if (statusFilter === "daDon" && !isDaDen) return false;
+      if (statusFilter === "chuaDon" && tt !== "cho") return false;
+      if (statusFilter === "daDon" && tt !== "daLen") return false;
+      if (statusFilter === "huy" && tt !== "huy") return false;
       if (statusFilter === "daMo" && !isMo) return false;
       return true;
     });
@@ -558,8 +563,10 @@ export default function DoanXePage() {
   // Thống kê tổng hợp
   const summary = useMemo(() => {
     const total = data.length;
-    const daDon = data.filter((i) => i.daDon || i.ngayDenBV || i.trangThaiDieuTri === "Đã mổ" || i.ngayMoThucTe).length;
-    const chuaDon = total - daDon;
+    const tts = data.map((i) => trangThaiLenXe(i));
+    const daDon = tts.filter((t) => t === "daLen").length;
+    const chuaDon = tts.filter((t) => t === "cho").length;
+    const huyGhe = tts.filter((t) => t === "huy").length;
     const daMo = data.filter((i) => i.trangThaiDieuTri === "Đã mổ" || i.ngayMoThucTe).length;
     const totalNguoiNha = data.reduce((acc, it) => {
       const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
@@ -571,6 +578,7 @@ export default function DoanXePage() {
       total,
       daDon,
       chuaDon,
+      huyGhe,
       daMo,
       totalDoan1,
       totalDoan2,
@@ -669,7 +677,7 @@ export default function DoanXePage() {
         "Địa chỉ": p.diaChi || "",
         "Chẩn đoán": [p.chanDoanMP, p.chanDoanMT, p.chanDoan].filter(Boolean).join(" · "),
         "Ghi chú tư vấn / Dặn dò": stripDoanXeTag(p.ghiChuTuVan) || "",
-        "Trạng thái đón": p.daDon || p.ngayDenBV ? "ĐÃ ĐÓN" : "CHƯA ĐÓN",
+        "Trạng thái đón": { daLen: "ĐÃ ĐÓN", cho: "CHỜ ĐÓN", huy: "HUỶ GHẾ" }[trangThaiLenXe(p)],
         "Trạng thái mổ": p.trangThaiDieuTri === "Đã mổ" || p.ngayMoThucTe ? "ĐÃ MỔ" : "CHƯA MỔ",
       };
     });
@@ -890,12 +898,13 @@ export default function DoanXePage() {
         accessorFn: (r) => {
           const isMo = r.trangThaiDieuTri === "Đã mổ" || Boolean(r.ngayMoThucTe);
           if (isMo) return "Đã mổ";
-          return Boolean(r.daDon) || Boolean(r.ngayDenBV) ? "Đã lên xe" : "Chờ đón";
+          return { daLen: "Đã lên xe", cho: "Chờ đón", huy: "Huỷ ghế" }[trangThaiLenXe(r)];
         },
         cell: ({ row }) => {
           const p = row.original;
           const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
-          const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
+          const tt = trangThaiLenXe(p);
+          const isDaDen = tt === "daLen";
           if (isMo)
             return (
               <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
@@ -906,6 +915,12 @@ export default function DoanXePage() {
             return (
               <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-950 border border-emerald-300">
                 ✓ ĐÃ LÊN XE
+              </span>
+            );
+          if (tt === "huy")
+            return (
+              <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-[var(--rose-soft)] text-[var(--rose)]" title="Quá ngày xe đón mà chưa lên xe">
+                Huỷ ghế
               </span>
             );
           return (
@@ -924,8 +939,7 @@ export default function DoanXePage() {
         meta: { align: "right" },
         cell: ({ row }) => {
           const p = row.original;
-          const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
-          const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
+          const isDaDen = trangThaiLenXe(p) === "daLen";
           return (
             <button
               type="button"
@@ -1005,7 +1019,8 @@ export default function DoanXePage() {
                   { k: "Đoàn 1", v: summary.totalDoan1, sub: pct(summary.totalDoan1), tone: "text-[var(--navy)]" },
                   { k: "Đoàn 2+", v: summary.totalDoan2, sub: pct(summary.totalDoan2), tone: summary.totalDoan2 ? "text-[var(--navy)]" : "text-[var(--mute-soft)]" },
                   { k: "Đã lên xe", v: summary.daDon, sub: pct(summary.daDon), tone: "text-[var(--teal-deep)]" },
-                  { k: "Chờ đón", v: summary.chuaDon, sub: "chưa lên xe", tone: summary.chuaDon ? "text-[var(--amber-deep)]" : "text-[var(--mute-soft)]" },
+                  { k: "Chờ đón", v: summary.chuaDon, sub: "chưa tới ngày", tone: summary.chuaDon ? "text-[var(--amber-deep)]" : "text-[var(--mute-soft)]" },
+                  { k: "Huỷ ghế", v: summary.huyGhe, sub: "quá ngày chưa lên", tone: summary.huyGhe ? "text-[var(--rose)]" : "text-[var(--mute-soft)]" },
                   { k: "Đã phẫu thuật", v: summary.daMo, sub: "ca", tone: "text-[var(--teal-deep)]" },
                 ].map((m) => (
                   <div key={m.k} className="px-3.5 py-1.5 min-w-[118px] xl:min-w-0 xl:flex-1">
@@ -1047,6 +1062,7 @@ export default function DoanXePage() {
             { key: "all" as const, label: "Tất cả", n: summary.total },
             { key: "chuaDon" as const, label: "Chờ đón", n: summary.chuaDon },
             { key: "daDon" as const, label: "Đã lên xe", n: summary.daDon },
+            { key: "huy" as const, label: "Huỷ ghế", n: summary.huyGhe },
             { key: "daMo" as const, label: "Đã mổ", n: summary.daMo },
           ].map((tab) => {
             const active = statusFilter === tab.key;
@@ -1140,7 +1156,8 @@ export default function DoanXePage() {
             <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
               {/* Sidebar điểm đón: nhóm theo ngày, tiến độ từng trạm, tìm & lọc nhanh */}
               {(() => {
-                const daDonCua = (g: (typeof groupedByDiemDon)[number]) => g.items.filter((it) => it.daDon || it.ngayDenBV).length;
+                const daDonCua = (g: (typeof groupedByDiemDon)[number]) =>
+                  g.items.filter((it) => trangThaiLenXe(it) !== "cho").length;
                 const q = stationQuery.trim().toLowerCase();
                 const nDu = groupedByDiemDon.filter((g) => daDonCua(g) >= g.items.length).length;
                 const rows = groupedByDiemDon
@@ -1311,7 +1328,9 @@ export default function DoanXePage() {
                   const out: NguoiTrenXe[] = [];
                   const ds = grp.items.filter((it) => parseDoanXe(it) === d).sort((a, b) => (a.stt ?? 0) - (b.stt ?? 0));
                   for (const it of ds) {
-                    const daLen = Boolean(it.daDon) || Boolean(it.ngayDenBV);
+                    const ttXe = trangThaiLenXe(it);
+                    if (ttXe === "huy") continue; // quá ngày chưa lên xe → huỷ ghế, không giữ chỗ
+                    const daLen = ttXe === "daLen";
                     out.push({ key: it.id, loai: "bn", ten: it.hoTen, daLenXe: daLen, onClick: () => handleOpenAssignModal(it) });
                     const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
                     if (f.coDiCung) {
@@ -1339,12 +1358,15 @@ export default function DoanXePage() {
                     ? grp.items
                     : grp.items.filter((it) => parseDoanXe(it) === currentDoanFilter);
 
-                const grpDaDon = grp.items.filter((i) => i.daDon || i.ngayDenBV).length;
-                const isAllDone = grpDaDon === grp.items.length && grp.items.length > 0;
-                const percentDone = Math.round((grpDaDon / grp.items.length) * 100);
+                // Tiến độ tính trên ca còn giữ ghế (bỏ ca huỷ ghế)
+                const grpDaDon = grp.items.filter((i) => trangThaiLenXe(i) === "daLen").length;
+                const grpHuy = grp.items.filter((i) => trangThaiLenXe(i) === "huy").length;
+                const grpGiuGhe = grp.items.length - grpHuy;
+                const isAllDone = grp.items.length > 0 && grpDaDon === grpGiuGhe;
+                const percentDone = grpGiuGhe ? Math.round((grpDaDon / grpGiuGhe) * 100) : 0;
 
-                const filterDaDon = displayedItems.filter((i) => i.daDon || i.ngayDenBV).length;
-                const filterUnboarded = displayedItems.length - filterDaDon;
+                const choDonDangXem = displayedItems.filter((i) => trangThaiLenXe(i) === "cho");
+                const filterUnboarded = choDonDangXem.length;
                 const stationFamilyCount = grp.items.reduce((acc, it) => {
                   const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
                   return acc + (f.coDiCung ? f.soLuongDiCung : 0);
@@ -1416,8 +1438,13 @@ export default function DoanXePage() {
                           <div className="flex items-baseline justify-between gap-2 text-[11.5px]">
                             <span className="text-[var(--mute)]">Tiến độ đón</span>
                             <span className="font-mono font-semibold tabular-nums text-[var(--ink)]">
-                              {grpDaDon}/{grp.items.length}
+                              {grpDaDon}/{grpGiuGhe}
                               <span className="text-[var(--mute)] font-normal"> · {percentDone}%</span>
+                              {grpHuy > 0 && (
+                                <span className="font-sans font-normal text-[var(--rose)]" title="Quá ngày xe đón mà chưa lên xe — không tính chỗ">
+                                  {" "}· {grpHuy} huỷ ghế
+                                </span>
+                              )}
                             </span>
                           </div>
                           <div className="mt-1 h-1.5 rounded-full bg-[var(--line-soft)] overflow-hidden">
@@ -1438,7 +1465,7 @@ export default function DoanXePage() {
                               <button
                                 type="button"
                                 disabled={isStationLoading}
-                                onClick={() => checkInAllStation(displayedItems, stationKey)}
+                                onClick={() => checkInAllStation(choDonDangXem, stationKey)}
                                 className="h-8 px-3 rounded-[9px] text-[12px] font-semibold border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
                                 title="Đánh dấu tất cả bệnh nhân trong danh sách đang xem đã lên xe"
                               >
@@ -1632,7 +1659,9 @@ export default function DoanXePage() {
                         ) : (
                           displayedItems.map((p, pIdx) => {
                             const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
-                            const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
+                            const ttXe = trangThaiLenXe(p);
+                            const isDaDen = ttXe === "daLen";
+                            const isHuy = ttXe === "huy";
                             const currentDoan = parseDoanXe(p);
                             const isSwitching = switchingPatientId === p.id;
                             const nn = parseThongTinNguoiNha(p.sdtNguoiNha, p.ghiChuTuVan);
@@ -1782,11 +1811,19 @@ export default function DoanXePage() {
                                     type="button"
                                     disabled={checkingInId === p.id}
                                     onClick={() => toggleCheckIn(p)}
-                                    title={isDaDen ? "Đã lên xe — bấm để huỷ đánh dấu" : "Đánh dấu bệnh nhân đã lên xe"}
+                                    title={
+                                      isDaDen
+                                        ? "Đã lên xe — bấm để huỷ đánh dấu"
+                                        : isHuy
+                                        ? "Quá ngày xe đón mà chưa lên xe — ghế đã huỷ. Bấm nếu thực tế có lên xe"
+                                        : "Đánh dấu bệnh nhân đã lên xe"
+                                    }
                                     className={`h-8 w-[112px] justify-center rounded-[9px] text-[12px] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                                       isDaDen
                                         ? // Đã xong: chữ teal không nền — chỉ ca còn chờ mới nổi bật
                                           "text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
+                                        : isHuy
+                                        ? "text-[var(--rose)] hover:bg-[var(--rose-soft)]"
                                         : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
                                     }`}
                                   >
@@ -1794,10 +1831,12 @@ export default function DoanXePage() {
                                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : isDaDen ? (
                                       <CheckCircle2 className="w-3.5 h-3.5" />
+                                    ) : isHuy ? (
+                                      <X className="w-3.5 h-3.5" />
                                     ) : (
                                       <Bus className="w-3.5 h-3.5 text-[var(--teal)]" />
                                     )}
-                                    {isDaDen ? "Đã lên xe" : "Đón lên xe"}
+                                    {isDaDen ? "Đã lên xe" : isHuy ? "Huỷ ghế" : "Đón lên xe"}
                                   </button>
                                 </div>
                               </div>
@@ -1827,7 +1866,7 @@ export default function DoanXePage() {
                 const displayDoanTabs = Array.from(new Set([...(presentDoans.length ? presentDoans : [1]), ...xeTram.map((x) => x.soDoan)])).sort((a, b) => a - b);
                 const soChoCua = (d: number) => xeTram.find((x) => x.soDoan === d)?.soCho ?? XE_MAC_DINH;
                 const doanStats = (d: number) => {
-                  const itms = grp.items.filter((it) => parseDoanXe(it) === d);
+                  const itms = grp.items.filter((it) => parseDoanXe(it) === d && trangThaiLenXe(it) !== "huy");
                   const ghe = itms.reduce((acc, it) => {
                     const f = parseThongTinNguoiNha(it.sdtNguoiNha, it.ghiChuTuVan);
                     return acc + 1 + (f.coDiCung ? f.soLuongDiCung : 0);
@@ -1838,10 +1877,13 @@ export default function DoanXePage() {
 
                 const displayedItems =
                   currentDoanFilter === "all" ? grp.items : grp.items.filter((it) => parseDoanXe(it) === currentDoanFilter);
-                const grpDaDon = grp.items.filter((i) => i.daDon || i.ngayDenBV).length;
-                const isAllDone = grpDaDon === grp.items.length && grp.items.length > 0;
-                const percentDone = grp.items.length ? Math.round((grpDaDon / grp.items.length) * 100) : 0;
-                const filterUnboarded = displayedItems.filter((i) => !(i.daDon || i.ngayDenBV)).length;
+                const grpDaDon = grp.items.filter((i) => trangThaiLenXe(i) === "daLen").length;
+                const grpHuy = grp.items.filter((i) => trangThaiLenXe(i) === "huy").length;
+                const grpGiuGhe = grp.items.length - grpHuy;
+                const isAllDone = grp.items.length > 0 && grpDaDon === grpGiuGhe;
+                const percentDone = grpGiuGhe ? Math.round((grpDaDon / grpGiuGhe) * 100) : 0;
+                const choDonDangXem = displayedItems.filter((i) => trangThaiLenXe(i) === "cho");
+                const filterUnboarded = choDonDangXem.length;
 
                 return (
                   <div key={stationKey} className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
@@ -1880,7 +1922,7 @@ export default function DoanXePage() {
                             <button
                               type="button"
                               disabled={isStationLoading}
-                              onClick={() => checkInAllStation(displayedItems, stationKey)}
+                              onClick={() => checkInAllStation(choDonDangXem, stationKey)}
                               className="shrink-0 h-7 px-2.5 rounded-[8px] text-[11.5px] font-semibold border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 whitespace-nowrap"
                               title="Đánh dấu tất cả bệnh nhân đang xem đã lên xe"
                             >
@@ -1897,8 +1939,9 @@ export default function DoanXePage() {
                           <div className={`h-full rounded-full transition-all duration-500 ${isAllDone ? "bg-[var(--teal)]" : "bg-[var(--navy)]"}`} style={{ width: `${percentDone}%` }} />
                         </div>
                         <span className="font-mono text-[11px] font-semibold tabular-nums text-[var(--ink-soft)] shrink-0">
-                          {grpDaDon}/{grp.items.length}
+                          {grpDaDon}/{grpGiuGhe}
                           <span className="font-sans font-normal text-[var(--mute)]"> lên xe</span>
+                          {grpHuy > 0 && <span className="font-sans font-normal text-[var(--rose)]"> · {grpHuy} huỷ</span>}
                         </span>
                       </div>
 
@@ -1946,7 +1989,9 @@ export default function DoanXePage() {
                       ) : (
                         displayedItems.map((p, pIdx) => {
                           const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
-                          const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo;
+                          const ttXe = trangThaiLenXe(p);
+                          const isDaDen = ttXe === "daLen";
+                          const isHuy = ttXe === "huy";
                           const currentDoan = parseDoanXe(p);
                           const isSwitching = switchingPatientId === p.id;
                           const nn = parseThongTinNguoiNha(p.sdtNguoiNha, p.ghiChuTuVan);
@@ -2023,10 +2068,18 @@ export default function DoanXePage() {
                                 type="button"
                                 disabled={checkingInId === p.id}
                                 onClick={() => toggleCheckIn(p)}
-                                title={isDaDen ? "Đã lên xe — bấm để huỷ đánh dấu" : "Đánh dấu bệnh nhân đã lên xe"}
+                                title={
+                                  isDaDen
+                                    ? "Đã lên xe — bấm để huỷ đánh dấu"
+                                    : isHuy
+                                    ? "Quá ngày xe đón mà chưa lên xe — ghế đã huỷ. Bấm nếu thực tế có lên xe"
+                                    : "Đánh dấu bệnh nhân đã lên xe"
+                                }
                                 className={`h-7 px-2.5 rounded-[8px] text-[11.5px] font-semibold transition-colors cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap ${
                                   isDaDen
                                     ? "text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
+                                    : isHuy
+                                    ? "text-[var(--rose)] hover:bg-[var(--rose-soft)]"
                                     : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
                                 }`}
                               >
@@ -2034,10 +2087,12 @@ export default function DoanXePage() {
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : isDaDen ? (
                                   <CheckCircle2 className="w-3.5 h-3.5" />
+                                ) : isHuy ? (
+                                  <X className="w-3 h-3" />
                                 ) : (
                                   <Bus className="w-3 h-3 text-[var(--teal)]" />
                                 )}
-                                {isDaDen ? "Đã lên xe" : "Đón"}
+                                {isDaDen ? "Đã lên xe" : isHuy ? "Huỷ ghế" : "Đón"}
                               </button>
                             </div>
                           );
@@ -2060,8 +2115,8 @@ export default function DoanXePage() {
                   emptyIcon={Bus}
                   emptyTitle="Không có bệnh nhân xếp xe"
                   rowClassName={(p) => {
-                    const isMo = p.trangThaiDieuTri === "Đã mổ" || Boolean(p.ngayMoThucTe);
-                    return Boolean(p.daDon) || Boolean(p.ngayDenBV) || isMo ? "!bg-emerald-50/40" : undefined;
+                    const tt = trangThaiLenXe(p);
+                    return tt === "daLen" ? "!bg-emerald-50/40" : tt === "huy" ? "opacity-60" : undefined;
                   }}
                 />
                 <DataPagination pageSizeOptions={[50, 100, 200, 500]} />
