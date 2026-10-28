@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { HOSO_HEADER, hoSoToCells, KHAM_SUC_KHOE_HEADER, hoSoToKhamSucKhoeCells } from "@/lib/csr";
 import { buildRutGonExcelWorkbook } from "@/lib/exportRutGonExcel";
+import { buildTiepNhanExcelWorkbook } from "@/lib/exportTiepNhanExcel";
 import * as XLSX from "xlsx";
 
 import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
       orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }],
     });
 
-    if (format === "rutGon") {
+    if (format === "rutGon" || format === "tiepNhan") {
       const ids = rows.map((r) => r.id);
       const CHUNK_SIZE = 500;
       const nhatKyMap = new Map<string, Array<{ noiDung: string; ngay: Date }>>();
@@ -82,14 +83,18 @@ export async function GET(request: Request) {
         nhatKy: nhatKyMap.get(r.id) || [],
       }));
 
-      const excelWb = await buildRutGonExcelWorkbook(rowsWithNhatKy, buoiKhamInfo);
+      // M\u1EABu ti\u1EBFp nh\u1EADn: m\u1ED7i \u0111\u1EE3t kh\u00E1m m\u1ED9t sheet (\u0111\u0103ng k\u00FD / kh\u00F4ng \u0111\u0103ng k\u00FD)
+      const excelWb =
+        format === "tiepNhan"
+          ? await buildTiepNhanExcelWorkbook(rowsWithNhatKy)
+          : await buildRutGonExcelWorkbook(rowsWithNhatKy, buoiKhamInfo);
       const buf = await excelWb.xlsx.writeBuffer();
 
       const dateStr = buoiKhamInfo?.ngayKham
         ? new Date(buoiKhamInfo.ngayKham).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10);
-      const cleanXa = (buoiKhamInfo?.xa || "RutGon").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
-      const fileName = `Danh_Sach_Rut_Gon_${cleanXa}_${dateStr}.xlsx`;
+      const cleanXa = (buoiKhamInfo?.xa || (format === "tiepNhan" ? "Tat_ca_dot" : "RutGon")).replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
+      const fileName = `${format === "tiepNhan" ? "Danh_Sach_Tiep_Nhan" : "Danh_Sach_Rut_Gon"}_${cleanXa}_${dateStr}.xlsx`;
       const asciiName = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, "_");
 
       return new Response(buf as unknown as BodyInit, {
