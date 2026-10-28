@@ -14,7 +14,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { can, roleLabel } from "@/lib/permissions";
-import { dotDaQuaNgay, duocSuaSauNgayKham } from "@/lib/khoaSua";
+import { dotBiKhoa, duocSuaSauNgayKham } from "@/lib/khoaSua";
 import {
   CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
   fmtSinhTuoi,
@@ -34,7 +34,7 @@ import { CameraScannerModal } from "@/components/csr/CameraScannerModal";
 import { BarcodeScannerInput } from "@/components/csr/BarcodeScannerInput";
 import { Skeleton3Column, SkeletonList, SkeletonForm } from "@/components/layout/Skeleton";
 
-interface BuoiKham { id: string; coSoId: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null }; ngayKham: string; xa: string; diaDiem: string; bacSiKham?: string | null; ghiChu?: string | null }
+interface BuoiKham { id: string; coSoId: string; coSo?: { id: string; ten: string; cauHinhTruong?: string | null }; ngayKham: string; xa: string; diaDiem: string; bacSiKham?: string | null; ghiChu?: string | null; trangThai?: string | null }
 
 const CO_KHONG = ["Có", "Không"];
 /** Boolean? ⇄ "Có" / "Không" / "" cho ChoiceRow */
@@ -902,7 +902,8 @@ export default function ExamPage() {
   const canCreateHoSo = can(userRole, "hoso.create");
   const canClinical = can(userRole, "hoso.clinical");
   // Đợt đã qua ngày: chỉ Quản trị viên được sửa phiếu khám (server cũng chặn — xem lib/khoaSua)
-  const khoaQuaNgay = !!buoiKham && dotDaQuaNgay(buoiKham.ngayKham) && !duocSuaSauNgayKham(userRole);
+  // (Quản trị viên mở khoá đợt → trangThai "moKhoa" → sửa lại được như chưa qua ngày)
+  const khoaQuaNgay = dotBiKhoa(buoiKham) && !duocSuaSauNgayKham(userRole);
   const readOnly = (!canCreateHoSo && !canClinical) || khoaQuaNgay;
   /* NV tư vấn mặc định = người đang đăng nhập. Phiên đăng nhập thường tải xong SAU khi hồ sơ được nạp,
      nên không điền vào state lúc nạp mà dùng làm giá trị dự phòng khi hiển thị và khi lưu. */
@@ -1601,7 +1602,7 @@ export default function ExamPage() {
             <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             {khoaQuaNgay ? (
               <span>
-                <strong>Đợt khám đã qua ngày</strong> — phiếu khám chỉ xem. Chỉ <strong>Quản trị viên</strong> được sửa hoặc tiếp nhận thêm; tư vấn, xếp xe, theo dõi vẫn làm bình thường ở trang Tư vấn / Theo dõi.
+                <strong>Đợt khám đã qua ngày và đang khoá</strong> — phiếu khám chỉ xem. Cần sửa thì nhờ <strong>Quản trị viên</strong> mở khoá đợt ở trang Đợt khám; tư vấn, xếp xe, theo dõi vẫn làm bình thường ở trang Tư vấn / Theo dõi.
               </span>
             ) : (
               <span>Chế độ xem danh sách tầm soát — Bạn đang đăng nhập vai trò <strong>{roleLabel(session?.user?.role)}</strong> (Chỉ xem dữ liệu, không chỉnh sửa kết quả y khoa).</span>

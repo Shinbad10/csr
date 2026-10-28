@@ -9,7 +9,7 @@ import { triggerSync } from "@/lib/syncWorker";
 import { parseDiag } from "@/lib/csr";
 import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
 import { broadcastEvent } from "@/lib/events";
-import { dotDaQuaNgay, duocSuaSauNgayKham, truongPhieuKhamBiDoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
+import { dotBiKhoa, duocSuaSauNgayKham, truongPhieuKhamBiDoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
 
 import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -79,8 +79,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Đợt đã qua ngày: thông tin hành chính / phiếu khám chỉ Quản trị viên được sửa
     if (!duocSuaSauNgayKham(session.user.role)) {
-      const cur = await prisma.hoSoBenhNhan.findUnique({ where: { id }, include: { buoiKham: { select: { ngayKham: true } } } });
-      if (cur && dotDaQuaNgay(cur.buoiKham?.ngayKham) && truongPhieuKhamBiDoi(body, cur as unknown as Record<string, unknown>).length)
+      const cur = await prisma.hoSoBenhNhan.findUnique({ where: { id }, include: { buoiKham: { select: { ngayKham: true, trangThai: true } } } });
+      if (cur && dotBiKhoa(cur.buoiKham) && truongPhieuKhamBiDoi(body, cur as unknown as Record<string, unknown>).length)
         return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
     }
 
@@ -165,7 +165,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const current = await prisma.hoSoBenhNhan.findUnique({
       where: { id },
       include: {
-        buoiKham: { select: { bacSiKham: true, ngayKham: true } },
+        buoiKham: { select: { bacSiKham: true, ngayKham: true, trangThai: true } },
         coSo: { select: { cauHinhTruong: true } },
       },
     });
@@ -175,7 +175,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // Đợt đã qua ngày: chỉ chặn khi THỰC SỰ đổi trường phiếu khám (phiếu tư vấn gửi lại giá trị cũ vẫn qua)
     if (
-      dotDaQuaNgay(current.buoiKham?.ngayKham) &&
+      dotBiKhoa(current.buoiKham) &&
       !duocSuaSauNgayKham(session.user.role) &&
       truongPhieuKhamBiDoi(body, current as unknown as Record<string, unknown>).length
     )

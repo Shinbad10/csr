@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
-import { dotDaQuaNgay, duocSuaSauNgayKham, THONG_BAO_KHOA } from "@/lib/khoaSua";
+import { dotBiKhoa, duocSuaSauNgayKham, THONG_BAO_KHOA } from "@/lib/khoaSua";
 import { audit } from "@/lib/audit";
 import { COSO_AN_TOAN } from "@/lib/safeSelect";
 import { DOT_KHAM_DA_XOA } from "@/lib/dotKham";
@@ -49,7 +49,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
 
     // Đợt đã qua ngày: chỉ Quản trị viên được sửa (trước đây điều kiện trùng quyền buoikham.manage nên không chặn ai)
-    if (dotDaQuaNgay(existing.ngayKham) && !duocSuaSauNgayKham(session.user.role)) {
+    if (dotBiKhoa(existing) && !duocSuaSauNgayKham(session.user.role)) {
       return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
     }
 

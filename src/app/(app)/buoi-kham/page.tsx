@@ -8,12 +8,12 @@ import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import {
   Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X,
-  Stethoscope, Pencil, FolderOpen, Lock, FileSpreadsheet, UserCheck,
+  Stethoscope, Pencil, FolderOpen, Lock, LockOpen, FileSpreadsheet, UserCheck,
   RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical,
   ClipboardList, Clock, RefreshCw, History, Download, Layers, Trash2
 } from "lucide-react";
 import { can } from "@/lib/permissions";
-import { dotDaQuaNgay } from "@/lib/khoaSua";
+import { dotDaQuaNgay, dotBiKhoa, DOT_MO_KHOA } from "@/lib/khoaSua";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
@@ -39,6 +39,8 @@ interface CoSo { id: string; ten: string }
 interface BuoiKham {
   id: string; coSo: CoSo; coSoId: string; ngayKham: string; xa: string; diaDiem: string;
   bacSiKham?: string | null; ghiChu?: string | null; _count: { hoSo: number };
+  /** "moKhoa" = Quản trị viên đã mở khoá đợt đã qua ngày cho sửa lại */
+  trangThai?: string | null;
   stats?: { nhomA: number; nhomB: number; daMo: number; daMoTruoc?: number; chuaMo: number; phaco2Lan?: number };
   /** Lần đối chiếu HIS gần nhất (từ AuditLog) */
   lastDoiChieu?: DoiChieuLog | null;
@@ -91,6 +93,14 @@ function JoinAction({
     );
   }
 
+  if (p.key === "DaKetThuc" && b.trangThai === DOT_MO_KHOA) {
+    return (
+      <Link href={`/kham/${b.id}`} className={`${BTN_SECONDARY} ${w}`} title="Đợt đã qua ngày nhưng đang được mở khoá cho sửa">
+        <LockOpen className="w-3.5 h-3.5 text-[var(--amber-deep)]" />
+        Sửa hồ sơ
+      </Link>
+    );
+  }
   if (p.key === "DaKetThuc") {
     return (
       <Link href={`/kham/${b.id}`} className={`${BTN_SECONDARY} ${w}`}>
@@ -182,6 +192,7 @@ function BuoiKhamRowActions({
   onHistory,
   canDelete,
   onDelete,
+  onToggleKhoa,
 }: {
   b: BuoiKham;
   canManage: boolean;
@@ -199,6 +210,8 @@ function BuoiKhamRowActions({
   /** Quản lý / Quản trị viên: xoá mềm đợt khám */
   canDelete?: boolean;
   onDelete?: (b: BuoiKham) => void;
+  /** Quản trị viên: mở khoá / khoá lại đợt đã qua ngày */
+  onToggleKhoa?: (b: BuoiKham) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -327,10 +340,21 @@ function BuoiKhamRowActions({
               <>
                 <div className="my-1 border-t border-[var(--line-soft)]" />
                 {!isEnded && <MenuItem icon={CheckCheck} tone="amber" label="Kết thúc đợt khám" onClick={pick(() => onComplete(b))} />}
-                {dotDaQuaNgay(b.ngayKham) && !canDelete ? (
-                  <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" hint="Đã qua ngày — chỉ Quản trị viên được sửa" disabled onClick={() => {}} />
+                {dotBiKhoa(b) && !canDelete ? (
+                  <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" hint="Đã qua ngày & đang khoá — nhờ Quản trị viên mở khoá" disabled onClick={() => {}} />
                 ) : (
                   <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" onClick={pick(() => onEdit(b))} />
+                )}
+              </>
+            )}
+
+            {canDelete && onToggleKhoa && dotDaQuaNgay(b.ngayKham) && (
+              <>
+                <div className="my-1 border-t border-[var(--line-soft)]" />
+                {b.trangThai === DOT_MO_KHOA ? (
+                  <MenuItem icon={Lock} label="Khoá lại đợt khám" hint="Hết cho sửa — chỉ Quản trị viên sửa được" onClick={pick(() => onToggleKhoa(b))} />
+                ) : (
+                  <MenuItem icon={LockOpen} tone="amber" label="Mở khoá chỉnh sửa" hint="Cho người có quyền sửa lại phiếu khám & đợt" onClick={pick(() => onToggleKhoa(b))} />
                 )}
               </>
             )}
@@ -411,8 +435,15 @@ function Mat2Badge({ count, onClick }: { count: number; onClick?: () => void }) 
 }
 
 /** Badge trạng thái đợt: đang diễn ra = teal (sống), sắp tới = amber, đã xong = xám. */
-function PhaseBadge({ ngayKham }: { ngayKham: string }) {
+function PhaseBadge({ ngayKham, moKhoa }: { ngayKham: string; moKhoa?: boolean }) {
   const p = phaseOf(ngayKham);
+  if (p.key === "DaKetThuc" && moKhoa)
+    return (
+      <span title="Quản trị viên đã mở khoá — người có quyền sửa lại được phiếu khám & đợt" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11.5px] font-semibold whitespace-nowrap bg-[var(--amber-soft)] text-[var(--amber-deep)]">
+        <LockOpen className="w-3 h-3" />
+        Đang mở khoá
+      </span>
+    );
   const cls =
     p.key === "DangDienRa"
       ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]"
@@ -922,6 +953,40 @@ export default function BuoiKhamPage() {
     [confirm, addToast]
   );
 
+  /** Quản trị viên mở khoá / khoá lại đợt đã qua ngày */
+  const toggleKhoa = useCallback(
+    async (b: BuoiKham) => {
+      const moKhoa = b.trangThai !== DOT_MO_KHOA;
+      const ok = await confirm({
+        title: moKhoa ? "Mở khoá đợt khám?" : "Khoá lại đợt khám?",
+        message: moKhoa
+          ? `Đợt ${fmtBuoiKhamName(b)} ngày ${fmtDate(b.ngayKham)} đã qua ngày. Mở khoá để người có quyền sửa lại phiếu khám, tiếp nhận thêm và sửa thông tin đợt.`
+          : `Khoá lại đợt ${fmtBuoiKhamName(b)} ngày ${fmtDate(b.ngayKham)} — sau đó chỉ Quản trị viên sửa được phiếu khám & thông tin đợt.`,
+        note: moKhoa ? "Nhớ khoá lại sau khi chỉnh sửa xong." : undefined,
+        confirmLabel: moKhoa ? "Mở khoá" : "Khoá lại",
+        cancelLabel: "Huỷ",
+      });
+      if (!ok) return;
+      try {
+        const res = await fetch(`/api/csr/buoikham/${b.id}/khoa`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ moKhoa }),
+        });
+        const d = await res.json().catch(() => null);
+        if (!res.ok) {
+          addToast({ type: "error", message: d?.error || `Không cập nhật được (HTTP ${res.status})` });
+          return;
+        }
+        setList((prev) => prev.map((x) => (x.id === b.id ? { ...x, trangThai: d?.trangThai ?? (moKhoa ? DOT_MO_KHOA : "active") } : x)));
+        addToast({ type: "success", message: moKhoa ? `Đã mở khoá đợt ${fmtBuoiKhamName(b)}` : `Đã khoá lại đợt ${fmtBuoiKhamName(b)}` });
+      } catch {
+        addToast({ type: "error", message: "Mất kết nối máy chủ" });
+      }
+    },
+    [confirm, addToast]
+  );
+
   const columns = useMemo<ColumnDef<BuoiKham>[]>(
     () => [
       {
@@ -1075,7 +1140,7 @@ export default function BuoiKhamPage() {
         size: 128,
         enableColumnFilter: false,
         accessorFn: (row) => phaseOf(row.ngayKham).key,
-        cell: ({ row }) => <PhaseBadge ngayKham={row.original.ngayKham} />,
+        cell: ({ row }) => <PhaseBadge ngayKham={row.original.ngayKham} moKhoa={row.original.trangThai === DOT_MO_KHOA} />,
       },
       {
         id: "actions",
@@ -1102,12 +1167,13 @@ export default function BuoiKhamPage() {
             onHistory={setHistoryTarget}
             canDelete={canDelete}
             onDelete={deleteBuoiKham}
+            onToggleKhoa={toggleKhoa}
           />
         ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canManage, canViewTamSoat, canClinical, canReconcile, canDelete, deleteBuoiKham, exportingId, his.runningIds]
+    [canManage, canViewTamSoat, canClinical, canReconcile, canDelete, deleteBuoiKham, toggleKhoa, exportingId, his.runningIds]
   );
 
   const statusTabs: { key: StatusFilter; label: string; dot?: boolean }[] = [
@@ -1278,7 +1344,7 @@ export default function BuoiKhamPage() {
                                 </div>
                               )}
                             </div>
-                            <PhaseBadge ngayKham={b.ngayKham} />
+                            <PhaseBadge ngayKham={b.ngayKham} moKhoa={b.trangThai === DOT_MO_KHOA} />
                           </div>
 
                           {/* Dải số liệu */}
@@ -1340,6 +1406,7 @@ export default function BuoiKhamPage() {
                               onHistory={setHistoryTarget}
                               canDelete={canDelete}
                               onDelete={deleteBuoiKham}
+                              onToggleKhoa={toggleKhoa}
                             />
                           </div>
                         </div>

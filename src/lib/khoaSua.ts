@@ -13,12 +13,21 @@ export function dotDaQuaNgay(ngayKham?: Date | string | null): boolean {
   return !!nk && nk < ngayVN(new Date());
 }
 
+/** BuoiKham.trangThai khi Quản trị viên mở khoá đợt đã qua ngày cho người có quyền sửa lại. */
+export const DOT_MO_KHOA = "moKhoa";
+
+/** Đợt đang bị khoá sửa: đã qua ngày VÀ chưa được Quản trị viên mở khoá. */
+export function dotBiKhoa(bk?: { ngayKham?: Date | string | null; trangThai?: string | null } | null): boolean {
+  return !!bk && dotDaQuaNgay(bk.ngayKham) && bk.trangThai !== DOT_MO_KHOA;
+}
+
 /** Quản trị viên (IT) và Quản lý toàn hệ thống được sửa dữ liệu khám đã qua ngày. */
 export function duocSuaSauNgayKham(role?: string | null): boolean {
   return can(role, "admin.users");
 }
 
-export const THONG_BAO_KHOA = "Đợt khám đã qua ngày — chỉ Quản trị viên được sửa phiếu khám / thông tin đợt khám";
+export const THONG_BAO_KHOA =
+  "Đợt khám đã qua ngày và đang khoá — chỉ Quản trị viên được sửa, hoặc nhờ Quản trị viên mở khoá đợt khám";
 
 /** Trường thuộc phiếu khám (hành chính + lâm sàng) — bị khoá sau ngày khám. */
 export const TRUONG_PHIEU_KHAM = [
