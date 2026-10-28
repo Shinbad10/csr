@@ -14,6 +14,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { can, roleLabel } from "@/lib/permissions";
+import { dotDaQuaNgay, duocSuaSauNgayKham } from "@/lib/khoaSua";
 import {
   CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
   fmtSinhTuoi,
@@ -900,7 +901,9 @@ export default function ExamPage() {
   const userRole = session?.user?.role;
   const canCreateHoSo = can(userRole, "hoso.create");
   const canClinical = can(userRole, "hoso.clinical");
-  const readOnly = !canCreateHoSo && !canClinical;
+  // Đợt đã qua ngày: chỉ Quản trị viên được sửa phiếu khám (server cũng chặn — xem lib/khoaSua)
+  const khoaQuaNgay = !!buoiKham && dotDaQuaNgay(buoiKham.ngayKham) && !duocSuaSauNgayKham(userRole);
+  const readOnly = (!canCreateHoSo && !canClinical) || khoaQuaNgay;
   /* NV tư vấn mặc định = người đang đăng nhập. Phiên đăng nhập thường tải xong SAU khi hồ sơ được nạp,
      nên không điền vào state lúc nạp mà dùng làm giá trị dự phòng khi hiển thị và khi lưu. */
   const tenDangNhap = readOnly ? "" : session?.user?.name || "";
@@ -1596,7 +1599,13 @@ export default function ExamPage() {
         <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/40 border-y border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-[12px] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 font-medium">
             <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>Chế độ xem danh sách tầm soát — Bạn đang đăng nhập vai trò <strong>{roleLabel(session?.user?.role)}</strong> (Chỉ xem dữ liệu, không chỉnh sửa kết quả y khoa).</span>
+            {khoaQuaNgay ? (
+              <span>
+                <strong>Đợt khám đã qua ngày</strong> — phiếu khám chỉ xem. Chỉ <strong>Quản trị viên</strong> được sửa hoặc tiếp nhận thêm; tư vấn, xếp xe, theo dõi vẫn làm bình thường ở trang Tư vấn / Theo dõi.
+              </span>
+            ) : (
+              <span>Chế độ xem danh sách tầm soát — Bạn đang đăng nhập vai trò <strong>{roleLabel(session?.user?.role)}</strong> (Chỉ xem dữ liệu, không chỉnh sửa kết quả y khoa).</span>
+            )}
           </div>
           <Link
             href="/buoi-kham"

@@ -13,6 +13,7 @@ import {
   ClipboardList, Clock, RefreshCw, History, Download, Layers, Trash2
 } from "lucide-react";
 import { can } from "@/lib/permissions";
+import { dotDaQuaNgay } from "@/lib/khoaSua";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
@@ -326,7 +327,11 @@ function BuoiKhamRowActions({
               <>
                 <div className="my-1 border-t border-[var(--line-soft)]" />
                 {!isEnded && <MenuItem icon={CheckCheck} tone="amber" label="Kết thúc đợt khám" onClick={pick(() => onComplete(b))} />}
-                <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" onClick={pick(() => onEdit(b))} />
+                {dotDaQuaNgay(b.ngayKham) && !canDelete ? (
+                  <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" hint="Đã qua ngày — chỉ Quản trị viên được sửa" disabled onClick={() => {}} />
+                ) : (
+                  <MenuItem icon={Pencil} label="Chỉnh sửa đợt khám" onClick={pick(() => onEdit(b))} />
+                )}
               </>
             )}
 

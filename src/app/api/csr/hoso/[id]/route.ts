@@ -9,6 +9,7 @@ import { triggerSync } from "@/lib/syncWorker";
 import { parseDiag } from "@/lib/csr";
 import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
 import { broadcastEvent } from "@/lib/events";
+import { dotDaQuaNgay, duocSuaSauNgayKham, truongPhieuKhamBiDoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
 
 import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -75,6 +76,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const body = await request.json();
     const update: Record<string, unknown> = { updatedBy: session.user.id };
+
+    // Đợt đã qua ngày: thông tin hành chính / phiếu khám chỉ Quản trị viên được sửa
+    if (!duocSuaSauNgayKham(session.user.role)) {
+      const cur = await prisma.hoSoBenhNhan.findUnique({ where: { id }, include: { buoiKham: { select: { ngayKham: true } } } });
+      if (cur && dotDaQuaNgay(cur.buoiKham?.ngayKham) && truongPhieuKhamBiDoi(body, cur as unknown as Record<string, unknown>).length)
+        return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
+    }
 
     for (const f of TRUONG_TUY_CHON) {
       if (body[f] === undefined) continue;
@@ -157,13 +165,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const current = await prisma.hoSoBenhNhan.findUnique({
       where: { id },
       include: {
-        buoiKham: { select: { bacSiKham: true } },
+        buoiKham: { select: { bacSiKham: true, ngayKham: true } },
         coSo: { select: { cauHinhTruong: true } },
       },
     });
     if (!current) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
 
     const body = await request.json();
+
+    // Đợt đã qua ngày: chỉ chặn khi THỰC SỰ đổi trường phiếu khám (phiếu tư vấn gửi lại giá trị cũ vẫn qua)
+    if (
+      dotDaQuaNgay(current.buoiKham?.ngayKham) &&
+      !duocSuaSauNgayKham(session.user.role) &&
+      truongPhieuKhamBiDoi(body, current as unknown as Record<string, unknown>).length
+    )
+      return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
     const update: Record<string, unknown> = { ...body, updatedBy: session.user.id };
     if (body.hoTen) update.hoTen = String(body.hoTen).trim().toUpperCase();
     delete update.daNhacLich; // cờ kích hoạt, không phải cột trong DB

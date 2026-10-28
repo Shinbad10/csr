@@ -120,6 +120,18 @@ export const ROLE_LABEL: Record<Role, string> = {
   IT: "Quản trị viên",
 };
 
+/** Mô tả quyền chính của từng vai trò — hiện khi cấp tài khoản. */
+export const ROLE_MO_TA: Record<string, string> = {
+  BacSi: "Khám, chẩn đoán, tư vấn & theo dõi bệnh nhân",
+  MKT: "Tạo đợt khám, tiếp nhận, tư vấn, xếp xe, theo dõi",
+  CSKH: "Tạo đợt khám, tiếp nhận, tư vấn, xếp xe, theo dõi",
+  TuVanVien: "Tiếp nhận, tư vấn, xếp xe, theo dõi điều trị",
+  KeToan: "Xem đợt khám, báo cáo & xuất Excel",
+  HCNS: "Xem đợt khám, danh sách tầm soát, báo cáo",
+  IT: "Toàn quyền đơn vị + quản lý tài khoản; sửa dữ liệu đợt đã qua ngày",
+  QuanLy: "Toàn hệ thống mọi cơ sở + danh mục; sửa dữ liệu đợt đã qua ngày",
+};
+
 export function roleLabel(raw?: string | null): string {
   if (raw === "BacSi" || raw === "Bác sĩ" || raw === "Bác sỹ") return "Bác sĩ";
   if (raw === "IT") return "Quản trị viên";

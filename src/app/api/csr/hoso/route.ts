@@ -8,6 +8,7 @@ import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
 import { bhytLevel } from "@/lib/csr";
 import { broadcastEvent } from "@/lib/events";
+import { dotDaQuaNgay, duocSuaSauNgayKham, THONG_BAO_KHOA } from "@/lib/khoaSua";
 
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 
@@ -128,6 +129,11 @@ export async function POST(request: Request) {
     const b = await request.json();
     if (!b.buoiKhamId || !b.hoTen || !b.gioiTinh)
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc (họ tên, giới tính, buổi khám)" }, { status: 400 });
+
+    // Đợt đã qua ngày: chỉ Quản trị viên được tiếp nhận thêm
+    const bkKhoa = await prisma.buoiKham.findUnique({ where: { id: b.buoiKhamId }, select: { ngayKham: true } });
+    if (bkKhoa && dotDaQuaNgay(bkKhoa.ngayKham) && !duocSuaSauNgayKham(session.user.role))
+      return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
 
     // ngày sinh: nhận ISO (ngaySinh) → suy năm; hoặc namSinh nhập tay
     const ngaySinh = b.ngaySinh ? new Date(b.ngaySinh) : null;

@@ -1,0 +1,65 @@
+/**
+ * Khoá sửa dữ liệu khám sau ngày khám.
+ * Đợt khám đã qua ngày → chỉ Quản trị viên / Quản lý được sửa thông tin đợt và PHIẾU KHÁM của hồ sơ
+ * (hành chính + lâm sàng). Phần tư vấn, xếp xe, người nhà, theo dõi, điều trị vẫn mở cho người có quyền
+ * vì các việc này diễn ra SAU ngày khám. Module thuần — dùng chung client & route handler.
+ */
+import { can } from "./permissions";
+import { ngayVN } from "./csr";
+
+/** Đợt khám đã qua ngày (so theo ngày giờ Việt Nam, không phụ thuộc múi giờ máy chủ). */
+export function dotDaQuaNgay(ngayKham?: Date | string | null): boolean {
+  const nk = ngayVN(ngayKham);
+  return !!nk && nk < ngayVN(new Date());
+}
+
+/** Quản trị viên (IT) và Quản lý toàn hệ thống được sửa dữ liệu khám đã qua ngày. */
+export function duocSuaSauNgayKham(role?: string | null): boolean {
+  return can(role, "admin.users");
+}
+
+export const THONG_BAO_KHOA = "Đợt khám đã qua ngày — chỉ Quản trị viên được sửa phiếu khám / thông tin đợt khám";
+
+/** Trường thuộc phiếu khám (hành chính + lâm sàng) — bị khoá sau ngày khám. */
+export const TRUONG_PHIEU_KHAM = [
+  "hoTen", "gioiTinh", "ngaySinh", "namSinh", "cccd", "bhyt", "mucHuongBHYT",
+  "diaChi", "khuPho", "xaPhuong", "diemKham", "stt",
+  "thiLucMP", "thiLucMT", "doKinhMP", "doKinhMT", "matKham",
+  "chanDoan", "chanDoanKhac", "chanDoanMP", "chanDoanKhacMP", "chanDoanMT", "chanDoanKhacMT",
+  "khuyenNghi", "huongXuTri", "huongXuTriKhac",
+  "benhSu", "loaiBenhSu", "loaiBenhSuKhac", "chieuCao", "canNang",
+  "benhLy", "loaiBenhLy", "loaiBenhLyKhac", "bacSiChiDinh",
+] as const;
+
+/** Chuẩn hoá để so sánh: rỗng → null, mảng → JSON, ngày → YYYY-MM-DD, chuỗi số giữ nguyên. */
+function chuan(v: unknown): string | null {
+  if (v === undefined || v === null || v === "") return null;
+  if (v instanceof Date) return ngayVN(v);
+  if (Array.isArray(v)) return v.length ? JSON.stringify(v) : null;
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (!t || t === "[]") return null;
+    if (/^\d{4}-\d{2}-\d{2}(T|$)/.test(t)) return ngayVN(t);
+    return t;
+  }
+  return String(v);
+}
+
+/**
+ * Các trường phiếu khám mà `body` thực sự làm thay đổi so với bản đang lưu.
+ * Form có thể gửi lại nguyên giá trị cũ — chỉ tính khi khác.
+ */
+export function truongPhieuKhamBiDoi(body: Record<string, unknown>, current: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const f of TRUONG_PHIEU_KHAM) {
+    if (body[f] === undefined) continue;
+    let moi = chuan(body[f]);
+    let cu = chuan(current[f]);
+    if (f === "hoTen") {
+      moi = moi?.toUpperCase() ?? null;
+      cu = cu?.toUpperCase() ?? null;
+    }
+    if (moi !== cu) out.push(f);
+  }
+  return out;
+}

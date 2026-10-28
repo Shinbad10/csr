@@ -43,7 +43,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import Modal from "@/components/layout/Modal";
 import { fmtTime } from "@/lib/csr";
-import { can, roleLabel } from "@/lib/permissions";
+import { can, roleLabel, ROLE_MO_TA } from "@/lib/permissions";
 import { Field, StatusBadge, SectionHeader } from "@/components/csr/fields";
 import { DataView, DataTable } from "@/components/data";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -2774,19 +2774,45 @@ function UserModal({
               <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
                 Vai trò hệ thống <span className="text-rose-500">*</span>
               </label>
-              <div className="relative">
-                <select
-                  value={vaiTro}
-                  onChange={(e) => handleRoleChange(e.target.value)}
-                  className="input-field h-10 w-full font-semibold text-[13.5px] pr-9 bg-white cursor-pointer appearance-none rounded-xl border-slate-200 focus:border-blue-500"
-                >
-                  {roleOptions.map((r) => (
-                    <option key={r} value={r}>
-                      {roleLabels[r] || r}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {/* Thẻ chọn vai trò: tên + quyền chính (thay <select> của trình duyệt) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup">
+                {roleOptions.map((r) => {
+                  const on = vaiTro === r;
+                  const quanTri = r === "IT" || r === "QuanLy";
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => handleRoleChange(r)}
+                      className={`flex items-start gap-2.5 px-3 py-2.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                        on
+                          ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-[0_0_0_3px_var(--navy-100)]"
+                          : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
+                      }`}
+                    >
+                      <span
+                        className={`mt-0.5 w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                          on ? "border-[var(--navy)]" : "border-[var(--line-strong)]"
+                        }`}
+                      >
+                        {on && <span className="w-2 h-2 rounded-full bg-[var(--navy)]" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${on ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
+                          {roleLabels[r] || r}
+                          {quanTri && (
+                            <span className="h-[18px] px-1.5 rounded-full bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[10px] font-semibold inline-flex items-center">
+                              Quản trị
+                            </span>
+                          )}
+                        </span>
+                        <span className="block text-[11.5px] text-[var(--mute)] leading-snug mt-0.5">{ROLE_MO_TA[r] || ""}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               {isIT ? (
                 // Quản trị viên đơn vị chỉ tạo tài khoản cho chính đơn vị mình — không cần chọn cơ sở

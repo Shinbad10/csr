@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
-import { phaseOf } from "@/lib/csr";
+import { dotDaQuaNgay, duocSuaSauNgayKham, THONG_BAO_KHOA } from "@/lib/khoaSua";
 import { audit } from "@/lib/audit";
 import { COSO_AN_TOAN } from "@/lib/safeSelect";
 import { DOT_KHAM_DA_XOA } from "@/lib/dotKham";
@@ -48,11 +48,9 @@ export async function PATCH(
     if (!existing || existing.trangThai === DOT_KHAM_DA_XOA)
       return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
 
-    const phase = phaseOf(existing.ngayKham);
-    // Cho phép quản lý cập nhật bác sĩ, ghi chú hoặc địa điểm để hoàn thiện dữ liệu
-    const isOnlyMetaUpdate = xa === undefined && diaDiem === undefined && ngayKham === undefined;
-    if (phase.key === "DaKetThuc" && !isOnlyMetaUpdate && !can(session.user.role, "buoikham.manage")) {
-      return NextResponse.json({ error: "Đợt khám đã kết thúc, không thể đổi ngày hoặc địa bàn" }, { status: 400 });
+    // Đợt đã qua ngày: chỉ Quản trị viên được sửa (trước đây điều kiện trùng quyền buoikham.manage nên không chặn ai)
+    if (dotDaQuaNgay(existing.ngayKham) && !duocSuaSauNgayKham(session.user.role)) {
+      return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
     }
 
     const updateData: any = {};
