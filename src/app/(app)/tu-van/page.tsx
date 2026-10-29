@@ -502,6 +502,37 @@ export default function TuVanSessionPage() {
   const patientsAbort = useRef<AbortController | null>(null);
   /** Điện thoại: BHYT / CCCD / địa chỉ thu gọn sau nút "Thêm" để thẻ hồ sơ không chiếm nửa màn hình */
   const [moThongTin, setMoThongTin] = useState(false);
+  /** Sửa SĐT tại chỗ trên thẻ hồ sơ: null = không sửa */
+  const [suaSdt, setSuaSdt] = useState<string | null>(null);
+  const [dangLuuSdt, setDangLuuSdt] = useState(false);
+  const luuSdt = async () => {
+    if (!selected || suaSdt === null) return;
+    const sdt = suaSdt.replace(/[^\d+]/g, "");
+    if ((selected.sdt || "") === sdt) {
+      setSuaSdt(null);
+      return;
+    }
+    setDangLuuSdt(true);
+    try {
+      const res = await fetch(`/api/csr/hoso/${selected.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sdt }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        addToast({ type: "error", message: d.error || "Không lưu được số điện thoại" });
+        return;
+      }
+      setPatients((prev) => prev.map((p) => (p.id === selected.id ? { ...p, sdt: sdt || null } : p)));
+      setSuaSdt(null);
+      addToast({ type: "success", message: `Đã cập nhật SĐT ${selected.hoTen}` });
+    } catch {
+      addToast({ type: "error", message: "Mất kết nối máy chủ" });
+    } finally {
+      setDangLuuSdt(false);
+    }
+  };
   const fetchPatients = useCallback(
     async (keepSel?: string, forceForm = false) => {
       if (!selBk) {
@@ -616,6 +647,7 @@ export default function TuVanSessionPage() {
   /** `force`: bỏ qua hỏi xác nhận — dùng khi vừa lưu xong (biến `dirty` trong closure còn là giá trị cũ). */
   const pick = async (p: HoSo, force = false) => {
     if (p.id === selId) return;
+    setSuaSdt(null); // đóng ô sửa SĐT của bệnh nhân trước
     if (!force && (dirty || hasCallDraft)) {
       const pending = [dirty && "phiếu tư vấn", hasCallDraft && "nội dung cuộc gọi"].filter(Boolean).join(" và ");
       const ok = await confirm({
@@ -1248,12 +1280,57 @@ export default function TuVanSessionPage() {
                         {/* Liên hệ */}
                         <div className="mt-1.5 sm:mt-2 flex items-center gap-x-5 gap-y-1.5 flex-wrap">
                           <Fact label="SĐT">
-                            {selected.sdt ? (
-                              <a href={`tel:${selected.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
-                                <Phone className="w-3 h-3" /> {selected.sdt}
-                              </a>
+                            {suaSdt !== null ? (
+                              // Sửa SĐT tại chỗ (SĐT không bị khoá sau ngày khám — tư vấn viên cập nhật khi gọi)
+                              <span className="inline-flex items-center gap-1">
+                                <input
+                                  autoFocus
+                                  type="tel"
+                                  value={suaSdt}
+                                  onChange={(e) => setSuaSdt(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") luuSdt();
+                                    if (e.key === "Escape") setSuaSdt(null);
+                                  }}
+                                  placeholder="09xx xxx xxx"
+                                  className="w-[132px] h-7 px-2 rounded-[8px] border border-[var(--navy)] bg-[var(--surface)] font-mono text-[12.5px] font-semibold text-[var(--ink)] outline-none shadow-[0_0_0_3px_var(--navy-100)]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={luuSdt}
+                                  disabled={dangLuuSdt}
+                                  className="w-7 h-7 rounded-[8px] bg-[var(--navy)] text-white flex items-center justify-center cursor-pointer disabled:opacity-50"
+                                  title="Lưu số điện thoại (Enter)"
+                                >
+                                  {dangLuuSdt ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSuaSdt(null)}
+                                  className="w-7 h-7 rounded-[8px] text-[var(--mute)] hover:bg-[var(--surface-soft)] flex items-center justify-center cursor-pointer"
+                                  title="Huỷ (Esc)"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </span>
                             ) : (
-                              <span className="text-[var(--mute-soft)]">—</span>
+                              <span className="inline-flex items-center gap-1">
+                                {selected.sdt ? (
+                                  <a href={`tel:${selected.sdt}`} className="inline-flex items-center gap-1 font-mono font-semibold text-[var(--navy)] hover:underline">
+                                    <Phone className="w-3 h-3" /> {selected.sdt}
+                                  </a>
+                                ) : (
+                                  <span className="text-[var(--mute-soft)]">—</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setSuaSdt(selected.sdt || "")}
+                                  className="w-6 h-6 rounded-[6px] text-[var(--mute-soft)] hover:text-[var(--navy)] hover:bg-[var(--surface-soft)] flex items-center justify-center cursor-pointer"
+                                  title="Sửa số điện thoại"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </span>
                             )}
                           </Fact>
                           {(selected.bhyt || selected.cccd || selected.diaChi) && (

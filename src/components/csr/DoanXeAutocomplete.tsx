@@ -49,6 +49,10 @@ interface DoanXeAutocompleteProps {
 
 const COMMON_TIMES = ["05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "13:30"];
 
+/** Tuyến có ngày đón mới nhất lên đầu — ca khám hôm nay thường chọn xe ngày mai, khỏi cuộn xuống cuối. */
+const moiNhatTruoc = (ds: DoanXeItem[]): DoanXeItem[] =>
+  [...ds].sort((a, b) => (b.ngayDon || "").localeCompare(a.ngayDon || "") || a.tenDoan.localeCompare(b.tenDoan));
+
 export default function DoanXeAutocomplete({
   diemDon,
   gioDon,
@@ -224,10 +228,10 @@ export default function DoanXeAutocomplete({
       });
     }
 
-    if (!searchQuery.trim()) return list;
+    if (!searchQuery.trim()) return moiNhatTruoc(list);
     const q = searchQuery.trim().toLowerCase();
 
-    return list
+    return moiNhatTruoc(list
       .map((dx) => {
         const matchTen = dx.tenDoan.toLowerCase().includes(q);
         const matchNgay = dx.ngayDon.includes(q) || fmtDate(dx.ngayDon).toLowerCase().includes(q);
@@ -247,7 +251,7 @@ export default function DoanXeAutocomplete({
         }
         return null;
       })
-      .filter(Boolean) as DoanXeItem[];
+      .filter(Boolean) as DoanXeItem[]);
   }, [doanXeList, searchQuery, quickFilter, buoiKhamXa]);
 
   function xLowerSafe(val: string) {
