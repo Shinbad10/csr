@@ -37,6 +37,8 @@ export function determineConciseStatus(p: RutGonPatient): {
   const latestLog = logs[0]?.noiDung || "";
 
   const allText = `${latestLog} ${p.ghiChuTuVan || ""} ${p.lyDoKhongDieuTri || ""}`.toLowerCase();
+  // Tra cứu cổng BHXH đã ghi thẻ hết hạn (mucHuongBHYT = 0)
+  if ((p as { mucHuongBHYT?: number | null }).mucHuongBHYT === 0) return { text: "HẾT HẠN BH", type: "HET_HAN_BH" };
   if (allText.includes("hết hạn bh") || allText.includes("het han bh") || allText.includes("hết hạn") || allText.includes("het han")) {
     return { text: "HẾT HẠN BH", type: "HET_HAN_BH" };
   }

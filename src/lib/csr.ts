@@ -348,6 +348,16 @@ export const fmtBuoiKhamCode = (id?: string | null): string => {
 
 // `bhyt` lưu MÃ THẺ. Mức hưởng suy từ ký tự thứ 3: 1·2·5→100% · 3→95% · 4→80%.
 export const isCardNumber = (raw?: string | null) => !!raw && !(BHYT as readonly string[]).includes(raw.trim());
+/**
+ * Mức hưởng BHYT để HIỂN THỊ: mucHuongBHYT = 0 → thẻ hết hạn; có số → "N%"; không thì suy từ mã thẻ.
+ * Dùng thay cho bhytLevel(bhyt) ở giao diện để thẻ hết hạn không bị hiện "100%" (tư vấn nhầm).
+ */
+export function mucHuongHienThi(p: { bhyt?: string | null; mucHuongBHYT?: number | null }): { text: string; hetHan: boolean } {
+  if (p.mucHuongBHYT === 0) return { text: "Hết hạn", hetHan: true };
+  if (p.mucHuongBHYT != null && p.mucHuongBHYT > 0) return { text: `${p.mucHuongBHYT}%`, hetHan: false };
+  return { text: bhytLevel(p.bhyt), hetHan: false };
+}
+
 export function bhytLevel(raw?: string | null): string {
   const v = (raw || "").trim();
   if (!v) return "";

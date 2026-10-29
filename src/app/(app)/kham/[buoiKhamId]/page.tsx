@@ -17,10 +17,10 @@ import { can, roleLabel } from "@/lib/permissions";
 import { dotBiKhoa, duocSuaSauNgayKham } from "@/lib/khoaSua";
 import {
   CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
-  fmtSinhTuoi,
+  fmtSinhTuoi, mucHuongHienThi
 } from "@/lib/csr";
 import {
-  BENH_SU_OPTIONS, BENH_LY_OPTIONS, LOAI_BENH_LY_OPTIONS, HUONG_XU_TRI, MUC_HUONG_BHYT,
+  BENH_SU_OPTIONS, BENH_LY_OPTIONS, LOAI_BENH_LY_OPTIONS, HUONG_XU_TRI, MUC_HUONG_OPTS, MUC_HUONG_LABELS,
   huongXuTriToKhuyenNghi, parseFieldConfig, isFieldOn, type FieldConfig,
 } from "@/lib/formFields";
 import { type ThongTinTheBHYT, parseQRData } from "@/lib/bhxh-types";
@@ -124,6 +124,8 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
   const [khuPho, setKhuPho] = useState("");
   const [xaPhuong, setXaPhuong] = useState("");
   const [mucHuong, setMucHuong] = useState("");
+  /** Tra cứu vừa báo thẻ hết hạn → giữ mức hưởng "Thẻ hết hạn", không để mã thẻ ghi đè lại 100% */
+  const theHetHanRef = useRef(false);
   const [scan, setScan] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -167,6 +169,9 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
         setLookup(r.success ? "ok" : "fail");
         setLookupMsg(r.notification || r.the.ghiChu || (r.success ? `Tìm thấy thẻ: ${ma}` : `Thẻ hết hạn (${r.the.gtTheDen || "Đã hết hạn"}). Đã tự động điền thông tin thẻ.`));
         applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v), setMucHuong);
+        // Thẻ hết hạn: GIỮ mã thẻ nhưng mức hưởng = "Thẻ hết hạn" (0) — tránh tư vấn nhầm là được BHYT chi trả
+        theHetHanRef.current = !r.success;
+        if (!r.success) setMucHuong("0");
       } else if (r.success && r.maThe) {
         setBhyt(String(r.maThe).toUpperCase());
         setLookup("ok");
@@ -237,6 +242,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
   };
   const handleBhytChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
+    theHetHanRef.current = false; // gõ tay mã thẻ → suy lại mức hưởng bình thường
     setBhyt(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15));
     setLookup("idle"); setTheBhyt(null);
   };
@@ -250,6 +256,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
   };
 
   const handleResetForm = () => {
+    theHetHanRef.current = false;
     setHoTen("");
     setBhyt("");
     setGioiTinh("Nam");
@@ -269,7 +276,8 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
   };
 
   // Mức hưởng suy tự động từ mã thẻ mỗi khi thẻ đổi
-  useEffect(() => { const m = mucHuongFromThe(bhyt); if (m) setMucHuong(m); }, [bhyt]);
+  // (Bỏ qua khi tra cứu vừa báo thẻ hết hạn — nếu không mã thẻ sẽ ghi đè lại 100%)
+  useEffect(() => { if (theHetHanRef.current) return; const m = mucHuongFromThe(bhyt); if (m) setMucHuong(m); }, [bhyt]);
 
   const submit = async (e?: React.FormEvent, forceCreate = false) => {
     if (e) e.preventDefault();
@@ -430,7 +438,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           {/* Nếu có BHYT / lỗi tra cứu / có dữ liệu thẻ -> Hiển thị Mức hưởng BHYT (%) để nhân viên chọn */}
           {(bhyt.trim().length > 0 || theBhyt || lookup === "fail") && (
             <div className="sm:col-span-6">
-              <Select label="Mức hưởng BHYT (%)" value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+              <Select label="Mức hưởng BHYT (%)" value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_OPTS} labels={MUC_HUONG_LABELS} placeholder="Chọn mức hưởng…" />
             </div>
           )}
 
@@ -585,7 +593,10 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
   const lookupAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => lookupAbortRef.current?.abort(), []);
+  // Mã thẻ đổi → suy lại mức hưởng; bỏ qua khi tra cứu vừa báo thẻ hết hạn, hoặc hồ sơ đang ghi thẻ hết hạn
+  const theHetHanRef = useRef(patient.mucHuongBHYT === 0);
   useEffect(() => {
+    if (theHetHanRef.current) return;
     const m = mucHuongFromThe(bhyt);
     if (m) setMucHuong(m);
   }, [bhyt]);
@@ -619,6 +630,9 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
         setLookup(r.success ? "ok" : "fail");
         setLookupMsg(r.notification || r.the.ghiChu || (r.success ? `Tìm thấy thẻ: ${ma}` : `Thẻ hết hạn (${r.the.gtTheDen || "Đã hết hạn"}). Đã tự động điền thông tin thẻ.`));
         applyBhxhDataToForm(r.the, setHoTen, setNgaySinh, setGioiTinh, setDiaChi, (v) => setCccd((prev) => prev.trim() || v), setMucHuong);
+        // Thẻ hết hạn: GIỮ mã thẻ nhưng mức hưởng = "Thẻ hết hạn" (0) — tránh tư vấn nhầm là được BHYT chi trả
+        theHetHanRef.current = !r.success;
+        if (!r.success) setMucHuong("0");
       } else if (r.success && r.maThe) {
         setBhyt(String(r.maThe).toUpperCase());
         setLookup("ok");
@@ -688,6 +702,7 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
   };
   const handleBhytChange = (val: string) => {
     if (val.includes("|")) { applyScan(val); return; }
+    theHetHanRef.current = false; // gõ tay mã thẻ → suy lại mức hưởng bình thường
     const clean = val.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 15);
     setBhyt(clean);
   };
@@ -842,7 +857,7 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
           )}
         </Field>
 
-        <Select label="Mức hưởng BHYT (%)" value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_BHYT.map(String)} placeholder="Chọn mức hưởng…" />
+        <Select label="Mức hưởng BHYT (%)" value={mucHuong} onChange={setMucHuong} opts={MUC_HUONG_OPTS} labels={MUC_HUONG_LABELS} placeholder="Chọn mức hưởng…" />
 
         {isFieldOn(cfg, "diaChi") && (
           <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" placeholder="Số nhà, đường, thôn/ấp..." /></Field>
@@ -1351,7 +1366,7 @@ export default function ExamPage() {
   // ── Tra cứu BHYT tự động hàng loạt cho các ca chưa có thông tin BHYT ────
   const missingBhytPatients = useMemo(() => {
     return patients.filter((p) => {
-      const hasValidBhyt = Boolean((p.bhyt && isCardNumber(p.bhyt)) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
+      const hasValidBhyt = p.mucHuongBHYT !== 0 && Boolean((p.bhyt && isCardNumber(p.bhyt)) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
       const hasSearchableInfo = Boolean((p.bhyt && p.bhyt.trim()) || (p.cccd && p.cccd.trim()) || (p.hoTen && p.hoTen.trim()));
       return !hasValidBhyt && hasSearchableInfo;
     });
@@ -1812,7 +1827,7 @@ export default function ExamPage() {
                 const st = statusOf(p.trangThai);
                 const sttPadded = String(p.stt ?? 0).padStart(2, "0");
                 const diags = parseDiag(p.chanDoan);
-                const hasBhyt = Boolean((p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
+                const hasBhyt = p.mucHuongBHYT !== 0 && Boolean((p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
 
                 // Badge màu cho STT
                 let sttBadgeCls = "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
@@ -1873,7 +1888,11 @@ export default function ExamPage() {
 
                         <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
                           <span>{p.gioiTinh} · {ageOf(p)}t</span>
-                          {p.mucHuongBHYT ? (
+                          {p.mucHuongBHYT === 0 ? (
+                            <span className="text-[var(--rose)] font-bold bg-[var(--rose-soft)] px-1 rounded border border-[var(--rose)]/25">
+                              BH hết hạn
+                            </span>
+                          ) : p.mucHuongBHYT ? (
                             <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded border border-emerald-200/60 dark:border-emerald-800/40">
                               BH {p.mucHuongBHYT}%
                             </span>
@@ -1900,7 +1919,7 @@ export default function ExamPage() {
               <h2 className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--navy)] mb-2">Thực hiện</h2>
               <div className="flex items-start justify-between gap-2">
                 <h3 className={`font-serif text-[19px] font-bold leading-tight uppercase ${
-                  (selected.bhyt && selected.bhyt.trim().length > 0) || (selected.mucHuongBHYT != null && selected.mucHuongBHYT > 0)
+                  selected.mucHuongBHYT !== 0 && ((selected.bhyt && selected.bhyt.trim().length > 0) || (selected.mucHuongBHYT != null && selected.mucHuongBHYT > 0))
                     ? "text-emerald-700 font-black"
                     : "text-[var(--ink)]"
                 }`}>
@@ -1920,7 +1939,7 @@ export default function ExamPage() {
               <dl className="mt-3 space-y-1 text-[11.5px] text-[var(--ink-soft)]">
                 <Row k="Giới tính" v={selected.gioiTinh || "—"} />
                 <Row k="Ngày sinh" v={fmtSinhTuoi(selected).replace(/^NS /, "") || "—"} mono />
-                <Row k="BHYT" v={selected.bhyt ? `${selected.bhyt} · ${selected.mucHuongBHYT ? `${selected.mucHuongBHYT}%` : bhytLevel(selected.bhyt)}` : "—"} mono />
+                <Row k="BHYT" v={selected.bhyt || selected.mucHuongBHYT === 0 ? `${selected.bhyt || "—"} · ${mucHuongHienThi(selected).text === "Hết hạn" ? "THẺ HẾT HẠN" : mucHuongHienThi(selected).text}` : "—"} mono />
                 <Row k="CCCD" v={selected.cccd || "—"} mono />
                 <Row k="SĐT" v={selected.sdt || "—"} mono />
                 <Row k="Địa chỉ" v={selected.diaChi || "—"} />
@@ -1984,7 +2003,7 @@ export default function ExamPage() {
                     </div>
                     <div className="text-[10.5px] sm:text-[11px] text-[var(--mute)] truncate font-medium mt-0.5">
                       <span>{selected.gioiTinh} · {ageOf(selected)}t</span>
-                      {selected.mucHuongBHYT ? <span> · BH {selected.mucHuongBHYT}%</span> : selected.bhyt ? <span> · {bhytLevel(selected.bhyt)}</span> : null}
+                      {selected.mucHuongBHYT === 0 ? <span className="text-[var(--rose)] font-semibold"> · BH hết hạn</span> : selected.mucHuongBHYT ? <span> · BH {selected.mucHuongBHYT}%</span> : selected.bhyt ? <span> · {bhytLevel(selected.bhyt)}</span> : null}
                       {selected.sdt && <span> · {selected.sdt}</span>}
                     </div>
                   </div>

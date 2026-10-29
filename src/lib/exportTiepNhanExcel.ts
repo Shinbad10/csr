@@ -64,7 +64,8 @@ function kyHieuMat(p: TiepNhanPatient): string {
   return "";
 }
 
-const bhytPct = (p: TiepNhanPatient) => (p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt));
+const bhytPct = (p: TiepNhanPatient) =>
+  p.mucHuongBHYT === 0 ? "Hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt);
 const namSinh = (p: TiepNhanPatient) => (p.namSinh ? String(p.namSinh) : p.ngaySinh ? String(new Date(p.ngaySinh).getFullYear()) : "");
 const nguoiTuVan = (p: TiepNhanPatient) => p.nhanVienTuVan || p.tuVanVien?.hoTen || "";
 const bacSi = (p: TiepNhanPatient) => p.bacSiChiDinh || p.buoiKham?.bacSiKham || "";

@@ -132,13 +132,14 @@ export function SectionHeader({ n, accent }: { n: number; accent: string }) {
   );
 }
 
-export function Select({ label, value, onChange, opts, req, mono = true, placeholder, disabled }: {
+export function Select({ label, value, onChange, opts, req, mono = true, placeholder, disabled, labels }: {
   label: string; value: string; onChange: (v: string) => void; opts: readonly string[]; req?: boolean; mono?: boolean; placeholder?: string; disabled?: boolean;
+  labels?: Record<string, string>;
 }) {
   return (
     <div className={disabled ? "opacity-70 pointer-events-none" : ""}>
       <label className={labelCls}>{label} {req && <span className="text-[var(--rose)]">*</span>}</label>
-      <Dropdown value={value} onChange={onChange} options={opts} mono={mono} placeholder={placeholder} disabled={disabled} />
+      <Dropdown value={value} onChange={onChange} options={opts} mono={mono} placeholder={placeholder} disabled={disabled} labels={labels} />
     </div>
   );
 }

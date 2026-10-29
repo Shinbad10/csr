@@ -36,6 +36,11 @@ export const LOAI_BENH_LY_OPTIONS = [
 export const HUONG_XU_TRI = ["Theo dõi", "Phẫu thuật", "Điều trị khác"] as const;
 
 export const MUC_HUONG_BHYT = [100, 95, 80] as const;
+/** mucHuongBHYT = 0 nghĩa là THẺ HẾT HẠN (tra cứu cổng BHXH báo hết hạn) — không được BHYT chi trả. */
+export const MUC_HUONG_HET_HAN = 0;
+/** Lựa chọn trên form: 100 / 95 / 80 / Thẻ hết hạn */
+export const MUC_HUONG_OPTS = ["100", "95", "80", "0"] as const;
+export const MUC_HUONG_LABELS: Record<string, string> = { "100": "100%", "95": "95%", "80": "80%", "0": "Thẻ hết hạn (không hưởng BHYT)" };
 
 /** "Hướng xử trí" → `khuyenNghi` (giữ nguyên luồng Tư vấn / Theo dõi / Báo cáo). */
 export const huongXuTriToKhuyenNghi = (v?: string | null): string | null =>

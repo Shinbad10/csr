@@ -608,7 +608,7 @@ export default function ReportDetailModal({
           <div>
             <div className="font-mono text-[11.5px] font-bold text-indigo-700">{p.bhyt}</div>
             <div className="text-[10.5px] text-[var(--mute)] mt-0.5">
-              Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
+              Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT === 0 ? "Thẻ hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
             </div>
           </div>
         );
@@ -747,7 +747,7 @@ export default function ReportDetailModal({
             return c.isNhomA ? "A" : c.hasPathology ? "B" : "";
           })(),
           "Thẻ BHYT": p.bhyt || "",
-          "Mức hưởng BHYT": p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt),
+          "Mức hưởng BHYT": p.mucHuongBHYT === 0 ? "Thẻ hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt),
           "Bác sĩ chỉ định": p.bacSiChiDinh || p.buoiKham?.bacSiKham || "",
           "Nhân viên tư vấn": tenTuVanVien(p),
           "Trạng thái": statusOf(p.trangThai).label,

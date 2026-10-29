@@ -36,10 +36,9 @@ import {
   fmtTime,
   fmtBuoiKhamName,
   statusOf,
-  bhytLevel,
   TT_DIEU_TRI,
   type HoSo,
-  fmtSinhTuoi,
+  fmtSinhTuoi, mucHuongHienThi
 } from "@/lib/csr";
 import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/components/csr/fields";
 import { SkeletonList } from "@/components/layout/Skeleton";
@@ -956,7 +955,7 @@ export default function TheoDoiPage() {
                       <div className={`${moThongTin ? "contents" : "hidden"} sm:contents`}>
                         {sel.bhyt && (
                           <Fact label="BHYT">
-                            <span className="font-mono">{sel.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(sel.bhyt)})</span>
+                            <span className="font-mono">{sel.bhyt}</span> <span className={mucHuongHienThi(sel).hetHan ? "text-[var(--rose)] font-semibold" : "text-[var(--mute)]"}>({mucHuongHienThi(sel).hetHan ? "Thẻ hết hạn" : mucHuongHienThi(sel).text})</span>
                           </Fact>
                         )}
                         {sel.cccd && <Fact label="CCCD"><span className="font-mono">{sel.cccd}</span></Fact>}

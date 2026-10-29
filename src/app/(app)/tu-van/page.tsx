@@ -40,7 +40,7 @@ import {
   parseDoanXe,
   formatGhiChuWithDoanXe,
   parseThongTinNguoiNha,
-  formatThongTinNguoiNha,
+  formatThongTinNguoiNha, mucHuongHienThi
 } from "@/lib/csr";
 import { StatusBadge, labelCls, Combobox, SectionHeader, Select, DateField } from "@/components/csr/fields";
 import PageHeader from "@/components/layout/PageHeader";
@@ -1164,7 +1164,7 @@ export default function TuVanSessionPage() {
                       </div>
 
                       <div className="mt-0.5 pl-[26px] text-[11.5px] text-[var(--mute)] truncate">
-                        {[p.gioiTinh, fmtSinhTuoi(p) || null, p.bhyt ? `BH ${bhytLevel(p.bhyt)}` : null].filter(Boolean).join(" · ")}
+                        {[p.gioiTinh, fmtSinhTuoi(p) || null, p.mucHuongBHYT === 0 ? "BH hết hạn" : p.bhyt ? `BH ${mucHuongHienThi(p).text}` : null].filter(Boolean).join(" · ")}
                         {diags.length > 0 && <span className="text-[var(--ink-soft)]"> · {diags.join(", ")}</span>}
                       </div>
 
@@ -1358,7 +1358,7 @@ export default function TuVanSessionPage() {
                           <div className={`${moThongTin ? "contents" : "hidden"} sm:contents`}>
                             {selected.bhyt && (
                               <Fact label="BHYT">
-                                <span className="font-mono">{selected.bhyt}</span> <span className="text-[var(--mute)]">({bhytLevel(selected.bhyt)})</span>
+                                <span className="font-mono">{selected.bhyt}</span> <span className={mucHuongHienThi(selected).hetHan ? "text-[var(--rose)] font-semibold" : "text-[var(--mute)]"}>({mucHuongHienThi(selected).hetHan ? "Thẻ hết hạn" : bhytLevel(selected.bhyt)})</span>
                               </Fact>
                             )}
                             {selected.cccd && <Fact label="CCCD"><span className="font-mono">{selected.cccd}</span></Fact>}

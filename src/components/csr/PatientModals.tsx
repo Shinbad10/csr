@@ -28,7 +28,7 @@ import {
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
-import { fmtDate, parseDiag, statusOf, bhytLevel, fmtSinhTuoi, ageOf, fmtNgaySinh } from "@/lib/csr";
+import { fmtDate, parseDiag, statusOf, fmtSinhTuoi, ageOf, fmtNgaySinh, mucHuongHienThi } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -394,7 +394,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     <span className="inline-flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-indigo-700">{data.bhyt}</span>
                       <span className="px-1.5 py-px rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
-                        {data.mucHuongBHYT ? `${data.mucHuongBHYT}%` : bhytLevel(data.bhyt)}
+                        {mucHuongHienThi(data).hetHan ? "Thẻ hết hạn" : mucHuongHienThi(data).text}
                       </span>
                     </span>
                   ) : null}

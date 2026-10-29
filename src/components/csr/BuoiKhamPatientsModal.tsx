@@ -289,7 +289,7 @@ export default function BuoiKhamPatientsModal({
           <div className="min-w-0">
             <div className="font-mono text-[11.5px] font-semibold text-indigo-700 truncate" title={p.bhyt}>{p.bhyt}</div>
             <div className="text-[10.5px] text-[var(--mute)]">
-              Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
+              Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT === 0 ? "Thẻ hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
             </div>
           </div>
         );
