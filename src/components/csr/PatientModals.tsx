@@ -718,18 +718,31 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
                             <span className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
                               Chi tiết cập nhật ({ev.changes.length} trường)
                             </span>
-                            <span className="font-sans text-[10px] text-[var(--mute)] font-medium">* Giá trị mới ghi nhận</span>
+                            <span className="font-sans text-[10px] text-[var(--mute)] font-medium">
+                              {ev.changes.some((c: { oldValue?: string }) => c.oldValue !== undefined) ? "Giá trị cũ → mới" : "* Giá trị mới ghi nhận"}
+                            </span>
                           </div>
-                          <div className="divide-y divide-[var(--line-soft)] max-h-[180px] overflow-y-auto">
+                          <div className="divide-y divide-[var(--line-soft)] max-h-[220px] overflow-y-auto">
                             {ev.changes.map((ch: any, idx: number) => (
-                              <div key={idx} className="px-3 py-1.5 text-[12px] flex items-center justify-between hover:bg-[var(--surface-soft)] transition-colors">
+                              <div key={idx} className="px-3 py-1.5 text-[12px] flex items-center justify-between gap-2 hover:bg-[var(--surface-soft)] transition-colors">
                                 <span className="font-sans font-medium text-[var(--ink-soft)] w-2/5 shrink-0 truncate flex items-center gap-1.5" title={ch.fieldLabel}>
                                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] inline-block shrink-0"></span>
                                   {ch.fieldLabel}
                                 </span>
-                                <span className="font-mono font-semibold text-[var(--navy)] w-3/5 text-right break-words pl-2">
-                                  {ch.displayValue}
-                                </span>
+                                {ch.oldValue !== undefined ? (
+                                  // Giữ thông tin cũ để đối chiếu: cũ (gạch, rose) → mới (navy)
+                                  <span className="w-3/5 flex items-center justify-end gap-1.5 flex-wrap text-right min-w-0">
+                                    <span className="font-mono text-[var(--rose)] line-through decoration-[var(--rose)]/50 break-words" title="Giá trị trước khi sửa">
+                                      {ch.oldValue}
+                                    </span>
+                                    <span className="text-[var(--mute-soft)] shrink-0">→</span>
+                                    <span className="font-mono font-semibold text-[var(--navy)] break-words">{ch.displayValue}</span>
+                                  </span>
+                                ) : (
+                                  <span className="font-mono font-semibold text-[var(--navy)] w-3/5 text-right break-words pl-2">
+                                    {ch.displayValue}
+                                  </span>
+                                )}
                               </div>
                             ))}
                           </div>

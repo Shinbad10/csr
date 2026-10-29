@@ -47,6 +47,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { Badge, Fact, FIELD_LABEL, INPUT_CLS, type Tone } from "@/components/csr/ui";
 import { useHisReconcile, DoiChieuHistoryModal, fmtRelative, type DoiChieuLog } from "@/components/csr/HisReconcile";
+import { PatientHistoryModal } from "@/components/csr/PatientModals";
 import { RefreshCw, History, ChevronDown } from "lucide-react";
 
 type FilterKey = "" | "chuagoi" | "dagoi" | "nhomA" | "nhomB" | "daden" | "damo" | "damotruoc";
@@ -502,6 +503,8 @@ export default function TuVanSessionPage() {
   const patientsAbort = useRef<AbortController | null>(null);
   /** Điện thoại: BHYT / CCCD / địa chỉ thu gọn sau nút "Thêm" để thẻ hồ sơ không chiếm nửa màn hình */
   const [moThongTin, setMoThongTin] = useState(false);
+  /** Hồ sơ đang xem lịch sử thay đổi (giá trị cũ → mới) */
+  const [lichSuId, setLichSuId] = useState<string | null>(null);
   /** Sửa SĐT tại chỗ trên thẻ hồ sơ: null = không sửa */
   const [suaSdt, setSuaSdt] = useState<string | null>(null);
   const [dangLuuSdt, setDangLuuSdt] = useState(false);
@@ -853,6 +856,7 @@ export default function TuVanSessionPage() {
         }
       />
 
+      {lichSuId && <PatientHistoryModal hoSoId={lichSuId} onClose={() => setLichSuId(null)} />}
       <DoiChieuHistoryModal
         target={showHisHistory && curBk ? { id: curBk.id, name: fmtBuoiKhamName(curBk) } : null}
         onClose={() => setShowHisHistory(false)}
@@ -1245,6 +1249,14 @@ export default function TuVanSessionPage() {
                             <Fact label="Chỉ định">
                               <span className="font-semibold text-[var(--rose)]">{selected.khuyenNghi || selected.huongXuTri || "Phẫu thuật"}</span>
                             </Fact>
+                            <button
+                              type="button"
+                              onClick={() => setLichSuId(selected.id)}
+                              title="Xem lịch sử thay đổi thông tin (giá trị cũ → mới)"
+                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[8px] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer"
+                            >
+                              <History className="w-3.5 h-3.5" /> Lịch sử
+                            </button>
                           </div>
                         </div>
 

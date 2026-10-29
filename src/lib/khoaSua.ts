@@ -41,7 +41,7 @@ export const TRUONG_PHIEU_KHAM = [
 ] as const;
 
 /** Chuẩn hoá để so sánh: rỗng → null, mảng → JSON, ngày → YYYY-MM-DD, chuỗi số giữ nguyên. */
-function chuan(v: unknown): string | null {
+export function chuan(v: unknown): string | null {
   if (v === undefined || v === null || v === "") return null;
   if (v instanceof Date) return ngayVN(v);
   if (Array.isArray(v)) return v.length ? JSON.stringify(v) : null;
@@ -52,6 +52,27 @@ function chuan(v: unknown): string | null {
     return t;
   }
   return String(v);
+}
+
+/** Trường hệ thống — không ghi vào lịch sử thay đổi. */
+const KHONG_GHI_LICH_SU = new Set(["updatedBy", "updatedAt", "createdBy", "createdAt", "id", "coSoId", "buoiKhamId", "syncStatus"]);
+
+/**
+ * Giá trị CŨ → MỚI của mọi trường mà `update` thực sự đổi so với bản đang lưu — để ghi nhật ký,
+ * giữ lại thông tin cũ cho đối chiếu. Giá trị lưu dạng chuỗi đã chuẩn hoá (null = trống).
+ */
+export function soSanhCuMoi(
+  update: Record<string, unknown>,
+  current: Record<string, unknown>
+): Record<string, { cu: string | null; moi: string | null }> {
+  const out: Record<string, { cu: string | null; moi: string | null }> = {};
+  for (const [k, v] of Object.entries(update)) {
+    if (KHONG_GHI_LICH_SU.has(k) || v === undefined) continue;
+    const cu = chuan(current[k]);
+    const moi = chuan(v);
+    if (cu !== moi) out[k] = { cu, moi };
+  }
+  return out;
 }
 
 /**

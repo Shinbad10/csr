@@ -9,7 +9,7 @@ import { triggerSync } from "@/lib/syncWorker";
 import { parseDiag } from "@/lib/csr";
 import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
 import { broadcastEvent } from "@/lib/events";
-import { dotBiKhoa, duocSuaSauNgayKham, truongPhieuKhamBiDoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
+import { dotBiKhoa, duocSuaSauNgayKham, truongPhieuKhamBiDoi, soSanhCuMoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
 
 import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -77,12 +77,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json();
     const update: Record<string, unknown> = { updatedBy: session.user.id };
 
+    // Bản đang lưu: để chặn sửa đợt đã khoá và ghi lịch sử CŨ → MỚI
+    const cur = await prisma.hoSoBenhNhan.findUnique({ where: { id }, include: { buoiKham: { select: { ngayKham: true, trangThai: true } } } });
+    if (!cur) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
     // Đợt đã qua ngày: thông tin hành chính / phiếu khám chỉ Quản trị viên được sửa
-    if (!duocSuaSauNgayKham(session.user.role)) {
-      const cur = await prisma.hoSoBenhNhan.findUnique({ where: { id }, include: { buoiKham: { select: { ngayKham: true, trangThai: true } } } });
-      if (cur && dotBiKhoa(cur.buoiKham) && truongPhieuKhamBiDoi(body, cur as unknown as Record<string, unknown>).length)
-        return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
-    }
+    if (!duocSuaSauNgayKham(session.user.role) && dotBiKhoa(cur.buoiKham) && truongPhieuKhamBiDoi(body, cur as unknown as Record<string, unknown>).length)
+      return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
 
     for (const f of TRUONG_TUY_CHON) {
       if (body[f] === undefined) continue;
@@ -132,8 +132,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
     }
 
+    // Lịch sử: giữ giá trị CŨ → MỚI của các trường thực sự đổi
+    const cuMoi = soSanhCuMoi(update, cur as unknown as Record<string, unknown>);
     await Promise.all([
-      audit(session.user.id, "HoSoBenhNhan", id, "sua", body),
+      Object.keys(cuMoi).length ? audit(session.user.id, "HoSoBenhNhan", id, "sua", { _cuMoi: cuMoi }) : Promise.resolve(),
       prisma.syncQueue.create({ data: { hoSoId: id } }), // BR-15
     ]);
     triggerSync();
@@ -295,9 +297,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         throw err;
       }
     }
-    // Chạy song song thay vì nối tiếp — vẫn chờ syncQueue để giữ đảm bảo bền vững của BR-15
+    // Chạy song song thay vì nối tiếp — vẫn chờ syncQueue để giữ đảm bảo bền vững của BR-15.
+    // Lịch sử ghi CŨ → MỚI (không phải nguyên body) để đối chiếu được thông tin trước khi sửa.
+    const cuMoi = soSanhCuMoi(update, current as unknown as Record<string, unknown>);
     await Promise.all([
-      audit(session.user.id, "HoSoBenhNhan", id, "sua", body),
+      Object.keys(cuMoi).length ? audit(session.user.id, "HoSoBenhNhan", id, "sua", { _cuMoi: cuMoi }) : Promise.resolve(),
       prisma.syncQueue.create({ data: { hoSoId: id } }),
     ]);
     triggerSync(); // đẩy Sheet ngay, không chặn response

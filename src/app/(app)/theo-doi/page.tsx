@@ -47,6 +47,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
 import { Badge, Fact, FIELD_LABEL, INPUT_CLS, BTN_SOFT, TONE_SOLID, WorkCard, type Tone } from "@/components/csr/ui";
 import { useHisReconcile, DoiChieuHistoryModal, fmtRelative, type DoiChieuLog } from "@/components/csr/HisReconcile";
+import { PatientHistoryModal } from "@/components/csr/PatientModals";
 
 const FOLLOW = ["", "Đang follow-up", "Quá 28 ngày–chuyển CSKH", "Đã chốt", "Ngừng"];
 /** Các trạng thái thuộc luồng mổ (nhóm A). Gồm cả CoChiDinhMo — ca chưa chốt ngày, cần nhắc lịch. */
@@ -95,6 +96,8 @@ export default function TheoDoiPage() {
   const { addToast } = useToast();
   const [tab, setTab] = useState<"A" | "B">("A");
   const [moThongTin, setMoThongTin] = useState(false);
+  /** Hồ sơ đang xem lịch sử thay đổi (giá trị cũ → mới) */
+  const [lichSuId, setLichSuId] = useState<string | null>(null);
   const [rows, setRows] = useState<HoSo[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -911,17 +914,22 @@ export default function TheoDoiPage() {
                         <span className="text-[12.5px] text-[var(--mute)]">{[sel.gioiTinh, fmtSinhTuoi(sel)].filter(Boolean).join(" · ")}</span>
                         {sel.nhom && <Badge tone={sel.nhom === "A" ? "rose" : "amber"}>Nhóm {sel.nhom}</Badge>}
                       </div>
-                      {hasHisConfig && (
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => checkHisPatient(sel)} disabled={checkingHis} title="Đối chiếu HIS riêng bệnh nhân này" className={`${BTN_SOFT.navy} h-8`}>
-                            {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-                            Đối chiếu BN này
-                          </button>
-                          <button onClick={() => openHisSearch(sel)} title="Tìm & chọn ca mổ trong HIS thủ công" className={`${BTN_SOFT.ghost} h-8`}>
-                            <Search className="w-3.5 h-3.5" /> Tìm HIS
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {hasHisConfig && (
+                          <>
+                            <button onClick={() => checkHisPatient(sel)} disabled={checkingHis} title="Đối chiếu HIS riêng bệnh nhân này" className={`${BTN_SOFT.navy} h-8`}>
+                              {checkingHis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                              Đối chiếu BN này
+                            </button>
+                            <button onClick={() => openHisSearch(sel)} title="Tìm & chọn ca mổ trong HIS thủ công" className={`${BTN_SOFT.ghost} h-8`}>
+                              <Search className="w-3.5 h-3.5" /> Tìm HIS
+                            </button>
+                          </>
+                        )}
+                        <button onClick={() => setLichSuId(sel.id)} title="Xem lịch sử thay đổi thông tin (giá trị cũ → mới)" className={`${BTN_SOFT.ghost} h-8`}>
+                          <History className="w-3.5 h-3.5" /> Lịch sử
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-2 pt-2 sm:mt-2.5 sm:pt-2.5 border-t border-[var(--line-soft)] flex items-center gap-x-5 gap-y-1.5 flex-wrap">
                       <Fact label="SĐT">
@@ -1256,6 +1264,7 @@ export default function TheoDoiPage() {
         </div>
       )}
 
+      {lichSuId && <PatientHistoryModal hoSoId={lichSuId} onClose={() => setLichSuId(null)} />}
       <DoiChieuHistoryModal
         target={showHisHistory && curBk ? { id: curBk.id, name: fmtBuoiKhamName(curBk) } : null}
         onClose={() => setShowHisHistory(false)}

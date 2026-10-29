@@ -23,7 +23,30 @@ const FIELD_NAMES: Record<string, string> = {
   doKinhMT: "Độ kính mắt trái",
   thiLucMT: "Thị lực mắt trái",
   nhom: "Phân nhóm điều trị",
-  bhyt: "Mức hưởng BHYT",
+  bhyt: "Mã thẻ BHYT",
+  mucHuongBHYT: "Mức hưởng BHYT",
+  khuPho: "Khu phố / Thôn",
+  xaPhuong: "Xã / Phường",
+  matKham: "Mắt khám",
+  chanDoanMP: "Chẩn đoán mắt phải",
+  chanDoanMT: "Chẩn đoán mắt trái",
+  chanDoanKhacMP: "Chẩn đoán khác mắt phải",
+  chanDoanKhacMT: "Chẩn đoán khác mắt trái",
+  huongXuTri: "Hướng xử trí",
+  huongXuTriKhac: "Hướng xử trí khác",
+  benhSu: "Bệnh sử",
+  loaiBenhSu: "Loại bệnh sử",
+  benhLy: "Bệnh lý",
+  loaiBenhLy: "Loại bệnh lý",
+  chieuCao: "Chiều cao",
+  canNang: "Cân nặng",
+  bacSiChiDinh: "Bác sĩ chỉ định",
+  nhanVienTuVan: "Nhân viên tư vấn",
+  xacNhanDieuTri: "Xác nhận điều trị",
+  lyDoKhongDieuTri: "Ý kiến / lý do chưa điều trị",
+  ghiChuTuVan: "Ghi chú tư vấn / dặn dò",
+  ngayDenBV: "Ngày đến bệnh viện",
+  diemKham: "Điểm khám",
   soTienBao: "Chi phí báo bệnh nhân",
   soTienThucThu: "Chi phí thực thu",
   trangThaiDieuTri: "Kết quả điều trị viện",
@@ -105,7 +128,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       userInfo: { name: string; maNV: string; role: string; khoa: string; isSystem: boolean };
       action: string;
       type: "create" | "clinical" | "group" | "his" | "surgery" | "log" | "edit";
-      changes?: Array<{ fieldLabel: string; displayValue: string }>;
+      changes?: Array<{ fieldLabel: string; displayValue: string; oldValue?: string }>;
       message?: string;
       badge?: { label: string; cls: string };
     }> = [];
@@ -167,8 +190,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       if (a.hanhDong === "them") continue;
 
       const u = getUserInfo(a.nguoiDung);
-      let changesObj: Record<string, any> = {};
-      try { changesObj = JSON.parse(a.thayDoi || "{}"); } catch {}
+      let raw: Record<string, unknown> = {};
+      try { raw = JSON.parse(a.thayDoi || "{}"); } catch {}
+      // Định dạng mới: { _cuMoi: { field: { cu, moi } } } — giữ giá trị CŨ để đối chiếu.
+      // Định dạng cũ: nguyên body (chỉ có giá trị mới).
+      const cuMoi: Record<string, { cu: string | null; moi: string | null }> | null =
+        raw && raw._cuMoi && typeof raw._cuMoi === "object"
+          ? (raw._cuMoi as Record<string, { cu: string | null; moi: string | null }>)
+          : null;
+      const changesObj: Record<string, any> = cuMoi
+        ? Object.fromEntries(Object.entries(cuMoi).map(([k, v]) => [k, v.moi ?? "(để trống)"]))
+        : raw;
 
       const changedKeys = Object.keys(changesObj).filter(
         (k) =>
@@ -203,24 +235,27 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         badge = { label: changesObj.trangThaiDieuTri || "Tại bệnh viện", cls: "badge-green" };
       }
 
-      // Format đẹp từng trường thay đổi
-      const formattedChanges: Array<{ fieldLabel: string; displayValue: string }> = [];
-      for (const k of changedKeys) {
-        const label = FIELD_NAMES[k] || k;
-        let val = changesObj[k];
-
-        if (typeof val === "boolean") val = val ? "Có / Đã hoàn tất" : "Chưa / Không";
-        else if (typeof val === "number" && (k.toLowerCase().includes("sotien") || k.toLowerCase().includes("tien"))) {
-          val = val.toLocaleString("vi-VN") + " VNĐ";
-        } else if (k === "trangThai") {
-          val = statusOf(val).label || val;
-        } else if (k === "chanDoan" && typeof val === "string" && val.startsWith("[")) {
-          val = parseDiag(val).join(", ") || val;
-        } else if (typeof val === "string" && (val.startsWith("202") || val.startsWith("19") || val.startsWith("201")) && val.includes("T")) {
-          try { val = fmtDate(val); } catch {}
+      // Format đẹp từng trường thay đổi (kèm giá trị cũ nếu có)
+      const fmtVal = (k: string, val: unknown): string => {
+        if (val === null || val === undefined || val === "") return "(để trống)";
+        if (typeof val === "boolean" || val === "true" || val === "false") {
+          return val === true || val === "true" ? "Có / Đã hoàn tất" : "Chưa / Không";
         }
-
-        formattedChanges.push({ fieldLabel: label, displayValue: String(val) });
+        if (k.toLowerCase().includes("sotien") && !isNaN(Number(val))) return Number(val).toLocaleString("vi-VN") + " VNĐ";
+        if (k === "trangThai") return statusOf(String(val)).label || String(val);
+        if (k.startsWith("chanDoan") && typeof val === "string" && val.startsWith("[")) return parseDiag(val).join(", ") || "(để trống)";
+        if (typeof val === "string" && /^(19|20)\d{2}-\d{2}-\d{2}/.test(val)) {
+          try { return fmtDate(val); } catch { return val; }
+        }
+        return String(val);
+      };
+      const formattedChanges: Array<{ fieldLabel: string; displayValue: string; oldValue?: string }> = [];
+      for (const k of changedKeys) {
+        formattedChanges.push({
+          fieldLabel: FIELD_NAMES[k] || k,
+          displayValue: fmtVal(k, cuMoi ? cuMoi[k]?.moi : changesObj[k]),
+          ...(cuMoi ? { oldValue: fmtVal(k, cuMoi[k]?.cu) } : {}),
+        });
       }
 
       events.push({
