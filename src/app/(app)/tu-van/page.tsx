@@ -284,6 +284,19 @@ function getPatientCategoryPriority(p: HoSo): number {
   return hasCall ? 4 : 1; // chưa có quyết định
 }
 
+/** Bảng thứ tự cố định cho danh sách bệnh nhân khi nạp trang / đổi đợt / bấm sắp xếp lại */
+function computeOrderMap(list: HoSo[]): Map<string, number> {
+  const sorted = [...list].sort((a, b) => {
+    const prioA = getPatientCategoryPriority(a);
+    const prioB = getPatientCategoryPriority(b);
+    if (prioA !== prioB) return prioA - prioB;
+    return (a.stt ?? 0) - (b.stt ?? 0);
+  });
+  const map = new Map<string, number>();
+  sorted.forEach((p, idx) => map.set(p.id, idx));
+  return map;
+}
+
 /** Trạng thái quyết định tư vấn của một hồ sơ → nhãn + tông màu. */
 function decisionOf(p: HoSo): { label: string; tone: Tone } | null {
   if (p.nhom === "A" || p.xacNhanDieuTri === true) return { label: "Đồng ý điều trị", tone: "teal" };
@@ -307,6 +320,8 @@ export default function TuVanSessionPage() {
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("");
   const [sortBy, setSortBy] = useState<"loai" | "stt">("loai");
+  const sortOrderMapRef = useRef<Map<string, number>>(new Map());
+  const [sortVersion, setSortVersion] = useState(0);
 
   const [f, setF] = useState(EMPTY);
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
@@ -386,7 +401,7 @@ export default function TuVanSessionPage() {
       const timing = checkSurgeryTiming(p, currentBkDate);
       const isDaDen = Boolean(p.daDon) || Boolean(p.ngayDenBV) || p.trangThai === "DaDonVien" || p.trangThaiDieuTri === "Đã đến trước đây" || timing.isDaMo;
 
-      if (filter === "chuagoi" && called) return false;
+      if (filter === "chuagoi" && called && p.id !== selId) return false;
       if (filter === "dagoi" && !called) return false;
       if (filter === "nhomA" && !isA) return false;
       if (filter === "nhomB" && isA) return false;
@@ -398,13 +413,13 @@ export default function TuVanSessionPage() {
 
     return [...filtered].sort((a, b) => {
       if (sortBy === "loai") {
-        const prioA = getPatientCategoryPriority(a);
-        const prioB = getPatientCategoryPriority(b);
-        if (prioA !== prioB) return prioA - prioB;
+        const orderA = sortOrderMapRef.current.get(a.id) ?? (100000 + (a.stt ?? 0));
+        const orderB = sortOrderMapRef.current.get(b.id) ?? (100000 + (b.stt ?? 0));
+        if (orderA !== orderB) return orderA - orderB;
       }
       return (a.stt ?? 0) - (b.stt ?? 0);
     });
-  }, [patients, filter, sortBy, currentBkDate]);
+  }, [patients, filter, sortBy, sortVersion, selId, currentBkDate]);
 
   // Bộ đếm nhanh trạng thái tư vấn & tiến độ viện
   const counts = useMemo(() => {
@@ -559,9 +574,31 @@ export default function TuVanSessionPage() {
       // Tải tất cả các bệnh nhân có chẩn đoán bệnh lý
       const data = all.filter(isBenhLyPatient);
       setPatients(data);
-      // Ưu tiên: ID giữ nguyên -> Bệnh nhân chưa tư vấn đầu tiên -> Bệnh nhân đầu tiên
+
+      if (sortOrderMapRef.current.size === 0) {
+        sortOrderMapRef.current = computeOrderMap(data);
+      } else {
+        let maxIdx = 0;
+        sortOrderMapRef.current.forEach((idx) => {
+          if (idx > maxIdx) maxIdx = idx;
+        });
+        data.forEach((p) => {
+          if (!sortOrderMapRef.current.has(p.id)) {
+            maxIdx += 1;
+            sortOrderMapRef.current.set(p.id, maxIdx);
+          }
+        });
+      }
+
+      let firstPatient: HoSo | null = null;
+      if (sortOrderMapRef.current.size > 0) {
+        firstPatient = data.find((p) => sortOrderMapRef.current.get(p.id) === 0) || null;
+      }
+
+      // Ưu tiên: ID giữ nguyên -> Bệnh nhân đầu tiên theo thứ tự -> Bệnh nhân chưa tư vấn đầu tiên -> Bệnh nhân đầu tiên
       const next =
         data.find((p) => p.id === (keepSel ?? selId)) ||
+        firstPatient ||
         data.find((p) => !isTuVanDone(p)) ||
         data[0] ||
         null;
@@ -596,6 +633,8 @@ export default function TuVanSessionPage() {
 
   useEffect(() => {
     if (selBk) {
+      sortOrderMapRef.current.clear();
+      setSortVersion((v) => v + 1);
       setLoading(true);
       fetchPatients().finally(() => setLoading(false));
     }
@@ -718,12 +757,6 @@ export default function TuVanSessionPage() {
         message: `Đã lưu tư vấn${pendingCall ? " & nhật ký gọi" : ""}: ${selected.hoTen}`,
       });
       await fetchPatients(selected.id, true);
-
-      // Tự động chuyển ca tiếp theo chưa tư vấn
-      const nextPending = visible.find((p) => p.id !== selected.id && !p.nhom && p.xacNhanDieuTri == null);
-      if (nextPending) {
-        pick(nextPending, true);
-      }
     } catch {
       addToast({ type: "error", message: "Mất kết nối máy chủ" });
     } finally {
@@ -1040,7 +1073,13 @@ export default function TuVanSessionPage() {
                     <button
                       key={k}
                       type="button"
-                      onClick={() => setSortBy(k)}
+                      onClick={() => {
+                        setSortBy(k);
+                        if (k === "loai") {
+                          sortOrderMapRef.current = computeOrderMap(patients);
+                          setSortVersion((v) => v + 1);
+                        }
+                      }}
                       className={`px-2 h-6 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
                         sortBy === k ? "bg-[var(--surface)] text-[var(--navy)] shadow-[var(--shadow-sm)]" : "text-[var(--mute)] hover:text-[var(--ink)]"
                       }`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import PageHeader from "@/components/layout/PageHeader";
@@ -133,6 +133,19 @@ function getPatientCategoryPriority(p: HoSo): number {
   return 5; // Đã tư vấn khác
 }
 
+/** Bảng thứ tự cố định cho danh sách bệnh nhân khi nạp trang / đổi đợt / bấm sắp xếp lại */
+function computeOrderMap(list: HoSo[]): Map<string, number> {
+  const sorted = [...list].sort((a, b) => {
+    const prioA = getPatientCategoryPriority(a);
+    const prioB = getPatientCategoryPriority(b);
+    if (prioA !== prioB) return prioA - prioB;
+    return (a.stt ?? 0) - (b.stt ?? 0);
+  });
+  const map = new Map<string, number>();
+  sorted.forEach((p, idx) => map.set(p.id, idx));
+  return map;
+}
+
 function getPatientDiags(p: HoSo): string[] {
   const diags: string[] = [];
   if (p.chanDoanMP) {
@@ -198,6 +211,8 @@ export default function TuVanSessionPage() {
   const [filter, setFilter] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"loai" | "stt">("loai");
+  const sortOrderMapRef = useRef<Map<string, number>>(new Map());
+  const [sortVersion, setSortVersion] = useState(0);
 
   const [f, setF] = useState(EMPTY);
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
@@ -280,11 +295,33 @@ export default function TuVanSessionPage() {
     const all: HoSo[] = res.ok ? await res.json() : [];
     const data = all.filter(isBenhLyPatient);
     setPatients(data);
-    const next = data.find((p) => p.id === (keepSel ?? selId)) || data[0] || null;
+
+    if (sortOrderMapRef.current.size === 0) {
+      sortOrderMapRef.current = computeOrderMap(data);
+    } else {
+      let maxIdx = 0;
+      sortOrderMapRef.current.forEach((idx) => {
+        if (idx > maxIdx) maxIdx = idx;
+      });
+      data.forEach((p) => {
+        if (!sortOrderMapRef.current.has(p.id)) {
+          maxIdx += 1;
+          sortOrderMapRef.current.set(p.id, maxIdx);
+        }
+      });
+    }
+
+    let firstPatient: HoSo | null = null;
+    if (sortOrderMapRef.current.size > 0) {
+      firstPatient = data.find((p) => sortOrderMapRef.current.get(p.id) === 0) || null;
+    }
+    const next = data.find((p) => p.id === (keepSel ?? selId)) || firstPatient || data[0] || null;
     if (next) { if (forceForm || next.id !== selId) loadForm(next); setSelId(next.id); } else setSelId(null);
   }, [buoiKhamId, search, selId, loadForm]);
 
   useEffect(() => {
+    sortOrderMapRef.current.clear();
+    setSortVersion((v) => v + 1);
     (async () => {
       const targetId = decodeURIComponent(buoiKhamId || "").normalize("NFC");
       let cur: BuoiKham | null = null;
@@ -395,7 +432,7 @@ export default function TuVanSessionPage() {
       const called = !!(p.nhatKy && p.nhatKy.length > 0);
       const isA = p.nhom === "A" || p.xacNhanDieuTri === true;
       if (!filter) return true;
-      if (filter === "chuagoi" && called) return false;
+      if (filter === "chuagoi" && called && p.id !== selId) return false;
       if (filter === "dagoi" && !called) return false;
       if (filter === "nhomA" && !isA) return false;
       if (filter === "nhomB" && isA) return false;
@@ -404,13 +441,13 @@ export default function TuVanSessionPage() {
 
     return [...filtered].sort((a, b) => {
       if (sortBy === "loai") {
-        const prioA = getPatientCategoryPriority(a);
-        const prioB = getPatientCategoryPriority(b);
-        if (prioA !== prioB) return prioA - prioB;
+        const orderA = sortOrderMapRef.current.get(a.id) ?? (100000 + (a.stt ?? 0));
+        const orderB = sortOrderMapRef.current.get(b.id) ?? (100000 + (b.stt ?? 0));
+        if (orderA !== orderB) return orderA - orderB;
       }
       return (a.stt ?? 0) - (b.stt ?? 0);
     });
-  }, [patients, filter, sortBy]);
+  }, [patients, filter, sortBy, sortVersion, selId]);
 
   const FILTERS = [
     { key: "", label: "Tất cả" },
@@ -533,7 +570,11 @@ export default function TuVanSessionPage() {
             <div className="flex items-center gap-0.5 bg-[var(--surface-soft)] p-0.5 rounded-md border border-[var(--line-soft)] text-[10.5px]">
               <button
                 type="button"
-                onClick={() => setSortBy("loai")}
+                onClick={() => {
+                  setSortBy("loai");
+                  sortOrderMapRef.current = computeOrderMap(patients);
+                  setSortVersion((v) => v + 1);
+                }}
                 className={`px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer ${sortBy === "loai"
                     ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
                     : "text-[var(--mute)] hover:text-[var(--ink)]"

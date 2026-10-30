@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { bhytLevel, classifyCSRNhom, fmtBuoiKhamName, parseDiag, stripDoanXeTag } from "./csr";
-import { determineConciseStatus, type RutGonPatient } from "./exportRutGonExcel";
+import { determineConciseStatus, cleanPhone, type RutGonPatient } from "./exportRutGonExcel";
 
 /**
  * Mẫu TIẾP NHẬN — "DANH SÁCH BỆNH CHỈ ĐỊNH PHẪU THUẬT TẦM SOÁT": mỗi đợt khám một sheet gồm
@@ -166,7 +166,7 @@ function renderSheet(ws: ExcelJS.Worksheet, ds: TiepNhanPatient[]) {
     nhanTuVan,
     bacSi(p),
     bhytPct(p),
-    p.sdt ? String(p.sdt).trim() : "",
+    cleanPhone(p.sdt, p.sdtNguoiNha),
   ];
 
   // DANH SÁCH ĐĂNG KÝ
