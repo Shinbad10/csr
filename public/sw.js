@@ -1,7 +1,7 @@
 /// VISI CSR — Manual Service Worker
 /// Compatible with Next.js 16 Turbopack (no webpack plugin needed)
 
-const CACHE_NAME = "visi-csr-v2";
+const CACHE_NAME = "visi-csr-v3";
 
 // Core shell files to precache
 const PRECACHE_URLS = [
@@ -64,8 +64,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Skip caching on localhost/dev
-  if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.pathname.includes("_next/static/chunks")) {
+  // Skip caching on localhost/dev and let Next.js handle all /_next/ assets directly
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.pathname.startsWith("/_next/")) {
     return;
   }
 

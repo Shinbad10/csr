@@ -40,20 +40,28 @@ export default function LoginPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    const savedTheme = localStorage.getItem("visi_theme");
-    if (savedTheme === "dark") {
-      setTheme("dark");
-      document.documentElement.classList.add("dark");
-    } else {
-      setTheme("light");
-      document.documentElement.classList.remove("dark");
+    try {
+      const savedTheme = localStorage.getItem("visi_theme");
+      if (savedTheme === "dark") {
+        setTheme("dark");
+        document.documentElement.classList.add("dark");
+      } else {
+        setTheme("light");
+        document.documentElement.classList.remove("dark");
+      }
+    } catch {
+      // Safe fallback if localStorage is restricted (Safari Private Browsing)
     }
   }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
-    localStorage.setItem("visi_theme", newTheme);
+    try {
+      localStorage.setItem("visi_theme", newTheme);
+    } catch {
+      // Safe fallback if localStorage is restricted (Safari Private Browsing)
+    }
     if (newTheme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
@@ -62,12 +70,16 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    getActiveFacilities().then((data) => {
-      setFacilities(data);
-      if (data.length > 0) {
-        setSelectedFacility(data[0].id);
-      }
-    });
+    getActiveFacilities()
+      .then((data) => {
+        setFacilities(data);
+        if (data.length > 0) {
+          setSelectedFacility(data[0].id);
+        }
+      })
+      .catch((err) => {
+        console.warn("[Login] Could not prefetch active facilities:", err);
+      });
   }, []);
 
   const handleLogin = useCallback(
@@ -168,7 +180,7 @@ export default function LoginPage() {
       >
         {/* Left: CSR Branding Column */}
         <motion.div
-          initial={{ opacity: 0, x: -40 }}
+          initial={false}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="hidden lg:block space-y-10"
@@ -223,7 +235,7 @@ export default function LoginPage() {
 
         {/* Right: Login Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 30 }}
+          initial={false}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="w-full flex justify-center lg:justify-end"
