@@ -6,8 +6,8 @@ import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 
-import { classifyCSRNhom, checkSurgeryTiming } from "@/lib/csr";
-import { fetchPhaco2LanStats } from "@/lib/his";
+import { classifyCSRNhom, classifyCSRFunnel, checkSurgeryTiming } from "@/lib/csr";
+import { fetchPhaco2LanPatientIds } from "@/lib/his";
 import { latestDoiChieuMap } from "@/lib/hisReconcile";
 
 import { COSO_AN_TOAN } from "@/lib/safeSelect";
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const whereCoSo = coSoId ? { coSoId } : undefined;
 
     // Tối ưu tốc độ nạp: Dùng aggregation ở cấp DB thay vì tải toàn bộ hàng ngàn dòng hồ sơ về bộ nhớ Node.js
-    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback, phaco2LanMap] = await Promise.all([
+    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback, phaco2Ids] = await Promise.all([
       prisma.buoiKham.findMany({
         where: { ...(whereCoSo || {}), ...DOT_CON_HIEU_LUC }, // đợt đã xoá mềm không hiện
         include: {
@@ -64,6 +64,7 @@ export async function GET(request: Request) {
           ],
         },
         select: {
+          id: true,
           buoiKhamId: true,
           ngayMoThucTe: true,
           trangThai: true,
@@ -84,15 +85,18 @@ export async function GET(request: Request) {
         select: { buoiKhamId: true, bacSiChiDinh: true },
         distinct: ["buoiKhamId"],
       }),
-      fetchPhaco2LanStats(coSoId || undefined),
+      fetchPhaco2LanPatientIds(undefined, coSoId || undefined).catch(() => new Set<string>()),
     ]);
 
     const doiChieuMap = await latestDoiChieuMap(buoiKhams.map((b) => b.id)).catch(() => new Map());
 
     const daMoMap = new Map<string, number>();
     const daMoTruocMap = new Map<string, number>();
+    const mat2Map = new Map<string, number>();
     for (const r of daMoGroups) {
       if (!r.buoiKhamId) continue;
+      // Mắt 2: cùng quy tắc với báo cáo — ca Phaco 2 lần phải là ca đã mổ hợp lệ của đợt
+      if (classifyCSRFunnel(r, phaco2Ids.has(r.id)).isMat2) mat2Map.set(r.buoiKhamId, (mat2Map.get(r.buoiKhamId) || 0) + 1);
       const timing = checkSurgeryTiming(r);
       if (timing.isDaMo) {
         daMoMap.set(r.buoiKhamId, (daMoMap.get(r.buoiKhamId) || 0) + 1);
@@ -126,7 +130,7 @@ export async function GET(request: Request) {
       const daMo = daMoMap.get(bk.id) || 0;
       const daMoTruoc = daMoTruocMap.get(bk.id) || 0;
       const chuaMo = Math.max(0, st.nhomA - daMo);
-      const phaco2Lan = phaco2LanMap.get(bk.id) || 0;
+      const phaco2Lan = mat2Map.get(bk.id) || 0;
       const bacSiKham = bk.bacSiKham || docMap.get(bk.id) || null;
       return {
         ...bk,

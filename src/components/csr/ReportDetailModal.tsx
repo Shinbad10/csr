@@ -50,6 +50,7 @@ type SessionItem = {
   nhomB: number;
   daMo: number;
   denKhongMo?: number;
+  phaco2Lan?: number;
 };
 
 interface ReportDetailModalProps {
@@ -387,6 +388,15 @@ export default function ReportDetailModal({
         cell: ({ row }) => <NumCell value={row.original.daMo} tone="text-[var(--teal-deep)]" />,
       },
       {
+        id: "phaco2Lan",
+        accessorFn: (s) => s.phaco2Lan ?? 0,
+        header: "Mắt 2",
+        size: 100,
+        enableColumnFilter: false,
+        meta: { align: "right" },
+        cell: ({ row }) => <NumCell value={row.original.phaco2Lan ?? 0} tone="text-[#7c3aed]" />,
+      },
+      {
         id: "tyLeMo",
         header: "Tỷ lệ mổ",
         size: 140,
@@ -708,6 +718,7 @@ export default function ReportDetailModal({
           "Nhóm A (Chỉ định mổ)": s.nhomA,
           "Nhóm B (Theo dõi)": s.nhomB,
           "Đã phẫu thuật": s.daMo,
+          "Mắt 2": s.phaco2Lan ?? 0,
           "Tỷ lệ mổ (%)": `${tyLeMo(s) ?? 0}%`,
         }));
 

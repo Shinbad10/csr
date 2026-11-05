@@ -336,7 +336,8 @@ export async function GET(request: Request) {
         if (isNhomB) sessionMap[h.buoiKhamId].nhomB++;
         if (isDaMo) sessionMap[h.buoiKhamId].daMo++;
         if (isDenKhongMo) sessionMap[h.buoiKhamId].denKhongMo++;
-        if (isPhaco2Lan) sessionMap[h.buoiKhamId].phaco2Lan++;
+        // Cùng quy tắc với phễu: ca Phaco 2 lần phải là ca ĐÃ MỔ hợp lệ của đợt (bỏ mổ trước ngày khám, khớp một phần chưa xác nhận)
+        if (isMat2) sessionMap[h.buoiKhamId].phaco2Lan++;
       }
     }
 

@@ -7,7 +7,7 @@ import {
   FileSpreadsheet, Download, ChevronDown, FileText,
 } from "lucide-react";
 import {
-  fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, parseDiag, checkSurgeryTiming, classifyCSRNhom, bhytLevel, type HoSo,
+  fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, parseDiag, checkSurgeryTiming, classifyCSRNhom, laMat2, bhytLevel, type HoSo,
   fmtSinhTuoi,
 } from "@/lib/csr";
 import { useToast } from "@/components/providers/ToastProvider";
@@ -181,7 +181,7 @@ export default function BuoiKhamPatientsModal({
       case "DA_MO": return x.timing.isDaMo;
       case "DA_MO_TRUOC": return x.timing.isDaMoTruoc;
       case "CHUA_MO": return x.nhom.isNhomA && !x.timing.hasSurgery;
-      case "PHACO_2_LAN": return Boolean(x.p.isPhaco2Lan);
+      case "PHACO_2_LAN": return laMat2(x.timing.isDaMo, x.p.isPhaco2Lan, x.p.ghiChuMat2);
       default: return true;
     }
   };
@@ -405,7 +405,7 @@ export default function BuoiKhamPatientsModal({
                 {timing.isDaMo
                   ? badge("bg-[var(--teal-soft)] text-[var(--teal-deep)]", <CheckCircle2 className="w-3 h-3" />, "Đã mổ")
                   : badge("bg-[#f3eaf8] text-[#7c3aed]", null, "Mổ trước")}
-                {p.isPhaco2Lan && (
+                {laMat2(timing.isDaMo, p.isPhaco2Lan, p.ghiChuMat2) && (
                   <span className="px-1.5 py-0.5 rounded-md text-[10.5px] font-semibold bg-[#f3eaf8] text-[#7c3aed]" title="Đã mổ Phaco 2 lần (mắt 2)">Mắt 2</span>
                 )}
               </div>

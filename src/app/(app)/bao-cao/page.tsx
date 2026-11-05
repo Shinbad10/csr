@@ -74,6 +74,7 @@ interface StatsData {
     nhomB: number;
     daMo: number;
     denKhongMo: number;
+    phaco2Lan: number;
   }>;
   topDoctors: Array<{ name: string; total: number; chiDinh: number; nhomA: number; daMo: number }>;
   topCounselors: Array<{ name: string; total: number; chotMo: number; daMo: number }>;
@@ -840,7 +841,7 @@ function BaoCaoSkeleton() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[1050px] table-fixed">
+              <table className="w-full text-left text-xs min-w-[1130px] table-fixed">
                 <colgroup>
                   <col className="w-24" />
                   <col className="w-36" />
@@ -850,6 +851,7 @@ function BaoCaoSkeleton() {
                   <col className="w-20" />
                   <col className="w-20" />
                   <col className="w-24" />
+                  <col className="w-20" />
                   <col className="w-20" />
                   <col className="w-20" />
                   <col className="w-24" />
@@ -865,6 +867,7 @@ function BaoCaoSkeleton() {
                     <th className="py-3 px-3 text-right text-amber-700">Nhóm B</th>
                     <th className="py-3 px-3 text-right text-amber-600">Đến chưa mổ</th>
                     <th className="py-3 px-3 text-right text-[var(--teal-deep)]">Đã mổ</th>
+                    <th className="py-3 px-3 text-right text-[#7c3aed]">Mắt 2</th>
                     <th className="py-3 px-3 text-right">Tỷ lệ mổ</th>
                     <th className="py-3 px-4 text-center">Thao tác</th>
                   </tr>
@@ -872,7 +875,7 @@ function BaoCaoSkeleton() {
                 <tbody className="divide-y divide-[var(--line-soft)]">
                   {stats.sessions.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="py-10 text-center text-xs text-[var(--mute)]">
+                      <td colSpan={12} className="py-10 text-center text-xs text-[var(--mute)]">
                         Không có dữ liệu đợt khám.
                       </td>
                     </tr>
@@ -938,6 +941,29 @@ function BaoCaoSkeleton() {
                           <td className="py-3 px-3 text-right font-mono font-extrabold text-[var(--teal-deep)]">
                             {s.daMo.toLocaleString("vi-VN")}
                           </td>
+                          <td className="py-3 px-3 text-right font-mono font-bold text-[#7c3aed]">
+                            {s.phaco2Lan > 0 ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDetail({
+                                    type: "session_phaco2",
+                                    val: s.id,
+                                    title: `Đợt khám: ${s.xa || s.diaDiem} — Mắt 2`,
+                                    subtitle: `Ca đã mổ của đợt có Phaco 2 lần theo HIS (${s.phaco2Lan} ca)`,
+                                    icon: Eye,
+                                  });
+                                }}
+                                title="Bấm để xem danh sách bệnh nhân đã mổ mắt 2"
+                                className="underline decoration-dotted underline-offset-2 hover:opacity-80 transition-colors cursor-pointer font-bold"
+                              >
+                                {s.phaco2Lan.toLocaleString("vi-VN")}
+                              </button>
+                            ) : (
+                              <span className="text-slate-300 font-normal">—</span>
+                            )}
+                          </td>
                           <td className="py-3 px-3 text-right font-mono">
                             <span
                               className={`px-2 py-0.5 rounded text-[11px] font-bold ${
@@ -971,6 +997,50 @@ function BaoCaoSkeleton() {
                     })
                   )}
                 </tbody>
+                {stats.sessions.length > 0 && (() => {
+                  const tong = stats.sessions.reduce(
+                    (t, s) => ({
+                      tong: t.tong + s.tong,
+                      nhomA: t.nhomA + s.nhomA,
+                      nhomB: t.nhomB + s.nhomB,
+                      denKhongMo: t.denKhongMo + s.denKhongMo,
+                      daMo: t.daMo + s.daMo,
+                      phaco2Lan: t.phaco2Lan + s.phaco2Lan,
+                    }),
+                    { tong: 0, nhomA: 0, nhomB: 0, denKhongMo: 0, daMo: 0, phaco2Lan: 0 },
+                  );
+                  // Tỷ lệ của cả kỳ tính trên tổng số ca, không phải trung bình tỷ lệ các đợt.
+                  const tyLeMo = tong.nhomA > 0 ? Math.round((tong.daMo / tong.nhomA) * 100) : 0;
+                  return (
+                    <tfoot className="border-t-2 border-[var(--line-strong)] bg-[var(--surface-soft)]">
+                      <tr>
+                        <td colSpan={4} className="py-3 px-4 font-mono text-[10.5px] uppercase font-bold tracking-[0.06em] text-[var(--ink-soft)]">
+                          Tổng cộng ({stats.sessions.length} đợt khám)
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-[var(--ink)]">{tong.tong.toLocaleString("vi-VN")}</td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-emerald-700">{tong.nhomA.toLocaleString("vi-VN")}</td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-700">{tong.nhomB.toLocaleString("vi-VN")}</td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-600">{tong.denKhongMo.toLocaleString("vi-VN")}</td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-[var(--teal-deep)]">{tong.daMo.toLocaleString("vi-VN")}</td>
+                        <td className="py-3 px-3 text-right font-mono font-extrabold text-[#7c3aed]">{tong.phaco2Lan.toLocaleString("vi-VN")}</td>
+                        <td className="py-3 px-3 text-right font-mono">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                              tyLeMo >= 50
+                                ? "bg-emerald-50 text-emerald-700"
+                                : tyLeMo > 0
+                                ? "bg-amber-50 text-amber-700"
+                                : "text-[var(--mute)]"
+                            }`}
+                          >
+                            {tyLeMo}%
+                          </span>
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  );
+                })()}
               </table>
             </div>
           </div>

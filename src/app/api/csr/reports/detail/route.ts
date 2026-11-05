@@ -331,10 +331,10 @@ export async function GET(request: Request) {
           return isDenKhongMo;
 
         case "session_phaco2":
-          return h.buoiKhamId === val && Boolean(phaco2Ids?.has(h.id));
+          return h.buoiKhamId === val && isMat2; // cùng quy tắc với số Mắt 2 trên bảng / phễu
 
         case "kpi_phaco2":
-          return Boolean(phaco2Ids?.has(h.id));
+          return isMat2;
 
         default:
           return true;

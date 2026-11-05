@@ -240,9 +240,14 @@ export function classifyCSRFunnel(
     h.nhom === "A" ||
     h.nhom === "B" ||
     TRANG_THAI_CHI_DINH.includes(h.trangThai || "");
-  const isMat2 = c.isDaMo && (isPhaco2Lan || /m[ắa]t\s*2/i.test(h.ghiChuMat2 || ""));
+  const isMat2 = laMat2(c.isDaMo, isPhaco2Lan, h.ghiChuMat2);
 
   return { ...c, isChiDinh, isDuKien, isDaLen, isMat2 };
+}
+
+/** Quy tắc Mắt 2 dùng chung: phải là ca ĐÃ MỔ hợp lệ của đợt, và HIS có Phaco 2 lần hoặc có ghi chú "Mắt 2". */
+export function laMat2(isDaMo: boolean, isPhaco2Lan?: boolean, ghiChuMat2?: string | null) {
+  return isDaMo && (Boolean(isPhaco2Lan) || /m[ắa]t\s*2/i.test(ghiChuMat2 || ""));
 }
 
 export const parseDiag = (raw: string | null): string[] => {
