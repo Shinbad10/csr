@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, canAccessCoSo, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
@@ -16,7 +16,9 @@ export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const coSoId = new URL(request.url).searchParams.get("coSoId") || (await getWorkingCoSoId(session));
+  const scope = await resolveReadCoSoScope(session, new URL(request.url).searchParams.get("coSoId"));
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const coSoId = scope.coSoId;
   try {
     const prisma = getPrisma();
     const whereCoSo = coSoId ? { coSoId } : undefined;
@@ -157,6 +159,8 @@ export async function POST(request: Request) {
     const { coSoId, ngayKham, xa, diaDiem, bacSiKham, ghiChu } = await request.json();
     if (!coSoId || !ngayKham || !xa || !diaDiem)
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc (cơ sở, ngày, xã, địa điểm)" }, { status: 400 });
+    if (!canAccessCoSo(session, coSoId))
+      return NextResponse.json({ error: "Bạn chỉ được tạo đợt khám cho cơ sở của mình" }, { status: 403 });
 
     const dateStr = yymmdd(new Date(ngayKham)); // YYMMDD theo giờ địa phương
     const prefix = `ĐK-${dateStr}-`;

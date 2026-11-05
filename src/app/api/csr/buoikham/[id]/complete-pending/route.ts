@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
+import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 import { parseDoctorList } from "@/lib/csr";
 import { triggerSync } from "@/lib/syncWorker";
@@ -12,6 +13,9 @@ export async function POST(
 ) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Chuyển hàng loạt hồ sơ sang "Đã khám" = bước lâm sàng (cùng quyền như PUT hoso/[id] khi chuyển DaKham)
+  if (!can(session.user.role, "hoso.clinical"))
+    return NextResponse.json({ error: "Bạn không có quyền hoàn tất khám hàng loạt" }, { status: 403 });
 
   try {
     const { id } = await params;
@@ -22,6 +26,8 @@ export async function POST(
     if (!buoiKham) {
       return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
     }
+    if (!canAccessCoSo(session, buoiKham.coSoId))
+      return NextResponse.json({ error: "Đợt khám thuộc cơ sở khác — bạn không có quyền thao tác" }, { status: 403 });
 
     const teamDocs = parseDoctorList(buoiKham.bacSiKham);
     const defaultDoc = teamDocs.length > 0 ? teamDocs[0] : null;

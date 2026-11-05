@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, getWorkingCoSoId, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
@@ -47,7 +47,9 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const sp = new URL(request.url).searchParams;
-  const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
+  const scope = await resolveReadCoSoScope(session, sp.get("coSoId"));
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const coSoId = scope.coSoId;
   const ngayQuery = sp.get("ngay"); // YYYY-MM-DD nếu muốn xem theo ngày cụ thể
 
   try {
@@ -354,6 +356,7 @@ export async function POST(request: Request) {
     broadcastEvent({
       type: "hoso_change",
       action: "create",
+      coSoId: coSoId ?? undefined,
       data: { action: "create_doan_xe", routeId: targetRoute.id },
     });
 

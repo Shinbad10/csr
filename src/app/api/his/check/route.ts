@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { checkHISForPatient, appendHisNote } from "@/lib/his";
 import { triggerSync } from "@/lib/syncWorker";
@@ -21,6 +21,8 @@ export async function POST(request: Request) {
     });
 
     if (!hoSo) return NextResponse.json({ error: "Không tìm thấy hồ sơ bệnh nhân" }, { status: 404 });
+    if (!canAccessCoSo(session, hoSo.coSoId))
+      return NextResponse.json({ error: "Hồ sơ thuộc cơ sở khác — bạn không có quyền truy cập" }, { status: 403 });
 
     // Gọi HIS check
     const res = await checkHISForPatient(

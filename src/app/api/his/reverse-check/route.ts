@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { getHISSurgeryList, foldName, foldId, foldCccd, foldPhone } from "@/lib/his";
 
@@ -13,7 +13,10 @@ export async function POST(request: Request) {
     const { coSoId: reqCoSoId, month, date } = await request.json();
     const prisma = getPrisma();
 
-    let coSoId = reqCoSoId;
+    // Kết nối HIS theo cơ sở: nhân viên cơ sở chỉ đối chiếu HIS của chính cơ sở mình.
+    const scope = await resolveReadCoSoScope(session, reqCoSoId);
+    if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+    let coSoId = scope.coSoId;
     if (!coSoId) {
       const firstCoSo = await prisma.coSo.findFirst();
       coSoId = firstCoSo?.id || "BT";

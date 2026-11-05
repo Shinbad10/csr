@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, resolveReadCoSoScope } from "@/lib/auth";
+import { isCorporate } from "@/lib/permissions";
 import { getPrisma } from "@/lib/prisma";
 import { batchCheckHISForPatients } from "@/lib/his";
 import { broadcastEvent } from "@/lib/events";
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
     } else {
       return NextResponse.json({ error: "Vui lòng chọn buổi khám hoặc danh sách bệnh nhân để đối chiếu" }, { status: 400 });
     }
+
+    // Nhân viên cơ sở chỉ đối chiếu hồ sơ của cơ sở mình (Quản lý: theo danh sách được chọn)
+    const scope = await resolveReadCoSoScope(session, null);
+    if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+    if (!isCorporate(session.user.role)) whereClause.coSoId = scope.coSoId;
 
     // Chỉ đối chiếu những bệnh nhân thuộc Nhóm A (có chỉ định phẫu thuật)
     whereClause.OR = [

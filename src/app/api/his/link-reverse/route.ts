@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { triggerSync } from "@/lib/syncWorker";
 import sql from "mssql";
@@ -17,11 +17,12 @@ export async function POST(request: Request) {
     const prisma = getPrisma();
 
     let updatedCount = 0;
+    const coSoDaDoi = new Set<string>(); // cơ sở có hồ sơ vừa đổi → chỉ phát realtime tới các cơ sở này
     for (const item of items) {
       if (!item.hoSoId || !item.maHIS) continue;
 
       const hoSo = await prisma.hoSoBenhNhan.findUnique({ where: { id: item.hoSoId } });
-      if (!hoSo) continue;
+      if (!hoSo || !canAccessCoSo(session, hoSo.coSoId)) continue; // bỏ qua hồ sơ không tồn tại / thuộc cơ sở khác
 
       const updateData: any = {
         maBNHIS: item.maHIS,
@@ -104,21 +105,16 @@ export async function POST(request: Request) {
       } catch {}
 
       updatedCount++;
+      coSoDaDoi.add(hoSo.coSoId);
     }
 
     // Vừa liên kết mã HIS (có thể là Mắt 2) → tính lại số liệu Mắt 2 ở lần tải sau
     clearPhacoCache();
     triggerSync();
 
-    if (updatedCount > 0) {
-      broadcastEvent({
-        type: "hoso_change",
-        action: "update",
-      });
-      broadcastEvent({
-        type: "buoikham_change",
-        action: "update",
-      });
+    for (const coSoId of coSoDaDoi) {
+      broadcastEvent({ type: "hoso_change", action: "update", coSoId });
+      broadcastEvent({ type: "buoikham_change", action: "update", coSoId });
     }
 
     return NextResponse.json({

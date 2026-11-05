@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
@@ -14,12 +14,23 @@ import {
 
 type Ctx = { params: Promise<{ id: string }> };
 
+/** Đợt khám phải tồn tại và thuộc cơ sở của người dùng; trả response lỗi hoặc null nếu hợp lệ. */
+async function kiemTraDotKham(session: Parameters<typeof canAccessCoSo>[0], id: string) {
+  const bk = await getPrisma().buoiKham.findUnique({ where: { id }, select: { coSoId: true } });
+  if (!bk) return NextResponse.json({ error: "Không tìm thấy đợt khám" }, { status: 404 });
+  if (!canAccessCoSo(session, bk.coSoId))
+    return NextResponse.json({ error: "Đợt khám thuộc cơ sở khác — bạn không có quyền truy cập" }, { status: 403 });
+  return null;
+}
+
 /** Lịch sử các lần đối chiếu HIS của đợt khám (mới nhất trước). */
 export async function GET(_request: Request, { params }: Ctx) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  const denied = await kiemTraDotKham(session, id);
+  if (denied) return denied;
   const rows = await getPrisma().auditLog.findMany({
     where: { bang: DOI_CHIEU_BANG, hanhDong: DOI_CHIEU_HANH_DONG, banGhiId: id },
     orderBy: { thoiDiem: "desc" },
@@ -36,6 +47,8 @@ export async function POST(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Bạn không có quyền đối chiếu HIS" }, { status: 403 });
 
   const { id } = await params;
+  const denied = await kiemTraDotKham(session, id);
+  if (denied) return denied;
   const body = await request.json().catch(() => ({}));
   const kieu: DoiChieuKieu = body?.kieu === "hang_loat" ? "hang_loat" : "don_le";
 

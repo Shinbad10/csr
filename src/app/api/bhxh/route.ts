@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, resolveReadCoSoScope } from "@/lib/auth";
 import { traCuuTheBHYT } from "@/lib/bhxh";
 
 // Tra cứu thông tin thẻ BHYT qua Cổng tiếp nhận BHXH (egw.baohiemxahoi.gov.vn).
@@ -18,7 +18,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Thiếu CCCD/mã thẻ hoặc họ tên để tra cứu" }, { status: 200 });
     }
 
-    const coSoId = body.coSoId || (await getWorkingCoSoId(session));
+    // Dùng tài khoản cổng BHXH của cơ sở → không để nhân viên chọn cơ sở khác qua body.
+    const scope = await resolveReadCoSoScope(session, body.coSoId);
+    if (!scope.ok) return NextResponse.json({ success: false, error: scope.error }, { status: scope.status });
+    const coSoId = scope.coSoId;
     const res = await traCuuTheBHYT({
       ma,
       hoTen,

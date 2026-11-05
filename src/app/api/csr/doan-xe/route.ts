@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 
 import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
@@ -9,7 +9,9 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const sp = new URL(request.url).searchParams;
-  const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
+  const scope = await resolveReadCoSoScope(session, sp.get("coSoId"));
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const coSoId = scope.coSoId;
   const buoiKhamId = sp.get("buoiKhamId") || undefined;
   const ngay = sp.get("ngay") || undefined; // YYYY-MM-DD
   const diemDon = sp.get("diemDon") || undefined;

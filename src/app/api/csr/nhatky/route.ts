@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { canAny } from "@/lib/permissions";
 import { triggerSync } from "@/lib/syncWorker";
@@ -17,6 +17,10 @@ export async function POST(request: Request) {
     const { hoSoId, noiDung, followUpStatus } = await request.json();
     if (!hoSoId || !noiDung?.trim()) return NextResponse.json({ error: "Thiếu nội dung" }, { status: 400 });
     const prisma = getPrisma();
+    const hoSo = await prisma.hoSoBenhNhan.findUnique({ where: { id: hoSoId }, select: { coSoId: true, buoiKhamId: true } });
+    if (!hoSo) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
+    if (!canAccessCoSo(session, hoSo.coSoId))
+      return NextResponse.json({ error: "Hồ sơ thuộc cơ sở khác — bạn không có quyền ghi nhật ký" }, { status: 403 });
     const log = await prisma.nhatKyTheoDoi.create({
       data: { hoSoId, ngay: new Date(), nguoiGoiMa: session.user.id, noiDung: noiDung.trim() },
       include: { nguoiGoi: true },
@@ -28,6 +32,7 @@ export async function POST(request: Request) {
     broadcastEvent({
       type: "nhatky_change",
       action: "create",
+      coSoId: hoSo.coSoId, // để luồng realtime chỉ gửi cho đúng cơ sở
       hoSoId,
       data: log,
     });
@@ -35,6 +40,8 @@ export async function POST(request: Request) {
     broadcastEvent({
       type: "hoso_change",
       action: "update",
+      coSoId: hoSo.coSoId,
+      buoiKhamId: hoSo.buoiKhamId,
       hoSoId,
     });
 

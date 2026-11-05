@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { audit } from "@/lib/audit";
@@ -29,11 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
 
     // Quản trị viên đơn vị chỉ thao tác đợt của đơn vị mình
-    if (!can(session.user.role, "admin.masterdata")) {
-      const coSo = await getWorkingCoSoId(session);
-      if (coSo && bk.coSoId !== coSo)
-        return NextResponse.json({ error: "Bạn chỉ được mở / khoá đợt khám thuộc đơn vị của mình" }, { status: 403 });
-    }
+    if (!can(session.user.role, "admin.masterdata") && !canAccessCoSo(session, bk.coSoId))
+      return NextResponse.json({ error: "Bạn chỉ được mở / khoá đợt khám thuộc đơn vị của mình" }, { status: 403 });
 
     const data = await prisma.buoiKham.update({
       where: { id },

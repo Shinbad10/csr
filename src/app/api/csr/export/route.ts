@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, resolveCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { HOSO_HEADER, hoSoToCells, KHAM_SUC_KHOE_HEADER, hoSoToKhamSucKhoeCells } from "@/lib/csr";
@@ -8,7 +8,28 @@ import { buildRutGonExcelWorkbook } from "@/lib/exportRutGonExcel";
 import { buildTiepNhanExcelWorkbook } from "@/lib/exportTiepNhanExcel";
 import * as XLSX from "xlsx";
 
-import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
+import { DOT_CON_HIEU_LUC, HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
+const dateStr = (d?: Date | string | null) => (d ? new Date(d) : new Date()).toISOString().slice(0, 10);
+const cleanXa = (xa: string | undefined, fallback: string) =>
+  (xa || fallback).replace(/[^a-zA-Z0-9_À-ɏḀ-ỿ]/g, "_");
+
+function xlsxResponse(body: BodyInit, fileName: string) {
+  const asciiName = fileName
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .replace(/\s+/g, "_");
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      "Cache-Control": "private, no-store",
+    },
+  });
+}
+
 // UC-08 / SRS §11.1 — xuất danh sách theo bộ lọc + phân quyền cơ sở.
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -17,34 +38,42 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Bạn không có quyền xuất dữ liệu" }, { status: 403 });
 
   const sp = new URL(request.url).searchParams;
-  const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
   const buoiKhamId = sp.get("buoiKhamId") || undefined;
   const trangThai = sp.get("trangThai") || undefined;
   const format = sp.get("format") || "default";
   const fromDate = sp.get("from") || undefined;
   const toDate = sp.get("to") || undefined;
 
+  // Phạm vi cơ sở do SERVER quyết định (không tin ?coSoId= của nhân viên cơ sở, không bao giờ xuất "tất cả").
+  const scope = await resolveCoSoScope(session, sp.get("coSoId"));
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const { coSoId } = scope;
+
+  const gte = fromDate ? new Date(fromDate) : null;
+  const lte = toDate ? new Date(`${toDate}T23:59:59.999Z`) : null;
+  if ((gte && isNaN(gte.getTime())) || (lte && isNaN(lte.getTime())))
+    return NextResponse.json({ error: "Khoảng ngày không hợp lệ" }, { status: 400 });
+
   try {
+    const prisma = getPrisma();
+
+    // Đợt khám phải thuộc đúng cơ sở đang xuất (và chưa bị xoá mềm).
     let buoiKhamInfo: { xa?: string; diaDiem?: string; ngayKham?: Date } | null = null;
     if (buoiKhamId) {
-      buoiKhamInfo = await getPrisma().buoiKham.findUnique({
-        where: { id: buoiKhamId },
+      buoiKhamInfo = await prisma.buoiKham.findFirst({
+        where: { id: buoiKhamId, coSoId, ...DOT_CON_HIEU_LUC },
         select: { xa: true, diaDiem: true, ngayKham: true },
       });
+      if (!buoiKhamInfo) return NextResponse.json({ error: "Không tìm thấy đợt khám của cơ sở này" }, { status: 404 });
     }
 
-    const ngayKhamRange =
-      fromDate || toDate
-        ? {
-            ...(fromDate ? { gte: new Date(fromDate) } : {}),
-            ...(toDate ? { lte: new Date(`${toDate}T23:59:59.999Z`) } : {}),
-          }
-        : null;
+    const ngayKhamRange = gte || lte ? { ...(gte ? { gte } : {}), ...(lte ? { lte } : {}) } : null;
 
-    const rows = await getPrisma().hoSoBenhNhan.findMany({
+    const rows = await prisma.hoSoBenhNhan.findMany({
       where: {
         AND: [
-          coSoId ? { coSoId } : {},
+          { coSoId },
+          { buoiKham: { coSoId } }, // hồ sơ và đợt khám cùng cơ sở: chặn dữ liệu lệch chéo cơ sở
           buoiKhamId ? { buoiKhamId } : {},
           trangThai ? { trangThai } : {},
           ngayKhamRange ? { buoiKham: { ngayKham: ngayKhamRange } } : {},
@@ -52,7 +81,7 @@ export async function GET(request: Request) {
         ],
       },
       include: {
-        buoiKham: true,
+        buoiKham: { select: { id: true, ngayKham: true, xa: true, diaDiem: true, ghiChu: true, bacSiKham: true } },
         tuVanVien: { select: { hoTen: true } },
       },
       orderBy: [{ buoiKhamId: "asc" }, { stt: "asc" }],
@@ -63,18 +92,23 @@ export async function GET(request: Request) {
       const CHUNK_SIZE = 500;
       const nhatKyMap = new Map<string, Array<{ noiDung: string; ngay: Date }>>();
 
-      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
-        const chunk = ids.slice(i, i + CHUNK_SIZE);
-        const logs = await getPrisma().nhatKyTheoDoi.findMany({
-          where: { hoSoId: { in: chunk } },
-          select: { hoSoId: true, noiDung: true, ngay: true },
-          orderBy: { ngay: "desc" },
-        });
+      // Các lô nhật ký độc lập nhau → chạy song song thay vì tuần tự.
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) chunks.push(ids.slice(i, i + CHUNK_SIZE));
+      const logBatches = await Promise.all(
+        chunks.map((chunk) =>
+          prisma.nhatKyTheoDoi.findMany({
+            where: { hoSoId: { in: chunk } },
+            select: { hoSoId: true, noiDung: true, ngay: true },
+            orderBy: { ngay: "desc" },
+          }),
+        ),
+      );
+      for (const logs of logBatches) {
         for (const log of logs) {
-          if (!nhatKyMap.has(log.hoSoId)) {
-            nhatKyMap.set(log.hoSoId, []);
-          }
-          nhatKyMap.get(log.hoSoId)!.push({ noiDung: log.noiDung, ngay: log.ngay });
+          const list = nhatKyMap.get(log.hoSoId);
+          if (list) list.push({ noiDung: log.noiDung, ngay: log.ngay });
+          else nhatKyMap.set(log.hoSoId, [{ noiDung: log.noiDung, ngay: log.ngay }]);
         }
       }
 
@@ -90,20 +124,10 @@ export async function GET(request: Request) {
           : await buildRutGonExcelWorkbook(rowsWithNhatKy, buoiKhamInfo);
       const buf = await excelWb.xlsx.writeBuffer();
 
-      const dateStr = buoiKhamInfo?.ngayKham
-        ? new Date(buoiKhamInfo.ngayKham).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-      const cleanXa = (buoiKhamInfo?.xa || (format === "tiepNhan" ? "Tat_ca_dot" : "RutGon")).replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
-      const fileName = `${format === "tiepNhan" ? "Danh_Sach_Tiep_Nhan" : "Danh_Sach_Rut_Gon"}_${cleanXa}_${dateStr}.xlsx`;
-      const asciiName = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, "_");
-
-      return new Response(buf as unknown as BodyInit, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-        },
-      });
+      return xlsxResponse(
+        buf as unknown as BodyInit,
+        `${format === "tiepNhan" ? "Danh_Sach_Tiep_Nhan" : "Danh_Sach_Rut_Gon"}_${cleanXa(buoiKhamInfo?.xa, format === "tiepNhan" ? "Tat_ca_dot" : "RutGon")}_${dateStr(buoiKhamInfo?.ngayKham)}.xlsx`,
+      );
     }
 
     const isKhamSucKhoe = format === "khamSucKhoe";
@@ -161,28 +185,14 @@ export async function GET(request: Request) {
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
     const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
-    let fileName = isKhamSucKhoe
-      ? `Kham_Suc_Khoe_VISI_${new Date().toISOString().slice(0, 10)}.xlsx`
-      : `VISI_CSR_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    let fileName = isKhamSucKhoe ? `Kham_Suc_Khoe_VISI_${dateStr()}.xlsx` : `VISI_CSR_${dateStr()}.xlsx`;
     if (buoiKhamInfo) {
-      const dateStr = buoiKhamInfo.ngayKham
-        ? new Date(buoiKhamInfo.ngayKham).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
-      const cleanXa = (buoiKhamInfo.xa || "KhamMat").replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g, "_");
-      fileName = isKhamSucKhoe
-        ? `Kham_Suc_Khoe_${cleanXa}_${dateStr}.xlsx`
-        : `Danh_Sach_Kham_Mat_${cleanXa}_${dateStr}.xlsx`;
+      const xa = cleanXa(buoiKhamInfo.xa, "KhamMat");
+      const ngay = dateStr(buoiKhamInfo.ngayKham);
+      fileName = isKhamSucKhoe ? `Kham_Suc_Khoe_${xa}_${ngay}.xlsx` : `Danh_Sach_Kham_Mat_${xa}_${ngay}.xlsx`;
     }
 
-    const asciiName = fileName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/\s+/g, "_");
-
-    return new Response(buf, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-      },
-    });
+    return xlsxResponse(buf, fileName);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
   }

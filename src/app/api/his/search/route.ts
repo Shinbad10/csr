@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { searchHIS } from "@/lib/his";
 
@@ -19,6 +19,8 @@ export async function POST(request: Request) {
       select: { coSoId: true },
     });
     if (!hoSo) return NextResponse.json({ error: "Không tìm thấy hồ sơ bệnh nhân" }, { status: 404 });
+    if (!canAccessCoSo(session, hoSo.coSoId))
+      return NextResponse.json({ error: "Hồ sơ thuộc cơ sở khác — bạn không có quyền truy cập" }, { status: 403 });
 
     const results = await searchHIS(hoSo.coSoId, String(q));
     return NextResponse.json({ success: true, results });

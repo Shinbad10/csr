@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
@@ -8,6 +8,8 @@ import { dotBiKhoa, duocSuaSauNgayKham, THONG_BAO_KHOA } from "@/lib/khoaSua";
 import { audit } from "@/lib/audit";
 import { COSO_AN_TOAN } from "@/lib/safeSelect";
 import { DOT_KHAM_DA_XOA } from "@/lib/dotKham";
+
+const KHAC_CO_SO = "Đợt khám thuộc cơ sở khác — bạn không có quyền truy cập";
 
 export async function GET(
   request: Request,
@@ -24,6 +26,7 @@ export async function GET(
     });
     if (!data || data.trangThai === DOT_KHAM_DA_XOA)
       return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
+    if (!canAccessCoSo(session, data.coSoId)) return NextResponse.json({ error: KHAC_CO_SO }, { status: 403 });
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
@@ -47,6 +50,7 @@ export async function PATCH(
     const existing = await getPrisma().buoiKham.findUnique({ where: { id } });
     if (!existing || existing.trangThai === DOT_KHAM_DA_XOA)
       return NextResponse.json({ error: "Không tìm thấy đợt khám (có thể đã bị xoá)" }, { status: 404 });
+    if (!canAccessCoSo(session, existing.coSoId)) return NextResponse.json({ error: KHAC_CO_SO }, { status: 403 });
 
     // Đợt đã qua ngày: chỉ Quản trị viên được sửa (trước đây điều kiện trùng quyền buoikham.manage nên không chặn ai)
     if (dotBiKhoa(existing) && !duocSuaSauNgayKham(session.user.role)) {

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { subscribeEvents, CSREvent } from "@/lib/events";
+import { isCorporate } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,7 +13,12 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const filterCoSoId = url.searchParams.get("coSoId");
+  // Nhân viên cơ sở chỉ nghe sự kiện của cơ sở mình (không tin ?coSoId=, không nhận sự kiện thiếu coSoId).
+  // Quản lý giữ hành vi cũ: lọc theo ?coSoId= nếu có, không có thì nhận tất cả.
+  const corporate = isCorporate(session.user?.role);
+  const ownCoSoId = session.user?.coSoId ?? null;
+  if (!corporate && !ownCoSoId) return new Response("Forbidden", { status: 403 });
+  const filterCoSoId = corporate ? url.searchParams.get("coSoId") : ownCoSoId;
   const filterBuoiKhamId = url.searchParams.get("buoiKhamId");
 
   const stream = new ReadableStream({
@@ -40,7 +46,7 @@ export async function GET(request: Request) {
       const unsubscribe = subscribeEvents((event: CSREvent) => {
         try {
           // Lọc cơ sở nếu client có yêu cầu cụ thể
-          if (filterCoSoId && event.coSoId && event.coSoId !== filterCoSoId) {
+          if (filterCoSoId && event.coSoId !== filterCoSoId && (event.coSoId || !corporate)) {
             return;
           }
           if (filterBuoiKhamId && event.buoiKhamId && event.buoiKhamId !== filterBuoiKhamId) {

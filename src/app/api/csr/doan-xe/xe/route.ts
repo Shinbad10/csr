@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { broadcastEvent } from "@/lib/events";
 import { LOAI_XE } from "@/lib/csr";
@@ -25,7 +25,9 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const sp = new URL(request.url).searchParams;
-  const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
+  const scope = await resolveReadCoSoScope(session, sp.get("coSoId"));
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const coSoId = scope.coSoId;
   if (chuaCoModel()) return NextResponse.json({ items: [], chuaCoBang: true, error: LOI_CHUA_CO_MODEL });
   try {
     const items = await getPrisma().doanXe.findMany({
@@ -45,7 +47,9 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const coSoId: string | null = body.coSoId || (await getWorkingCoSoId(session));
+  const scope = await resolveReadCoSoScope(session, body.coSoId);
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const coSoId: string | null = scope.coSoId;
   const ngayDon = String(body.ngayDon || "").trim();
   const diemDon = String(body.diemDon || "").trim();
   const soDoan = Number(body.soDoan);

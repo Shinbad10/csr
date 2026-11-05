@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { fmtDate, parseDiag, statusOf, bhytLevel } from "@/lib/csr";
 
@@ -87,6 +87,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     });
 
     if (!hoSo) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
+    if (!canAccessCoSo(session, hoSo.coSoId))
+      return NextResponse.json({ error: "Hồ sơ thuộc cơ sở khác — bạn không có quyền truy cập" }, { status: 403 });
 
     const audits = await prisma.auditLog.findMany({
       where: { bang: "HoSoBenhNhan", banGhiId: id },

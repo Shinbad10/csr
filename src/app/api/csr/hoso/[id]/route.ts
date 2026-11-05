@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions, canAccessCoSo } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can, canAny, type Capability } from "@/lib/permissions";
 import { inferNextState } from "@/lib/stateMachine";
@@ -12,6 +12,8 @@ import { broadcastEvent } from "@/lib/events";
 import { dotBiKhoa, duocSuaSauNgayKham, truongPhieuKhamBiDoi, soSanhCuMoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
 
 import { COSO_AN_TOAN, NGUOI_DUNG_AN_TOAN } from "@/lib/safeSelect";
+
+const KHAC_CO_SO = "Hồ sơ thuộc cơ sở khác — bạn không có quyền truy cập";
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -31,6 +33,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       },
     });
     if (!data) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
+    if (!canAccessCoSo(session, data.coSoId)) return NextResponse.json({ error: KHAC_CO_SO }, { status: 403 });
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Lỗi" }, { status: 500 });
@@ -80,6 +83,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     // Bản đang lưu: để chặn sửa đợt đã khoá và ghi lịch sử CŨ → MỚI
     const cur = await prisma.hoSoBenhNhan.findUnique({ where: { id }, include: { buoiKham: { select: { ngayKham: true, trangThai: true } } } });
     if (!cur) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
+    if (!canAccessCoSo(session, cur.coSoId)) return NextResponse.json({ error: KHAC_CO_SO }, { status: 403 });
     // Đợt đã qua ngày: thông tin hành chính / phiếu khám chỉ Quản trị viên được sửa
     if (!duocSuaSauNgayKham(session.user.role) && dotBiKhoa(cur.buoiKham) && truongPhieuKhamBiDoi(body, cur as unknown as Record<string, unknown>).length)
       return NextResponse.json({ error: THONG_BAO_KHOA }, { status: 403 });
@@ -172,6 +176,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
     });
     if (!current) return NextResponse.json({ error: "Không tìm thấy hồ sơ" }, { status: 404 });
+    if (!canAccessCoSo(session, current.coSoId)) return NextResponse.json({ error: KHAC_CO_SO }, { status: 403 });
 
     const body = await request.json();
 

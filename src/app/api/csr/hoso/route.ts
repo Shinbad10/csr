@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions, getWorkingCoSoId } from "@/lib/auth";
+import { authOptions, canAccessCoSo, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { can } from "@/lib/permissions";
 import { genMaBN, getNextMaSeq } from "@/lib/maBN";
@@ -36,7 +36,9 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const sp = new URL(request.url).searchParams;
-  const coSoId = sp.get("coSoId") || (await getWorkingCoSoId(session));
+  const scope = await resolveReadCoSoScope(session, sp.get("coSoId"));
+  if (!scope.ok) return NextResponse.json({ error: scope.error }, { status: scope.status });
+  const coSoId = scope.coSoId;
   const buoiKhamId = sp.get("buoiKhamId") || undefined;
   const trangThai = sp.get("trangThai") || undefined;
   const nhom = sp.get("nhom") || undefined;
@@ -147,6 +149,8 @@ export async function POST(request: Request) {
     const buoiKham = await prisma.buoiKham.findUnique({ where: { id: b.buoiKhamId }, include: { coSo: COSO_AN_TOAN } });
     if (!buoiKham || buoiKham.trangThai === DOT_KHAM_DA_XOA)
       return NextResponse.json({ error: "Không tìm thấy buổi khám (có thể đã bị xoá)" }, { status: 404 });
+    if (!canAccessCoSo(session, buoiKham.coSoId))
+      return NextResponse.json({ error: "Đợt khám thuộc cơ sở khác — không thể tiếp nhận bệnh nhân" }, { status: 403 });
 
     // Mức hưởng BHYT: ưu tiên giá trị nhập tay, nếu không thì suy từ mã thẻ (ký tự thứ 3)
     const mucHuongRaw = b.mucHuongBHYT ?? bhytLevel(b.bhyt);
