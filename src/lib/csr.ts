@@ -836,15 +836,15 @@ export function hoSoToKhamSucKhoeCells(h: HoSoExport): (string | number)[] {
 export const STATUS: Record<string, { label: string; cls: string }> = {
   TiepNhan:    { label: "Tiếp nhận",       cls: "bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" },
   DaKham:      { label: "Đã khám",         cls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]" },
-  TheoDoi:     { label: "Theo dõi",        cls: "bg-[var(--gold-soft)] text-[var(--gold-deep)] border-[var(--gold-line)]" },
+  TheoDoi:     { label: "Theo dõi",        cls: "bg-[var(--amber-soft)] text-[var(--amber)] border-[var(--amber-soft)]" },
   CoChiDinhMo: { label: "Có chỉ định mổ",  cls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]" },
   NhomA:       { label: "Nhóm A",          cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
-  NhomB:       { label: "Nhóm B",          cls: "bg-[var(--gold-soft)] text-[var(--gold-deep)] border-[var(--gold-line)]" },
+  NhomB:       { label: "Nhóm B",          cls: "bg-[var(--amber-soft)] text-[var(--amber)] border-[var(--amber-soft)]" },
   DaNhacLich:  { label: "Đã nhắc lịch",    cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
   DaDonVien:   { label: "Đã đón",          cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
   DaMoHauPhau: { label: "Đã mổ",           cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" },
-  DaMoTruocDay: { label: "Mổ trước đây",    cls: "bg-purple-50 text-purple-700 border-purple-300" },
-  DaDenTruocDay: { label: "Đến trước đây",  cls: "bg-indigo-50 text-indigo-700 border-indigo-300" },
+  DaMoTruocDay: { label: "Mổ trước đây",    cls: "bg-[#f3eaf8] text-[#7c3aed] border-[#f3eaf8]" },
+  DaDenTruocDay: { label: "Đến trước đây",  cls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]" },
   HuyKhongDen: { label: "Hủy / Không đến", cls: "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]" },
 };
 export const statusOf = (t?: string | null) =>

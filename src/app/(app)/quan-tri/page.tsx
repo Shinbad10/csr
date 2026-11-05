@@ -42,10 +42,12 @@ import {
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import Modal from "@/components/layout/Modal";
+import PageHeader from "@/components/layout/PageHeader";
 import { fmtTime } from "@/lib/csr";
 import { can, roleLabel, ROLE_MO_TA } from "@/lib/permissions";
 import { Field, StatusBadge, SectionHeader } from "@/components/csr/fields";
-import { DataView, DataTable } from "@/components/data";
+import { DataView, DataTable, DataPagination } from "@/components/data";
+import { useCurrentFacility } from "@/lib/useFacility";
 import type { ColumnDef } from "@tanstack/react-table";
 
 type CoSoSecretKey = "hisHost" | "hisPort" | "hisUser" | "hisPass" | "hisDbName" | "bhxhUser" | "bhxhPass" | "bhxhCccdCB";
@@ -204,6 +206,199 @@ function QtStat({
   );
 }
 
+/* ── Nhật ký kiểm toán: hiển thị dễ đọc thay vì JSON thô ───────────────────────── */
+const AUDIT_BANG: Record<string, string> = {
+  HoSoBenhNhan: "Hồ sơ bệnh nhân",
+  NguoiDungCSR: "Tài khoản",
+  BuoiKham: "Đợt khám",
+  CoSo: "Cơ sở y tế",
+};
+
+const AUDIT_TRUONG: Record<string, string> = {
+  hoTen: "Họ tên",
+  gioiTinh: "Giới tính",
+  namSinh: "Năm sinh",
+  ngaySinh: "Ngày sinh",
+  sdt: "SĐT",
+  sdtNguoiNha: "SĐT người nhà",
+  cccd: "CCCD",
+  bhyt: "Thẻ BHYT",
+  mucHuongBHYT: "Mức hưởng BHYT",
+  diaChi: "Địa chỉ",
+  nhom: "Nhóm",
+  trangThai: "Trạng thái",
+  chanDoan: "Chẩn đoán",
+  chanDoanMP: "CĐ mắt phải",
+  chanDoanMT: "CĐ mắt trái",
+  matKham: "Mắt khám",
+  benhLy: "Bệnh lý",
+  khuyenNghi: "Khuyến nghị",
+  huongXuTri: "Hướng xử trí",
+  thiLucMP: "Thị lực MP",
+  thiLucMT: "Thị lực MT",
+  ngayDieuTri: "Ngày hẹn mổ",
+  ngayDenBV: "Ngày đến BV",
+  ngayMoThucTe: "Ngày mổ",
+  trangThaiDieuTri: "KQ điều trị",
+  soTienBao: "Chi phí báo",
+  soTienThucThu: "Thực thu",
+  ghiChuTuVan: "Ghi chú tư vấn",
+  ghiChuMat2: "Ghi chú nội bộ",
+  diemDon: "Điểm đón",
+  gioDon: "Giờ đón",
+  daDon: "Đã đón",
+  followUpStatus: "Theo dõi",
+  xacNhanDieuTri: "Xác nhận ĐT",
+  lyDoKhongDieuTri: "Lý do chưa ĐT",
+  maBNHIS: "Mã HIS",
+  maBN: "Mã BN",
+  xa: "Xã",
+  ngayKham: "Ngày khám",
+};
+
+/** Giá trị trong nhật ký → chuỗi ngắn gọn (ngày dd/mm/yyyy, mảng nối dấu phẩy, rỗng = "—"). */
+function fmtAuditVal(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "boolean") return v ? "Có" : "Không";
+  if (Array.isArray(v)) return v.length ? v.map(fmtAuditVal).join(", ") : "—";
+  if (typeof v === "object") return JSON.stringify(v);
+  const s = String(v).trim();
+  const d = s.match(/^(\d{4})-(\d{2})-(\d{2})T/);
+  if (d) return `${d[3]}/${d[2]}/${d[1]}`;
+  if (s.startsWith("[") && s.endsWith("]")) {
+    try {
+      return fmtAuditVal(JSON.parse(s));
+    } catch {
+      /* giữ nguyên chuỗi */
+    }
+  }
+  return s || "—";
+}
+
+const cutAudit = (s: string, n = 24) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+
+/** Một dòng tóm tắt thay đổi: các chip "Trường: cũ → mới", thừa thì gộp "+N". Toàn văn nằm ở tooltip. */
+function AuditDetail({ hanhDong, raw }: { hanhDong: string; raw: string | null | undefined }) {
+  if (!raw) return <span className="text-[12px] text-[var(--mute-soft)]">—</span>;
+  let parsed: any;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return <span className="text-[12px] text-[var(--mute)]">{cutAudit(raw, 80)}</span>;
+  }
+  if (!parsed || typeof parsed !== "object") return <span className="text-[12px] text-[var(--mute)]">{String(parsed)}</span>;
+
+  // Gửi thư mời
+  if (hanhDong === "gui_email_moi") {
+    return (
+      <div className="flex items-center gap-2 min-w-0 text-[12px]" title={raw}>
+        <QtPill tone={parsed.ok ? "active" : "expired"}>{parsed.ok ? "Thành công" : "Lỗi"}</QtPill>
+        <span className="font-mono text-[11px] text-[var(--navy)] truncate">{parsed.email}</span>
+        {!parsed.ok && parsed.loi && <span className="text-[var(--rose)] truncate">{String(parsed.loi)}</span>}
+      </div>
+    );
+  }
+
+  // Sửa: { _cuMoi: { truong: { cu, moi } } }
+  const cuMoi = parsed._cuMoi && typeof parsed._cuMoi === "object" ? (parsed._cuMoi as Record<string, { cu: unknown; moi: unknown }>) : null;
+  if (cuMoi) {
+    const keys = Object.keys(cuMoi);
+    const tip = keys
+      .map((k) => `${AUDIT_TRUONG[k] || k}: ${fmtAuditVal(cuMoi[k]?.cu)} → ${fmtAuditVal(cuMoi[k]?.moi)}`)
+      .join("\n");
+    const shown = keys.slice(0, 2);
+    return (
+      <div className="flex items-center gap-1.5 min-w-0 overflow-hidden" title={tip}>
+        {shown.map((k) => {
+          const cu = fmtAuditVal(cuMoi[k]?.cu);
+          const moi = fmtAuditVal(cuMoi[k]?.moi);
+          return (
+            <span
+              key={k}
+              className="inline-flex items-center gap-1 h-6 px-2 rounded-[6px] bg-[var(--surface-soft)] border border-[var(--line)] text-[11px] whitespace-nowrap shrink-0"
+            >
+              <span className="text-[var(--mute)]">{AUDIT_TRUONG[k] || k}</span>
+              {cu !== "—" && (
+                <>
+                  <span className="text-[var(--mute-soft)] line-through">{cutAudit(cu, 18)}</span>
+                  <span className="text-[var(--teal-deep)]">→</span>
+                </>
+              )}
+              <b className="font-semibold text-[var(--ink)]">{cutAudit(moi, 22)}</b>
+            </span>
+          );
+        })}
+        {keys.length > shown.length && (
+          <span className="font-mono text-[10.5px] font-bold text-[var(--mute)] shrink-0">+{keys.length - shown.length}</span>
+        )}
+      </div>
+    );
+  }
+
+  // Xoá mềm đợt khám
+  if (parsed.xoaMem) {
+    return (
+      <span className="text-[12px] text-[var(--ink-soft)] truncate block" title={raw}>
+        Xoá mềm đợt khám{parsed.xa ? ` · xã ${parsed.xa}` : ""}
+        {parsed.ngayKham ? ` · ${fmtAuditVal(parsed.ngayKham)}` : ""}
+        {typeof parsed.soHoSo === "number" ? ` · ${parsed.soHoSo} hồ sơ` : ""}
+      </span>
+    );
+  }
+
+  // Thêm mới / khác: "Trường giá trị · Trường giá trị"
+  const parts = Object.entries(parsed)
+    .filter(([, v]) => v !== null && typeof v !== "object")
+    .map(([k, v]) => `${AUDIT_TRUONG[k] || k} ${fmtAuditVal(v)}`);
+  return (
+    <span className="text-[12px] text-[var(--ink-soft)] truncate block" title={raw}>
+      {parts.join(" · ") || "—"}
+    </span>
+  );
+}
+
+/** Bộ lọc dạng chip: icon + select. Đang lọc thì chip đổi sang nền navy nhạt để nhìn là biết. */
+function QtFilter({
+  icon: Icon,
+  value,
+  onChange,
+  className = "",
+  children,
+}: {
+  icon: React.ElementType;
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`relative h-9 ${className}`}>
+      <Icon className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${value ? "text-[var(--navy)]" : "text-[var(--mute)]"}`} />
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`h-9 w-full appearance-none pl-8 pr-7 text-[12.5px] font-medium cursor-pointer rounded-[10px] border outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] ${
+          value
+            ? "bg-[var(--navy-50)] border-[var(--navy)] text-[var(--navy)] font-semibold"
+            : "bg-[var(--surface-soft)] border-[var(--line)] text-[var(--ink-soft)]"
+        }`}
+      >
+        {children}
+      </select>
+      <ChevronDown className="w-3 h-3 text-[var(--mute)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+    </div>
+  );
+}
+
+/** Nhãn vai trò: Quản lý = tím (màu "thanh lý" chuẩn), Quản trị viên = navy, còn lại trung tính. */
+function roleTagCls(role: string) {
+  if (role === "QuanLy") return "bg-[#f3eaf8] text-[#7c3aed]";
+  if (role === "IT") return "bg-[var(--navy-100)] text-[var(--navy)]";
+  return "bg-[var(--line-soft)] text-[var(--ink-soft)]";
+}
+const ROLE_TAG_BASE =
+  "inline-flex items-center px-2 py-[3px] rounded-[6px] text-[10px] font-bold uppercase tracking-[0.05em] whitespace-nowrap";
+
 export default function QuanTriPage() {
   const { data: session } = useSession();
   const isMaster = can(session?.user?.role, "admin.masterdata");
@@ -226,6 +421,14 @@ export default function QuanTriPage() {
 
   // Bác sĩ
   const [bacsiFilterCoso, setBacsiFilterCoso] = useState("");
+  // Mặc định lọc theo cơ sở đang chọn làm việc; đổi cơ sở ở thanh trên thì bộ lọc đi theo (vẫn chọn lại được "Tất cả cơ sở")
+  const { activeCoSoId } = useCurrentFacility();
+  const [seenCoSoId, setSeenCoSoId] = useState("");
+  if (activeCoSoId && activeCoSoId !== seenCoSoId) {
+    setSeenCoSoId(activeCoSoId);
+    setBacsiFilterCoso(activeCoSoId);
+    setUserCosoFilter(activeCoSoId); // tab Tài khoản cũng mặc định theo cơ sở đang chọn
+  }
   const [bacsiSearch, setBacsiSearch] = useState("");
   const [syncingBacSi, setSyncingBacSi] = useState(false);
 
@@ -406,29 +609,33 @@ export default function QuanTriPage() {
     });
   }, [audits, auditFilterHanhDong, auditSearch]);
 
-  // KPI Metrics for Accounts
-  const totalUsers = regularUsers.length;
-  const activeUsers = regularUsers.filter((u) => u.trangThai === "active").length;
-  const totalEmailSent = regularUsers.filter((u) => u.loiMoi?.ok).length;
-  const totalNotSent = regularUsers.filter((u) => !u.loiMoi?.ok).length;
+  // Số liệu tài khoản theo phạm vi cơ sở đang lọc (cùng phạm vi với danh sách bên dưới)
+  const scopedUsers = useMemo(
+    () => (userCosoFilter ? regularUsers.filter((u) => u.coSoId === userCosoFilter) : regularUsers),
+    [regularUsers, userCosoFilter]
+  );
+  const totalUsers = scopedUsers.length;
+  const activeUsers = scopedUsers.filter((u) => u.trangThai === "active").length;
+  const totalEmailSent = scopedUsers.filter((u) => u.loiMoi?.ok).length;
+  const totalNotSent = scopedUsers.filter((u) => !u.loiMoi?.ok).length;
 
   const availableTabs = useMemo(() => {
     // [khoá, nhãn, icon, số đếm (null = không hiện)]
     if (isIT) {
       return [
         ["coso", "Cấu hình đơn vị", Building2, null],
-        ["nguoidung", "Tài khoản", Users, regularUsers.length],
+        ["nguoidung", "Tài khoản", Users, scopedUsers.length],
         ["bacsi", "Danh sách bác sĩ", Stethoscope, doctorUsers.length],
       ] as const;
     }
     return [
       ["coso", "Cơ sở y tế", Building2, displayedCosos.length],
-      ["nguoidung", "Tài khoản", Users, regularUsers.length],
+      ["nguoidung", "Tài khoản", Users, scopedUsers.length],
       ["bacsi", "Danh sách bác sĩ", Stethoscope, doctorUsers.length],
       ["gsheet", "Google Sheet", FileSpreadsheet, null],
       ["audit", "Nhật ký", ScrollText, audits.length],
     ] as const;
-  }, [isIT, displayedCosos.length, regularUsers.length, doctorUsers.length, audits.length]);
+  }, [isIT, displayedCosos.length, scopedUsers.length, doctorUsers.length, audits.length]);
 
   const lockCoso = (id: string) => {
     setConfirmDialog({
@@ -560,7 +767,7 @@ export default function QuanTriPage() {
         accessorKey: "ten",
         header: "Cơ sở y tế",
         size: 260,
-        meta: { width: "30%" },
+        meta: { width: "23%" },
         cell: ({ row }) => (
           <div className="flex items-center gap-3 min-w-0">
             <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[10.5px] font-extrabold text-[var(--navy)] shrink-0">
@@ -580,7 +787,7 @@ export default function QuanTriPage() {
         id: "nhanSu",
         header: "Nhân sự",
         size: 120,
-        meta: { width: "11%" },
+        meta: { width: "15%" },
         enableSorting: false,
         cell: ({ row }) => {
           const ns = nhanSuTheoCoSo[row.original.id] || { tk: 0, bs: 0 };
@@ -600,7 +807,7 @@ export default function QuanTriPage() {
         id: "bhxh",
         header: "Cổng tra cứu BHYT",
         size: 200,
-        meta: { width: "20%" },
+        meta: { width: "19%" },
         enableSorting: false,
         cell: ({ row }) => {
           const c = row.original;
@@ -620,8 +827,8 @@ export default function QuanTriPage() {
       {
         id: "his",
         header: "Kết nối HIS",
-        size: 230,
-        meta: { width: "25%" },
+        size: 270,
+        meta: { width: "24%" },
         enableSorting: false,
         cell: ({ row }) => {
           const c = row.original;
@@ -732,14 +939,12 @@ export default function QuanTriPage() {
         id: "maNV",
         accessorKey: "maNV",
         header: "Mã NV",
-        size: 95,
-        meta: { align: "center", width: "95px" },
+        size: 84,
+        meta: { width: "84px" },
         cell: ({ row }) => (
-          <div className="flex justify-center">
-            <span className="font-mono font-bold text-[12px] px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200/80 whitespace-nowrap">
-              {row.original.maNV}
-            </span>
-          </div>
+          <span className="inline-flex items-center h-7 px-2 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] font-mono text-[11px] font-extrabold text-[var(--navy)] whitespace-nowrap">
+            {row.original.maNV}
+          </span>
         ),
       },
       {
@@ -747,22 +952,27 @@ export default function QuanTriPage() {
         accessorKey: "hoTen",
         header: "Họ và tên",
         size: 260,
-        meta: { width: "28%" },
+        meta: { width: "32%" },
         cell: ({ row }) => {
           const email = row.original.loiMoi?.email;
+          const ten = (row.original.hoTen || "").trim();
+          const initials = ten.split(/\s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() || "?";
           return (
-            <div className="min-w-0 pr-2">
-              <div className="font-bold text-[var(--ink)] text-[14px] flex items-center gap-1.5 truncate">
-                <span className="truncate">{row.original.hoTen}</span>
-              </div>
-              <div className="text-[12px] text-[var(--mute)] font-mono flex items-center gap-1.5 mt-0.5 truncate">
-                <span className="text-teal-700 font-semibold">@{row.original.tenDangNhap}</span>
-                {email && (
-                  <>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-[var(--ink-soft)] font-sans truncate">{email}</span>
-                  </>
-                )}
+            <div className="flex items-center gap-3 min-w-0 pr-2">
+              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] flex items-center justify-center font-mono text-[10.5px] font-bold shrink-0">
+                {initials}
+              </span>
+              <div className="min-w-0">
+                <div className="text-[13px] font-semibold text-[var(--ink)] truncate">{ten}</div>
+                <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-[var(--mute)] min-w-0">
+                  <span className="font-mono font-semibold text-[var(--teal-deep)] shrink-0">@{row.original.tenDangNhap}</span>
+                  {email && (
+                    <>
+                      <span className="text-[var(--mute-soft)]">·</span>
+                      <span className="truncate">{email}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -774,56 +984,48 @@ export default function QuanTriPage() {
         header: "Vai trò",
         size: 150,
         meta: { width: "150px" },
-        cell: ({ row }) => {
-          const badge = ROLE_BADGES[row.original.vaiTro] || {
-            label: roleLabel(row.original.vaiTro),
-            cls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]",
-          };
-          return (
-            <span
-              className={`text-[11.5px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${badge.cls}`}
-            >
-              {badge.label}
-            </span>
-          );
-        },
+        cell: ({ row }) => (
+          <span className={`${ROLE_TAG_BASE} ${roleTagCls(row.original.vaiTro)}`}>
+            {ROLE_BADGES[row.original.vaiTro]?.label || roleLabel(row.original.vaiTro)}
+          </span>
+        ),
       },
       {
         id: "coSo",
         header: "Đơn vị làm việc",
         size: 220,
-        meta: { width: "24%" },
+        meta: { width: "22%" },
         accessorFn: (u) => u.coSo?.ten || "Toàn hệ thống",
-        cell: ({ getValue }) => (
-          <span className="text-[var(--ink-soft)] font-medium text-[13px] truncate block">{String(getValue())}</span>
-        ),
+        cell: ({ row, getValue }) =>
+          row.original.coSo?.ten ? (
+            <span className="text-[12.5px] text-[var(--ink-soft)] truncate block">{String(getValue())}</span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--navy)]">
+              <Server className="w-3 h-3 text-[var(--teal)]" />
+              Toàn hệ thống
+            </span>
+          ),
       },
       {
         id: "trang_thai_moi",
-        header: "Thư mời (SMTP)",
-        size: 240,
-        meta: { width: "24%" },
+        header: "Thư mời",
+        size: 190,
+        meta: { width: "190px" },
         enableSorting: false,
         cell: ({ row }) => {
           const u = row.original;
           const loiMoi = u.loiMoi;
 
+          const iconBtn =
+            "w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors cursor-pointer";
+
           if (loiMoi?.ok) {
             return (
-              <div className="flex items-center gap-1.5" data-no-row-click>
-                <span
-                  className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/40 whitespace-nowrap"
-                  title={`Đã gửi thư mời lúc: ${fmtTime(loiMoi.thoiDiem)}${loiMoi.email ? ` tới ${loiMoi.email}` : ""}`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" />
-                  Đã gửi email
+              <div className="flex items-center gap-1" data-no-row-click>
+                <span title={`Đã gửi thư mời lúc: ${fmtTime(loiMoi.thoiDiem)}${loiMoi.email ? ` tới ${loiMoi.email}` : ""}`}>
+                  <QtPill tone="active">Đã gửi</QtPill>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setInviteModal(u)}
-                  className="p-1 rounded text-[var(--mute)] hover:text-[var(--navy)] hover:bg-[var(--navy-50)] transition-colors"
-                  title="Gửi lại thư mời"
-                >
+                <button type="button" onClick={() => setInviteModal(u)} className={iconBtn} title="Gửi lại thư mời">
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -832,18 +1034,14 @@ export default function QuanTriPage() {
 
           if (loiMoi && !loiMoi.ok) {
             return (
-              <div className="flex items-center gap-1.5" data-no-row-click>
-                <span
-                  className="inline-flex items-center gap-1 text-[11.5px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--rose-soft)] text-[var(--rose)] border border-[var(--rose)]/40 whitespace-nowrap"
-                  title={`Lỗi gửi: ${loiMoi.loi || "Không rõ nguyên nhân"}`}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--rose)]" />
-                  Lỗi gửi thư
+              <div className="flex items-center gap-1" data-no-row-click>
+                <span title={`Lỗi gửi: ${loiMoi.loi || "Không rõ nguyên nhân"}`}>
+                  <QtPill tone="expired">Lỗi gửi</QtPill>
                 </span>
                 <button
                   type="button"
                   onClick={() => setInviteModal(u)}
-                  className="p-1 rounded text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-colors"
+                  className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-colors cursor-pointer"
                   title="Thử gửi lại"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
@@ -853,19 +1051,16 @@ export default function QuanTriPage() {
           }
 
           return (
-            <div className="flex items-center gap-2" data-no-row-click>
-              <span className="inline-flex items-center gap-1 text-[11.5px] font-medium px-2 py-0.5 rounded-md bg-[var(--surface-hover)] text-[var(--mute)] border border-[var(--line)] whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                Chưa gửi mail
-              </span>
+            <div className="flex items-center gap-1.5" data-no-row-click>
+              <QtPill tone="draft">Chưa gửi</QtPill>
               <button
                 type="button"
                 onClick={() => setInviteModal(u)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white text-[11px] font-bold transition-all shadow-xs"
+                className="h-6 px-2 inline-flex items-center gap-1 rounded-[6px] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white text-[10.5px] font-bold transition-colors cursor-pointer"
                 title="Gửi email mời tham gia qua SMTP no-reply@visicare.com.vn"
               >
                 <Send className="w-3 h-3" />
-                <span>Gửi</span>
+                Gửi
               </button>
             </div>
           );
@@ -876,46 +1071,46 @@ export default function QuanTriPage() {
         accessorKey: "trangThai",
         header: "Trạng thái",
         size: 120,
-        meta: { align: "center", width: "120px" },
+        meta: { width: "120px" },
         cell: ({ row }) =>
           row.original.trangThai === "active" ? (
-            <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+            <QtPill tone="active">Hoạt động</QtPill>
           ) : (
-            <StatusBadge label="Đã khóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
+            <QtPill tone="expired">Đã khoá</QtPill>
           ),
       },
       {
         id: "actions",
-        header: "Thao tác",
-        size: 110,
+        header: "",
+        size: 100,
         enableSorting: false,
         enableResizing: false,
-        meta: { align: "right", width: "110px" },
+        meta: { align: "right", width: "100px" },
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1" data-no-row-click>
+          <div className="flex items-center justify-end gap-0.5" data-no-row-click>
             <button
               type="button"
               onClick={() => setInviteModal(row.original)}
-              className="p-1.5 rounded-md text-[var(--navy)] hover:bg-[var(--navy-50)] transition-colors"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors cursor-pointer"
               title="Gửi email mời tham gia"
             >
-              <Mail className="w-4 h-4" />
+              <Mail className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setModal({ type: "user", rec: row.original })}
-              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors cursor-pointer"
               title="Chỉnh sửa tài khoản"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => lockUser(row.original.maNV)}
-              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors"
-              title="Xóa tài khoản"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors cursor-pointer"
+              title="Xoá tài khoản"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ),
@@ -931,92 +1126,98 @@ export default function QuanTriPage() {
       {
         id: "maNV",
         accessorKey: "maNV",
-        header: "Mã Bác sĩ",
-        size: 110,
-        meta: { align: "center", width: "110px" },
+        header: "Mã bác sĩ",
+        size: 170,
+        meta: { width: "170px" },
         cell: ({ row }) => (
-          <div className="flex justify-center">
-            <span className="font-mono font-bold text-[12px] px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200/80 whitespace-nowrap">
-              {row.original.maNV}
-            </span>
-          </div>
+          <span className="inline-flex items-center max-w-full h-7 px-2 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] font-mono text-[10.5px] font-extrabold text-[var(--navy)] whitespace-nowrap truncate">
+            {row.original.maNV}
+          </span>
         ),
       },
       {
         id: "hoTen",
         accessorKey: "hoTen",
-        header: "Họ và Tên Bác sĩ",
+        header: "Họ và tên bác sĩ",
         size: 280,
-        meta: { width: "36%" },
-        cell: ({ row }) => (
-          <div className="flex items-center gap-2 min-w-0 pr-2">
-            <div className="w-7 h-7 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] font-bold text-xs flex items-center justify-center shrink-0">
-              BS
+        meta: { width: "34%" },
+        cell: ({ row }) => {
+          const ten = (row.original.hoTen || "").trim();
+          const initials = ten.split(/s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() || "BS";
+          return (
+            <div className="flex items-center gap-3 min-w-0 pr-2">
+              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] flex items-center justify-center font-mono text-[10.5px] font-bold shrink-0">
+                {initials}
+              </span>
+              <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{ten}</span>
             </div>
-            <span className="font-bold text-[var(--ink)] text-[14px] truncate">{row.original.hoTen}</span>
-          </div>
-        ),
+          );
+        },
       },
       {
         id: "coSo",
         header: "Cơ sở làm việc",
         size: 260,
-        meta: { width: "34%" },
+        meta: { width: "30%" },
         accessorFn: (u) => u.coSo?.ten || "Toàn hệ thống",
-        cell: ({ getValue }) => <span className="text-[var(--ink-soft)] font-medium text-[13px] truncate block">{String(getValue())}</span>,
+        cell: ({ row, getValue }) =>
+          row.original.coSo?.ten ? (
+            <span className="text-[12.5px] text-[var(--ink-soft)] truncate block">{String(getValue())}</span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--navy)]">
+              <Server className="w-3 h-3 text-[var(--teal)]" />
+              Toàn hệ thống
+            </span>
+          ),
       },
       {
         id: "nguon",
         header: "Nguồn dữ liệu",
-        size: 170,
-        meta: { width: "170px" },
+        size: 150,
+        meta: { width: "150px" },
         enableSorting: false,
         cell: ({ row }) => {
           const isHis = row.original.maNV.startsWith("HIS-") || row.original.tenDangNhap.startsWith("his_");
-          return isHis ? (
-            <StatusBadge label="Từ HIS (DMNhanSu)" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
-          ) : (
-            <StatusBadge label="Nhập thủ công" cls="bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy-100)]" sm />
-          );
+          return isHis ? <QtPill tone="active">Từ HIS</QtPill> : <QtPill tone="draft">Nhập thủ công</QtPill>;
         },
       },
       {
         id: "trangThai",
         accessorKey: "trangThai",
         header: "Trạng thái",
-        size: 130,
-        meta: { align: "center", width: "130px" },
+        size: 120,
+        meta: { width: "120px" },
         cell: ({ row }) =>
           row.original.trangThai === "active" ? (
-            <StatusBadge label="Hoạt động" cls="bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]" sm />
+            <QtPill tone="active">Hoạt động</QtPill>
           ) : (
-            <StatusBadge label="Đã khóa" cls="bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]" sm />
+            <QtPill tone="expired">Đã khoá</QtPill>
           ),
       },
       {
         id: "actions",
-        header: "Thao tác",
-        size: 100,
+        header: "",
+        size: 84,
         enableSorting: false,
         enableResizing: false,
-        meta: { align: "right", width: "100px" },
+        meta: { align: "right", width: "84px" },
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-1" data-no-row-click>
+          <div className="flex items-center justify-end gap-0.5" data-no-row-click>
             <button
               type="button"
               onClick={() => setModal({ type: "user", rec: row.original })}
-              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--navy-50)] hover:text-[var(--navy)] transition-colors cursor-pointer"
               title="Sửa"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => lockUser(row.original.maNV)}
-              className="p-1.5 rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors"
-              title="Xóa bác sĩ"
+              className="w-7 h-7 inline-flex items-center justify-center rounded-[6px] text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors cursor-pointer"
+              title="Xoá bác sĩ"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ),
@@ -1026,53 +1227,62 @@ export default function QuanTriPage() {
     []
   );
 
+  // Tên người thực hiện theo mã NV (nhật ký chỉ lưu mã)
+  const userNameByMa = useMemo(() => new Map(users.map((u) => [u.maNV, u.hoTen])), [users]);
+
   // Cột bảng Audit
   const auditColumns = useMemo<ColumnDef<Audit>[]>(
     () => [
       {
         id: "thoiDiem",
         header: "Thời điểm",
-        size: 165,
-        meta: { width: "165px" },
+        size: 120,
+        meta: { width: "120px" },
         accessorFn: (a) => (a.thoiDiem ? new Date(a.thoiDiem).getTime() : 0),
-        cell: ({ row }) => (
-          <span className="font-mono text-[11.5px] text-[var(--mute)] whitespace-nowrap">{fmtTime(row.original.thoiDiem)}</span>
-        ),
+        cell: ({ row }) => {
+          const t = fmtTime(row.original.thoiDiem); // "07:53 05/11/2026"
+          const [gio, ngay] = t.split(" ");
+          return (
+            <div className="leading-tight">
+              <div className="font-mono text-[11.5px] font-semibold text-[var(--ink)]">{ngay || t}</div>
+              {ngay && <div className="font-mono text-[10.5px] text-[var(--mute)] mt-0.5">{gio}</div>}
+            </div>
+          );
+        },
       },
       {
         id: "nguoiDung",
         accessorKey: "nguoiDung",
         header: "Người thực hiện",
-        size: 150,
-        meta: { width: "150px" },
-        cell: ({ row }) => (
-          <span className="font-mono font-bold text-[var(--navy)] whitespace-nowrap">{row.original.nguoiDung}</span>
-        ),
+        size: 190,
+        meta: { width: "190px" },
+        cell: ({ row }) => {
+          const ma = row.original.nguoiDung;
+          const ten = userNameByMa.get(ma);
+          return (
+            <div className="min-w-0 leading-tight">
+              <div className="text-[12.5px] font-semibold text-[var(--ink)] truncate">{ten || ma}</div>
+              {ten && <div className="font-mono text-[10.5px] text-[var(--navy)] mt-0.5">{ma}</div>}
+            </div>
+          );
+        },
       },
       {
         id: "hanhDong",
         accessorKey: "hanhDong",
         header: "Hành động",
-        size: 145,
-        meta: { align: "center", width: "145px" },
+        size: 130,
+        meta: { width: "130px" },
         cell: ({ row }) => {
           const hd = row.original.hanhDong;
-          const isEmail = hd === "gui_email_moi";
-          return (
-            <span
-              className={`text-[11px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
-                isEmail
-                  ? "bg-teal-50 text-teal-700 border-teal-200"
-                  : hd === "them"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : hd === "xoa"
-                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                  : "bg-[var(--surface-hover)] text-[var(--ink-soft)] border-[var(--line)]"
-              }`}
-            >
-              {isEmail ? "Gửi thư mời" : hd}
-            </span>
-          );
+          const map: Record<string, { tone: "active" | "pending" | "expired" | "draft"; label: string }> = {
+            gui_email_moi: { tone: "active", label: "Gửi thư mời" },
+            them: { tone: "active", label: "Thêm" },
+            sua: { tone: "pending", label: "Chỉnh sửa" },
+            xoa: { tone: "expired", label: "Xoá" },
+          };
+          const m = map[hd] || { tone: "draft" as const, label: hd };
+          return <QtPill tone={m.tone}>{m.label}</QtPill>;
         },
       },
       {
@@ -1081,86 +1291,107 @@ export default function QuanTriPage() {
         header: "Đối tượng",
         size: 140,
         meta: { width: "140px" },
-        cell: ({ row }) => <span className="text-[var(--ink-soft)] font-mono text-[12px]">{row.original.bang}</span>,
+        cell: ({ row }) => (
+          <span className="text-[12.5px] text-[var(--ink-soft)]" title={row.original.bang}>
+            {AUDIT_BANG[row.original.bang] || row.original.bang}
+          </span>
+        ),
       },
       {
         id: "banGhiId",
         accessorKey: "banGhiId",
         header: "Mã bản ghi",
-        size: 130,
-        meta: { align: "center", width: "130px" },
-        cell: ({ row }) => (
-          <div className="flex justify-center">
-            <span className="font-mono text-[12px] font-bold text-[var(--teal-deep)]">{row.original.banGhiId}</span>
-          </div>
-        ),
+        size: 120,
+        meta: { width: "120px" },
+        cell: ({ row }) => {
+          const id = row.original.banGhiId || "";
+          // Mã hồ sơ dạng cuid rất dài: rút gọn, đủ để đối chiếu; toàn văn ở tooltip
+          const ngan = id.length > 14 ? `…${id.slice(-8)}` : id;
+          return (
+            <span className="font-mono text-[11px] font-semibold text-[var(--navy)]" title={id}>
+              {ngan}
+            </span>
+          );
+        },
       },
       {
         id: "thayDoi",
         header: "Chi tiết thay đổi",
         size: 360,
-        meta: { width: "42%" },
+        meta: { flex: true },
         enableSorting: false,
-        cell: ({ row }) => {
-          const raw = row.original.thayDoi;
-          if (!raw) return <span className="text-[var(--mute)] text-[12px]">—</span>;
-          try {
-            const parsed = JSON.parse(raw);
-            if (row.original.hanhDong === "gui_email_moi") {
-              return (
-                <div className="text-[12px] text-[var(--ink-soft)] truncate" title={raw}>
-                  Email: <span className="font-bold text-[var(--navy)]">{parsed.email}</span> · {parsed.ok ? "Thành công" : `Lỗi: ${parsed.loi}`}
-                </div>
-              );
-            }
-            return (
-              <span className="font-mono text-[11px] text-[var(--mute)] truncate block max-w-md" title={raw}>
-                {raw}
-              </span>
-            );
-          } catch {
-            return <span className="text-[11px] text-[var(--mute)] truncate">{raw}</span>;
-          }
-        },
+        cell: ({ row }) => <AuditDetail hanhDong={row.original.hanhDong} raw={row.original.thayDoi} />,
       },
     ],
-    []
+    [userNameByMa]
   );
 
   return (
-    <div className="space-y-4">
-      {/* Tabs navigation */}
-      <div
-        data-tour="qt-tabs"
-        className="flex items-center gap-0.5 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-2 overflow-x-auto overflow-y-hidden hide-scrollbar"
+    <div className="flex flex-col h-full min-h-0 gap-4 min-w-0">
+      {/* Header trang (chuẩn company UI, giống Báo cáo / Đợt khám) + thanh tab nằm trong header */}
+      <PageHeader
+        className="shrink-0"
+        icon={ShieldCheck}
+        title="Quản trị"
+        accent={isIT ? "đơn vị" : "hệ thống"}
+        badge={isIT ? displayedCosos[0]?.ten || session?.user?.coSoId || "Đơn vị" : "Toàn hệ thống"}
+        description={
+          <>
+            <span>Cơ sở y tế, tài khoản, bác sĩ, nhật ký và đồng bộ dữ liệu</span>
+            <span className="text-[var(--mute-soft)]">·</span>
+            <span>
+              <b className="font-mono text-[var(--ink)] tabular-nums">{scopedUsers.length}</b> tài khoản
+            </span>
+            <span className="text-[var(--mute-soft)]">·</span>
+            <span>
+              <b className="font-mono text-[var(--ink)] tabular-nums">{doctorUsers.length}</b> bác sĩ
+            </span>
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => load(true)}
+            title="Làm mới dữ liệu"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] px-3 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition-all cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[var(--teal)] ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Làm mới</span>
+          </button>
+        }
       >
-        {availableTabs.map(([k, label, Icon, count]) => {
-          const on = tab === k;
-          return (
-            <button
-              key={k}
-              onClick={() => changeTab(k as any)}
-              className={`relative inline-flex items-center gap-2 px-3.5 py-3 text-[12.5px] font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                on
-                  ? "text-[var(--navy)] after:absolute after:left-3 after:right-3 after:bottom-0 after:h-[2px] after:rounded-full after:bg-[var(--navy)]"
-                  : "text-[var(--mute)] hover:text-[var(--ink)]"
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{label}</span>
-              {count != null && (
-                <span
-                  className={`font-mono text-[10px] font-bold px-1.5 py-px rounded-[6px] tabular-nums ${
-                    on ? "bg-[var(--navy-100)] text-[var(--navy)]" : "bg-[var(--line-soft)] text-[var(--mute)]"
-                  }`}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+        <div
+          data-tour="qt-tabs"
+          className="inline-flex max-w-full items-center gap-0.5 p-[3px] rounded-xl bg-[var(--surface-soft)] border border-[var(--line)] overflow-x-auto overflow-y-hidden hide-scrollbar"
+        >
+          {availableTabs.map(([k, label, Icon, count]) => {
+            const on = tab === k;
+            return (
+              <button
+                key={k}
+                onClick={() => changeTab(k as any)}
+                className={`relative inline-flex items-center gap-2 h-8 px-3.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  on
+                    ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)]"
+                    : "text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface)]"
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${on ? "text-[var(--teal)]" : ""}`} />
+                <span>{label}</span>
+                {count != null && (
+                  <span
+                    className={`font-mono text-[10px] font-bold px-1.5 py-px rounded-[6px] tabular-nums ${
+                      on ? "bg-white/15 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </PageHeader>
 
       {loading && users.length === 0 && cosos.length === 0 ? (
         <div className="py-24 flex flex-col items-center justify-center gap-3">
@@ -1168,91 +1399,61 @@ export default function QuanTriPage() {
           <span className="text-[13px] text-[var(--mute)] font-medium">Đang tải dữ liệu quản trị...</span>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto">
           {/* ════════════════════════════════════════════════════════════════
               TAB: TÀI KHOẢN (NGƯỜI DÙNG)
              ════════════════════════════════════════════════════════════════ */}
           {tab === "nguoidung" && (
-            <div className="space-y-4">
-              {/* 4 Thẻ KPI Metrics chuẩn VISIHUB */}
+            <div className="flex flex-col gap-4 flex-1 min-h-0">
+              {/* Thẻ số liệu nhanh */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                <div className="bg-white border border-[var(--line)] rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center shrink-0">
-                    <Users className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider">Tổng tài khoản</div>
-                    <div className="text-[24px] font-extrabold text-[var(--ink)] font-mono leading-tight">{totalUsers}</div>
-                    <div className="text-[11px] text-[var(--mute)] mt-0.5">Nhân sự trong phạm vi</div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-[var(--line)] rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider">Đang hoạt động</div>
-                    <div className="text-[24px] font-extrabold text-emerald-600 font-mono leading-tight">{activeUsers}</div>
-                    <div className="text-[11px] text-[var(--mute)] mt-0.5">Trạng thái active</div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-[var(--line)] rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--teal-soft)] text-[var(--teal-deep)] flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider">Đã gửi thư mời</div>
-                    <div className="text-[24px] font-extrabold text-[var(--teal-deep)] font-mono leading-tight">
-                      {totalEmailSent}
-                      <span className="text-xs font-normal text-[var(--mute)] ml-1 font-sans">
-                        ({totalUsers > 0 ? Math.round((totalEmailSent / totalUsers) * 100) : 0}%)
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-[var(--mute)] mt-0.5">Đã gửi email thông tin</div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-[var(--line)] rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                    <Clock className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider">Chưa gửi thư mời</div>
-                    <div className="text-[24px] font-extrabold text-amber-600 font-mono leading-tight">{totalNotSent}</div>
-                    <div className="text-[11px] text-[var(--mute)] mt-0.5">Cần gửi thông tin đăng nhập</div>
-                  </div>
-                </div>
+                <QtStat icon={Users} label="Tổng tài khoản" value={totalUsers} sub="nhân sự trong phạm vi quản lý" tone="navy" />
+                <QtStat
+                  icon={ShieldCheck}
+                  label="Đang hoạt động"
+                  value={activeUsers}
+                  sub={totalUsers - activeUsers > 0 ? `${totalUsers - activeUsers} tài khoản đã khoá` : "không có tài khoản bị khoá"}
+                  tone="teal"
+                />
+                <QtStat
+                  icon={CheckCircle2}
+                  label="Đã gửi thư mời"
+                  value={totalEmailSent}
+                  unit={`/${totalUsers}`}
+                  sub={`${totalUsers > 0 ? Math.round((totalEmailSent / totalUsers) * 100) : 0}% đã nhận thông tin đăng nhập`}
+                  tone="teal"
+                />
+                <QtStat
+                  icon={Clock}
+                  label="Chưa gửi thư mời"
+                  value={totalNotSent}
+                  sub={totalNotSent > 0 ? "cần gửi thông tin đăng nhập" : "đã gửi đủ cho mọi tài khoản"}
+                  tone="amber"
+                />
               </div>
 
-              {/* Banner Máy chủ SMTP (no-reply@visicare.com.vn) */}
-              <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-teal-50/40 border border-blue-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start sm:items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-[var(--navy)] text-white flex items-center justify-center shrink-0 shadow-sm shadow-[var(--navy)]/20">
-                    <Mail className="w-5 h-5 text-[var(--teal)]" />
-                  </div>
-                  <div className="space-y-1">
+              {/* Cổng email (SMTP): một dải trạng thái gọn, không chiếm cả khối */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-4 py-2.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] flex items-center justify-center shrink-0 shadow-[var(--navy-shadow)]">
+                    <Mail className="w-4 h-4 text-[var(--teal)]" />
+                  </span>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[14px] font-bold text-[var(--ink)]">Cổng gửi Email thư mời (SMTP Gateway)</span>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100/80 text-emerald-800 border border-emerald-300">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Sẵn sàng gửi
-                      </span>
+                      <span className="text-[12.5px] font-bold text-[var(--ink)]">Cổng gửi email thư mời</span>
+                      <QtPill tone="active">Sẵn sàng gửi</QtPill>
                     </div>
-                    <div className="text-[12.5px] text-[var(--ink-soft)] flex flex-wrap items-center gap-y-1 gap-x-2">
-                      <span>Máy chủ: <strong className="font-mono text-[var(--navy)]">{smtpStatus?.host || "mail.visicare.com.vn"}:{smtpStatus?.port || 465} (SSL)</strong></span>
-                      <span className="text-[var(--mute)]">•</span>
-                      <span>Tài khoản: <strong className="font-mono text-[var(--navy)]">{smtpStatus?.from || "no-reply@visicare.com.vn"}</strong></span>
+                    <div className="mt-0.5 font-mono text-[10.5px] text-[var(--mute)] truncate">
+                      {smtpStatus?.host || "mail.visicare.com.vn"}:{smtpStatus?.port || 465} (SSL) · {smtpStatus?.from || "no-reply@visicare.com.vn"}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={checkSmtpConnection}
                     disabled={checkingSmtp}
-                    className="btn btn-secondary px-3.5 py-2 text-[12.5px] font-bold rounded-xl"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition-all cursor-pointer"
                     title="Kiểm tra kết nối tới mail.visicare.com.vn"
                   >
                     {checkingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
@@ -1261,7 +1462,7 @@ export default function QuanTriPage() {
                   <button
                     type="button"
                     onClick={() => setSmtpTestModal(true)}
-                    className="btn px-3.5 py-2 text-[12.5px] font-bold bg-[var(--navy)] text-white hover:bg-[#021370] rounded-xl shadow-xs"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
                     title="Gửi thư thử nghiệm"
                   >
                     <Send className="w-3.5 h-3.5 text-[var(--teal)]" />
@@ -1270,138 +1471,105 @@ export default function QuanTriPage() {
                 </div>
               </div>
 
-              {/* DataToolbar: Tìm kiếm, Bộ lọc và Thao tác hàng loạt */}
-              <div className="bg-white border border-[var(--line)] rounded-2xl p-3.5 shadow-xs space-y-3">
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
-                    {/* Search */}
-                    <div className="relative flex-1 min-w-[200px]">
-                      <Search className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2" />
+              {/* Bảng tài khoản: thanh công cụ nằm trong cùng thẻ với bảng (giống tab Cơ sở y tế) */}
+              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+                    <div className="relative w-full sm:w-[300px] shrink-0">
+                      <Search className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="text"
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
-                        placeholder="Tìm tên, mã nhân viên, đăng nhập, email..."
-                        className="input-field pl-9 pr-8 h-10 text-[13px] w-full rounded-xl"
+                        placeholder="Tìm tên, mã NV, đăng nhập, email…"
+                        className="h-9 w-full pl-8 pr-8 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
                       />
                       {userSearch && (
                         <button
                           type="button"
                           onClick={() => setUserSearch("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)]"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink)] cursor-pointer"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
 
-                    {/* Filter Vai trò */}
-                    <div className="relative w-full sm:w-44">
-                      <select
-                        value={userRoleFilter}
-                        onChange={(e) => setUserRoleFilter(e.target.value)}
-                        className="input-field h-10 text-[12.5px] w-full font-medium bg-white cursor-pointer pr-8 rounded-xl appearance-none"
-                      >
-                        <option value="">Tất cả vai trò</option>
-                        {(isIT ? IT_ROLES : ALL_ROLES).map((r) => (
-                          <option key={r} value={r}>
-                            {roleLabel(r)}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-[var(--mute)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
+                    <QtFilter icon={KeyRound} value={userRoleFilter} onChange={setUserRoleFilter} className="w-full sm:w-[160px]">
+                      <option value="">Tất cả vai trò</option>
+                      {(isIT ? IT_ROLES : ALL_ROLES).map((r) => (
+                        <option key={r} value={r}>
+                          {roleLabel(r)}
+                        </option>
+                      ))}
+                    </QtFilter>
 
-                    {/* Filter Cơ sở (cho Master) */}
                     {!isIT && (
-                      <div className="relative w-full sm:w-48">
-                        <select
-                          value={userCosoFilter}
-                          onChange={(e) => setUserCosoFilter(e.target.value)}
-                          className="input-field h-10 text-[12.5px] w-full font-medium bg-white cursor-pointer pr-8 rounded-xl appearance-none"
-                        >
-                          <option value="">Tất cả cơ sở</option>
-                          {cosos
-                            .filter((c) => c.trangThai === "active")
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.ten}
-                              </option>
-                            ))}
-                        </select>
-                        <ChevronDown className="w-4 h-4 text-[var(--mute)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
+                      <QtFilter icon={Building2} value={userCosoFilter} onChange={setUserCosoFilter} className="w-full sm:w-[210px]">
+                        <option value="">Tất cả cơ sở</option>
+                        {cosos
+                          .filter((c) => c.trangThai === "active")
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.ten}
+                            </option>
+                          ))}
+                      </QtFilter>
                     )}
 
-                    {/* Filter Trạng thái Email */}
-                    <div className="relative w-full sm:w-44">
-                      <select
-                        value={userEmailFilter}
-                        onChange={(e) => setUserEmailFilter(e.target.value as any)}
-                        className="input-field h-10 text-[12.5px] w-full font-medium bg-white cursor-pointer pr-8 rounded-xl appearance-none"
-                      >
-                        <option value="">Tất cả thư mời</option>
-                        <option value="da_gui">Đã gửi email</option>
-                        <option value="chua_gui">Chưa gửi mail</option>
-                        <option value="loi">Lỗi gửi thư</option>
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-[var(--mute)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
+                    <QtFilter icon={Mail} value={userEmailFilter} onChange={(v) => setUserEmailFilter(v as any)} className="w-full sm:w-[160px]">
+                      <option value="">Tất cả thư mời</option>
+                      <option value="da_gui">Đã gửi email</option>
+                      <option value="chua_gui">Chưa gửi mail</option>
+                      <option value="loi">Lỗi gửi thư</option>
+                    </QtFilter>
                   </div>
 
-                  {/* Actions: Add / Bulk */}
-                  <div className="flex items-center gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setModal({ type: "user" })}
-                      className="btn btn-primary px-4 py-2.5 text-[13px] font-bold flex items-center justify-center gap-2 rounded-xl shadow-sm whitespace-nowrap"
-                    >
-                      <Plus className="w-4 h-4 text-[var(--teal)] stroke-[3]" />
-                      <span>Thêm tài khoản</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModal({ type: "user" })}
+                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" />
+                    <span>Thêm tài khoản</span>
+                  </button>
                 </div>
 
-                {/* Bulk Actions Bar */}
+                {/* Thao tác hàng loạt: hiện khi có dòng được chọn */}
                 {selectedUsers.size > 0 && (
-                  <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[var(--line-soft)] bg-[var(--surface-soft)] p-2.5 rounded-xl">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[var(--teal)]" />
-                      <span className="text-[13px] font-bold text-[var(--ink)]">
-                        Đã chọn <strong className="text-[var(--navy)] font-mono">{selectedUsers.size}</strong> tài khoản
-                      </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 bg-[var(--navy-50)] border-b border-[var(--line)]">
+                    <div className="flex items-center gap-2 text-[12.5px] font-semibold text-[var(--ink)]">
+                      <span className="w-[6px] h-[6px] rounded-full bg-[var(--teal)]" />
+                      Đã chọn <b className="font-mono text-[var(--navy)] tabular-nums">{selectedUsers.size}</b> tài khoản
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setBulkInviteModal(true)}
-                        className="btn px-3.5 py-1.5 text-[12.5px] font-bold bg-[var(--navy)] text-white hover:bg-[#021370] rounded-lg shadow-xs flex items-center gap-1.5"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5 text-[var(--teal)]" />
-                        <span>Gửi thư mời hàng loạt ({selectedUsers.size})</span>
+                        Gửi thư mời hàng loạt (<span className="font-mono">{selectedUsers.size}</span>)
                       </button>
                       <button
                         type="button"
                         onClick={bulkDeleteUsers}
-                        className="btn px-3.5 py-1.5 text-[12.5px] font-bold text-[var(--rose)] bg-[var(--rose-soft)] hover:bg-[var(--rose)] hover:text-white rounded-lg transition-colors flex items-center gap-1.5"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] text-[12px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition-all cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Xóa ({selectedUsers.size})</span>
+                        Xoá (<span className="font-mono">{selectedUsers.size}</span>)
                       </button>
                       <button
                         type="button"
                         onClick={() => setSelectedUsers(new Set())}
-                        className="text-[12px] text-[var(--mute)] hover:underline ml-1"
+                        className="text-[12px] font-medium text-[var(--mute)] hover:text-[var(--ink)] px-1 cursor-pointer"
                       >
                         Bỏ chọn
                       </button>
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Bảng dữ liệu tài khoản */}
-              <div className="card p-0 overflow-hidden rounded-2xl border border-[var(--line)] shadow-xs">
                 {/* Mobile: card list */}
                 <div className="md:hidden divide-y divide-[var(--line-soft)] bg-white">
                   {filteredUsers.length === 0 ? (
@@ -1433,13 +1601,7 @@ export default function QuanTriPage() {
                                 </span>
                               </div>
                             </div>
-                            <span
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                                ROLE_BADGES[u.vaiTro]?.cls || "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {roleLabel(u.vaiTro)}
-                            </span>
+                            <span className={`${ROLE_TAG_BASE} ${roleTagCls(u.vaiTro)}`}>{roleLabel(u.vaiTro)}</span>
                           </div>
 
                           <div className="text-[12px] text-[var(--mute)] flex flex-wrap items-center gap-2">
@@ -1497,18 +1659,21 @@ export default function QuanTriPage() {
                 </div>
 
                 {/* Desktop: DataTable */}
-                <div className="hidden md:block">
-                  <DataView<NguoiDung, unknown> columns={userColumns} data={filteredUsers} pageSize={50}>
+                <div className="hidden md:flex md:flex-col md:flex-1 md:min-h-0">
+                  <DataView<NguoiDung, unknown> fullHeight columns={userColumns} data={filteredUsers} pageSize={50}>
                     <DataTable<NguoiDung> dense emptyIcon={Users} emptyTitle="Không có tài khoản nào" />
+                    <DataPagination />
                   </DataView>
                 </div>
 
-                <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium flex justify-between items-center">
+                <div className="md:hidden flex items-center justify-between gap-1.5 px-4 py-2.5 border-t border-[var(--line)] bg-[var(--surface-soft)] text-[11px] text-[var(--mute)]">
                   <span>
-                    Hiển thị <span className="font-mono font-bold text-[var(--ink)]">{filteredUsers.length}</span> /{" "}
-                    <span className="font-mono font-bold text-[var(--ink)]">{regularUsers.length}</span> tài khoản
+                    Hiển thị <b className="font-mono text-[var(--ink)]">{filteredUsers.length}</b> /{" "}
+                    <b className="font-mono text-[var(--ink)]">{regularUsers.length}</b> tài khoản
                   </span>
-                  <span className="text-[11.5px]">Máy chủ SMTP: mail.visicare.com.vn:465</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-[var(--teal)]" /> Mật khẩu được băm, không thể xem lại
+                  </span>
                 </div>
               </div>
             </div>
@@ -1518,7 +1683,7 @@ export default function QuanTriPage() {
               TAB: CƠ SỞ Y TẾ
              ════════════════════════════════════════════════════════════════ */}
           {tab === "coso" && (
-            <div className="space-y-3.5">
+            <div className="flex flex-col gap-4 flex-1 min-h-0">
               {/* Thẻ số liệu nhanh */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                 <QtStat icon={Building2} label="Cơ sở y tế" value={cosoStats.tong} sub="trong phạm vi quản lý" tone="navy" />
@@ -1547,7 +1712,7 @@ export default function QuanTriPage() {
                 />
               </div>
 
-              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden">
+              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
                 {/* Thanh công cụ */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
                   <div className="relative w-full sm:w-[300px]">
@@ -1635,8 +1800,8 @@ export default function QuanTriPage() {
                 </div>
 
                 {/* Desktop */}
-                <div className="hidden md:block">
-                  <DataView<CoSo, unknown> columns={cosoColumns} data={filteredCosos} pageSize={50}>
+                <div className="hidden md:flex md:flex-col md:flex-1 md:min-h-0">
+                  <DataView<CoSo, unknown> fullHeight columns={cosoColumns} data={filteredCosos} pageSize={50}>
                     <DataTable<CoSo>
                       dense
                       emptyIcon={Building2}
@@ -1669,37 +1834,31 @@ export default function QuanTriPage() {
               TAB: DANH SÁCH BÁC SĨ
              ════════════════════════════════════════════════════════════════ */}
           {tab === "bacsi" && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl">
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2" />
+            <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+              {/* Thanh công cụ nằm trong thẻ bảng (cùng mẫu tab Cơ sở y tế / Tài khoản) */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+                  <div className="relative w-full sm:w-[300px] shrink-0">
+                    <Search className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={bacsiSearch}
                       onChange={(e) => setBacsiSearch(e.target.value)}
-                      placeholder="Tìm theo tên hoặc mã bác sĩ..."
-                      className="input-field pl-9 pr-3 h-10 text-[13px] w-full rounded-xl"
+                      placeholder="Tìm theo tên hoặc mã bác sĩ…"
+                      className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
                     />
                   </div>
                   {!isIT && (
-                    <div className="relative w-full sm:w-48">
-                      <select
-                        value={bacsiFilterCoso}
-                        onChange={(e) => setBacsiFilterCoso(e.target.value)}
-                        className="input-field h-10 text-[12.5px] w-full font-medium bg-white cursor-pointer pr-8 rounded-xl appearance-none"
-                      >
-                        <option value="">Tất cả cơ sở</option>
-                        {cosos
-                          .filter((c) => c.trangThai === "active")
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.ten}
-                            </option>
-                          ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-[var(--mute)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
+                    <QtFilter icon={Building2} value={bacsiFilterCoso} onChange={setBacsiFilterCoso} className="w-full sm:w-[220px]">
+                      <option value="">Tất cả cơ sở</option>
+                      {cosos
+                        .filter((c) => c.trangThai === "active")
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.ten}
+                          </option>
+                        ))}
+                    </QtFilter>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1728,9 +1887,9 @@ export default function QuanTriPage() {
                       }
                     }}
                     disabled={syncingBacSi}
-                    className="btn px-4 py-2.5 text-[13px] font-bold bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs"
+                    className="h-9 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition-all cursor-pointer whitespace-nowrap"
                   >
-                    {syncingBacSi ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    {syncingBacSi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
                     <span>Đồng bộ từ HIS DMNhanSu</span>
                   </button>
                   <button
@@ -1747,29 +1906,25 @@ export default function QuanTriPage() {
                         } as any,
                       })
                     }
-                    className="btn btn-primary px-4 py-2.5 text-[13px] font-bold flex items-center justify-center gap-2 rounded-xl shadow-xs whitespace-nowrap"
+                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer whitespace-nowrap"
                   >
-                    <Plus className="w-4 h-4 text-[var(--teal)] stroke-[3]" />
-                    <span>Thêm Bác sĩ</span>
+                    <Plus className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" />
+                    <span>Thêm bác sĩ</span>
                   </button>
                 </div>
               </div>
 
-              <div className="card p-0 overflow-hidden rounded-2xl border border-[var(--line)] shadow-xs">
-                <div className="hidden md:block">
-                  <DataView<NguoiDung, unknown> columns={bacsiColumns} data={doctorUsers} pageSize={50}>
-                    <DataTable<NguoiDung>
-                      dense
-                      emptyIcon={Stethoscope}
-                      emptyTitle="Chưa có bác sĩ nào"
-                      emptyDesc="Không có bác sĩ khớp bộ lọc hoặc chưa đồng bộ từ HIS DMNhanSu."
-                    />
-                  </DataView>
-                </div>
-                <div className="bg-[var(--surface-soft)] border-t border-[var(--line)] px-4 py-3 text-xs text-[var(--mute)] font-medium flex justify-between items-center">
-                  <span>Tổng số <span className="font-mono font-bold text-[var(--ink)]">{doctorUsers.length}</span> bác sĩ</span>
-                  <span>Đồng bộ từ <span className="font-bold text-[var(--teal-deep)]">HIS DMNhanSu</span></span>
-                </div>
+              {/* Vùng bảng có chiều cao cố định: thanh tiêu đề dính trên, chỉ phần dòng cuộn; phân trang nằm cuối thẻ */}
+              <div className="hidden md:flex md:flex-col md:flex-1 md:min-h-0">
+                <DataView<NguoiDung, unknown> fullHeight columns={bacsiColumns} data={doctorUsers} pageSize={50}>
+                  <DataTable<NguoiDung>
+                    dense
+                    emptyIcon={Stethoscope}
+                    emptyTitle="Chưa có bác sĩ nào"
+                    emptyDesc="Không có bác sĩ khớp bộ lọc hoặc chưa đồng bộ từ HIS DMNhanSu."
+                  />
+                  <DataPagination />
+                </DataView>
               </div>
             </div>
           )}
@@ -1778,45 +1933,32 @@ export default function QuanTriPage() {
               TAB: NHẬT KÝ KIỂM TOÁN (AUDIT LOG)
              ════════════════════════════════════════════════════════════════ */}
           {tab === "audit" && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-[var(--line)] shadow-xs">
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={auditSearch}
-                      onChange={(e) => setAuditSearch(e.target.value)}
-                      placeholder="Tìm nhật ký theo người dùng, bảng, bản ghi..."
-                      className="input-field pl-9 pr-3 h-10 text-[13px] w-full rounded-xl"
-                    />
-                  </div>
-                  <div className="relative w-full sm:w-48">
-                    <select
-                      value={auditFilterHanhDong}
-                      onChange={(e) => setAuditFilterHanhDong(e.target.value)}
-                      className="input-field h-10 text-[12.5px] w-full font-medium bg-white cursor-pointer pr-8 rounded-xl appearance-none"
-                    >
-                      <option value="">Tất cả hành động</option>
-                      <option value="gui_email_moi">Gửi thư mời</option>
-                      <option value="them">Thêm bản ghi</option>
-                      <option value="sua">Chỉnh sửa</option>
-                      <option value="xoa">Xóa dữ liệu</option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-[var(--mute)] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
+            <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 py-3 border-b border-[var(--line)]">
+                <div className="relative w-full sm:w-[340px] shrink-0">
+                  <Search className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="Tìm theo người dùng, bảng, bản ghi…"
+                    className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
+                  />
                 </div>
-                <div className="text-[12px] text-[var(--mute)] font-medium px-2">
-                  Tổng cộng: <strong className="text-[var(--ink)] font-mono">{filteredAudits.length}</strong> sự kiện
-                </div>
+                <QtFilter icon={Filter} value={auditFilterHanhDong} onChange={setAuditFilterHanhDong} className="w-full sm:w-[190px]">
+                  <option value="">Tất cả hành động</option>
+                  <option value="gui_email_moi">Gửi thư mời</option>
+                  <option value="them">Thêm bản ghi</option>
+                  <option value="sua">Chỉnh sửa</option>
+                  <option value="xoa">Xoá dữ liệu</option>
+                </QtFilter>
               </div>
 
-              <div className="card p-0 overflow-hidden rounded-2xl border border-[var(--line)] shadow-xs">
-                <div className="hidden md:block">
-                  <DataView<Audit, unknown> columns={auditColumns} data={filteredAudits} pageSize={50}>
-                    <DataTable<Audit> dense emptyIcon={ScrollText} emptyTitle="Chưa có nhật ký kiểm toán" />
-                  </DataView>
-                </div>
+              <div className="hidden md:flex md:flex-col md:flex-1 md:min-h-0">
+                <DataView<Audit, unknown> fullHeight columns={auditColumns} data={filteredAudits} pageSize={50}>
+                  <DataTable<Audit> dense emptyIcon={ScrollText} emptyTitle="Chưa có nhật ký kiểm toán" />
+                  <DataPagination />
+                </DataView>
               </div>
             </div>
           )}
@@ -3837,63 +3979,68 @@ function GoogleSheetPanel() {
     );
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 flex-1 min-h-0">
       {/* Trạng thái tổng */}
-      <div className="bg-white border border-[var(--line)] rounded-2xl shadow-xs p-5">
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                status?.enabled ? "bg-[var(--teal-soft)] text-[var(--teal-deep)]" : "bg-[var(--rose-soft)] text-[var(--rose)]"
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${
+                status?.enabled
+                  ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)]"
+                  : "bg-[var(--rose-soft)]"
               }`}
             >
-              <FileSpreadsheet className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-[16px] font-bold text-[var(--ink)]">Đồng bộ dữ liệu Google Sheet</div>
-              <div className="text-[12.5px] text-[var(--mute)]">
+              <FileSpreadsheet className={`w-[18px] h-[18px] ${status?.enabled ? "text-[var(--teal)]" : "text-[var(--rose)]"}`} />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-serif text-[15px] font-semibold text-[var(--ink)]">Đồng bộ dữ liệu Google Sheet</span>
+                <QtPill tone={status?.enabled ? "active" : "expired"}>{status?.enabled ? "Đã bật" : "Chưa bật"}</QtPill>
+              </div>
+              <div className="text-[12px] text-[var(--mute)] mt-0.5">
                 {!status?.enabled
                   ? "Chưa bật: thiếu GOOGLE_CREDENTIALS trong .env."
                   : status?.sharedSheetId
-                  ? "Đã bật — dùng chung 1 bảng tính, mỗi cơ sở là 1 tab riêng."
-                  : "Đã bật — mỗi cơ sở đồng bộ 1 chiều lên spreadsheet riêng."}
+                  ? "Dùng chung 1 bảng tính, mỗi cơ sở là 1 tab riêng."
+                  : "Mỗi cơ sở đồng bộ 1 chiều lên spreadsheet riêng."}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={rebuildSheet}
               disabled={rebuilding || syncing || !status?.enabled}
               title="Xoá dòng cũ & đẩy lại toàn bộ theo bộ cột hiện tại"
-              className="btn btn-secondary px-4 py-2.5 font-bold rounded-xl"
+              className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-50 transition-all cursor-pointer"
             >
-              {rebuilding ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 text-amber-500" />}
+              {rebuilding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--amber)]" />}
               <span>Dựng lại báo cáo</span>
             </button>
             <button
               onClick={syncNow}
               disabled={syncing || rebuilding || !status?.enabled}
-              className="btn btn-primary px-5 py-2.5 font-bold rounded-xl"
+              className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] disabled:opacity-50 transition-all cursor-pointer"
             >
-              {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 text-[var(--teal)]" />}
+              {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
               <span>Đồng bộ ngay</span>
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mt-3.5">
           {[
             { label: "Credentials", val: status?.enabled ? "Đã cấu hình" : "Chưa có", ok: status?.enabled },
             { label: "Email chia sẻ", val: status?.shareEmail || "Chưa đặt", ok: !!status?.shareEmail },
             { label: "Cron dự phòng", val: status?.cronConfigured ? "Đã đặt" : "Chưa đặt", ok: status?.cronConfigured },
             { label: "Hàng đợi chờ", val: `${status?.pending ?? 0} hồ sơ`, ok: (status?.pending ?? 0) === 0 },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-[var(--line-soft)] bg-[var(--surface-soft)] px-3.5 py-2.5">
-              <div className="text-[10.5px] uppercase tracking-wide font-bold text-[var(--mute)]">{s.label}</div>
-              <div
-                className={`text-[13px] font-bold mt-0.5 truncate ${s.ok ? "text-[var(--teal-deep)]" : "text-[var(--ink-soft)]"}`}
-                title={s.val}
-              >
+            <div key={s.label} className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] px-3.5 py-2.5 min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--mute)]">
+                <span className={`w-[6px] h-[6px] rounded-full shrink-0 ${s.ok ? "bg-[var(--teal)]" : "bg-[var(--amber)]"}`} />
+                {s.label}
+              </div>
+              <div className="font-mono text-[12.5px] font-bold mt-1 truncate text-[var(--ink)]" title={s.val}>
                 {s.val}
               </div>
             </div>
@@ -3903,16 +4050,16 @@ function GoogleSheetPanel() {
 
       {/* Sheet dùng chung */}
       {status?.sharedSheetId && (
-        <div className="bg-[var(--navy-50)] border border-[var(--navy-100)] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-[var(--navy-50)] border border-[var(--navy-100)] rounded-[14px] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <FileSpreadsheet className="w-5 h-5 text-[var(--navy)] shrink-0" />
+            <FileSpreadsheet className="w-4 h-4 text-[var(--navy)] shrink-0" />
             <div className="min-w-0">
-              <div className="text-[13px] font-bold text-[var(--ink)]">Bảng tính dùng chung của mọi cơ sở</div>
+              <div className="text-[12.5px] font-bold text-[var(--ink)]">Bảng tính dùng chung của mọi cơ sở</div>
               <a
                 href={sheetUrl(status.sharedSheetId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[11.5px] font-semibold text-[var(--navy)] hover:underline truncate block"
+                className="font-mono text-[10.5px] font-semibold text-[var(--navy)] hover:underline truncate block"
                 title={sheetUrl(status.sharedSheetId)}
               >
                 {sheetUrl(status.sharedSheetId)}
@@ -3925,7 +4072,7 @@ function GoogleSheetPanel() {
                 navigator.clipboard?.writeText(sheetUrl(status.sharedSheetId!));
                 addToast({ type: "success", message: "Đã copy link." });
               }}
-              className="btn btn-secondary px-3 py-2 text-[12px] font-bold rounded-lg"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition-all cursor-pointer"
             >
               <Copy className="w-3.5 h-3.5" /> Copy
             </button>
@@ -3933,7 +4080,7 @@ function GoogleSheetPanel() {
               href={sheetUrl(status.sharedSheetId)}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-primary px-4 py-2 text-[12px] font-bold rounded-lg"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5 text-[var(--teal)]" /> Mở bảng tính
             </a>
@@ -3942,8 +4089,8 @@ function GoogleSheetPanel() {
       )}
 
       {/* Danh sách cơ sở */}
-      <div className="bg-white border border-[var(--line)] rounded-2xl shadow-xs overflow-hidden">
-        <DataView<GSheetCoSo, unknown> columns={gsheetColumns} data={rows} pageSize={100}>
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[240px]">
+        <DataView<GSheetCoSo, unknown> fullHeight columns={gsheetColumns} data={rows} pageSize={100}>
           <DataTable<GSheetCoSo> dense emptyIcon={FileSpreadsheet} emptyTitle="Chưa có cơ sở nào" />
         </DataView>
       </div>

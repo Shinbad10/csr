@@ -295,9 +295,9 @@ export default function HoSoPage() {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col h-full min-h-0 gap-3">
       {/* bộ lọc + nút hành động */}
-      <div data-tour="hs-filter" className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+      <div data-tour="hs-filter" className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
           <div data-tour="hs-search" className="relative w-full sm:w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
@@ -404,7 +404,9 @@ export default function HoSoPage() {
         </div>
       </div>
 
+      <div className="flex-1 min-h-0">
       <DataView<HoSo, unknown>
+        fullHeight
         columns={columns}
         data={rows}
         isLoading={loading}
@@ -418,9 +420,9 @@ export default function HoSoPage() {
           setPageSize(ps);
         }}
       >
-      <div className="card p-0 overflow-hidden mt-3">
+      <div className="card p-0 overflow-hidden flex flex-col flex-1 min-h-0">
         {/* Mobile: danh sách thẻ */}
-        <div className="md:hidden divide-y divide-[var(--line-soft)] bg-white">
+        <div className="md:hidden flex-1 min-h-0 overflow-y-auto divide-y divide-[var(--line-soft)] bg-white">
           {loading && rows.length === 0 ? (
             <div className="py-16 flex justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" />
@@ -480,7 +482,7 @@ export default function HoSoPage() {
         </div>
 
         {/* Desktop: Bảng dữ liệu (TanStack — chuẩn VISIHUB) */}
-        <div className="hidden md:block" data-tour="hs-table">
+        <div className="hidden md:flex md:flex-col md:flex-1 md:min-h-0" data-tour="hs-table">
           <DataTable<HoSo>
             dense
             emptyIcon={ClipboardList}
@@ -492,6 +494,7 @@ export default function HoSoPage() {
         <DataPagination pageSizeOptions={PAGE_SIZE_OPTS} />
       </div>
       </DataView>
+      </div>
 
       {infoId && <PatientInfoModal hoSoId={infoId} onClose={() => setInfoId(null)} />}
       {historyId && <PatientHistoryModal hoSoId={historyId} onClose={() => setHistoryId(null)} />}

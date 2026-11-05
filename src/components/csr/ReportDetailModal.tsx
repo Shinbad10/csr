@@ -443,7 +443,7 @@ export default function ReportDetailModal({
     {
       id: "stt",
       header: "#",
-      size: 48,
+      size: 40,
       enableSorting: false,
       enableColumnFilter: false,
       enableHiding: false,
@@ -453,7 +453,7 @@ export default function ReportDetailModal({
     {
       id: "maBN",
       header: "Mã BN",
-      size: 124,
+      size: 108,
       accessorFn: (p) => [p.maBN, p.maBNHIS].filter(Boolean).join(" "),
       enableSorting: false,
       meta: { noTruncate: true },
@@ -475,7 +475,7 @@ export default function ReportDetailModal({
       id: "hoTen",
       accessorKey: "hoTen",
       header: "Họ và tên",
-      size: 210,
+      size: 160,
       meta: { noTruncate: true },
       cell: ({ row }) => {
         const p = row.original;
@@ -494,7 +494,7 @@ export default function ReportDetailModal({
     {
       id: "lienHe",
       header: "Liên hệ / Địa chỉ",
-      size: 230,
+      size: 170,
       accessorFn: (p) =>
         [p.sdt, p.sdtNguoiNha, p.cccd, p.diaChi, p.khuPho, p.xaPhuong].filter(Boolean).join(" "),
       enableSorting: false,
@@ -523,7 +523,7 @@ export default function ReportDetailModal({
     {
       id: "buoiKham",
       header: "Đợt khám",
-      size: 160,
+      size: 124,
       accessorFn: (p) =>
         [p.buoiKham?.xa, p.buoiKham?.diaDiem, p.buoiKham?.ngayKham ? fmtDate(p.buoiKham.ngayKham) : ""]
           .filter(Boolean)
@@ -549,7 +549,7 @@ export default function ReportDetailModal({
     {
       id: "chanDoan",
       header: "Chẩn đoán",
-      size: 240,
+      size: 190,
       accessorFn: (p) => diagnosisOf(p) || p.chanDoanKhac || "",
       enableSorting: false,
       meta: { flex: true, noTruncate: true },
@@ -573,7 +573,7 @@ export default function ReportDetailModal({
     {
       id: "nhom",
       header: "Nhóm",
-      size: 64,
+      size: 56,
       enableSorting: false,
       enableColumnFilter: false,
       meta: { align: "center", noTruncate: true },
@@ -581,13 +581,13 @@ export default function ReportDetailModal({
         const { isNhomA, isNhomB } = classifyCSRNhom(row.original);
         if (isNhomA)
           return (
-            <span className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose)] border border-rose-200/70">
+            <span className="inline-flex px-2 py-[3px] rounded-[6px] font-mono text-[10.5px] font-bold bg-[var(--rose-soft)] text-[var(--rose)]">
               A
             </span>
           );
         if (isNhomB)
           return (
-            <span className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-bold bg-[var(--amber-soft)] text-[var(--amber-deep)] border border-amber-200/70">
+            <span className="inline-flex px-2 py-[3px] rounded-[6px] font-mono text-[10.5px] font-bold bg-[var(--amber-soft)] text-[var(--amber)]">
               B
             </span>
           );
@@ -597,7 +597,7 @@ export default function ReportDetailModal({
     {
       id: "bhyt",
       header: "Thẻ BHYT",
-      size: 150,
+      size: 128,
       accessorFn: (p) => p.bhyt || "",
       enableSorting: false,
       meta: { noTruncate: true },
@@ -606,7 +606,7 @@ export default function ReportDetailModal({
         if (!hasBhyt(p)) return <span className="text-[11px] text-[var(--mute-soft)]">Không có</span>;
         return (
           <div>
-            <div className="font-mono text-[11.5px] font-bold text-indigo-700">{p.bhyt}</div>
+            <div className="font-mono text-[11.5px] font-bold text-[var(--navy)]">{p.bhyt}</div>
             <div className="text-[10.5px] text-[var(--mute)] mt-0.5">
               Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT === 0 ? "Thẻ hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
             </div>
@@ -617,7 +617,7 @@ export default function ReportDetailModal({
     {
       id: "bacSi",
       header: "Bác sĩ / TVV",
-      size: 170,
+      size: 132,
       accessorFn: (p) => [p.bacSiChiDinh || p.buoiKham?.bacSiKham, tenTuVanVien(p)].filter(Boolean).join(" "),
       enableSorting: false,
       meta: { noTruncate: true },
@@ -642,7 +642,7 @@ export default function ReportDetailModal({
     {
       id: "trangThai",
       header: "Trạng thái",
-      size: 160,
+      size: 128,
       accessorFn: (p) => statusOf(p.trangThai).label,
       enableSorting: false,
       meta: { noTruncate: true },
@@ -672,7 +672,7 @@ export default function ReportDetailModal({
     {
       id: "actions",
       header: "",
-      size: 56,
+      size: 44,
       enableSorting: false,
       enableColumnFilter: false,
       enableHiding: false,

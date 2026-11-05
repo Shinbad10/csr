@@ -921,8 +921,8 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
 // Badge trạng thái dùng chung với chỉ báo Glowing Dot
 export function StatusBadge({ label, cls, sm }: { label: string; cls: string; sm?: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 ${sm ? "text-[10.5px] px-2.5 py-0.5" : "text-[11.5px] px-3 py-1"} font-bold rounded-full border shadow-2xs ${cls}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80 animate-pulse" />
+    <span className={`inline-flex items-center gap-1.5 ${sm ? "text-[10px] px-2 py-[3px]" : "text-[10.5px] px-2.5 py-1"} font-mono font-bold uppercase tracking-[0.05em] rounded-[6px] whitespace-nowrap ${cls}`}>
+      <span className="w-[5px] h-[5px] rounded-full bg-current shrink-0" />
       {label}
     </span>
   );

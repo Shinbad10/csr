@@ -161,21 +161,21 @@ function NumCell({
 
 /** Ô "tỷ lệ": thanh nhỏ gradient + phần trăm, tô màu theo mức. */
 function RateCell({ value, tone }: { value: number; tone: "emerald" | "fuchsia" }) {
-  const on = tone === "emerald" ? "from-emerald-500 to-teal-500" : "from-fuchsia-500 to-purple-500";
+  const on = tone === "emerald" ? "bg-[var(--teal)]" : "bg-[#7c3aed]";
   const fg =
     value === 0
       ? "text-[var(--mute)]"
       : tone === "emerald"
         ? value >= 50
-          ? "text-emerald-600"
-          : "text-amber-600"
-        : "text-fuchsia-600";
+          ? "text-[var(--teal-deep)]"
+          : "text-[var(--amber)]"
+        : "text-[#7c3aed]";
   const barGradient =
     value === 0
       ? "bg-transparent"
       : tone === "emerald" && value < 50
-        ? "bg-gradient-to-r from-amber-500 to-amber-400"
-        : `bg-gradient-to-r ${on}`;
+        ? "bg-[var(--amber)]"
+        : on;
 
   return (
     <div className="flex items-center gap-2">
@@ -342,7 +342,7 @@ export default function Dashboard() {
         id: "tong",
         accessorKey: "tong",
         header: "SL BN",
-        size: 88,
+        size: 96,
         meta: { align: "right" },
         cell: ({ row }) => (
           <NumCell
@@ -357,12 +357,12 @@ export default function Dashboard() {
         id: "nhomA",
         accessorKey: "nhomA",
         header: "Nhóm A",
-        size: 88,
+        size: 108,
         meta: { align: "right" },
         cell: ({ row }) => (
           <NumCell
             value={row.original.nhomA}
-            color="text-amber-600"
+            color="text-[var(--amber)]"
             title="Xem bệnh nhân Nhóm A (chỉ định mổ) của đợt khám này"
             onClick={() => openSessionDetail(row.original, "nhomA")}
           />
@@ -372,12 +372,12 @@ export default function Dashboard() {
         id: "nhomB",
         accessorKey: "nhomB",
         header: "Nhóm B",
-        size: 88,
+        size: 108,
         meta: { align: "right" },
         cell: ({ row }) => (
           <NumCell
             value={row.original.nhomB}
-            color="text-violet-600"
+            color="text-[#7c3aed]"
             title="Xem bệnh nhân Nhóm B (theo dõi) của đợt khám này"
             onClick={() => openSessionDetail(row.original, "nhomB")}
           />
@@ -387,12 +387,12 @@ export default function Dashboard() {
         id: "denKhongMo",
         accessorKey: "denKhongMo",
         header: "Đến chưa mổ",
-        size: 96,
+        size: 132,
         meta: { align: "right" },
         cell: ({ row }) => (
           <NumCell
             value={row.original.denKhongMo ?? 0}
-            color="text-amber-600"
+            color="text-[var(--amber)]"
             title="Xem bệnh nhân có đến viện nhưng chưa/không mổ của đợt này"
             onClick={() => openSessionDetail(row.original, "denKhongMo")}
           />
@@ -402,12 +402,12 @@ export default function Dashboard() {
         id: "daMo",
         accessorKey: "daMo",
         header: "Đã mổ",
-        size: 84,
+        size: 100,
         meta: { align: "right" },
         cell: ({ row }) => (
           <NumCell
             value={row.original.daMo}
-            color="text-emerald-600"
+            color="text-[var(--teal-deep)]"
             title="Xem bệnh nhân đã phẫu thuật của đợt khám này"
             onClick={() => openSessionDetail(row.original, "daMo")}
           />
@@ -416,7 +416,7 @@ export default function Dashboard() {
       {
         id: "tyLeMo",
         header: "Tỷ lệ mổ",
-        size: 128,
+        size: 140,
         accessorFn: (r) => (r.nhomA > 0 ? Math.round((r.daMo / r.nhomA) * 100) : 0),
         cell: ({ getValue }) => <RateCell value={Number(getValue()) || 0} tone="emerald" />,
       },
@@ -424,12 +424,12 @@ export default function Dashboard() {
         id: "phaco2Lan",
         accessorKey: "phaco2Lan",
         header: "Mắt 2",
-        size: 84,
+        size: 100,
         meta: { align: "right" },
         cell: ({ row }) => (
           <NumCell
             value={row.original.phaco2Lan}
-            color="text-fuchsia-600"
+            color="text-[#7c3aed]"
             title="Xem bệnh nhân mổ Phaco 2 lần (mắt thứ hai) của đợt khám này"
             onClick={() => openSessionDetail(row.original, "phaco2")}
           />
@@ -438,7 +438,7 @@ export default function Dashboard() {
       {
         id: "tyLeMat2",
         header: "Tỷ lệ mắt 2",
-        size: 128,
+        size: 148,
         // Tỷ lệ trên số ca ĐÃ MỔ — bao nhiêu % ca mổ là mổ mắt thứ hai.
         accessorFn: (r) => (r.daMo > 0 ? Math.round((r.phaco2Lan / r.daMo) * 100) : 0),
         cell: ({ getValue }) => <RateCell value={Number(getValue()) || 0} tone="fuchsia" />,
