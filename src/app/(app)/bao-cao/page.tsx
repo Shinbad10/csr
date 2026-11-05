@@ -240,7 +240,7 @@ function BaoCaoSkeleton() {
         badge={stats?.coSoName || "Đơn vị"}
         description={
           <>
-            <span>Trung tâm điều hành & phân tích số liệu khám sàng lọc mắt cộng đồng</span>
+            <span>Trung tâm điều hành & phân tích số liệu khám sàng lọc mắt ngoại viện</span>
             <span className="text-[var(--teal-deep)] font-semibold">· Nhấp vào từng mục để xem danh sách chi tiết</span>
           </>
         }
@@ -327,7 +327,7 @@ function BaoCaoSkeleton() {
                 openDetail({
                   type: "kpi_soBuoi",
                   title: "Danh sách các Đợt khám CSR",
-                  subtitle: "Tổng hợp các đợt khám sàng lọc mắt cộng đồng",
+                  subtitle: "Tổng hợp các đợt khám sàng lọc mắt ngoại viện",
                   icon: Calendar,
                 })
               }

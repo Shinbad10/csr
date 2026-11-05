@@ -36,8 +36,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "VISI CSR · Khám tầm soát cộng đồng",
-  description: "Hệ thống Quản lý Khám tầm soát cộng đồng & Tư vấn phẫu thuật — VISI Medical Group",
+  title: "VISI CSR · Khám tầm soát ngoại viện",
+  description: "Hệ thống Quản lý Khám tầm soát ngoại viện & Tư vấn phẫu thuật — VISI Medical Group",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

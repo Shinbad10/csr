@@ -12,7 +12,7 @@ export type NavGroup = { title: string; items: NavItem[] };
 export const MENU_GROUPS: NavGroup[] = [
   { title: "Tổng quan", items: [{ label: "Bảng điều khiển", icon: LayoutDashboard, href: "/" }] },
   {
-    title: "Tầm soát cộng đồng",
+    title: "Tầm soát ngoại viện",
     items: [
       { label: "Đợt khám tầm soát", icon: CalendarHeart, href: "/buoi-kham", cap: "buoikham.view" },
     ],

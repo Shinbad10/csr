@@ -290,7 +290,7 @@ export default function Dashboard() {
 
   const navTiles = useMemo(() => {
     const all = [
-      { id: "buoi-kham", label: "Đợt khám tầm soát", desc: "Lập lịch & tiếp nhận cộng đồng", href: "/buoi-kham", icon: CalendarHeart, cap: "buoikham.view" as const, tone: "navy" as ToneKey },
+      { id: "buoi-kham", label: "Đợt khám tầm soát", desc: "Lập lịch & tiếp nhận ngoại viện", href: "/buoi-kham", icon: CalendarHeart, cap: "buoikham.view" as const, tone: "navy" as ToneKey },
       { id: "tu-van", label: "Tư vấn điều trị", desc: "Phân loại A/B & đặt hẹn mổ", href: "/tu-van", icon: Stethoscope, cap: "hoso.clinical" as const, tone: "green" as ToneKey },
       { id: "theo-doi", label: "Theo dõi & Chăm sóc", desc: "Gọi nhắc lịch, cập nhật ca mổ", href: "/theo-doi", icon: PhoneCall, cap: "hoso.followup" as const, tone: "amber" as ToneKey },
       { id: "ho-so", label: "Hồ sơ bệnh nhân", desc: "Tra cứu theo tên, SĐT, CCCD", href: "/ho-so", icon: ClipboardList, cap: undefined, tone: "indigo" as ToneKey },
@@ -476,7 +476,7 @@ export default function Dashboard() {
               Thời gian thực
             </span>
           }
-          description="Tình hình bệnh nhân từ tiếp nhận cộng đồng đến phẫu thuật tại viện"
+          description="Tình hình bệnh nhân từ tiếp nhận ngoại viện đến phẫu thuật tại viện"
           actions={
           <div className="flex w-full md:w-auto items-center gap-2">
             <DateRangeFilter value={range} onChange={setRange} className="flex-1 min-w-0 md:flex-none md:w-auto" />
@@ -509,10 +509,10 @@ export default function Dashboard() {
           <KpiCard
             label="Đợt khám CSR"
             value={soBuoi}
-            subtext="Các đợt khám cộng đồng"
+            subtext="Các đợt khám ngoại viện"
             icon={CalendarHeart}
             tone="indigo"
-            onClick={() => openDetail({ type: "kpi_soBuoi", title: "Danh sách Đợt khám CSR", subtitle: "Các đợt khám sàng lọc cộng đồng", icon: CalendarHeart })}
+            onClick={() => openDetail({ type: "kpi_soBuoi", title: "Danh sách Đợt khám CSR", subtitle: "Các đợt khám sàng lọc ngoại viện", icon: CalendarHeart })}
           />
           <KpiCard
             label="Chỉ định mổ (A)"

@@ -186,7 +186,7 @@ export function emailShell(title: string, body: string): string {
           <td style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#02b8a9,#031da6);color:#fff;font-weight:900;font-size:19px;text-align:center;vertical-align:middle;">V</td>
           <td style="padding-left:14px;">
             <div style="font-size:18px;font-weight:800;color:#ffffff;letter-spacing:-.2px;">VISI <span style="color:#5eead4;">CSR</span></div>
-            <div style="font-size:10.5px;font-weight:700;color:#a5f3fc;letter-spacing:.14em;text-transform:uppercase;margin-top:2px;">Khám sàng lọc cộng đồng</div>
+            <div style="font-size:10.5px;font-weight:700;color:#a5f3fc;letter-spacing:.14em;text-transform:uppercase;margin-top:2px;">Khám sàng lọc ngoại viện</div>
           </td>
         </tr></table>
       </td></tr>
@@ -222,7 +222,7 @@ export function inviteEmail(args: {
   const body = `
     <p style="margin:0 0 6px;">Xin chào <strong style="color:#031da6;">${esc(args.hoTen)}</strong>,</p>
     <p style="margin:0 0 16px;color:#45495e;">
-      ${args.nguoiMoi ? `<strong>${esc(args.nguoiMoi)}</strong> đã mời bạn` : "Bạn được mời"} tham gia hệ thống <strong>VISI CSR</strong> — quản lý khám sàng lọc cộng đồng, tư vấn &amp; theo dõi điều trị.
+      ${args.nguoiMoi ? `<strong>${esc(args.nguoiMoi)}</strong> đã mời bạn` : "Bạn được mời"} tham gia hệ thống <strong>VISI CSR</strong> — quản lý khám sàng lọc ngoại viện, tư vấn &amp; theo dõi điều trị.
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e6e9f2;border-radius:12px;overflow:hidden;border-collapse:separate;">
       ${row("Tên đăng nhập", esc(args.tenDangNhap), true)}

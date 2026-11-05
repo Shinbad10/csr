@@ -93,7 +93,7 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
             <span className="text-[var(--teal)] ml-0.5 font-sans font-bold">CSR</span>
           </div>
           <div className="font-mono font-bold text-[8.5px] uppercase tracking-[0.18em] text-white/75 whitespace-nowrap hidden sm:block mt-0.5">
-            Khám cộng đồng
+            Khám ngoại viện
           </div>
         </div>
       </Link>

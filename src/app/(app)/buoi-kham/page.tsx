@@ -1467,7 +1467,7 @@ export default function BuoiKhamPage() {
         open={open}
         onClose={() => setOpen(false)}
         title="Tổ chức đợt khám mới"
-        subtitle="Tạo lịch khám tầm soát cộng đồng tại cơ sở y tế"
+        subtitle="Tạo lịch khám tầm soát ngoại viện tại cơ sở y tế"
         icon={CalendarDays}
         maxWidth="max-w-[580px]"
         noPadding

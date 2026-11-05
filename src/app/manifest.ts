@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "VISI · Khám tầm soát cộng đồng",
+    name: "VISI · Khám tầm soát ngoại viện",
     short_name: "VISI CSR",
     description:
-      "Hệ thống Quản lý Khám tầm soát cộng đồng & Tư vấn phẫu thuật — VISI Medical Group",
+      "Hệ thống Quản lý Khám tầm soát ngoại viện & Tư vấn phẫu thuật — VISI Medical Group",
     start_url: "/",
     display: "standalone",
     background_color: "#f7f8fc",

@@ -1,4 +1,4 @@
-# Kế hoạch thiết kế phần mềm — VISI CSR (Quản lý khám tầm soát cộng đồng & Tư vấn phẫu thuật)
+# Kế hoạch thiết kế phần mềm — VISI CSR (Quản lý khám tầm soát ngoại viện & Tư vấn phẫu thuật)
 
 **Phiên bản plan:** 2.1 · 06/2026 (chốt: bỏ field ngoài SRS · thêm `ngaySinh`)
 **Bám theo:** SRS 1.1 (VISI_02) + Hướng dẫn triển khai kỹ thuật 1.0 (VISI_03) + UI mẫu app khám tầm soát.
@@ -10,7 +10,7 @@
 ## 1. Phạm vi (bám SRS §1–2)
 
 Phần mềm = **sổ ghi nhận bệnh nhân điện tử đa cơ sở**, thay Google Sheet. Ba mục tiêu:
-1. Nhập liệu khi khám cộng đồng (tiếp nhận + lâm sàng + tư vấn).
+1. Nhập liệu khi khám ngoại viện (tiếp nhận + lâm sàng + tư vấn).
 2. CSKH cập nhật điều trị tại bệnh viện (đón, mổ, số tiền, tái khám).
 3. Kế toán xuất dữ liệu tính tiền CSR (tính tiền làm trên Excel theo policy).
 
