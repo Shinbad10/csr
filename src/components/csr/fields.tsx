@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft, Calendar as CalendarIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -258,6 +258,127 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
   );
 }
 
+
+/**
+ * Ô nhập tự do có gợi ý (combobox): gõ thẳng vào ô, danh sách gợi ý lọc theo chữ đang gõ;
+ * ↑/↓ chọn gợi ý, Enter lấy, Esc đóng. Giá trị không có trong danh sách vẫn được giữ nguyên.
+ */
+export function InputGoiY({ value, onChange, options, placeholder, mono, disabled, size = "md", ariaLabel, minWidth = 140 }: {
+  value: string; onChange: (v: string) => void; options: readonly string[]; placeholder?: string; mono?: boolean; disabled?: boolean;
+  size?: "sm" | "md"; ariaLabel?: string; minWidth?: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(-1);
+  const [daGo, setDaGo] = useState(false); // chỉ lọc sau khi người dùng gõ (mới mở thì hiện đủ danh sách)
+  const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const { ready, style, update } = usePortalPosition(open, ref, 260, minWidth);
+
+  const mo = () => {
+    if (disabled || open) return;
+    setOpen(true); setHi(-1); setDaGo(false); update();
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || popupRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    window.addEventListener("mousedown", h);
+    return () => window.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const goiY = options.filter(Boolean);
+  const q = value.trim().toLowerCase();
+  const loc = daGo && q ? goiY.filter((o) => o.toLowerCase().includes(q)) : goiY;
+  const chon = (o: string) => { onChange(o); setOpen(false); };
+
+  return (
+    <div className="relative" ref={ref}>
+      <input
+        value={value}
+        aria-label={ariaLabel}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        disabled={disabled}
+        placeholder={placeholder}
+        onFocus={mo}
+        onClick={mo}
+        onChange={(e) => { onChange(e.target.value); setDaGo(true); setHi(-1); if (!open) mo(); }}
+        onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing) return;
+          if (e.key === "ArrowDown") { e.preventDefault(); if (!open) mo(); else setHi((i) => Math.min(i + 1, loc.length - 1)); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); setHi((i) => Math.max(i - 1, -1)); }
+          else if (e.key === "Enter" && open) { if (hi >= 0 && loc[hi]) { e.preventDefault(); chon(loc[hi]); } else setOpen(false); }
+          else if (e.key === "Escape" || e.key === "Tab") setOpen(false);
+        }}
+        className={`input-field w-full ${mono ? "font-mono tabular-nums" : ""} ${size === "sm" ? "!h-8 !py-0 !pl-2 !pr-7 !text-[12.5px]" : "h-10 !pr-8"} ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""}`}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Mở gợi ý"
+        disabled={disabled}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => { if (open) setOpen(false); else { (ref.current?.querySelector("input") as HTMLInputElement | null)?.focus(); mo(); } }}
+        className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 grid place-items-center rounded-md text-[var(--mute)] hover:text-[var(--navy)] cursor-pointer disabled:cursor-not-allowed"
+      >
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
+      </button>
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {open && ready && (
+            <motion.div
+              key="combobox-pop"
+              ref={popupRef} data-portal-popover
+              style={style}
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 3 }}
+              transition={{ duration: 0.1, ease: "easeOut" }}
+              className="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-1 text-[12.5px] overflow-hidden"
+            >
+              <div id={listId} role="listbox" className="overflow-y-auto p-0.5 space-y-0.5 custom-scrollbar max-h-[240px]">
+                {loc.length === 0 ? (
+                  <div className="px-3 py-2 text-[11.5px] text-[var(--mute)]">
+                    Giữ giá trị nhập tay <span className={`font-semibold text-[var(--ink)] ${mono ? "font-mono" : ""}`}>“{value.trim()}”</span>
+                  </div>
+                ) : (
+                  loc.map((o, i) => {
+                    const dangChon = value === o;
+                    return (
+                      <button
+                        key={o}
+                        type="button"
+                        role="option"
+                        aria-selected={dangChon}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onMouseEnter={() => setHi(i)}
+                        onClick={() => chon(o)}
+                        className={`w-full text-left px-3 py-1.5 rounded-lg flex items-center justify-between gap-2 transition-colors cursor-pointer ${mono ? "font-mono" : ""} ${
+                          dangChon ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : i === hi ? "bg-[var(--surface-hover)] text-[var(--ink)]" : "text-[var(--ink-soft)] dark:text-slate-200"
+                        }`}
+                      >
+                        <span className="truncate">{o}</span>
+                        {dangChon && <Check className="w-3.5 h-3.5 shrink-0 text-[var(--teal-deep)] stroke-[2.5]" />}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </div>
+  );
+}
 
 const MONTH_SHORT = ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"];
 

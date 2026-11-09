@@ -33,7 +33,8 @@ export const KHUYEN_NGHI = ["Phẫu thuật", "Theo dõi"] as const;            
 export const BHYT = ["Không có", "100%", "95%", "80%", "Không rõ"] as const;     // SRS §7
 export const NHOM = ["A", "B"] as const;                                         // A = đã chốt mổ · B = theo dõi
 export const TT_DIEU_TRI = ["Đã mổ", "Hủy", "Không đến"] as const;              // SRS §7
-export const THI_LUC = ["", "10/10", "8/10", "6/10", "5/10", "4/10", "3/10", "2/10", "1/10", "ĐNT 3m", "ĐNT 2m", "ĐNT 1m", "BBT", "ST(+)", "ST(-)"];
+// Thị lực theo thang Snellen quốc tế (feet, 20/xx). Hồ sơ cũ có thể còn giá trị thang /10 (vd. "10/10").
+export const THI_LUC = ["", "20/20", "20/25", "20/30", "20/40", "20/50", "20/60", "20/70", "20/80", "20/100", "20/200", "20/400", "ĐNT 3m", "ĐNT 2m", "ĐNT 1m", "BBT", "ST(+)", "ST(-)"];
 
 /**
  * Phân loại Nhóm CSR chuẩn cho bệnh nhân (theo quy tắc nghiệp vụ CSR chuẩn hóa):

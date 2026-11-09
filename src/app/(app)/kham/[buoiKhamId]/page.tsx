@@ -26,7 +26,7 @@ import {
 import { type ThongTinTheBHYT, parseQRData } from "@/lib/bhxh-types";
 import { readJson, loiTuResponse } from "@/lib/http";
 import { BhytResultCard } from "@/components/csr/BhytResultCard";
-import { Field, Select, Dropdown, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
+import { Field, Select, InputGoiY, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
 import { DoctorAutocomplete, parseDoctorList } from "@/components/csr/DoctorAutocomplete";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
@@ -1229,8 +1229,8 @@ export default function ExamPage() {
     const defaultDoc = teamDocs.length === 1 ? teamDocs[0] : null;
 
     const normalPayload: Record<string, unknown> = {
-      thiLucMP: "10/10",
-      thiLucMT: "10/10",
+      thiLucMP: "20/20",
+      thiLucMT: "20/20",
       chanDoanMP: "[]",
       chanDoanKhacMP: null,
       chanDoanMT: "[]",
@@ -2206,7 +2206,7 @@ export default function ExamPage() {
                                 {([["Không kính", e.tl], ["Có kính", e.ck]] as const).map(([nhan, k]) => (
                                   <div key={k} className="col-span-2 @lg:col-span-1 min-w-0">
                                     <span className={nhanNho}>{nhan}</span>
-                                    <Dropdown size="sm" mono value={f[k]} onChange={(v) => setF((s) => ({ ...s, [k]: v }))} options={THI_LUC} placeholder="—" disabled={readOnly} />
+                                    <InputGoiY size="sm" mono value={f[k]} onChange={(v) => setF((s) => ({ ...s, [k]: v }))} options={THI_LUC} placeholder="20/20" ariaLabel={`Thị lực ${nhan.toLowerCase()} ${e.ten}`} disabled={readOnly} />
                                   </div>
                                 ))}
                                 {([
@@ -2704,7 +2704,7 @@ export default function ExamPage() {
                       onClick={handleQuickNormal}
                       disabled={saving || !!isDone}
                       className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
-                      title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 10/10, Theo dõi) và tự động chuyển ca kế tiếp"}
+                      title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 20/20, Theo dõi) và tự động chuyển ca kế tiếp"}
                     >
                       <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
                       <span className="hidden sm:inline">Khám bình thường</span>
@@ -2895,7 +2895,7 @@ export default function ExamPage() {
               <ul className="list-disc list-inside space-y-1 text-[12px] text-[var(--mute)] pl-1">
                 <li>Chuyển trạng thái <b className="text-[var(--ink)]">{counts.waiting} ca</b> sang <b>ĐÃ KHÁM</b></li>
                 <li>Gán kết quả <b>Bình thường (Chưa phát hiện bất thường)</b></li>
-                <li>Thị lực mặc định <b>10/10 hai mắt</b>, hướng xử trí <b>Theo dõi</b></li>
+                <li>Thị lực mặc định <b>20/20 hai mắt</b>, hướng xử trí <b>Theo dõi</b></li>
                 <li>Gán bác sĩ chỉ định theo đợt khám để hồ sơ đầy đủ pháp lý</li>
               </ul>
             </div>

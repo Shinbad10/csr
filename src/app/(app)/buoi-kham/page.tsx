@@ -1609,7 +1609,7 @@ export default function BuoiKhamPage() {
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                 Lưu ý hành động này:
               </div>
-              <div>Tất cả bệnh nhân đang ở trạng thái <strong>Tiếp nhận (chờ khám)</strong> trong đợt này sẽ được tự động chuyển sang <strong>Đã khám</strong> với kết quả <strong>Bình thường (Thị lực 10/10, Chưa phát hiện bất thường, Theo dõi)</strong>.</div>
+              <div>Tất cả bệnh nhân đang ở trạng thái <strong>Tiếp nhận (chờ khám)</strong> trong đợt này sẽ được tự động chuyển sang <strong>Đã khám</strong> với kết quả <strong>Bình thường (Thị lực 20/20, Chưa phát hiện bất thường, Theo dõi)</strong>.</div>
             </div>
           </div>
         </Modal>
