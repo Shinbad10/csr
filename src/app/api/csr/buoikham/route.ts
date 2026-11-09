@@ -6,7 +6,7 @@ import { yymmdd } from "@/lib/maBN";
 import { can } from "@/lib/permissions";
 import { broadcastEvent } from "@/lib/events";
 
-import { classifyCSRNhom, classifyCSRFunnel, checkSurgeryTiming } from "@/lib/csr";
+import { classifyCSRNhom, classifyCSRFunnel, checkSurgeryTiming, laCanXacNhanMo, laChoMo } from "@/lib/csr";
 import { fetchPhaco2LanPatientIds } from "@/lib/his";
 import { latestDoiChieuMap } from "@/lib/hisReconcile";
 
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const whereCoSo = coSoId ? { coSoId } : undefined;
 
     // Tối ưu tốc độ nạp: Dùng aggregation ở cấp DB thay vì tải toàn bộ hàng ngàn dòng hồ sơ về bộ nhớ Node.js
-    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback, phaco2Ids] = await Promise.all([
+    const [buoiKhams, hoSoGroups, daMoGroups, doctorsFallback, phaco2Ids, hisRows] = await Promise.all([
       prisma.buoiKham.findMany({
         where: { ...(whereCoSo || {}), ...DOT_CON_HIEU_LUC }, // đợt đã xoá mềm không hiện
         include: {
@@ -86,6 +86,34 @@ export async function GET(request: Request) {
         distinct: ["buoiKhamId"],
       }),
       fetchPhaco2LanPatientIds(undefined, coSoId || undefined).catch(() => new Set<string>()),
+      // Hồ sơ đã khớp HIS (có mã HIS) — đếm khớp / cần xác nhận / chờ mổ theo HIỆN TRẠNG, cùng nguồn cột Tiến độ mổ
+      prisma.hoSoBenhNhan.findMany({
+        where: { ...(coSoId ? { coSoId } : {}), maBNHIS: { not: null } },
+        select: {
+          buoiKhamId: true,
+          nhom: true,
+          trangThai: true,
+          xacNhanDieuTri: true,
+          chanDoanMP: true,
+          chanDoanMT: true,
+          chanDoan: true,
+          chanDoanKhacMP: true,
+          chanDoanKhacMT: true,
+          chanDoanKhac: true,
+          benhLy: true,
+          khuyenNghi: true,
+          huongXuTri: true,
+          daDon: true,
+          ngayDenBV: true,
+          ngayMoThucTe: true,
+          trangThaiDieuTri: true,
+          cccd: true,
+          maBNHIS: true,
+          ghiChuMat2: true,
+          hoTen: true,
+          buoiKham: { select: { ngayKham: true } },
+        },
+      }),
     ]);
 
     const doiChieuMap = await latestDoiChieuMap(buoiKhams.map((b) => b.id)).catch(() => new Map());
@@ -103,6 +131,25 @@ export async function GET(request: Request) {
       } else if (timing.isDaMoTruoc) {
         daMoTruocMap.set(r.buoiKhamId, (daMoTruocMap.get(r.buoiKhamId) || 0) + 1);
       }
+    }
+
+    const hisMap = new Map<string, { khop: number; canXacNhan: number; choMo: number }>();
+    for (const r of hisRows) {
+      if (!r.buoiKhamId) continue;
+      const c = classifyCSRNhom(r);
+      if (!c.isNhomA && !c.isNhomB) continue; // đối chiếu HIS chỉ tra BN Nhóm A/B
+      const m = hisMap.get(r.buoiKhamId) || { khop: 0, canXacNhan: 0, choMo: 0 };
+      m.khop++;
+      if (laCanXacNhanMo(r)) m.canXacNhan++;
+      else if (laChoMo(r)) m.choMo++;
+      hisMap.set(r.buoiKhamId, m);
+    }
+    // Ca đã mổ được ghi tay (chưa có mã HIS) vẫn là ca có kết quả — tính vào "khớp" để khớp = mổ + cần XN + chờ + trước + chưa mổ
+    for (const r of daMoGroups) {
+      if (!r.buoiKhamId || r.maBNHIS || !checkSurgeryTiming(r).isDaMo) continue;
+      const m = hisMap.get(r.buoiKhamId) || { khop: 0, canXacNhan: 0, choMo: 0 };
+      m.khop++;
+      hisMap.set(r.buoiKhamId, m);
     }
 
     const docMap = new Map<string, string>();
@@ -143,6 +190,9 @@ export async function GET(request: Request) {
           daMoTruoc,
           chuaMo,
           phaco2Lan,
+          canXacNhan: hisMap.get(bk.id)?.canXacNhan || 0,
+          choMoHis: hisMap.get(bk.id)?.choMo || 0,
+          khopHis: hisMap.get(bk.id)?.khop || 0,
         },
       };
     });

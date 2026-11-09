@@ -1075,8 +1075,19 @@ export async function batchCheckHISForPatients(
         // CHỈ tự động nâng lên "Đã mổ" khi matchType === "exact" (Khớp CCCD / BHYT)!
         // Nếu là partial (khuyết CCCD) -> KHÔNG tự động nâng lên "Đã mổ", chỉ lưu mã HIS và ghi chú để người dùng xác nhận thủ công!
         const updateData: any = { maBNHIS: maHIS };
+        /* CSR đang ghi "Đã mổ" (thường do lần đối chiếu / liên kết cũ) nhưng HIS — đã khớp CCCD/BHYT — không có ca mổ
+           nào từ ngày khám, cũng không chờ mổ → HIS là nguồn chuẩn: trả hồ sơ về chưa mổ để Tiến độ khớp HIS.
+           Không đụng ca người dùng đã xác nhận tay. */
+        const csrGhiDaMo = p.trangThaiDieuTri === "Đã mổ" || (p as Record<string, unknown>).trangThai === "DaMoHauPhau";
+        const xacNhanTay = /Đã xác nhận|Xác nhận thủ công/.test(p.ghiChuMat2 || "");
+        const traVeChuaMo = matchType === "exact" && csrGhiDaMo && !xacNhanTay && !dec.daMo && !dec.daMoTruoc && !dec.choMo;
         if (matchType === "exact") {
           Object.assign(updateData, dec.data);
+          if (traVeChuaMo) {
+            updateData.ngayMoThucTe = null;
+            updateData.trangThaiDieuTri = null;
+            updateData.trangThai = dec.denVien ? "DaDonVien" : p.nhom === "B" ? "NhomB" : "NhomA";
+          }
         } else {
           if (dec.denVien) updateData.daDon = true;
         }
@@ -1084,7 +1095,11 @@ export async function batchCheckHISForPatients(
           updateData.soTienThucThu = soTienThucThu;
         }
         if (chiTiet) {
-          updateData.ghiChuMat2 = appendHisNote(p.ghiChuMat2, chiTiet);
+          updateData.ghiChuMat2 = appendHisNote(
+            p.ghiChuMat2,
+            traVeChuaMo ? `${chiTiet}
+• CSR từng ghi "Đã mổ" nhưng HIS không có ca mổ — đã chuyển về chưa mổ` : chiTiet
+          );
         }
 
         await prisma.hoSoBenhNhan.update({

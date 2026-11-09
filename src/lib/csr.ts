@@ -85,6 +85,26 @@ export const THI_LUC = ["", "20/20", "20/25", "20/30", "20/40", "20/50", "20/60"
  *   2. VÀ xác nhận thủ công nếu 1 trong 2 giữa HIS và CSR khuyết CCCD.
  * - Trường hợp CCCD bị lệch/xung đột hoặc chưa xác nhận khi khuyết CCCD thì KHÔNG tính vào báo cáo.
  */
+/**
+ * Ca "cần xác nhận" theo HIỆN TRẠNG hồ sơ (không phụ thuộc lần đối chiếu): đối chiếu HIS thấy có ca mổ
+ * nhưng chỉ khớp Họ tên + Năm sinh (ghi chú "[⚠ …]" + "• Loại mổ:"), người dùng chưa xác nhận,
+ * nên chưa tính vào Đã mổ / Mổ trước. Xác nhận xong là tự ra khỏi nhóm này.
+ */
+export function laCanXacNhanMo(h: Parameters<typeof checkSurgeryTiming>[0]): boolean {
+  const note = h.ghiChuMat2 || "";
+  if (!note.includes("[⚠") || !note.includes("• Loại mổ:")) return false;
+  if (note.includes("Đã xác nhận") || note.includes("Xác nhận thủ công")) return false;
+  const t = checkSurgeryTiming(h);
+  return !t.isDaMo && !t.isDaMoTruoc;
+}
+
+/** Ca "chờ mổ" theo hiện trạng: đối chiếu HIS ghi đã nhập viện / có chỉ định PT, chưa vào sổ mổ, và CSR chưa ghi đã mổ. */
+export function laChoMo(h: Parameters<typeof checkSurgeryTiming>[0]): boolean {
+  if (!(h.ghiChuMat2 || "").includes("chờ mổ (chưa có trong sổ phòng mổ)")) return false;
+  const t = checkSurgeryTiming(h);
+  return !t.isDaMo && !t.isDaMoTruoc;
+}
+
 export function isReportValidSurgery(h: {
   ngayMoThucTe?: Date | string | null;
   trangThaiDieuTri?: string | null;

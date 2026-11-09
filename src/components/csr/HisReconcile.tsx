@@ -362,6 +362,11 @@ export function HisReconcilePanel({
                           )}
                           {(it.log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {it.log.choMo} chờ mổ</span>}
                           {(it.log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{it.log.surgeryPrior} trước</span>}
+                          {(() => {
+                            const l = it.log;
+                            const con = Math.max(0, (l.found ?? 0) - (l.surgery ?? 0) - canXacNhanCua(it).length - (l.choMo ?? 0) - (l.surgeryPrior ?? 0));
+                            return con > 0 ? <span title="Có trên HIS nhưng chưa có ca mổ (đã đến khám / chưa mổ)"> · {con} chưa mổ</span> : null;
+                          })()}
                         </>
                       ) : (
                         <span className="text-[10.5px] text-[var(--mute)]">{m.label}</span>
@@ -414,10 +419,14 @@ export function DoiChieuCell({
   log,
   running,
   onOpenHistory,
+  hienTai,
 }: {
   log?: DoiChieuLog | null;
   running?: boolean;
   onOpenHistory?: () => void;
+  /** Số theo HIỆN TRẠNG hồ sơ (cùng nguồn cột Tiến độ mổ) — có thì thay số mổ / cần xác nhận của lần đối chiếu,
+   *  vì sau khi đối chiếu người dùng còn xác nhận / lưu thêm ca mổ. */
+  hienTai?: { nhomA?: number; nhomB?: number; daMo: number; daMoTruoc?: number; canXacNhan?: number; choMoHis?: number; khopHis?: number };
 }) {
   if (running) {
     return (
@@ -430,13 +439,24 @@ export function DoiChieuCell({
 
   const isErr = log.trangThai === "loi";
   /** Bản ghi trước khi tách mổ trước/sau: `surgery` khi đó gộp cả ca mổ trước ngày khám → không hiển thị số mổ. */
-  const legacy = log.surgeryPrior === undefined;
+  const legacy = !hienTai && log.surgeryPrior === undefined;
+  const so = {
+    khop: hienTai ? hienTai.khopHis ?? 0 : log.found ?? 0,
+    tong: hienTai ? (hienTai.nhomA ?? 0) + (hienTai.nhomB ?? 0) : log.total ?? 0,
+    mo: hienTai ? hienTai.daMo : log.surgery ?? 0,
+    canXacNhan: hienTai ? hienTai.canXacNhan ?? 0 : log.canXacNhan ?? 0,
+    truoc: hienTai ? hienTai.daMoTruoc ?? 0 : log.surgeryPrior ?? 0,
+    choMo: hienTai ? hienTai.choMoHis ?? 0 : log.choMo ?? 0,
+  };
+  // Khớp HIS = mổ + cần xác nhận + chờ mổ + mổ trước + phần còn lại (có trên HIS, chưa mổ)
+  const chuaMo = Math.max(0, so.khop - so.mo - so.canXacNhan - so.choMo - so.truoc);
   const title = isErr
     ? `Lỗi: ${log.loi || "không xác định"}`
-    : `${fmtDateTime(log.thoiDiem)} · ${log.nguoiThucHien || log.nguoiDung}\nTìm thấy ${log.found ?? 0}/${log.total ?? 0} BN` +
+    : `${fmtDateTime(log.thoiDiem)} · ${log.nguoiThucHien || log.nguoiDung}\nTìm thấy ${so.khop}/${so.tong} BN` +
       (legacy
         ? "\nLần đối chiếu cũ chưa tách ca mổ trước ngày khám — đối chiếu lại để cập nhật"
-        : ` · ${log.surgery ?? 0} ca mổ sau khám${log.canXacNhan ? ` · ${log.canXacNhan} ca có mổ nhưng chỉ khớp Họ tên + Năm sinh — xác nhận ở trang Đối chiếu dữ liệu HIS` : ""}${log.choMo ? ` · ${log.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""}${log.surgeryPrior ? ` · ${log.surgeryPrior} ca đã mổ trước ngày khám` : ""}`);
+        : ` · ${so.mo} ca mổ sau khám${so.canXacNhan ? ` · ${so.canXacNhan} ca có mổ nhưng chỉ khớp Họ tên + Năm sinh — xác nhận ở trang Đối chiếu dữ liệu HIS` : ""}${so.choMo ? ` · ${so.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""}${so.truoc ? ` · ${so.truoc} ca đã mổ trước ngày khám` : ""}${chuaMo ? ` · ${chuaMo} ca có trên HIS nhưng chưa mổ` : ""}` +
+          (hienTai ? "\nSố liệu theo hồ sơ hiện tại (cùng nguồn cột Tiến độ mổ) — đã gồm các ca xác nhận / lưu sau lần đối chiếu" : ""));
 
   return (
     <button
@@ -457,14 +477,15 @@ export function DoiChieuCell({
           "Không có BN A/B"
         ) : (
           <>
-            {log.found ?? 0}/{log.total ?? 0} khớp
+            {so.khop}/{so.tong} khớp
             {!legacy && (
               <>
                 {" · "}
-                <span className={log.surgery ? "text-[var(--teal-deep)] font-semibold" : undefined}>{log.surgery ?? 0} mổ</span>
-                {(log.canXacNhan ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {log.canXacNhan} cần xác nhận</span>}
-                {(log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {log.choMo} chờ</span>}
-                {(log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{log.surgeryPrior} trước</span>}
+                <span className={so.mo ? "text-[var(--teal-deep)] font-semibold" : undefined}>{so.mo} mổ</span>
+                {so.canXacNhan > 0 && <span className="text-[var(--amber-deep)]"> · {so.canXacNhan} cần xác nhận</span>}
+                {so.choMo > 0 && <span className="text-[var(--amber-deep)]"> · {so.choMo} chờ</span>}
+                {so.truoc > 0 && <span className="text-[#7c3aed]"> · +{so.truoc} trước</span>}
+                {chuaMo > 0 && <span> · {chuaMo} chưa mổ</span>}
               </>
             )}
           </>

@@ -41,7 +41,7 @@ interface BuoiKham {
   bacSiKham?: string | null; ghiChu?: string | null; _count: { hoSo: number };
   /** "moKhoa" = Quản trị viên đã mở khoá đợt đã qua ngày cho sửa lại */
   trangThai?: string | null;
-  stats?: { nhomA: number; nhomB: number; daMo: number; daMoTruoc?: number; chuaMo: number; phaco2Lan?: number };
+  stats?: { nhomA: number; nhomB: number; daMo: number; daMoTruoc?: number; chuaMo: number; phaco2Lan?: number; canXacNhan?: number; choMoHis?: number; khopHis?: number };
   /** Lần đối chiếu HIS gần nhất (từ AuditLog) */
   lastDoiChieu?: DoiChieuLog | null;
 }
@@ -1138,6 +1138,7 @@ export default function BuoiKhamPage() {
         cell: ({ row }) => (
           <DoiChieuCell
             log={row.original.lastDoiChieu}
+            hienTai={row.original.stats}
             running={his.runningIds.has(row.original.id)}
             onOpenHistory={() => setHistoryTarget(row.original)}
           />
@@ -1398,7 +1399,7 @@ export default function BuoiKhamPage() {
                           {/* Đối chiếu HIS + thao tác */}
                           <div className="mt-2.5 flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <DoiChieuCell log={b.lastDoiChieu} running={his.runningIds.has(b.id)} onOpenHistory={() => setHistoryTarget(b)} />
+                              <DoiChieuCell log={b.lastDoiChieu} hienTai={b.stats} running={his.runningIds.has(b.id)} onOpenHistory={() => setHistoryTarget(b)} />
                             </div>
                             <BuoiKhamRowActions
                               b={b}
