@@ -16,7 +16,7 @@ import { useRealtimeEvent } from "@/lib/useRealtime";
 import { can, roleLabel } from "@/lib/permissions";
 import { dotBiKhoa, duocSuaSauNgayKham } from "@/lib/khoaSua";
 import {
-  CHAN_DOAN, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
+  CHAN_DOAN, TIEN_SU_PT, tienSuPTGiaTri, tachDoKinh, ghepDoKinh, chuanDiop, KHUYEN_NGHI, THI_LUC, parseDiag, ageOf, fmtDate, fmtBuoiKhamName, bhytLevel, isCardNumber, statusOf, type HoSo,
   fmtSinhTuoi, mucHuongHienThi
 } from "@/lib/csr";
 import {
@@ -26,7 +26,7 @@ import {
 import { type ThongTinTheBHYT, parseQRData } from "@/lib/bhxh-types";
 import { readJson, loiTuResponse } from "@/lib/http";
 import { BhytResultCard } from "@/components/csr/BhytResultCard";
-import { Field, Select, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
+import { Field, Select, Dropdown, ChoiceRow, PillGroup, MultiSelect, SectionHeader, DateField, StatusBadge, labelCls } from "@/components/csr/fields";
 import { DoctorAutocomplete, parseDoctorList } from "@/components/csr/DoctorAutocomplete";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
@@ -48,7 +48,10 @@ const mucHuongFromThe = (bhyt?: string | null) => {
 };
 
 const EMPTY = {
-  thiLucMP: "", thiLucMT: "", doKinhMP: "", doKinhMT: "", matKham: "",
+  thiLucMP: "", thiLucMT: "", thiLucCoKinhMP: "", thiLucCoKinhMT: "", kcdt: "", matKham: "",
+  // Khúc xạ từng mắt — lưu gộp vào doKinhMP/MT dạng "-2.50 / -0.75 x 180 Add +2.00"
+  cauMP: "", truMP: "", trucMP: "", addMP: "", cauMT: "", truMT: "", trucMT: "", addMT: "",
+  tienSuPhauThuat: [] as string[],
   chanDoanMP: [] as string[], chanDoanKhacMP: "",
   chanDoanMT: [] as string[], chanDoanKhacMT: "",
   chanDoan: [] as string[], chanDoanKhac: "",
@@ -958,7 +961,12 @@ export default function ExamPage() {
 
     const next = {
       thiLucMP: p.thiLucMP || "", thiLucMT: p.thiLucMT || "",
-      doKinhMP: p.doKinhMP || "", doKinhMT: p.doKinhMT || "",
+      ...(() => {
+        const a = tachDoKinh(p.doKinhMP), b = tachDoKinh(p.doKinhMT);
+        return { cauMP: a.cau, truMP: a.tru, trucMP: a.truc, addMP: a.add, cauMT: b.cau, truMT: b.tru, trucMT: b.truc, addMT: b.add };
+      })(),
+      thiLucCoKinhMP: p.thiLucCoKinhMP || "", thiLucCoKinhMT: p.thiLucCoKinhMT || "", kcdt: p.kcdt || "",
+      tienSuPhauThuat: parseDiag(p.tienSuPhauThuat ?? "[]"),
       matKham: p.matKham || "",
       chanDoanMP: cdMP, chanDoanKhacMP: cdKhacMP,
       chanDoanMT: cdMT, chanDoanKhacMT: cdKhacMT,
@@ -1142,11 +1150,21 @@ export default function ExamPage() {
     if (on("huongXuTri") && f.huongXuTri === "Điều trị khác" && !f.huongXuTriKhac.trim()) { addToast({ type: "error", message: "Vui lòng ghi rõ nội dung Điều trị khác." }); return; }
     if (f.nhom === "A" && !f.sdt.trim()) { addToast({ type: "error", message: "Vui lòng nhập số điện thoại khi chọn Đồng ý điều trị." }); return; }
 
+    if (on("thiLuc")) {
+      for (const [mat, tru, truc] of [["Mắt phải", f.truMP, f.trucMP], ["Mắt trái", f.truMT, f.trucMT]] as const) {
+        if (truc.trim() && !tru.trim()) { addToast({ type: "error", message: `${mat}: nhập Trụ trước khi nhập Trục.` }); return; }
+        if (truc.trim() && Number(truc) > 180) { addToast({ type: "error", message: `${mat}: Trục phải từ 0 đến 180°.` }); return; }
+      }
+    }
+
     // Chỉ gửi các trường đang BẬT để không ghi đè dữ liệu của trường đã tắt
     const payload: Record<string, unknown> = { sdt: f.sdt || undefined, nhom: f.nhom || null };
     if (on("thiLuc")) {
       payload.thiLucMP = f.thiLucMP; payload.thiLucMT = f.thiLucMT;
-      payload.doKinhMP = f.doKinhMP.trim() || null; payload.doKinhMT = f.doKinhMT.trim() || null;
+      payload.doKinhMP = ghepDoKinh({ cau: f.cauMP, tru: f.truMP, truc: f.trucMP, add: f.addMP }) || null;
+      payload.doKinhMT = ghepDoKinh({ cau: f.cauMT, tru: f.truMT, truc: f.trucMT, add: f.addMT }) || null;
+      payload.thiLucCoKinhMP = f.thiLucCoKinhMP || null; payload.thiLucCoKinhMT = f.thiLucCoKinhMT || null;
+      payload.kcdt = f.kcdt.trim() || null;
     }
     if (on("chanDoan")) {
       const unified: string[] = [];
@@ -1173,6 +1191,7 @@ export default function ExamPage() {
     if (on("huongXuTri")) { payload.huongXuTri = f.huongXuTri || null; payload.huongXuTriKhac = f.huongXuTriKhac; }
     else if (on("khuyenNghi")) payload.khuyenNghi = f.khuyenNghi;
     if (on("benhSu")) payload.benhSu = choiceToBool(f.benhSu);
+    if (on("tienSuPhauThuat")) payload.tienSuPhauThuat = f.tienSuPhauThuat;
     if (on("loaiBenhSu")) { payload.loaiBenhSu = f.loaiBenhSu; payload.loaiBenhSuKhac = f.loaiBenhSuKhac; }
     if (on("chieuCao")) payload.chieuCao = f.chieuCao;
     const teamDocs = parseDoctorList(buoiKham?.bacSiKham);
@@ -1300,6 +1319,19 @@ export default function ExamPage() {
   /** Bật/tắt 1 giá trị trong trường đa chọn (chanDoan / loaiBenhSu / loaiBenhLy). */
   const toggleMulti = (key: "chanDoan" | "loaiBenhSu" | "loaiBenhLy") => (v: string) =>
     setF((s) => ({ ...s, [key]: s[key].includes(v) ? s[key].filter((x) => x !== v) : [...s[key], v] }));
+  /* Tiền sử phẫu thuật: mắt đã mổ đục TTT thì không còn chẩn đoán "Đục thủy tinh thể" ở mắt đó (và ngược lại). */
+  const boTienSuDTT = (ds: string[], mat: "MP" | "MT") => ds.filter((x) => x !== tienSuPTGiaTri("Đục TTT", mat));
+  const toggleTienSuPT = (loai: string, mat: "MP" | "MT") =>
+    setF((s) => {
+      const v = tienSuPTGiaTri(loai, mat);
+      const co = s.tienSuPhauThuat.includes(v);
+      const next = co ? s.tienSuPhauThuat.filter((x) => x !== v) : [...s.tienSuPhauThuat, v];
+      if (co || loai !== "Đục TTT") return { ...s, tienSuPhauThuat: next };
+      return mat === "MP"
+        ? { ...s, tienSuPhauThuat: next, chanDoanMP: s.chanDoanMP.filter((x) => x !== "Đục thủy tinh thể") }
+        : { ...s, tienSuPhauThuat: next, chanDoanMT: s.chanDoanMT.filter((x) => x !== "Đục thủy tinh thể") };
+    });
+
   const toggleChanDoanMP = (v: string) =>
     setF((s) => {
       const nextMP = s.chanDoanMP.includes(v) ? s.chanDoanMP.filter((x) => x !== v) : [...s.chanDoanMP, v];
@@ -1309,7 +1341,8 @@ export default function ExamPage() {
         if (!nextHuong) nextHuong = "Phẫu thuật";
         if (!nextNhom) nextNhom = "A";
       }
-      return { ...s, chanDoanMP: nextMP, huongXuTri: nextHuong, nhom: nextNhom };
+      const tienSu = v === "Đục thủy tinh thể" && !s.chanDoanMP.includes(v) ? boTienSuDTT(s.tienSuPhauThuat, "MP") : s.tienSuPhauThuat;
+      return { ...s, chanDoanMP: nextMP, huongXuTri: nextHuong, nhom: nextNhom, tienSuPhauThuat: tienSu };
     });
 
   const toggleChanDoanMT = (v: string) =>
@@ -1321,7 +1354,8 @@ export default function ExamPage() {
         if (!nextHuong) nextHuong = "Phẫu thuật";
         if (!nextNhom) nextNhom = "A";
       }
-      return { ...s, chanDoanMT: nextMT, huongXuTri: nextHuong, nhom: nextNhom };
+      const tienSu = v === "Đục thủy tinh thể" && !s.chanDoanMT.includes(v) ? boTienSuDTT(s.tienSuPhauThuat, "MT") : s.tienSuPhauThuat;
+      return { ...s, chanDoanMT: nextMT, huongXuTri: nextHuong, nhom: nextNhom, tienSuPhauThuat: tienSu };
     });
 
   const copyMPtoMT = () => {
@@ -1354,7 +1388,8 @@ export default function ExamPage() {
         if (!nextHuong) nextHuong = "Phẫu thuật";
         if (!nextNhom) nextNhom = "A";
       }
-      return { ...s, chanDoanMP: nextMP, chanDoanMT: nextMT, huongXuTri: nextHuong, nhom: nextNhom };
+      const tienSu = !isBoth && diag === "Đục thủy tinh thể" ? boTienSuDTT(boTienSuDTT(s.tienSuPhauThuat, "MP"), "MT") : s.tienSuPhauThuat;
+      return { ...s, chanDoanMP: nextMP, chanDoanMT: nextMT, huongXuTri: nextHuong, nhom: nextNhom, tienSuPhauThuat: tienSu };
     });
   };
 
@@ -2141,33 +2176,88 @@ export default function ExamPage() {
                           )}
                         </div>
                       )}
-                      {/* Mỗi mắt một khối: thị lực + độ kính cạnh nhau, cùng màu với mục Kết luận (MP xanh ngọc · MT navy) */}
-                      {showThiLuc && (
-                        <div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
-                          {([
-                            { mat: "MP", ten: "Mắt phải", tl: "thiLucMP", dk: "doKinhMP", dot: "bg-[var(--teal)]", box: "border-[var(--teal)]/25 bg-[var(--teal-softer)]" },
-                            { mat: "MT", ten: "Mắt trái", tl: "thiLucMT", dk: "doKinhMT", dot: "bg-[var(--navy)]", box: "border-[var(--navy)]/15 bg-[var(--navy-50)]/50" },
-                          ] as const).map((e) => (
-                            <div key={e.mat} className={`rounded-[12px] border p-3 space-y-2.5 ${e.box}`}>
-                              <div className="flex items-center gap-1.5">
-                                <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
-                                <span className="font-mono text-[12.5px] sm:text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
-                                <span className="text-[13px] sm:text-[11.5px] text-[var(--mute)]">· {e.ten}</span>
+                      {/* Bảng khúc xạ như "Khúc xạ hiện tại" của HIS: mỗi hàng một mắt, cột Không kính · Có kính · Cầu · Trụ · Trục · Add;
+                          KCĐT ở chân bảng. Khung hẹp (điện thoại) tự xếp lại theo từng mắt, mỗi ô có nhãn riêng. */}
+                      {showThiLuc && (() => {
+                        const COT = "@lg:grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1.3fr)_repeat(4,minmax(0,1fr))]";
+                        const nhanNho = "@lg:hidden block font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--mute)] mb-1";
+                        const oNhap = "input-field !h-8 !py-0 !px-2 !text-[12.5px] font-mono tabular-nums w-full";
+                        return (
+                          <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface)] overflow-hidden">
+                            <div className={`hidden @lg:grid ${COT} gap-1.5 px-3 py-1.5 bg-[var(--surface-soft)] border-b border-[var(--line)] font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--mute)]`}>
+                              <span>Mắt</span>
+                              <span>Không kính</span>
+                              <span>Có kính</span>
+                              <span>Cầu</span>
+                              <span>Trụ</span>
+                              <span>Trục</span>
+                              <span>Add</span>
+                            </div>
+                            {([
+                              { mat: "MP", ten: "Mắt phải", tl: "thiLucMP", ck: "thiLucCoKinhMP", cau: "cauMP", tru: "truMP", truc: "trucMP", add: "addMP", dot: "bg-[var(--teal)]" },
+                              { mat: "MT", ten: "Mắt trái", tl: "thiLucMT", ck: "thiLucCoKinhMT", cau: "cauMT", tru: "truMT", truc: "trucMT", add: "addMT", dot: "bg-[var(--navy)]" },
+                            ] as const).map((e, i) => (
+                              <div key={e.mat} className={`grid grid-cols-4 ${COT} gap-x-1.5 gap-y-2 px-3 py-2.5 @lg:py-2 items-center ${i > 0 ? "border-t border-[var(--line-soft)]" : ""}`}>
+                                <div className="col-span-4 @lg:col-span-1 flex items-center gap-1.5" title={e.ten}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
+                                  <span className="font-mono text-[12px] font-bold text-[var(--ink)]">{e.mat}</span>
+                                  <span className="@lg:hidden text-[12px] text-[var(--mute)]">· {e.ten}</span>
+                                </div>
+                                {([["Không kính", e.tl], ["Có kính", e.ck]] as const).map(([nhan, k]) => (
+                                  <div key={k} className="col-span-2 @lg:col-span-1 min-w-0">
+                                    <span className={nhanNho}>{nhan}</span>
+                                    <Dropdown size="sm" mono value={f[k]} onChange={(v) => setF((s) => ({ ...s, [k]: v }))} options={THI_LUC} placeholder="—" disabled={readOnly} />
+                                  </div>
+                                ))}
+                                {([
+                                  { k: e.cau, nhan: "Cầu", ph: "-2.50" },
+                                  { k: e.tru, nhan: "Trụ", ph: "-0.75" },
+                                  { k: e.truc, nhan: "Trục", ph: "180°" },
+                                  { k: e.add, nhan: "Add", ph: "+2.00" },
+                                ] as const).map((o) => {
+                                  const laTruc = o.k === e.truc;
+                                  return (
+                                    <label key={o.k} className="block min-w-0">
+                                      <span className={nhanNho}>{o.nhan}</span>
+                                      <input
+                                        value={f[o.k]}
+                                        inputMode={laTruc ? "numeric" : undefined}
+                                        aria-label={`${o.nhan} ${e.ten}`}
+                                        onChange={(ev) => {
+                                          const v = laTruc ? ev.target.value.replace(/\D/g, "").slice(0, 3) : ev.target.value.replace(/[^\d+\-.,]/g, "");
+                                          setF((s) => ({ ...s, [o.k]: v }));
+                                        }}
+                                        onBlur={laTruc ? undefined : () => setF((s) => ({ ...s, [o.k]: chuanDiop(s[o.k]) }))}
+                                        className={oNhap}
+                                        placeholder={o.ph}
+                                        disabled={readOnly}
+                                      />
+                                    </label>
+                                  );
+                                })}
                               </div>
-                              <Select label="Thị lực" value={f[e.tl]} onChange={(v) => setF((s) => ({ ...s, [e.tl]: v }))} opts={THI_LUC} disabled={readOnly} />
-                              <Field label="Độ kính">
+                            ))}
+                            <div className="flex items-center justify-between gap-3 px-3 py-2 bg-[var(--surface-soft)] border-t border-[var(--line)]">
+                              <label htmlFor="kh-kcdt" className="text-[12px] text-[var(--ink-soft)]">
+                                <span className="font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--mute)]">KCĐT</span>
+                                <span className="ml-1.5">Khoảng cách đồng tử</span>
+                              </label>
+                              <span className="relative w-24 shrink-0">
                                 <input
-                                  value={f[e.dk]}
-                                  onChange={(ev) => setF((s) => ({ ...s, [e.dk]: ev.target.value }))}
-                                  className="input-field font-mono"
-                                  placeholder="VD: -2.50"
+                                  id="kh-kcdt"
+                                  inputMode="decimal"
+                                  value={f.kcdt}
+                                  onChange={(ev) => setF((s) => ({ ...s, kcdt: ev.target.value.replace(/[^\d.,]/g, "").replace(",", ".").slice(0, 5) }))}
+                                  className={`${oNhap} !pr-9`}
+                                  placeholder="62"
                                   disabled={readOnly}
                                 />
-                              </Field>
+                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 font-mono text-[11px] text-[var(--mute)] pointer-events-none">mm</span>
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -2300,6 +2390,41 @@ export default function ExamPage() {
                               )}
                             </div>
                           ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tiền sử phẫu thuật — mục riêng, không tính là chẩn đoán / bệnh lý */}
+                    {isFieldOn(cfg, "tienSuPhauThuat") && (
+                      <div>
+                        <span className="block text-[13px] sm:text-[11.5px] font-semibold text-[var(--ink-soft)] mb-1.5">Tiền sử phẫu thuật</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {TIEN_SU_PT.flatMap((t) =>
+                            (["MP", "MT"] as const).map((mat) => {
+                              const on = f.tienSuPhauThuat.includes(tienSuPTGiaTri(t.loai, mat));
+                              const mau = mat === "MP"
+                                ? { dot: "bg-[var(--teal)]", on: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/50" }
+                                : { dot: "bg-[var(--navy)]", on: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30" };
+                              return (
+                                <button
+                                  key={`${t.loai}-${mat}`}
+                                  type="button"
+                                  onClick={() => !readOnly && toggleTienSuPT(t.loai, mat)}
+                                  disabled={readOnly}
+                                  title={`${t.nhan} — ${mat === "MP" ? "mắt phải" : "mắt trái"}`}
+                                  className={`inline-flex items-center gap-1.5 h-8 sm:h-7 px-3 sm:px-2.5 rounded-full border text-[13.5px] sm:text-[12px] transition-colors cursor-pointer ${
+                                    on
+                                      ? `${mau.on} font-semibold`
+                                      : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] font-medium hover:border-[var(--line-strong)] hover:text-[var(--ink)]"
+                                  }`}
+                                >
+                                  {on ? <Check className="w-3 h-3" strokeWidth={3} /> : <span className={`w-1.5 h-1.5 rounded-full ${mau.dot}`} />}
+                                  {t.nhan}
+                                  <span className="font-mono text-[11.5px] sm:text-[10.5px] font-bold">{mat}</span>
+                                </button>
+                              );
+                            }),
+                          )}
                         </div>
                       </div>
                     )}

@@ -98,6 +98,10 @@ model HoSoBenhNhan {
   thiLucMT     String?
   doKinhMP     String?  // độ kính mắt phải, vd. "-2.50", "+1.25 / -0.75 x 180"
   doKinhMT     String?  // độ kính mắt trái
+  thiLucCoKinhMP String? // thị lực có kính mắt phải
+  thiLucCoKinhMT String? // thị lực có kính mắt trái
+  kcdt         String?  // khoảng cách đồng tử (mm)
+  tienSuPhauThuat String? // JSON mảng — tiền sử phẫu thuật mắt, vd. ["Đục TTT (MP)"]
   matKham        String? // Mắt phải | Mắt trái | Hai mắt
   chanDoanMP     String? // JSON mảng chẩn đoán Mắt phải
   chanDoanKhacMP String? // Chẩn đoán khác Mắt phải

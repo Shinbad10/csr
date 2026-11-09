@@ -202,7 +202,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Các trường mảng của phiếu sàng lọc → JSON string (giống chanDoan)
-    for (const f of ["loaiBenhSu", "loaiBenhLy"] as const)
+    for (const f of ["loaiBenhSu", "loaiBenhLy", "tienSuPhauThuat"] as const)
       if (body[f] !== undefined && typeof body[f] !== "string") update[f] = JSON.stringify(body[f] ?? []);
 
     // "Hướng xử trí" đồng bộ sang khuyenNghi để giữ nguyên luồng Tư vấn / Theo dõi / Báo cáo

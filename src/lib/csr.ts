@@ -1,5 +1,33 @@
 // Hằng số & helper thuần dùng chung các màn CSR (SRS §6.4, §7). Không import React.
 
+/** Tiền sử phẫu thuật mắt (mục riêng, KHÔNG phải chẩn đoán). Lưu JSON mảng giá trị dạng "Đục TTT (MP)". */
+export const TIEN_SU_PT = [{ loai: "Đục TTT", nhan: "Đã mổ đục TTT" }] as const;
+export const tienSuPTGiaTri = (loai: string, mat: "MP" | "MT") => `${loai} (${mat})`;
+
+/* Độ kính (khúc xạ) một mắt: Cầu / Trụ / Trục / Add — lưu gộp vào cột doKinhMP/MT theo cách ghi chuẩn
+   "-2.50 / -0.75 x 180 Add +2.00" (chỉ có cầu thì "-2.50"). Chuỗi không đúng mẫu (nhập tay kiểu cũ) giữ nguyên ở ô Cầu. */
+export type DoKinh = { cau: string; tru: string; truc: string; add: string };
+const SO_DIOP = String.raw`[+-]?\d+(?:[.,]\d+)?`;
+const MAU_DO_KINH = new RegExp(String.raw`^\s*(${SO_DIOP})?\s*(?:\/\s*(${SO_DIOP}))?\s*(?:[x×]\s*(\d{1,3})\s*°?)?\s*(?:add\s*(${SO_DIOP}))?\s*$`, "i");
+export function tachDoKinh(raw?: string | null): DoKinh {
+  const t = (raw || "").trim();
+  if (!t) return { cau: "", tru: "", truc: "", add: "" };
+  const m = t.match(MAU_DO_KINH);
+  return m ? { cau: m[1] || "", tru: m[2] || "", truc: m[3] || "", add: m[4] || "" } : { cau: t, tru: "", truc: "", add: "" };
+}
+/** Chuẩn hoá số diop: "-2.5" → "-2.50", "2" → "+2.00", "0" → "0.00". Không phải số thì giữ nguyên. */
+export function chuanDiop(v: string): string {
+  const t = v.trim().replace(",", ".");
+  if (!/^[+-]?\d+(\.\d+)?$/.test(t)) return v.trim();
+  const n = Number(t);
+  return n === 0 ? "0.00" : `${n > 0 ? "+" : ""}${n.toFixed(2)}`;
+}
+export function ghepDoKinh(d: DoKinh): string {
+  const cau = chuanDiop(d.cau), tru = chuanDiop(d.tru), truc = d.truc.trim(), add = chuanDiop(d.add);
+  const goc = tru ? `${cau || "0.00"} / ${tru}${truc ? ` x ${truc}` : ""}` : cau;
+  return [goc, add ? `Add ${add}` : ""].filter(Boolean).join(" ");
+}
+
 export const CHAN_DOAN = ["Đục thủy tinh thể", "Mộng", "Đục bao sau", "Khác"];   // SRS §7
 export const KHUYEN_NGHI = ["Phẫu thuật", "Theo dõi"] as const;                  // SRS §7
 export const BHYT = ["Không có", "100%", "95%", "80%", "Không rõ"] as const;     // SRS §7
@@ -396,9 +424,9 @@ export interface HoSoExport {
   maBN: string; maBNHIS?: string | null; stt: number; hoTen: string; namSinh: number | null; ngaySinh?: Date | string | null; gioiTinh: string;
   cccd?: string | null; sdt: string | null; sdtNguoiNha?: string | null;
   diaChi?: string | null; khuPho?: string | null; xaPhuong?: string | null;
-  benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null;
+  benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null; tienSuPhauThuat?: string | null;
   chieuCao?: string | null; canNang?: string | null;
-  thiLucMP?: string | null; thiLucMT?: string | null; doKinhMP?: string | null; doKinhMT?: string | null;
+  thiLucMP?: string | null; thiLucMT?: string | null; doKinhMP?: string | null; doKinhMT?: string | null; thiLucCoKinhMP?: string | null; thiLucCoKinhMT?: string | null; kcdt?: string | null;
   chanDoan: string; chanDoanKhac: string | null;
   chanDoanMP?: string | null; chanDoanKhacMP?: string | null;
   chanDoanMT?: string | null; chanDoanKhacMT?: string | null;
@@ -813,8 +841,8 @@ export function hoSoToKhamSucKhoeCells(h: HoSoExport): (string | number)[] {
     bacSi,                                                                  // Bác sĩ (Khám Mắt)
     h.thiLucMP || "",                                                       // Mắt phải (không kính)
     h.thiLucMT || "",                                                       // Mắt trái (không kính)
-    "",                                                                     // Mắt phải (có kính)
-    "",                                                                     // Mắt trái (có kính)
+    h.thiLucCoKinhMP || "",                                                 // Mắt phải (có kính)
+    h.thiLucCoKinhMT || "",                                                 // Mắt trái (có kính)
     detail || (coBenhLy ? "Nghi ngờ bệnh lý mắt" : "Bình thường"),          // Các bệnh về mắt (Nếu có)
     !coBenhLy ? "Loại I" : (h.huongXuTri === "Phẫu thuật" ? "Chỉ định phẫu thuật" : "Theo dõi"), // Phân loại mắt
 
@@ -859,14 +887,14 @@ export interface HoSo {
   id: string; maBN: string; maBNHIS?: string | null; stt: number; buoiKhamId?: string; coSoId?: string; hoTen: string; gioiTinh: string;
   ngaySinh: string | null; namSinh: number | null; cccd: string | null; diaChi: string | null;
   sdt: string | null; sdtNguoiNha: string | null;
-  thiLucMP: string | null; thiLucMT: string | null; doKinhMP?: string | null; doKinhMT?: string | null;
+  thiLucMP: string | null; thiLucMT: string | null; doKinhMP?: string | null; doKinhMT?: string | null; thiLucCoKinhMP?: string | null; thiLucCoKinhMT?: string | null; kcdt?: string | null;
   matKham?: string | null;
   chanDoanMP?: string | null; chanDoanKhacMP?: string | null;
   chanDoanMT?: string | null; chanDoanKhacMT?: string | null;
   chanDoan: string; chanDoanKhac: string | null; khuyenNghi: string | null;
   // Phiếu khám sàng lọc nhãn khoa
   mucHuongBHYT?: number | null; khuPho?: string | null; xaPhuong?: string | null;
-  benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null;
+  benhSu?: boolean | null; loaiBenhSu?: string | null; loaiBenhSuKhac?: string | null; tienSuPhauThuat?: string | null;
   chieuCao?: string | null; canNang?: string | null;
   benhLy?: string | null; loaiBenhLy?: string | null; loaiBenhLyKhac?: string | null;
   huongXuTri?: string | null; huongXuTriKhac?: string | null;

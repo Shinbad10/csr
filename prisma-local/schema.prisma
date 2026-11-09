@@ -94,6 +94,10 @@ model HoSoBenhNhan {
   thiLucMT        String?
   doKinhMP        String?
   doKinhMT        String?
+  thiLucCoKinhMP  String?
+  thiLucCoKinhMT  String?
+  kcdt            String?
+  tienSuPhauThuat String?
   matKham         String?
   chanDoanMP      String?
   chanDoanKhacMP  String?

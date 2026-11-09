@@ -33,7 +33,7 @@ export const THONG_BAO_KHOA =
 export const TRUONG_PHIEU_KHAM = [
   "hoTen", "gioiTinh", "ngaySinh", "namSinh", "cccd", "bhyt", "mucHuongBHYT",
   "diaChi", "khuPho", "xaPhuong", "diemKham", "stt",
-  "thiLucMP", "thiLucMT", "doKinhMP", "doKinhMT", "matKham",
+  "thiLucMP", "thiLucMT", "doKinhMP", "doKinhMT", "thiLucCoKinhMP", "thiLucCoKinhMT", "kcdt", "matKham", "tienSuPhauThuat",
   "chanDoan", "chanDoanKhac", "chanDoanMP", "chanDoanKhacMP", "chanDoanMT", "chanDoanKhacMT",
   "khuyenNghi", "huongXuTri", "huongXuTriKhac",
   "benhSu", "loaiBenhSu", "loaiBenhSuKhac", "chieuCao", "canNang",

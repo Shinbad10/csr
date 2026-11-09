@@ -1253,6 +1253,7 @@ export default function TuVanSessionPage() {
                     const decision = decisionOf(selected);
                     const diagGroups = getDiagGroups(selected);
                     const tienSu = selected.benhSu ? parseDiags(selected.loaiBenhSu, selected.loaiBenhSuKhac).join(", ") || "Có tiền sử" : "";
+                    const tienSuPT = parseDiags(selected.tienSuPhauThuat).join(", ");
                     const theTrang = [selected.chieuCao ? `${selected.chieuCao} cm` : null, selected.canNang ? `${selected.canNang} kg` : null].filter(Boolean).join(" · ");
                     return (
                       <div className="bg-[var(--surface)] border-b border-[var(--line)] px-3 sm:px-6 py-2.5 sm:py-3.5 shrink-0">
@@ -1325,6 +1326,7 @@ export default function TuVanSessionPage() {
                           )}
                           {selected.matKham && <Fact label="Mắt khám">{selected.matKham}</Fact>}
                           {tienSu && <Fact label="Tiền sử"><span className="text-[var(--amber-deep)]">{tienSu}</span></Fact>}
+                          {tienSuPT && <Fact label="Tiền sử PT">{tienSuPT}</Fact>}
                           {theTrang && <Fact label="Thể trạng">{theTrang}</Fact>}
                         </div>
 

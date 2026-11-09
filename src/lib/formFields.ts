@@ -105,6 +105,7 @@ export const FIELD_GROUPS: FieldGroup[] = [
     fields: [
       { key: "benhLy", label: "Bệnh lý", type: "select", options: BENH_LY_OPTIONS },
       { key: "loaiBenhLy", label: "Loại bệnh lý", type: "multiselect", required: true, options: LOAI_BENH_LY_OPTIONS, hint: "Bắt buộc khi Bệnh lý = Nghi ngờ bệnh lý" },
+      { key: "tienSuPhauThuat", label: "Tiền sử phẫu thuật", type: "multiselect", hint: "Đã mổ đục TTT mắt phải / mắt trái" },
       { key: "huongXuTri", label: "Hướng xử trí", type: "select", required: true, options: HUONG_XU_TRI },
     ],
   },

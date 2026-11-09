@@ -90,18 +90,22 @@ model HoSoBenhNhan {
   khuPho       String?
   xaPhuong     String?
 
-  thiLucMP       String?
-  thiLucMT       String?
-  doKinhMP       String?
-  doKinhMT       String?
-  matKham        String?
-  chanDoanMP     String?
-  chanDoanKhacMP String?
-  chanDoanMT     String?
-  chanDoanKhacMT String?
-  chanDoan       String  @default("[]")
-  chanDoanKhac   String?
-  khuyenNghi     String?
+  thiLucMP        String?
+  thiLucMT        String?
+  doKinhMP        String?
+  doKinhMT        String?
+  thiLucCoKinhMP  String?
+  thiLucCoKinhMT  String?
+  kcdt            String?
+  tienSuPhauThuat String?
+  matKham         String?
+  chanDoanMP      String?
+  chanDoanKhacMP  String?
+  chanDoanMT      String?
+  chanDoanKhacMT  String?
+  chanDoan        String  @default("[]")
+  chanDoanKhac    String?
+  khuyenNghi      String?
 
   // Phiếu khám sàng lọc nhãn khoa
   benhSu           Boolean?

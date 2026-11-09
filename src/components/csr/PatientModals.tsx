@@ -152,6 +152,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
   const hasEyeDiag = diagMP.length > 0 || diagMT.length > 0 || !!data?.chanDoanKhacMP || !!data?.chanDoanKhacMT;
   const benhLy = data ? parseDiag(data.loaiBenhLy) : [];
   const loaiBenhSu = data ? parseDiag(data.loaiBenhSu) : [];
+  const tienSuPT = data ? parseDiag(data.tienSuPhauThuat ?? null) : [];
   const age = data ? ageOf(data) : 0;
   const nhatKy: Array<{ id: string; ngay: string; noiDung: string; nguoiGoi?: { hoTen?: string } | null }> = data?.nhatKy || [];
   const tvv = data?.tuVanVien?.hoTen || data?.nhanVienTuVan;
@@ -313,7 +314,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                 }
               >
                 <InfoRow label="Điểm khám">{data.diemKham || data.buoiKham?.diaDiem}</InfoRow>
-                <InfoRow label="Thị lực">
+                <InfoRow label="Thị lực không kính">
                   {data.thiLucMP || data.thiLucMT ? (
                     <span className="inline-flex gap-1.5 font-mono">
                       <span className="px-1.5 py-px rounded-md bg-[var(--surface-soft)] border border-[var(--line)] text-[12px]">
@@ -325,6 +326,21 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     </span>
                   ) : null}
                 </InfoRow>
+                {(["Thị lực có kính", "Khúc xạ"] as const).map((nhan) => {
+                  const [mp, mt] = nhan === "Khúc xạ" ? [data.doKinhMP, data.doKinhMT] : [data.thiLucCoKinhMP, data.thiLucCoKinhMT];
+                  return mp || mt ? (
+                    <InfoRow key={nhan} label={nhan}>
+                      <span className="inline-flex flex-wrap gap-1.5 font-mono">
+                        {([["MP", mp], ["MT", mt]] as const).map(([m, v]) => (
+                          <span key={m} className="px-1.5 py-px rounded-md bg-[var(--surface-soft)] border border-[var(--line)] text-[12px]">
+                            <span className="text-[var(--mute)] font-medium">{m}</span> {v || "—"}
+                          </span>
+                        ))}
+                      </span>
+                    </InfoRow>
+                  ) : null;
+                })}
+                {data.kcdt && <InfoRow label="KCĐT" mono>{data.kcdt} mm</InfoRow>}
                 <InfoRow label="Chiều cao / Cân nặng" mono>
                   {data.chieuCao || data.canNang
                     ? [data.chieuCao ? `${data.chieuCao} cm` : null, data.canNang ? `${data.canNang} kg` : null].filter(Boolean).join(" · ")
@@ -339,6 +355,9 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                   ) : (
                     "Không"
                   )}
+                </InfoRow>
+                <InfoRow label="Tiền sử phẫu thuật">
+                  {tienSuPT.length > 0 ? <DiagChips items={tienSuPT} /> : null}
                 </InfoRow>
                 <InfoRow label="Kết luận">
                   {data.benhLy ? (

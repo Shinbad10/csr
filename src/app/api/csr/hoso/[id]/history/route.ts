@@ -21,6 +21,9 @@ const FIELD_NAMES: Record<string, string> = {
   thiLucMP: "Thị lực mắt phải",
   doKinhMP: "Độ kính mắt phải",
   doKinhMT: "Độ kính mắt trái",
+  thiLucCoKinhMP: "Thị lực có kính mắt phải",
+  thiLucCoKinhMT: "Thị lực có kính mắt trái",
+  kcdt: "Khoảng cách đồng tử (mm)",
   thiLucMT: "Thị lực mắt trái",
   nhom: "Phân nhóm điều trị",
   bhyt: "Mã thẻ BHYT",
@@ -36,6 +39,7 @@ const FIELD_NAMES: Record<string, string> = {
   huongXuTriKhac: "Hướng xử trí khác",
   benhSu: "Bệnh sử",
   loaiBenhSu: "Loại bệnh sử",
+  tienSuPhauThuat: "Tiền sử phẫu thuật",
   benhLy: "Bệnh lý",
   loaiBenhLy: "Loại bệnh lý",
   chieuCao: "Chiều cao",
@@ -245,7 +249,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         }
         if (k.toLowerCase().includes("sotien") && !isNaN(Number(val))) return Number(val).toLocaleString("vi-VN") + " VNĐ";
         if (k === "trangThai") return statusOf(String(val)).label || String(val);
-        if (k.startsWith("chanDoan") && typeof val === "string" && val.startsWith("[")) return parseDiag(val).join(", ") || "(để trống)";
+        if ((k.startsWith("chanDoan") || k === "tienSuPhauThuat") && typeof val === "string" && val.startsWith("[")) return parseDiag(val).join(", ") || "(để trống)";
         if (typeof val === "string" && /^(19|20)\d{2}-\d{2}-\d{2}/.test(val)) {
           try { return fmtDate(val); } catch { return val; }
         }
