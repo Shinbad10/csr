@@ -39,8 +39,12 @@ export interface XacNhanItem {
   ngayMo: string | null;
   tenDichVu: string | null;
   loaiPT: string | null;
-  csr: { hoTen: string; namSinh: number | string | null; ngaySinh: string | null; cccd: string | null; sdt: string | null; diaChi?: string | null };
-  his: { maHIS: string; hoTen: string; namSinh: string; cccd: string | null; sdt: string | null; diaChi?: string | null };
+  /** Chi tiết thêm để xác nhận: giờ / phòng mổ, BS, chẩn đoán, mắt mổ, đối tượng, thực thu */
+  hisCt?: import("./csr").HisCtXacNhan;
+  /** Hồ sơ tầm soát: chẩn đoán MP/MT, hướng xử trí, hẹn mổ, tư vấn viên, điểm đón */
+  csrCt?: import("./csr").CsrCtXacNhan;
+  csr: { hoTen: string; namSinh: number | string | null; ngaySinh: string | null; cccd: string | null; bhyt?: string | null; sdt: string | null; diaChi?: string | null };
+  his: { maHIS: string; hoTen: string; namSinh: string; cccd: string | null; bhyt?: string | null; sdt: string | null; diaChi?: string | null };
 }
 
 export interface DoiChieuLog extends Partial<DoiChieuSummary> {

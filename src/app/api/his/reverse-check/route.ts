@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions, resolveReadCoSoScope } from "@/lib/auth";
 import { getPrisma } from "@/lib/prisma";
 import { getHISSurgeryList, foldName, foldId, foldCccd, foldPhone } from "@/lib/his";
+import { csrCtXacNhan } from "@/lib/csr";
 
 import { HOSO_CUA_DOT_CON_HIEU_LUC } from "@/lib/dotKham";
 export async function POST(request: Request) {
@@ -179,6 +180,8 @@ export async function POST(request: Request) {
             gioiTinh: matched.gioiTinh,
             diaChi: matched.diaChi || null,
             matKham: matched.matKham || null,
+            // Chẩn đoán MP/MT, hướng xử trí, hẹn mổ, tư vấn viên… để so với ca mổ HIS khi xác nhận
+            ct: csrCtXacNhan(matched as unknown as Record<string, unknown>),
             buoiKham: matched.buoiKham
               ? {
                   ngayKham: matched.buoiKham.ngayKham,

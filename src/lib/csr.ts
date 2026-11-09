@@ -28,6 +28,36 @@ export function ghepDoKinh(d: DoKinh): string {
   return [goc, add ? `Add ${add}` : ""].filter(Boolean).join(" ");
 }
 
+/** Chi tiết ca mổ phía HIS hiển thị khi xác nhận đúng người (ngoài họ tên / ngày sinh / CCCD / SĐT). */
+export interface HisCtXacNhan {
+  gioMo?: string | null;      // "YYYY-MM-DD HH:mm" đúng giờ HIS lưu
+  phongMo?: string | null;
+  bsDieuTri?: string | null;
+  doiTuong?: string | null;   // Đối tượng lượt khám HIS: BHYT / DV / CLS
+  chanDoan?: string | null;
+  matMo?: string | null;
+  soTienThucThu?: number | null;
+}
+/** Chi tiết hồ sơ tầm soát phía CSR để đối chiếu với ca mổ HIS. */
+export interface CsrCtXacNhan {
+  chanDoanMP: string[]; chanDoanMT: string[];
+  khacMP?: string | null; khacMT?: string | null;
+  huongXuTri?: string | null; nhom?: string | null;
+  ngayDieuTri?: string | null; tuVan?: string | null; diemDon?: string | null;
+}
+export function csrCtXacNhan(h: Record<string, unknown>): CsrCtXacNhan {
+  const s = (k: string) => (typeof h[k] === "string" && (h[k] as string).trim() ? (h[k] as string).trim() : null);
+  const d = h.ngayDieuTri as Date | string | null | undefined;
+  return {
+    chanDoanMP: parseDiag((h.chanDoanMP as string) ?? null),
+    chanDoanMT: parseDiag((h.chanDoanMT as string) ?? null),
+    khacMP: s("chanDoanKhacMP"), khacMT: s("chanDoanKhacMT"),
+    huongXuTri: s("huongXuTri") || s("khuyenNghi"), nhom: s("nhom"),
+    ngayDieuTri: d ? new Date(d).toISOString() : null,
+    tuVan: s("nhanVienTuVan"), diemDon: s("diemDon"),
+  };
+}
+
 export const CHAN_DOAN = ["Đục thủy tinh thể", "Mộng", "Đục bao sau", "Khác"];   // SRS §7
 export const KHUYEN_NGHI = ["Phẫu thuật", "Theo dõi"] as const;                  // SRS §7
 export const BHYT = ["Không có", "100%", "95%", "80%", "Không rõ"] as const;     // SRS §7

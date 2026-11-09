@@ -84,7 +84,7 @@ export default function DoiChieuHisPage() {
   const [dailySummary, setDailySummary] = useState<any>(null);
   const [hasScannedDaily, setHasScannedDaily] = useState<boolean>(false);
   const [dailySearch, setDailySearch] = useState<string>("");
-  const [dailyFilterStatus, setDailyFilterStatus] = useState<"all" | "pending" | "unlinked" | "linked" | "mat2" | "choMo">("all");
+  const [dailyFilterStatus, setDailyFilterStatus] = useState<"all" | "pending" | "unlinked" | "linked" | "mat2" | "choMo" | "nomatch">("all");
   const [syncingAll, setSyncingAll] = useState<boolean>(false);
 
   // Tab 1: Batch Check state (Mặc định chọn tháng hiện tại)
@@ -208,6 +208,8 @@ export default function DoiChieuHisPage() {
             `Đã tìm thấy ${d.summary?.totalHIS || 0} ca mổ ngày ${fmtDate(targetDate)} (${d.summary?.matchedCSR || 0} ca khớp CSR)` +
             (d.summary?.choMo ? ` · ${d.summary.choMo} ca chờ mổ (đã nhập viện, chưa vào sổ mổ)` : ""),
         });
+        // Mắt 2 của BN đã khớp chắc chắn (CCCD / đã xác nhận) → tự lưu, không cần bấm đồng bộ
+        await tuLuuMat2(d.list || []);
       } else {
         addToast({ type: "error", message: d.error || "Lỗi khi quét dữ liệu từ HIS" });
       }
@@ -215,6 +217,52 @@ export default function DoiChieuHisPage() {
       addToast({ type: "error", message: "Lỗi kết nối tới máy chủ HIS" });
     } finally {
       setDailyLoading(false);
+    }
+  };
+
+  /** Ca Mắt 2 tự lưu: đã mổ thật (có trong sổ mổ), BN khớp chắc chắn (CCCD/BHYT hoặc đã xác nhận), CSR chưa ghi ca này. */
+  const laMat2TuLuu = (r: HisRow) =>
+    !r.choMo && r.matchedCsr && r.matchedCsr.confirmed && !r.matchedCsr.daMo && Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
+
+  const tuLuuMat2 = async (list: HisRow[]) => {
+    const ds = list.filter(laMat2TuLuu);
+    if (ds.length === 0) return;
+    try {
+      const res = await fetch("/api/his/link-reverse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: ds.map((r) => ({
+            hoSoId: r.matchedCsr.id,
+            maHIS: r.maHIS,
+            ngayMo: r.ngayMo,
+            soTienThucThu: r.soTienThucThu,
+            isMat2: true,
+            tenDichVu: r.tenDichVu,
+            matMo: r.matMo,
+            loaiPT: r.loaiPT,
+            matchType: r.matchedCsr.matchType,
+            confirmed: true,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const ids = new Set(ds.map((r) => r.matchedCsr.id));
+      setDailyList((prev) =>
+        prev.map((r) =>
+          r.matchedCsr && ids.has(r.matchedCsr.id) && laMat2TuLuu(r)
+            ? { ...r, matchedCsr: { ...r.matchedCsr, daMo: true, maBNHIS: r.maHIS, trangThaiDieuTri: "Đã mổ", ghiChuMat2: `${r.matchedCsr.ghiChuMat2 || ""}\n[Mắt 2]` } }
+            : r
+        )
+      );
+      setDailySummary((prev: typeof dailySummary) => prev ? {
+        ...prev,
+        alreadyLinked: (prev.alreadyLinked || 0) + ds.length,
+        unlinkedMatched: Math.max(0, (prev.unlinkedMatched || 0) - ds.length),
+      } : null);
+      addToast({ type: "success", message: `Đã tự lưu ${ds.length} ca Mắt 2 vào CSR` });
+    } catch {
+      addToast({ type: "error", message: `Chưa tự lưu được ${ds.length} ca Mắt 2 — bấm "Lưu Mắt 2" ở từng ca để lưu tay` });
     }
   };
 
@@ -302,7 +350,9 @@ export default function DoiChieuHisPage() {
 
   const syncAllDailyUnlinked = async () => {
     // Chỉ tự động đồng bộ hàng loạt các ca KHỚP CCCD CHÍNH XÁC. Ca khuyết CCCD cần xác nhận tay từng ca.
-    const exactUnlinked = dailyList.filter((r) => !r.choMo && r.matchedCsr && !r.matchedCsr.daMo && r.matchedCsr.matchType === "exact");
+    const exactUnlinked = dailyList.filter(
+      (r) => !r.choMo && r.matchedCsr && !r.matchedCsr.daMo && r.matchedCsr.matchType === "exact" && !(r.isMat2 || (r.lanMo && r.lanMo >= 2))
+    );
     const partialUnlinked = dailyList.filter((r) => !r.choMo && r.matchedCsr && (!r.matchedCsr.daMo || !r.matchedCsr.confirmed) && r.matchedCsr.matchType === "partial");
 
     if (exactUnlinked.length === 0) {
@@ -826,13 +876,16 @@ export default function DoiChieuHisPage() {
     [confirmingId]
   );
 
-  /* Số đếm trên các chip — chỉ đếm trên các ca thuộc chương trình tầm soát CSR (có matchedCsr) */
+  /* Số đếm trên các chip. "Tất cả" = mọi ca mổ trong ngày trên HIS (kể cả chưa khớp CSR). */
   const dailyCounts = useMemo(() => {
     const caCsr = dailyList.filter((r) => r.matchedCsr && !r.choMo);
+    const laMat2 = (r: HisRow) => Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2));
     return {
-      all: dailyList.filter((r) => r.matchedCsr).length,
+      all: dailyList.length,
+      nomatch: dailyList.filter((r) => !r.matchedCsr && !r.choMo).length,
       pending: caCsr.filter((r) => (r.matchedCsr.matchType === "partial" || r.matchedCsr.isKhuyetCccd) && !r.matchedCsr.confirmed).length,
-      unlinked: caCsr.filter((r) => r.matchedCsr.matchType === "exact" && !r.matchedCsr.daMo).length,
+      // Mắt 2 tự lưu nên không nằm trong "Cần cập nhật" / nút Đồng bộ
+      unlinked: caCsr.filter((r) => r.matchedCsr.matchType === "exact" && !r.matchedCsr.daMo && !laMat2(r)).length,
       linked: caCsr.filter((r) => r.matchedCsr.daMo || r.matchedCsr.confirmed).length,
       mat2: caCsr.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length,
       choMo: dailyList.filter((r) => r.matchedCsr && r.choMo).length,
@@ -840,8 +893,10 @@ export default function DoiChieuHisPage() {
   }, [dailyList]);
 
   const filteredDailyList = useMemo(() => {
-    // CHỈ HIỆN CÁC CA THUỘC CSR (khớp CCCD hoặc chờ xác nhận khuyết CCCD)
-    let result = dailyList.filter((r) => Boolean(r.matchedCsr));
+    // Mọi ca mổ trong ngày trên HIS; thứ tự: khớp CCCD/BHYT → cần xác nhận (Họ tên + NS) → chưa khớp CSR,
+    // ca chờ mổ (chưa vào sổ mổ) xuống cuối từng nhóm
+    const hang = (r: HisRow) => (r.matchedCsr ? (r.matchedCsr.matchType === "exact" ? 0 : 1) : 2) * 2 + (r.choMo ? 1 : 0);
+    let result = dailyList.map((r, i) => ({ r, i })).sort((a, b) => hang(a.r) - hang(b.r) || a.i - b.i).map((x) => x.r);
 
     if (dailyFilterStatus === "choMo") {
       result = result.filter((r) => r.choMo);
@@ -849,12 +904,14 @@ export default function DoiChieuHisPage() {
       result = result.filter((r) => !r.choMo);
     }
 
-    if (dailyFilterStatus === "pending") {
+    if (dailyFilterStatus === "nomatch") {
+      result = result.filter((r) => !r.matchedCsr);
+    } else if (dailyFilterStatus === "pending") {
       result = result.filter((r) => (r.matchedCsr?.matchType === "partial" || r.matchedCsr?.isKhuyetCccd) && !r.matchedCsr?.confirmed);
     } else if (dailyFilterStatus === "unlinked") {
-      result = result.filter((r) => r.matchedCsr?.matchType === "exact" && !r.matchedCsr?.daMo);
+      result = result.filter((r) => r.matchedCsr?.matchType === "exact" && !r.matchedCsr?.daMo && !(r.isMat2 || (r.lanMo && r.lanMo >= 2)));
     } else if (dailyFilterStatus === "linked") {
-      result = result.filter((r) => r.matchedCsr?.daMo || r.matchedCsr?.confirmed);
+      result = result.filter((r) => r.matchedCsr && (r.matchedCsr.daMo || r.matchedCsr.confirmed));
     } else if (dailyFilterStatus === "mat2") {
       result = result.filter((r) => Boolean(r.isMat2 || (r.lanMo && r.lanMo >= 2)));
     }
@@ -1639,7 +1696,7 @@ export default function DoiChieuHisPage() {
                       dailyFilterStatus === "all" ? "bg-[var(--navy)] text-white shadow-2xs" : "bg-white text-[var(--ink-soft)] hover:bg-slate-100 border border-[var(--line)]"
                     }`}
                   >
-                    Tất cả ca CSR ({dailyCounts.all})
+                    Tất cả ({dailyCounts.all})
                   </button>
                   {dailyCounts.pending > 0 && (
                     <button
@@ -1694,6 +1751,21 @@ export default function DoiChieuHisPage() {
                       <span>Mắt 2</span>
                       <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "mat2" ? "bg-white/25 text-white" : "bg-purple-100 text-purple-900"}`}>
                         {dailyCounts.mat2}
+                      </span>
+                    </button>
+                  )}
+                  {dailyCounts.nomatch > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDailyFilterStatus("nomatch")}
+                      title="Ca mổ trên HIS không tìm thấy hồ sơ tầm soát CSR tương ứng"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "nomatch" ? "bg-[var(--ink-soft)] text-white shadow-2xs" : "bg-white text-[var(--ink-soft)] hover:bg-slate-100 border border-[var(--line)]"
+                      }`}
+                    >
+                      <span>Chưa khớp CSR</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "nomatch" ? "bg-white/25 text-white" : "bg-slate-100 text-[var(--ink-soft)]"}`}>
+                        {dailyCounts.nomatch}
                       </span>
                     </button>
                   )}

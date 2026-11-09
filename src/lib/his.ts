@@ -1,7 +1,7 @@
 import sql from "mssql";
 import { getPrisma } from "./prisma";
 import { triggerSync } from "./syncWorker";
-import { isReportValidSurgery } from "./csr";
+import { isReportValidSurgery, csrCtXacNhan, type HisCtXacNhan } from "./csr";
 import { decryptSecret } from "./secret";
 import { autoEncryptCoSo } from "./coso";
 
@@ -146,6 +146,65 @@ export const foldPhone = (s?: string | null) => {
   const d = foldId(s);
   return d.length >= 9 ? d.slice(-9) : "";
 };
+
+/** Mắt được mổ suy từ chẩn đoán HIS ("Mắt phải: …", "(MT)", "hai mắt"…). */
+export function matMoTuChanDoan(cd?: string | null): string {
+  const t = (cd || "").trim();
+  const low = t.toLowerCase();
+  if (low.includes("mắt phải") || t.includes("(MP)") || t.startsWith("MP:")) return "Mắt phải";
+  if (low.includes("mắt trái") || t.includes("(MT)") || t.startsWith("MT:")) return "Mắt trái";
+  if (low.includes("hai mắt") || t.includes("(2M)")) return "Hai mắt";
+  return "";
+}
+
+/** Đổi mã nhân sự HIS (vd. "BTNV5" ở BN_Master.BsDieutri) sang họ tên. Thiếu bảng / lỗi thì trả map rỗng. */
+export async function tenNhanSuHis(pool: sql.ConnectionPool, codes: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const ds = Array.from(new Set(codes.map((c) => String(c || "").trim()).filter(Boolean))).slice(0, 200);
+  if (ds.length === 0) return map;
+  try {
+    const req = pool.request();
+    ds.forEach((c, i) => req.input(`ns${i}`, sql.NVarChar, c));
+    const res = await req.query(`IF OBJECT_ID('DMNhanSu') IS NOT NULL SELECT Ma, Ten FROM DMNhanSu WITH (NOLOCK) WHERE Ma IN (${ds.map((_, i) => `@ns${i}`).join(", ")})`);
+    for (const r of res.recordset || []) if (r.Ma && r.Ten) map.set(String(r.Ma).trim(), String(r.Ten).trim());
+  } catch {
+    /* chỉ là tên hiển thị — bỏ qua */
+  }
+  return map;
+}
+
+/** Giờ mổ, phòng mổ, BS điều trị, Đối tượng (BHYT/DV) của ca mổ gần `ngayMo` — chỉ gọi cho ca cần xác nhận. */
+export async function fetchHisCaMoChiTiet(pool: sql.ConnectionPool, maHIS: string, ngayMo: Date | string | null): Promise<HisCtXacNhan | null> {
+  if (!maHIS) return null;
+  try {
+    const ngay = ngayMo ? new Date(ngayMo).toISOString().slice(0, 10) : "1900-01-01";
+    const res = await pool.request()
+      .input("ma", sql.NVarChar, maHIS.trim())
+      .input("ngay", sql.VarChar, ngay)
+      .query(`
+        DECLARE @d DATE = CAST(@ngay AS DATE);
+        SELECT TOP 1
+          CONVERT(VARCHAR(16), mo.Ngaymo, 120) AS gioMo,
+          mo.Phongmo AS phongMo,
+          (SELECT TOP 1 bm.BsDieutri FROM BN_Master bm WITH (NOLOCK)
+            WHERE bm.MaBN = mo.MaBenhnhan AND bm.BsDieutri IS NOT NULL AND bm.BsDieutri <> ''
+            ORDER BY ABS(DATEDIFF(day, bm.Ngay, mo.Ngaymo))) AS bsDieuTri,
+          (SELECT TOP 1 bm.Doituong FROM BN_Master bm WITH (NOLOCK)
+            WHERE bm.MaBN = mo.MaBenhnhan ORDER BY ABS(DATEDIFF(day, bm.Ngay, mo.Ngaymo))) AS doiTuong
+        FROM QLyPhongMo mo WITH (NOLOCK)
+        WHERE mo.MaBenhnhan = @ma AND mo.Ngaymo >= DATEADD(day, -1, @d)
+        ORDER BY mo.Ngaymo
+      `);
+    const r = res.recordset?.[0];
+    if (!r) return null;
+    const t = (v: unknown) => (v == null ? null : String(v).trim() || null);
+    const bs = t(r.bsDieuTri);
+    const ten = bs ? (await tenNhanSuHis(pool, [bs])).get(bs) : undefined;
+    return { gioMo: t(r.gioMo), phongMo: t(r.phongMo), bsDieuTri: ten || bs, doiTuong: t(r.doiTuong) };
+  } catch {
+    return null; // chỉ là thông tin thêm — lỗi thì bỏ qua, không chặn đối chiếu
+  }
+}
 
 export function appendHisNote(oldNote: string | null | undefined, newHisDetail: string): string {
   const lines = (oldNote || "").split("\n");
@@ -454,6 +513,8 @@ async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
   tableName: string;
   cmndCol: string | null;
   bhytCol: string | null;
+  /** Bảng BN không có cột số thẻ nhưng HIS có DuyetBHYT(Mabenhnhan, SoBH) — lấy mã thẻ từ lượt duyệt BHYT gần nhất */
+  bhytDuyet: boolean;
   addrCol: string | null;
   sdtCol: string | null;
   /** Ngày / tháng sinh tách cột (QLyCapThe.Ngaysinh, Thangsinh) — để so ngày sinh đầy đủ với CSR */
@@ -463,6 +524,7 @@ async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
   let tableName = "QLyCapThe";
   let cmndCol: string | null = null;
   let bhytCol: string | null = null;
+  let bhytDuyet = false;
   let addrCol: string | null = null;
   let sdtCol: string | null = null;
   let ngaySinhCol: string | null = null;
@@ -524,11 +586,40 @@ async function getQLyCapTheColumns(pool: sql.ConnectionPool): Promise<{
     const exactCol = (name: string) => tableCols.find((col) => col.toLowerCase() === name.toLowerCase()) || null;
     ngaySinhCol = exactCol("Ngaysinh");
     thangSinhCol = exactCol("Thangsinh");
+
+    if (!bhytCol) {
+      const d = await pool.request().query(
+        `SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'DuyetBHYT' AND COLUMN_NAME IN ('Mabenhnhan', 'SoBH')`
+      );
+      bhytDuyet = Number(d.recordset?.[0]?.n) === 2;
+    }
   } catch (err) {
     console.error("Error inspecting QLyCapThe columns:", err);
   }
 
-  return { tableName, cmndCol, bhytCol, addrCol, sdtCol, ngaySinhCol, thangSinhCol };
+  return { tableName, cmndCol, bhytCol, bhytDuyet, addrCol, sdtCol, ngaySinhCol, thangSinhCol };
+}
+
+/** Biểu thức SQL lấy mã thẻ BHYT của BN `c` — cột trong bảng BN, hoặc lượt duyệt BHYT gần nhất. */
+function bhytSqlExpr(o: { bhytCol: string | null; bhytDuyet: boolean }): string | null {
+  if (o.bhytCol) return `c.[${o.bhytCol}]`;
+  if (o.bhytDuyet)
+    return `(SELECT TOP 1 d.SoBH FROM DuyetBHYT d WITH (NOLOCK) WHERE d.Mabenhnhan = c.Ma AND d.SoBH <> '' ORDER BY d.Ngay DESC)`;
+  return null;
+}
+
+/** Điều kiện WHERE tìm BN theo mã thẻ (@bhyt đầy đủ hoặc @bhytLast10 = mã số BHXH, không đổi khi đổi thẻ). */
+function bhytWhereSql(o: { bhytCol: string | null; bhytDuyet: boolean }): string[] {
+  if (o.bhytCol)
+    return [
+      `(c.[${o.bhytCol}] = @bhyt AND @bhyt <> '')`,
+      `(c.[${o.bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')`,
+    ];
+  if (o.bhytDuyet)
+    return [
+      `(c.Ma IN (SELECT d.Mabenhnhan FROM DuyetBHYT d WITH (NOLOCK) WHERE (d.SoBH = @bhyt AND @bhyt <> '') OR (@bhytLast10 <> '' AND RIGHT(d.SoBH, 10) = @bhytLast10)))`,
+    ];
+  return [];
 }
 
 export async function checkHISForPatient(
@@ -568,7 +659,8 @@ export async function checkHISForPatient(
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { tableName, cmndCol, bhytCol, sdtCol } = await getQLyCapTheColumns(pool);
+    const hisCols = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, sdtCol } = hisCols;
 
     const hoTenClean = (hoTen || "").trim();
     const namSinhStr = String(namSinh || "").trim();
@@ -581,7 +673,7 @@ export async function checkHISForPatient(
     const bhytLast10 = bhytDigits.length >= 10 ? bhytDigits.slice(-10) : "";
 
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as CMND,` : `NULL as CMND,`;
-    const bhytSelect = bhytCol ? `c.[${bhytCol}] as Sothe,` : `NULL as Sothe,`;
+    const bhytSelect = `${bhytSqlExpr(hisCols) || "NULL"} as Sothe,`;
     const sdtSelect = sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`;
 
     const whereClauses: string[] = [];
@@ -589,10 +681,7 @@ export async function checkHISForPatient(
       whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
       if (cccdVars.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${cccdVars.map((_, i) => `@cv${i}`).join(", ")})`);
     }
-    if (bhytCol) {
-      whereClauses.push(`(c.[${bhytCol}] = @bhyt AND @bhyt <> '')`);
-      whereClauses.push(`(c.[${bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')`);
-    }
+    whereClauses.push(...bhytWhereSql(hisCols));
     whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
 
     const whereSql = whereClauses.join(" OR ");
@@ -829,10 +918,11 @@ export async function batchCheckHISForPatients(
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
     const prisma = getPrisma();
-    const { tableName, cmndCol, bhytCol, sdtCol, addrCol } = await getQLyCapTheColumns(pool);
+    const hisCols = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, sdtCol, addrCol } = hisCols;
 
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as CMND,` : `NULL as CMND,`;
-    const bhytSelect = bhytCol ? `c.[${bhytCol}] as Sothe,` : `NULL as Sothe,`;
+    const bhytSelect = `${bhytSqlExpr(hisCols) || "NULL"} as Sothe,`;
     // Kèm địa chỉ HIS để người dùng so với CSR khi xác nhận ca chỉ khớp tên + NS
     const sdtSelect =
       (sdtCol ? `c.[${sdtCol}] as Dienthoai,` : `NULL as Dienthoai,`) + (addrCol ? ` c.[${addrCol}] as DiaChiHIS,` : ` NULL as DiaChiHIS,`);
@@ -855,10 +945,7 @@ export async function batchCheckHISForPatients(
           whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
           if (cccdVars.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${cccdVars.map((_, i) => `@cv${i}`).join(", ")})`);
         }
-        if (bhytCol) {
-          whereClauses.push(`(c.[${bhytCol}] = @bhyt AND @bhyt <> '')`);
-          whereClauses.push(`(c.[${bhytCol}] LIKE '%' + @bhytLast10 AND @bhytLast10 <> '')`);
-        }
+        whereClauses.push(...bhytWhereSql(hisCols));
         whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
 
         const whereSql = whereClauses.join(" OR ");
@@ -1015,6 +1102,9 @@ export async function batchCheckHISForPatients(
         } catch {}
 
         const duocTinh = matchType === "exact" || isReportValidSurgery({ ...p, ...updateData });
+        const canXacNhan = (dec.daMo || dec.daMoTruoc) && !duocTinh;
+        // Chỉ ca cần xác nhận mới tra thêm giờ / phòng mổ / BS / đối tượng (ít ca, 1 truy vấn nhỏ)
+        const ctMo = canXacNhan ? await fetchHisCaMoChiTiet(pool!, maHIS, dec.ngayMo) : null;
         return {
           id: p.id, hoTen: p.hoTen, found: true, matchType, matchReason, maHIS, cccdHIS: hisCccd, bhytHIS: hisBhyt,
           // Ca mổ SAU ngày khám (tính tiến độ CSR) tách khỏi ca mổ TRƯỚC đó; chờ mổ = nhập viện / có DV PT, chưa vào sổ mổ
@@ -1037,16 +1127,25 @@ export async function batchCheckHISForPatients(
                   ngayMo: dec.ngayMo ? dec.ngayMo.toISOString() : null,
                   tenDichVu: surgDetail?.tenDichVu || null,
                   loaiPT: surgDetail?.loaiPhauThuat || null,
+                  hisCt: {
+                    ...ctMo,
+                    bsDieuTri: ctMo?.bsDieuTri || null,
+                    chanDoan: chanDoan || null,
+                    matMo: matMoTuChanDoan(chanDoan) || null,
+                    soTienThucThu: soTienThucThu ?? null,
+                  },
+                  csrCt: csrCtXacNhan(p as unknown as Record<string, unknown>),
                   csr: {
                     hoTen: p.hoTen,
                     namSinh: p.namSinh,
                     ngaySinh: (p as Record<string, unknown>).ngaySinh ?? null,
                     cccd: p.cccd || null,
+                    bhyt: p.bhyt || null,
                     sdt: (p as Record<string, unknown>).sdt ?? null,
                     diaChi: ((p as Record<string, unknown>).diaChi as string) ?? null,
                   },
                   his: {
-                    maHIS, hoTen: hoTenHIS, namSinh: namSinhHIS, cccd: hisCccd || null,
+                    maHIS, hoTen: hoTenHIS, namSinh: namSinhHIS, cccd: hisCccd || null, bhyt: hisBhyt || null,
                     sdt: String(matchedRow.Dienthoai || "").trim() || null,
                     diaChi: String(matchedRow.DiaChiHIS || "").trim() || null,
                   },
@@ -1092,9 +1191,10 @@ export async function searchHIS(coSoId: string, keyword: string) {
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { tableName, cmndCol, bhytCol, addrCol, sdtCol } = await getQLyCapTheColumns(pool);
+    const hisCols = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, addrCol, sdtCol } = hisCols;
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as cccd,` : `NULL as cccd,`;
-    const bhytSelect = bhytCol ? `c.[${bhytCol}] as bhyt,` : `NULL as bhyt,`;
+    const bhytSelect = `${bhytSqlExpr(hisCols) || "NULL"} as bhyt,`;
     const sdtSelect = sdtCol ? `c.[${sdtCol}] as sdt,` : `NULL as sdt,`;
     const addrSelect = addrCol ? `c.[${addrCol}] as diaChi,` : `NULL as diaChi,`;
 
@@ -1103,7 +1203,8 @@ export async function searchHIS(coSoId: string, keyword: string) {
     // Gõ đủ 12 số CCCD vẫn ra người mà HIS lưu mất số 0 đầu
     const kwCccd = /^\d{10,12}$/.test(kw) ? cccdVariants(kw) : [];
     if (cmndCol && kwCccd.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${kwCccd.map((_, i) => `@cv${i}`).join(", ")})`);
-    if (bhytCol) whereClauses.push(`c.[${bhytCol}] LIKE @kw`);
+    if (hisCols.bhytCol) whereClauses.push(`c.[${hisCols.bhytCol}] LIKE @kw`);
+    else if (hisCols.bhytDuyet) whereClauses.push(`c.Ma IN (SELECT d.Mabenhnhan FROM DuyetBHYT d WITH (NOLOCK) WHERE d.SoBH LIKE @kw)`);
     whereClauses.push(`c.Ma = @kwRaw`);
     const whereSql = whereClauses.join(" OR ");
 
@@ -1236,9 +1337,10 @@ export async function getHISSurgeryList(
   let pool: sql.ConnectionPool | null = null;
   try {
     pool = await new sql.ConnectionPool(dbConfig).connect();
-    const { tableName, cmndCol, bhytCol, sdtCol, addrCol, ngaySinhCol, thangSinhCol } = await getQLyCapTheColumns(pool);
+    const hisCols = await getQLyCapTheColumns(pool);
+    const { tableName, cmndCol, sdtCol, addrCol, ngaySinhCol, thangSinhCol } = hisCols;
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as cccd,` : `NULL as cccd,`;
-    const bhytSelect = bhytCol ? `c.[${bhytCol}] as bhyt,` : `NULL as bhyt,`;
+    const bhytSelect = `${bhytSqlExpr(hisCols) || "NULL"} as bhyt,`;
     // Địa chỉ + ngày/tháng sinh: để người dùng so từng trường HIS ↔ CSR trước khi xác nhận
     const sdtSelect =
       (sdtCol ? `c.[${sdtCol}] as sdt,` : `NULL as sdt,`) +
@@ -1282,7 +1384,9 @@ export async function getHISSurgeryList(
         mo.Phongmo as phongMo,
         hsba.Chandoan_Ravien as chanDoanRavien,
         hsba.Chandoan_Vaovien as chanDoanVaovien,
-        bm.BsDieutri as bsDieuTri,
+        COALESCE(NULLIF(bm.BsDieutri, ''), (SELECT TOP 1 b2.BsDieutri FROM BN_Master b2 WITH (NOLOCK) WHERE b2.MaBN = c.Ma AND b2.BsDieutri <> '' ORDER BY ABS(DATEDIFF(day, b2.Ngay, mo.Ngaymo)))) as bsDieuTri,
+        -- Đối tượng (BHYT / DV) của lượt khám gần ngày mổ nhất — join bm theo đúng giờ hiếm khi khớp
+        (SELECT TOP 1 b2.Doituong FROM BN_Master b2 WITH (NOLOCK) WHERE b2.MaBN = c.Ma ORDER BY ABS(DATEDIFF(day, b2.Ngay, mo.Ngaymo))) as doiTuong,
         bm.ChandoanChinh as chanDoanBM
       FROM QLyPhongMo mo
       JOIN [${tableName}] c ON mo.MaBenhnhan = c.Ma
@@ -1294,6 +1398,9 @@ export async function getHISSurgeryList(
 
     const res = await req.query(query);
     const rows = res.recordset || [];
+    // BS điều trị HIS lưu mã nhân sự (vd. "BTNV5") → đổi sang họ tên để người xác nhận đọc được
+    const tenBs = await tenNhanSuHis(pool, rows.map((r) => r.bsDieuTri));
+    rows.forEach((r) => { const ma = String(r.bsDieuTri || "").trim(); if (ma && tenBs.has(ma)) r.bsDieuTri = tenBs.get(ma); });
 
     /* "Chờ mổ" (chỉ khi xem theo 1 ngày): BN nhập viện / có DV phẫu thuật trong ngày mà phòng mổ chưa
        ghi sổ (không có ca nào trong QLyPhongMo từ ngày đó trở đi). Sổ phòng mổ thường ghi sau khi mổ
@@ -1433,14 +1540,7 @@ export async function getHISSurgeryList(
 
     const toRow = (r: any, orderInfo: { lanMo: number; isMat2: boolean }) => {
       const cd = (r.chanDoanRavien || r.chanDoanVaovien || r.chanDoanBM || "").trim();
-      let matMo = "";
-      if (cd.toLowerCase().includes("mắt phải") || cd.includes("(MP)") || cd.startsWith("MP:")) {
-        matMo = "Mắt phải";
-      } else if (cd.toLowerCase().includes("mắt trái") || cd.includes("(MT)") || cd.startsWith("MT:")) {
-        matMo = "Mắt trái";
-      } else if (cd.toLowerCase().includes("hai mắt") || cd.includes("(2M)")) {
-        matMo = "Hai mắt";
-      }
+      const matMo = matMoTuChanDoan(cd);
 
       const ma = String(r.maHIS || "").trim();
       const svcs = serviceMap.get(ma) || [];
@@ -1475,6 +1575,8 @@ export async function getHISSurgeryList(
         tenDichVu: r.tenDV ? String(r.tenDV).trim() : matchedSvc ? matchedSvc.tenDichVu : r.choMo ? "" : "Phẫu thuật mắt",
         loaiPT: r.tenDV ? phanLoaiPT(String(r.tenDV)) : matchedSvc ? matchedSvc.loaiPT : r.choMo ? "" : "Phẫu thuật",
         bsDieuTri: r.bsDieuTri || "",
+        /** Đối tượng lượt khám HIS (BHYT / DV / CLS) */
+        doiTuong: r.doiTuong ? String(r.doiTuong).trim() : "",
         lanMo: orderInfo.lanMo,
         isMat2: orderInfo.isMat2,
         /** Nhập viện / có DV phẫu thuật nhưng chưa có trong sổ phòng mổ — `ngayMoLocal` khi đó là giờ nhập viện / chỉ định */
