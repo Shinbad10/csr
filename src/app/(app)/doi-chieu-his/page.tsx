@@ -10,7 +10,7 @@ import {
   Calendar, Users, ShieldCheck, Database, Check,
   Play, Download, UserCheck, Stethoscope, Sparkles,
   CalendarDays, X, AlertTriangle, ShieldQuestion, ArrowRight,
-  CalendarCheck, Clock, CheckCircle, Zap, ChevronLeft, ChevronRight, Eye
+  CalendarCheck, Clock, CheckCircle, Zap, ChevronLeft, ChevronRight, Eye, Lightbulb
 } from "lucide-react";
 import { fmtDate, fmtBuoiKhamName } from "@/lib/csr";
 import { Dropdown } from "@/components/csr/fields";
@@ -55,12 +55,12 @@ function CompactStatCard({ label, value, sub, icon: Icon, tone }: {
     amber: { chip: "bg-[var(--amber-soft)] text-[var(--amber-deep)]", val: "text-[var(--amber-deep)]" },
   }[tone];
   return (
-    <div className="bg-white border border-[var(--line)] rounded-xl px-3 py-2 flex items-center justify-between gap-2.5 shadow-2xs">
+    <div className="bg-[var(--surface)] border border-[var(--line)] rounded-xl px-3 py-2 flex items-center justify-between gap-2.5 shadow-2xs">
       <div className="min-w-0">
-        <div className="text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider truncate">{label}</div>
+        <div className="text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider truncate">{label}</div>
         <div className="flex items-baseline gap-1.5 mt-0.5">
           <span className={`text-[18px] leading-none font-mono font-extrabold ${tones.val}`}>{value}</span>
-          {sub && <span className="text-[10.5px] text-[var(--mute)] truncate">{sub}</span>}
+          {sub && <span className="text-[11px] text-[var(--mute)] truncate">{sub}</span>}
         </div>
       </div>
       <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${tones.chip}`}>
@@ -790,7 +790,7 @@ export default function DoiChieuHisPage() {
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
                   r.matchReason?.includes("BHYT")
-                    ? "bg-blue-50 text-blue-700 border-blue-300"
+                    ? "bg-[var(--navy-soft)] text-[var(--navy)] border-[var(--navy-200)]"
                     : "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/30"
                 }`}
               >
@@ -956,7 +956,7 @@ export default function DoiChieuHisPage() {
           return (
             <div className="min-w-0 leading-tight">
               <div className="font-mono text-[12px] font-bold whitespace-nowrap text-[var(--navy)]" title={r.maHIS}>{r.maHIS}</div>
-              {r.phongMo && <div className="mt-1 truncate text-[10.5px] text-[var(--mute)]">{r.phongMo}</div>}
+              {r.phongMo && <div className="mt-1 truncate text-[11px] text-[var(--mute)]">{r.phongMo}</div>}
             </div>
           );
         },
@@ -984,7 +984,7 @@ export default function DoiChieuHisPage() {
           return (
             <div className="leading-tight min-w-0">
               {r.choMo ? (
-                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--amber-soft)] px-1.5 py-0.5 text-[10.5px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1 rounded-md bg-[var(--amber-soft)] px-1.5 py-0.5 text-[11px] font-bold text-[var(--amber-deep)] whitespace-nowrap">
                   <Clock className="h-3 w-3 shrink-0" /> Chờ mổ
                 </span>
               ) : (
@@ -994,15 +994,15 @@ export default function DoiChieuHisPage() {
               )}
               <div className="mt-1 flex flex-col items-start gap-0.5 whitespace-nowrap">
                 <span
-                  className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-px text-[10px] font-bold ${
-                    isSecondEye ? "bg-[#f3e8ff] text-[#7c3aed]" : "bg-[var(--surface-soft)] text-[var(--ink-soft)]"
+                  className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-px text-[11px] font-bold ${
+                    isSecondEye ? "bg-[var(--violet-soft)] text-[var(--violet)]" : "bg-[var(--surface-soft)] text-[var(--ink-soft)]"
                   }`}
                   title={r.lanMo ? `Lần mổ thứ ${r.lanMo}` : undefined}
                 >
                   {isSecondEye && <Eye className="h-2.5 w-2.5" />}
                   Mắt {isSecondEye ? 2 : 1}
                 </span>
-                {r.matMo && <span className="text-[10.5px] text-[var(--mute)]">{r.matMo}</span>}
+                {r.matMo && <span className="text-[11px] text-[var(--mute)]">{r.matMo}</span>}
               </div>
             </div>
           );
@@ -1026,7 +1026,7 @@ export default function DoiChieuHisPage() {
             <div className="min-w-0 leading-tight" title={[ten, diag && `Chẩn đoán: ${diag}`, r.bsDieuTri && `BS: ${r.bsDieuTri}`].filter(Boolean).join("\n")}>
               <div className="flex items-start gap-1.5 min-w-0">
                 {r.loaiPT && (
-                  <span className="shrink-0 rounded-md bg-[var(--navy-50)] px-1.5 py-px text-[10px] font-bold text-[var(--navy)]">
+                  <span className="shrink-0 rounded-md bg-[var(--navy-50)] px-1.5 py-px text-[11px] font-bold text-[var(--navy)]">
                     {r.loaiPT}
                   </span>
                 )}
@@ -1052,7 +1052,7 @@ export default function DoiChieuHisPage() {
           if (r.cccdConflict) {
             return (
               <div className="text-xs space-y-1 min-w-0">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose-deep)] border border-[var(--rose)]/30">
                   ✕ Lệch CCCD ({r.cccdConflict.maBN})
                 </span>
                 <div className="text-[11px] text-[var(--mute)]">
@@ -1063,7 +1063,7 @@ export default function DoiChieuHisPage() {
           }
           if (!r.matchedCsr) {
             return (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-[var(--mute)] bg-slate-100 border border-slate-200 font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-[var(--mute)] bg-[var(--surface-hover)] border border-[var(--line)] font-medium">
                 Chưa có trong CSR
               </span>
             );
@@ -1088,7 +1088,7 @@ export default function DoiChieuHisPage() {
           }
           if (r.cccdConflict) {
             return (
-              <span className="text-xs font-semibold text-rose-600" title="Trùng tên và năm sinh nhưng CCCD khác nhau - không thể liên kết">
+              <span className="text-xs font-semibold text-[var(--rose)]" title="Trùng tên và năm sinh nhưng CCCD khác nhau - không thể liên kết">
                 ✕ Lệch CCCD
               </span>
             );
@@ -1124,7 +1124,7 @@ export default function DoiChieuHisPage() {
             return (
               <span
                 className={`inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold ${
-                  isSecondEye ? "text-[#7c3aed]" : isPartial ? "text-[var(--amber-deep)]" : "text-[var(--teal-deep)]"
+                  isSecondEye ? "text-[var(--violet)]" : isPartial ? "text-[var(--amber-deep)]" : "text-[var(--teal-deep)]"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1140,7 +1140,7 @@ export default function DoiChieuHisPage() {
               onClick={() => linkDailyPatient(r, false)}
               disabled={linkingId === r.matchedCsr.id}
               className={`h-8 px-3 whitespace-nowrap text-[12px] font-semibold rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 text-white ${
-                isSecondEye ? "bg-[#7c3aed] hover:bg-[#6d28d9]" : "bg-[var(--teal-deep)] hover:bg-[var(--teal)]"
+                isSecondEye ? "bg-[var(--violet)] hover:bg-[var(--violet-deep)]" : "bg-[var(--teal-deep)] hover:bg-[var(--teal)]"
               }`}
             >
               {linkingId === r.matchedCsr.id ? (
@@ -1175,7 +1175,7 @@ export default function DoiChieuHisPage() {
                 {r.maHIS}
               </span>
               {r.phongMo && (
-                <div className="text-[10px] text-[var(--mute)] font-mono mt-0.5 truncate">
+                <div className="text-[11px] text-[var(--mute)] font-mono mt-0.5 truncate">
                   {r.phongMo}
                 </div>
               )}
@@ -1220,7 +1220,7 @@ export default function DoiChieuHisPage() {
                 </div>
               ) : null}
               {r.bhyt ? (
-                <div className="text-[11px] text-blue-700 font-semibold truncate" title={`BHYT: ${r.bhyt}`}>
+                <div className="text-[11px] text-[var(--navy)] font-semibold truncate" title={`BHYT: ${r.bhyt}`}>
                   <span className="text-[var(--mute)] font-sans font-normal mr-1">BHYT:</span>
                   {r.bhyt}
                 </div>
@@ -1261,21 +1261,21 @@ export default function DoiChieuHisPage() {
             <div className="space-y-1">
               <div>
                 {isSecondEye ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">
-                    <Eye className="w-3 h-3 text-purple-700" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-extrabold bg-[var(--violet)]/15 text-[var(--violet-deep)] border border-[var(--violet)]/40 shadow-2xs">
+                    <Eye className="w-3 h-3 text-[var(--violet-deep)]" />
                     <span>Mắt 2</span>
-                    {r.lanMo && r.lanMo > 2 && <span className="text-[9.5px] opacity-80">(lần {r.lanMo})</span>}
+                    {r.lanMo && r.lanMo > 2 && <span className="text-[11px] opacity-80">(lần {r.lanMo})</span>}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--surface-hover)] text-[var(--ink-soft)] border border-[var(--line)]">
                     <span>Mắt 1</span>
-                    {r.lanMo ? <span className="text-[10px] text-slate-500">(lần {r.lanMo})</span> : null}
+                    {r.lanMo ? <span className="text-[11px] text-[var(--mute)]">(lần {r.lanMo})</span> : null}
                   </span>
                 )}
               </div>
               {r.matMo && (
-                <div className="text-[11px] font-bold text-teal-800 flex items-center gap-1 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600 shrink-0" />
+                <div className="text-[11px] font-bold text-[var(--teal-deep)] flex items-center gap-1 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal-deep)] shrink-0" />
                   <span>{r.matMo}</span>
                 </div>
               )}
@@ -1298,7 +1298,7 @@ export default function DoiChieuHisPage() {
             <div className="text-xs min-w-0 space-y-0.5">
               {loai && (
                 <div>
-                  <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase tracking-wide bg-blue-50 text-blue-800 border border-blue-200">
+                  <span className="inline-block px-1.5 py-0.2 rounded text-[11px] font-extrabold uppercase tracking-wide bg-[var(--navy-soft)] text-[var(--navy)] border border-[var(--navy-200)]">
                     {loai}
                   </span>
                 </div>
@@ -1325,7 +1325,7 @@ export default function DoiChieuHisPage() {
                 {r.khoaMo || "Phòng mổ"}
               </div>
               {r.bsDieuTri ? (
-                <div className="text-[11px] text-emerald-800 font-semibold mt-0.5 truncate" title={`BS: ${r.bsDieuTri}`}>
+                <div className="text-[11px] text-[var(--green-deep)] font-semibold mt-0.5 truncate" title={`BS: ${r.bsDieuTri}`}>
                   BS: {r.bsDieuTri}
                 </div>
               ) : (
@@ -1361,7 +1361,7 @@ export default function DoiChieuHisPage() {
           if (r.cccdConflict) {
             return (
               <div className="text-xs space-y-1 min-w-0">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose-deep)] border border-[var(--rose)]/30">
                   ✕ Lệch CCCD ({r.cccdConflict.maBN})
                 </span>
                 <div className="text-[11px] text-[var(--mute)]">
@@ -1372,7 +1372,7 @@ export default function DoiChieuHisPage() {
           }
           if (!r.matchedCsr) {
             return (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-[var(--mute)] bg-slate-100 border border-slate-200 font-medium">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] text-[var(--mute)] bg-[var(--surface-hover)] border border-[var(--line)] font-medium">
                 ⚪ Khách tự đến BV / Khác
               </span>
             );
@@ -1385,12 +1385,12 @@ export default function DoiChieuHisPage() {
             <div className="text-xs space-y-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
                     m.matchType === "exact"
                       ? isBhyt
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border-amber-300"
+                        ? "bg-[var(--navy-soft)] text-[var(--navy)] border-[var(--navy-200)]"
+                        : "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)]/30"
+                      : "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/40"
                   }`}
                 >
                   {isPartial ? "⚠ Khuyết CCCD (Tên + NS)" : (m.matchReason || "Khớp hồ sơ")}
@@ -1402,8 +1402,8 @@ export default function DoiChieuHisPage() {
                 {m.buoiKham?.ngayKham ? ` (${fmtDate(m.buoiKham.ngayKham)})` : ""}
               </div>
               {isSecondEye && (
-                <div className="text-[10.5px] font-semibold text-purple-700 flex items-center gap-1 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                  <Eye className="w-3 h-3 text-purple-600 shrink-0" />
+                <div className="text-[11px] font-semibold text-[var(--violet-deep)] flex items-center gap-1 bg-[var(--violet-soft)] px-1.5 py-0.5 rounded border border-[var(--violet)]/30">
+                  <Eye className="w-3 h-3 text-[var(--violet)] shrink-0" />
                   <span className="truncate">Ghi nhận vào Ghi chú Mắt 2</span>
                 </div>
               )}
@@ -1422,7 +1422,7 @@ export default function DoiChieuHisPage() {
           const r = row.original;
           if (r.cccdConflict) {
             return (
-              <span className="text-xs font-semibold text-rose-600" title="Trùng tên và năm sinh nhưng CCCD khác nhau - không thể liên kết">
+              <span className="text-xs font-semibold text-[var(--rose)]" title="Trùng tên và năm sinh nhưng CCCD khác nhau - không thể liên kết">
                 ✕ Lệch CCCD
               </span>
             );
@@ -1441,7 +1441,7 @@ export default function DoiChieuHisPage() {
                 data-no-row-click
                 onClick={() => linkPatient(r, true)}
                 disabled={linkingId === r.matchedCsr.id}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50 ml-auto"
+                className="px-3 py-1.5 bg-[var(--amber)] hover:bg-[var(--amber)] text-white text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition cursor-pointer disabled:opacity-50 ml-auto"
                 title="1 trong 2 bên khuyết CCCD: Bấm xác nhận sau khi kiểm tra đúng bệnh nhân"
               >
                 {linkingId === r.matchedCsr.id ? (
@@ -1459,10 +1459,10 @@ export default function DoiChieuHisPage() {
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border ${
                   isSecondEye
-                    ? "bg-purple-50 text-purple-800 border-purple-200"
+                    ? "bg-[var(--violet-soft)] text-[var(--violet-deep)] border-[var(--violet)]/30"
                     : isPartial
-                    ? "bg-amber-50 text-amber-800 border-amber-300"
-                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    ? "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/40"
+                    : "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)]/30"
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1477,9 +1477,9 @@ export default function DoiChieuHisPage() {
               data-no-row-click
               onClick={() => linkPatient(r, false)}
               disabled={linkingId === r.matchedCsr.id}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition-all cursor-pointer disabled:opacity-50 ml-auto ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg shadow-2xs inline-flex items-center gap-1.5 hover:shadow transition cursor-pointer disabled:opacity-50 ml-auto ${
                 isSecondEye
-                  ? "bg-purple-600 hover:bg-purple-700 text-white"
+                  ? "bg-[var(--violet)] hover:bg-[var(--violet-deep)] text-white"
                   : "btn btn-success"
               }`}
             >
@@ -1509,8 +1509,8 @@ export default function DoiChieuHisPage() {
           accent="dữ liệu HIS"
           description="Quét & đồng bộ tự động giữa danh sách tầm soát CSR và hệ thống HIS bệnh viện."
         />
-        <div className="card p-10 text-center max-w-2xl mx-auto space-y-4 my-8 bg-white border border-[var(--line)] rounded-2xl shadow-sm">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-sm">
+        <div className="card p-10 text-center max-w-2xl mx-auto space-y-4 my-8 bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--amber-soft)] text-[var(--amber-deep)] flex items-center justify-center mx-auto border border-[var(--amber)]/30 shadow-sm">
             <Database className="w-8 h-8" />
           </div>
           <h2 className="text-[18px] font-bold text-[var(--ink)]">
@@ -1551,34 +1551,34 @@ export default function DoiChieuHisPage() {
         <div className="bg-[var(--surface-soft)] p-1 rounded-xl inline-flex gap-1 border border-[var(--line)] max-w-full overflow-x-auto">
           <button
             onClick={() => setTab("today")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
-              tab === "today" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-white"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
+              tab === "today" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface)]"
             }`}
           >
-            <CalendarCheck className={`w-3.5 h-3.5 ${tab === "today" ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+            <CalendarCheck className={`w-3.5 h-3.5 ${tab === "today" ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
             <span>Mổ trong ngày</span>
-            <span className={`px-1.5 py-0.2 text-[9.5px] font-mono font-bold rounded ${
-              tab === "today" ? "bg-[var(--teal)] text-[var(--navy-ink)]" : "bg-emerald-100 text-emerald-800"
+            <span className={`px-1.5 py-0.2 text-[11px] font-mono font-bold rounded ${
+              tab === "today" ? "bg-[var(--teal)] text-[var(--navy-ink)]" : "bg-[var(--green)]/15 text-[var(--green-deep)]"
             }`}>
               Hôm nay
             </span>
           </button>
           <button
             onClick={() => setTab("batch")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
-              tab === "batch" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-white"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
+              tab === "batch" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface)]"
             }`}
           >
-            <Activity className={`w-3.5 h-3.5 ${tab === "batch" ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+            <Activity className={`w-3.5 h-3.5 ${tab === "batch" ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
             <span>Quét theo Đợt khám</span>
           </button>
           <button
             onClick={() => setTab("reverse")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
-              tab === "reverse" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-white"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
+              tab === "reverse" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface)]"
             }`}
           >
-            <Database className={`w-3.5 h-3.5 ${tab === "reverse" ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+            <Database className={`w-3.5 h-3.5 ${tab === "reverse" ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
             <span>Đối chiếu theo Tháng</span>
           </button>
         </div>
@@ -1588,14 +1588,14 @@ export default function DoiChieuHisPage() {
       {tab === "today" && (
         <div className="space-y-2.5">
           {/* Thanh điều khiển siêu tinh gọn */}
-          <div className="bg-white border border-[var(--line)] p-2 rounded-xl shadow-2xs flex flex-wrap items-center justify-between gap-2">
+          <div className="bg-[var(--surface)] border border-[var(--line)] p-2 rounded-xl shadow-2xs flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center bg-[var(--surface-soft)] rounded-lg border border-[var(--line)] p-0.5">
                 <button
                   type="button"
                   title="Ngày trước"
                   onClick={() => shiftDailyDate(-1)}
-                  className="p-1 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-white rounded transition-colors cursor-pointer"
+                  className="p-1 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
@@ -1609,7 +1609,7 @@ export default function DoiChieuHisPage() {
                   type="button"
                   title="Ngày sau"
                   onClick={() => shiftDailyDate(1)}
-                  className="p-1 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-white rounded transition-colors cursor-pointer"
+                  className="p-1 text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface)] rounded transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -1620,8 +1620,8 @@ export default function DoiChieuHisPage() {
                     setDailyDate(todayStr);
                     runDailyCheck(todayStr);
                   }}
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
-                    dailyDate === todayStr ? "bg-white text-[var(--navy)] shadow-2xs font-extrabold" : "text-[var(--mute)] hover:text-[var(--ink)]"
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold transition cursor-pointer ${
+                    dailyDate === todayStr ? "bg-[var(--surface)] text-[var(--navy)] shadow-2xs font-extrabold" : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
                 >
                   Hôm nay
@@ -1685,15 +1685,15 @@ export default function DoiChieuHisPage() {
 
           {/* Bảng kết quả danh sách mổ trong ngày */}
           {hasScannedDaily ? (
-            <div className="card p-0 overflow-hidden bg-white border border-[var(--line)] rounded-xl shadow-2xs">
+            <div className="card p-0 overflow-hidden bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-2xs">
               {/* Header Lọc & Tìm kiếm & Đồng bộ tất cả */}
               <div className="p-2 border-b border-[var(--line)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-[var(--surface-soft)]/60">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setDailyFilterStatus("all")}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      dailyFilterStatus === "all" ? "bg-[var(--navy)] text-white shadow-2xs" : "bg-white text-[var(--ink-soft)] hover:bg-slate-100 border border-[var(--line)]"
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                      dailyFilterStatus === "all" ? "bg-[var(--navy)] text-white shadow-2xs" : "bg-[var(--surface)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] border border-[var(--line)]"
                     }`}
                   >
                     Tất cả ({dailyCounts.all})
@@ -1703,15 +1703,15 @@ export default function DoiChieuHisPage() {
                       type="button"
                       onClick={() => setDailyFilterStatus("pending")}
                       title="Ca khuyết CCCD (chỉ khớp Họ tên + Năm sinh) cần xác nhận thủ công"
-                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
                         dailyFilterStatus === "pending"
-                          ? "bg-amber-600 text-white shadow-2xs"
-                          : "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300"
+                          ? "bg-[var(--amber)] text-white shadow-2xs"
+                          : "bg-[var(--amber-soft)] text-[var(--amber-deep)] hover:bg-[var(--amber)]/15 border border-[var(--amber)]/40"
                       }`}
                     >
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-[var(--amber-deep)]" />
                       <span>Chờ xác nhận</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "pending" ? "bg-white/25 text-white" : "bg-amber-200 text-amber-950"}`}>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono font-black ${dailyFilterStatus === "pending" ? "bg-white/25 text-white" : "bg-[var(--amber)]/25 text-[var(--amber-deep)]"}`}>
                         {dailyCounts.pending}
                       </span>
                     </button>
@@ -1720,12 +1720,13 @@ export default function DoiChieuHisPage() {
                     <button
                       type="button"
                       onClick={() => setDailyFilterStatus("unlinked")}
-                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        dailyFilterStatus === "unlinked" ? "bg-blue-600 text-white shadow-2xs" : "bg-white text-blue-800 hover:bg-blue-50 border border-blue-200"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "unlinked" ? "bg-[var(--navy)] text-white shadow-2xs" : "bg-[var(--surface)] text-[var(--navy)] hover:bg-[var(--navy-soft)] border border-[var(--navy-200)]"
                       }`}
                     >
-                      <span>⚡ Cần cập nhật CSR</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "unlinked" ? "bg-white/25 text-white" : "bg-blue-100 text-blue-900"}`}>
+                      <Zap aria-hidden="true" className="w-3.5 h-3.5" />
+                      <span>Cần cập nhật CSR</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono font-black ${dailyFilterStatus === "unlinked" ? "bg-white/25 text-white" : "bg-[var(--navy)]/10 text-[var(--navy)]"}`}>
                         {dailyCounts.unlinked}
                       </span>
                     </button>
@@ -1733,8 +1734,8 @@ export default function DoiChieuHisPage() {
                   <button
                     type="button"
                     onClick={() => setDailyFilterStatus("linked")}
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      dailyFilterStatus === "linked" ? "bg-emerald-600 text-white shadow-2xs" : "bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200"
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer ${
+                      dailyFilterStatus === "linked" ? "bg-[var(--green)] text-white shadow-2xs" : "bg-[var(--surface)] text-[var(--green-deep)] hover:bg-[var(--green-soft)] border border-[var(--green)]/30"
                     }`}
                   >
                     Đã lưu CSR ({dailyCounts.linked})
@@ -1743,13 +1744,13 @@ export default function DoiChieuHisPage() {
                     <button
                       type="button"
                       onClick={() => setDailyFilterStatus("mat2")}
-                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        dailyFilterStatus === "mat2" ? "bg-purple-700 text-white shadow-2xs" : "bg-white text-purple-900 hover:bg-purple-50 border border-purple-200"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "mat2" ? "bg-[var(--violet-deep)] text-white shadow-2xs" : "bg-[var(--surface)] text-[var(--violet-deep)] hover:bg-[var(--violet-soft)] border border-[var(--violet)]/30"
                       }`}
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Mắt 2</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "mat2" ? "bg-white/25 text-white" : "bg-purple-100 text-purple-900"}`}>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono font-black ${dailyFilterStatus === "mat2" ? "bg-white/25 text-white" : "bg-[var(--violet)]/15 text-[var(--violet-deep)]"}`}>
                         {dailyCounts.mat2}
                       </span>
                     </button>
@@ -1759,12 +1760,12 @@ export default function DoiChieuHisPage() {
                       type="button"
                       onClick={() => setDailyFilterStatus("nomatch")}
                       title="Ca mổ trên HIS không tìm thấy hồ sơ tầm soát CSR tương ứng"
-                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        dailyFilterStatus === "nomatch" ? "bg-[var(--ink-soft)] text-white shadow-2xs" : "bg-white text-[var(--ink-soft)] hover:bg-slate-100 border border-[var(--line)]"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "nomatch" ? "bg-[var(--ink-soft)] text-white shadow-2xs" : "bg-[var(--surface)] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] border border-[var(--line)]"
                       }`}
                     >
                       <span>Chưa khớp CSR</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "nomatch" ? "bg-white/25 text-white" : "bg-slate-100 text-[var(--ink-soft)]"}`}>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono font-black ${dailyFilterStatus === "nomatch" ? "bg-white/25 text-white" : "bg-[var(--surface-hover)] text-[var(--ink-soft)]"}`}>
                         {dailyCounts.nomatch}
                       </span>
                     </button>
@@ -1774,13 +1775,13 @@ export default function DoiChieuHisPage() {
                       type="button"
                       onClick={() => setDailyFilterStatus("choMo")}
                       title="Đã nhập viện / có chỉ định phẫu thuật trong ngày, phòng mổ chưa ghi sổ"
-                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        dailyFilterStatus === "choMo" ? "bg-[var(--amber-deep)] text-white shadow-2xs" : "bg-white text-[var(--amber-deep)] hover:bg-[var(--amber-soft)] border border-[var(--amber)]/40"
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        dailyFilterStatus === "choMo" ? "bg-[var(--amber-deep)] text-white shadow-2xs" : "bg-[var(--surface)] text-[var(--amber-deep)] hover:bg-[var(--amber-soft)] border border-[var(--amber)]/40"
                       }`}
                     >
                       <Clock className="w-3.5 h-3.5" />
                       <span>Chờ mổ</span>
-                      <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ${dailyFilterStatus === "choMo" ? "bg-white/25 text-white" : "bg-[var(--amber-soft)] text-[var(--amber-deep)]"}`}>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono font-black ${dailyFilterStatus === "choMo" ? "bg-white/25 text-white" : "bg-[var(--amber-soft)] text-[var(--amber-deep)]"}`}>
                         {dailyCounts.choMo}
                       </span>
                     </button>
@@ -1795,7 +1796,7 @@ export default function DoiChieuHisPage() {
                       value={dailySearch}
                       onChange={(e) => setDailySearch(e.target.value)}
                       placeholder="Tìm tên, CCCD, Mã HIS..."
-                      className="input-field pl-7 pr-2.5 h-8 text-xs w-full bg-white rounded-lg border border-[var(--line-strong)]"
+                      className="input-field pl-7 pr-2.5 h-8 text-xs w-full bg-[var(--surface)] rounded-lg border border-[var(--line-strong)]"
                     />
                   </div>
 
@@ -1842,7 +1843,7 @@ export default function DoiChieuHisPage() {
             </div>
           ) : (
             /* Khung hướng dẫn ban đầu trước khi quét */
-            <div className="card p-6 text-center max-w-md mx-auto space-y-2.5 my-4 bg-white border border-[var(--line)] rounded-xl shadow-2xs">
+            <div className="card p-6 text-center max-w-md mx-auto space-y-2.5 my-4 bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-2xs">
               <div className="w-11 h-11 rounded-xl bg-[var(--teal-soft)] text-[var(--teal-deep)] flex items-center justify-center mx-auto border border-[var(--teal)]/25 shadow-2xs">
                 <CalendarCheck className="w-5 h-5" />
               </div>
@@ -1892,7 +1893,7 @@ export default function DoiChieuHisPage() {
 
               <div className="w-full sm:w-[240px]">
                 <label className="text-[12px] font-bold text-[var(--ink-soft)] mb-1.5 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[var(--teal)]" /> Tháng phẫu thuật HIS
+                  <Calendar className="w-3.5 h-3.5 text-[var(--teal-ink)]" /> Tháng phẫu thuật HIS
                 </label>
                 <Dropdown
                   value={batchMonth}
@@ -1911,7 +1912,7 @@ export default function DoiChieuHisPage() {
               disabled={batchLoading || !selectedBuoiId}
               className="btn btn-primary h-[42px] px-6 rounded-[var(--r-md)] font-bold text-sm shrink-0 justify-center gap-2"
             >
-              {batchLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[var(--teal)]" /> : <Play className="w-4 h-4 fill-current" />}
+              {batchLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[var(--teal-ink)]" /> : <Play className="w-4 h-4 fill-current" />}
               {batchLoading ? "Đang quét HIS..." : "Quét đối chiếu ngay"}
             </button>
           </div>
@@ -1944,10 +1945,10 @@ export default function DoiChieuHisPage() {
               <div className="relative p-6 sm:p-9">
                 <div className="flex flex-col items-center text-center max-w-xl mx-auto mb-7">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[var(--navy)] to-[var(--teal-deep)] text-white shadow-[var(--shadow-lg)] ring-4 ring-white flex items-center justify-center mb-4">
-                    <Sparkles className="w-7 h-7 text-[var(--teal)] animate-pulse" />
+                    <Sparkles className="w-7 h-7 text-[var(--teal-ink)] animate-pulse" />
                   </div>
                   <h3 className="font-serif text-xl sm:text-[26px] font-bold text-[var(--ink)] tracking-tight leading-tight">
-                    Sẵn sàng đối chiếu <span className="italic font-normal text-[var(--teal)]">dữ liệu HIS</span>
+                    Sẵn sàng đối chiếu <span className="italic font-normal text-[var(--teal-ink)]">dữ liệu HIS</span>
                   </h3>
                   <p className="text-[13px] text-[var(--mute)] leading-relaxed mt-2">
                     Chọn buổi khám tầm soát ở trên rồi nhấn <strong className="text-[var(--navy)] font-semibold">Quét đối chiếu ngay</strong> — hệ thống tự chạy quy trình 3 bước:
@@ -1962,7 +1963,7 @@ export default function DoiChieuHisPage() {
                     { n: 3, chip: "bg-[var(--gold)] text-white", t: "Xác nhận Phẫu thuật", tbl: "QLyPhongMo", d: "Truy vấn lịch sử mổ & cập nhật trạng thái trên" },
                   ].map((s, idx) => (
                     <div key={s.n} className="flex-1 flex items-stretch">
-                      <div className="flex-1 rounded-[var(--r-md)] bg-white/80 backdrop-blur-sm border border-[var(--line)] p-4 text-left hover:border-[var(--teal)] hover:shadow-[var(--shadow-sm)] transition-all">
+                      <div className="flex-1 rounded-[var(--r-md)] bg-white/80 backdrop-blur-sm border border-[var(--line)] p-4 text-left hover:border-[var(--teal)] hover:shadow-[var(--shadow-sm)] transition">
                         <div className="flex items-center gap-2.5 mb-2">
                           <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold font-mono text-[12px] shrink-0 shadow-[var(--shadow-sm)] ${s.chip}`}>{s.n}</div>
                           <div className="font-bold text-[var(--ink)] text-[13.5px]">{s.t}</div>
@@ -2015,7 +2016,7 @@ export default function DoiChieuHisPage() {
                   { k: "not_found", label: `Chưa thấy (${batchResults.filter((r) => !r.found).length})`, on: "bg-[var(--ink-soft)] text-white" },
                 ] as const).map((f) => (
                   <button key={f.k} onClick={() => setBatchFilterStatus(f.k)}
-                    className={`px-3 py-1.5 rounded-[var(--r-sm)] text-[12px] font-bold transition-all whitespace-nowrap ${batchFilterStatus === f.k ? `${f.on} shadow-[var(--shadow-sm)]` : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}>
+                    className={`px-3 py-1.5 rounded-[var(--r-sm)] text-[12px] font-bold transition whitespace-nowrap ${batchFilterStatus === f.k ? `${f.on} shadow-[var(--shadow-sm)]` : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}>
                     {f.label}
                   </button>
                 ))}
@@ -2088,7 +2089,7 @@ export default function DoiChieuHisPage() {
                 disabled={revLoading}
                 className="btn btn-primary h-[42px] px-6 rounded-[var(--r-md)] font-bold text-sm gap-2"
               >
-                {revLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[var(--teal)]" /> : <Download className="w-4 h-4" />}
+                {revLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[var(--teal-ink)]" /> : <Download className="w-4 h-4" />}
                 {revLoading ? "Đang tải danh sách HIS..." : "Tải danh sách mổ HIS"}
               </button>
 
@@ -2124,10 +2125,10 @@ export default function DoiChieuHisPage() {
               <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full bg-[var(--teal)]/5 blur-3xl pointer-events-none" />
               <div className="relative p-6 sm:p-9 text-center flex flex-col items-center max-w-xl mx-auto">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[var(--navy)] to-[var(--teal-deep)] text-white shadow-[var(--shadow-lg)] ring-4 ring-white flex items-center justify-center mb-4">
-                  <Database className="w-7 h-7 text-[var(--teal)] animate-pulse" />
+                  <Database className="w-7 h-7 text-[var(--teal-ink)] animate-pulse" />
                 </div>
                 <h3 className="font-serif text-xl sm:text-[26px] font-bold text-[var(--ink)] tracking-tight leading-tight">
-                  Đối chiếu ngược từ <span className="italic font-normal text-[var(--teal)]">danh sách mổ HIS</span>
+                  Đối chiếu ngược từ <span className="italic font-normal text-[var(--teal-ink)]">danh sách mổ HIS</span>
                 </h3>
                 <p className="text-[13px] text-[var(--mute)] leading-relaxed mt-2 mb-6">
                   Chọn tháng phẫu thuật ở trên rồi nhấn <strong className="text-[var(--navy)] font-semibold">Tải danh sách mổ HIS</strong> — hệ thống kéo toàn bộ ca mổ từ HIS và tự động so khớp với bệnh nhân đã tầm soát trong CSR.
@@ -2171,14 +2172,15 @@ export default function DoiChieuHisPage() {
 
               <div className="flex items-center gap-1 bg-[var(--surface-soft)] p-1 rounded-[var(--r-md)] border border-[var(--line)] shrink-0 overflow-x-auto">
                 {([
-                  { k: "all", label: `Tất cả (${revList.filter((r) => r.matchedCsr).length})`, on: "bg-[var(--navy)] text-white" },
-                  { k: "pending", label: `⚠ Chờ xác nhận (${revList.filter((r) => (r.matchedCsr?.matchType === "partial" || r.matchedCsr?.isKhuyetCccd) && !r.matchedCsr?.confirmed).length})`, on: "bg-amber-600 text-white" },
-                  { k: "unlinked", label: `⚡ Cần cập nhật (${revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo && r.matchedCsr.matchType === "exact").length})`, on: "bg-blue-600 text-white" },
-                  { k: "linked", label: `Đã liên kết (${revList.filter((r) => r.matchedCsr?.daMo || r.matchedCsr?.confirmed).length})`, on: "bg-[var(--gold)] text-white" },
-                  { k: "mat2", label: `👁️ Mắt 2 (${revList.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length})`, on: "bg-purple-700 text-white" },
+                  { k: "all", label: `Tất cả (${revList.filter((r) => r.matchedCsr).length})`, on: "bg-[var(--navy)] text-white", icon: null },
+                  { k: "pending", icon: AlertTriangle, label: `Chờ xác nhận (${revList.filter((r) => (r.matchedCsr?.matchType === "partial" || r.matchedCsr?.isKhuyetCccd) && !r.matchedCsr?.confirmed).length})`, on: "bg-[var(--amber)] text-white" },
+                  { k: "unlinked", icon: Zap, label: `Cần cập nhật (${revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo && r.matchedCsr.matchType === "exact").length})`, on: "bg-[var(--navy)] text-white" },
+                  { k: "linked", icon: null, label: `Đã liên kết (${revList.filter((r) => r.matchedCsr?.daMo || r.matchedCsr?.confirmed).length})`, on: "bg-[var(--gold)] text-white" },
+                  { k: "mat2", icon: Eye, label: `Mắt 2 (${revList.filter((r) => r.isMat2 || (r.lanMo && r.lanMo >= 2)).length})`, on: "bg-[var(--violet-deep)] text-white" },
                 ] as const).filter((f) => f.k === "all" || !f.label.includes("(0)")).map((f) => (
                   <button key={f.k} onClick={() => setRevFilterStatus(f.k)}
-                    className={`px-3 py-1.5 rounded-[var(--r-sm)] text-[12px] font-bold transition-all whitespace-nowrap cursor-pointer ${revFilterStatus === f.k ? `${f.on} shadow-[var(--shadow-sm)]` : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}>
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--r-sm)] text-[12px] font-bold transition-colors whitespace-nowrap cursor-pointer ${revFilterStatus === f.k ? `${f.on} shadow-[var(--shadow-sm)]` : "text-[var(--ink-soft)] hover:text-[var(--ink)]"}`}>
+                    {f.icon && <f.icon aria-hidden="true" className="w-3.5 h-3.5 shrink-0" />}
                     {f.label}
                   </button>
                 ))}
@@ -2195,7 +2197,8 @@ export default function DoiChieuHisPage() {
                   Danh sách phẫu thuật trên HIS ({filteredRevList.length} / {revList.length} ca)
                 </span>
                 <span className="text-[11.5px] text-[var(--teal-deep)] font-semibold bg-[var(--teal-soft)] px-3 py-1 rounded-full border border-[var(--teal)]/25">
-                  💡 Ưu tiên hiển thị các ca khớp tầm soát
+                  <Lightbulb aria-hidden="true" className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />
+                  Ưu tiên hiển thị các ca khớp tầm soát
                 </span>
               </div>
 

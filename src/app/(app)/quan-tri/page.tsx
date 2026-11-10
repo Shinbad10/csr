@@ -118,14 +118,14 @@ const ALL_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "HCNS", "IT", "QuanLy"
 const IT_ROLES = ["BacSi", "MKT", "TuVanVien", "KeToan", "HCNS", "IT"];
 
 const ROLE_BADGES: Record<string, { label: string; cls: string }> = {
-  QuanLy: { label: "Quản lý hệ thống", cls: "bg-purple-50 text-purple-700 border-purple-200" },
-  IT: { label: "Quản trị viên", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-  BacSi: { label: "Bác sĩ", cls: "bg-teal-50 text-teal-700 border-teal-200" },
-  TuVanVien: { label: "Tư vấn viên", cls: "bg-cyan-50 text-cyan-700 border-cyan-200" },
-  MKT: { label: "Marketing (MKT)", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-  KeToan: { label: "Kế toán", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  HCNS: { label: "HCNS", cls: "bg-slate-100 text-slate-700 border-slate-200" },
-  CSKH: { label: "Marketing (MKT)", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  QuanLy: { label: "Quản lý hệ thống", cls: "bg-[var(--violet-soft)] text-[var(--violet-deep)] border-[var(--violet)]/30" },
+  IT: { label: "Quản trị viên", cls: "bg-[var(--navy-soft)] text-[var(--navy)] border-[var(--navy-200)]" },
+  BacSi: { label: "Bác sĩ", cls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/35" },
+  TuVanVien: { label: "Tư vấn viên", cls: "bg-[var(--teal-soft)] text-cyan-700 border-[var(--teal)]/35" },
+  MKT: { label: "Marketing (MKT)", cls: "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/30" },
+  KeToan: { label: "Kế toán", cls: "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)]/30" },
+  HCNS: { label: "HCNS", cls: "bg-[var(--surface-hover)] text-[var(--ink-soft)] border-[var(--line)]" },
+  CSKH: { label: "Marketing (MKT)", cls: "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/30" },
 };
 
 /** Tạo mật khẩu tạm ngẫu nhiên an toàn trên client */
@@ -165,7 +165,7 @@ function QtPill({ tone, children }: { tone: "active" | "draft" | "pending" | "ex
     expired: "bg-[var(--rose-soft)] text-[var(--rose)]",
   }[tone];
   return (
-    <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.05em] px-2 py-[3px] rounded-[6px] whitespace-nowrap ${cls}`}>
+    <span className={`inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.05em] px-2 py-[3px] rounded-[6px] whitespace-nowrap ${cls}`}>
       <span className="w-[5px] h-[5px] rounded-full bg-current" />
       {children}
     </span>
@@ -193,7 +193,7 @@ function QtStat({
   return (
     <div className="relative bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-4 py-3.5 overflow-hidden">
       <span className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${bar}`} />
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mute)]">
+      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--mute)]">
         <Icon className={`w-3.5 h-3.5 ${ico}`} />
         {label}
       </div>
@@ -329,7 +329,7 @@ function AuditDetail({ hanhDong, raw }: { hanhDong: string; raw: string | null |
           );
         })}
         {keys.length > shown.length && (
-          <span className="font-mono text-[10.5px] font-bold text-[var(--mute)] shrink-0">+{keys.length - shown.length}</span>
+          <span className="font-mono text-[11px] font-bold text-[var(--mute)] shrink-0">+{keys.length - shown.length}</span>
         )}
       </div>
     );
@@ -377,7 +377,7 @@ function QtFilter({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-9 w-full appearance-none pl-8 pr-7 text-[12.5px] font-medium cursor-pointer rounded-[10px] border outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] ${
+        className={`h-9 w-full appearance-none pl-8 pr-7 text-[12.5px] font-medium cursor-pointer rounded-[10px] border outline-none transition focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] ${
           value
             ? "bg-[var(--navy-50)] border-[var(--navy)] text-[var(--navy)] font-semibold"
             : "bg-[var(--surface-soft)] border-[var(--line)] text-[var(--ink-soft)]"
@@ -392,12 +392,12 @@ function QtFilter({
 
 /** Nhãn vai trò: Quản lý = tím (màu "thanh lý" chuẩn), Quản trị viên = navy, còn lại trung tính. */
 function roleTagCls(role: string) {
-  if (role === "QuanLy") return "bg-[#f3eaf8] text-[#7c3aed]";
+  if (role === "QuanLy") return "bg-[var(--violet-soft)] text-[var(--violet)]";
   if (role === "IT") return "bg-[var(--navy-100)] text-[var(--navy)]";
   return "bg-[var(--line-soft)] text-[var(--ink-soft)]";
 }
 const ROLE_TAG_BASE =
-  "inline-flex items-center px-2 py-[3px] rounded-[6px] text-[10px] font-bold uppercase tracking-[0.05em] whitespace-nowrap";
+  "inline-flex items-center px-2 py-[3px] rounded-[6px] text-[11px] font-bold uppercase tracking-[0.05em] whitespace-nowrap";
 
 export default function QuanTriPage() {
   const { data: session } = useSession();
@@ -770,12 +770,12 @@ export default function QuanTriPage() {
         meta: { width: "23%" },
         cell: ({ row }) => (
           <div className="flex items-center gap-3 min-w-0">
-            <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[10.5px] font-extrabold text-[var(--navy)] shrink-0">
+            <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[11px] font-extrabold text-[var(--navy)] shrink-0">
               {row.original.id}
             </span>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-[var(--ink)] truncate">{row.original.ten}</div>
-              <div className="mt-0.5 flex items-center gap-1 text-[10.5px] text-[var(--mute)] min-w-0">
+              <div className="mt-0.5 flex items-center gap-1 text-[11px] text-[var(--mute)] min-w-0">
                 <MapPin className="w-3 h-3 shrink-0" />
                 <span className="truncate">{row.original.diaChi || "Chưa có địa chỉ"}</span>
               </div>
@@ -814,7 +814,7 @@ export default function QuanTriPage() {
           return c.bhxhConfigured ? (
             <div className="space-y-1 min-w-0">
               <QtPill tone="active">Đã cấu hình</QtPill>
-              <div className="font-mono text-[10.5px] text-[var(--mute)] truncate">
+              <div className="font-mono text-[11px] text-[var(--mute)] truncate">
                 CSKCB <span className="text-[var(--ink-soft)] font-semibold">{c.bhxhMaCSKCB || "—"}</span>
                 {c.che?.bhxhUser && <> · {c.che.bhxhUser}</>}
               </div>
@@ -840,13 +840,13 @@ export default function QuanTriPage() {
                 <QtPill tone="active">Đã kết nối</QtPill>
                 <span title={maHoa ? "Thông tin kết nối đã mã hoá" : "Thông tin kết nối còn dạng rõ, chưa mã hoá"}>
                   {maHoa ? (
-                    <Lock className="w-3 h-3 text-[var(--teal)]" />
+                    <Lock className="w-3 h-3 text-[var(--teal-ink)]" />
                   ) : (
                     <LockOpen className="w-3 h-3 text-[var(--amber)]" />
                   )}
                 </span>
               </div>
-              <div className="font-mono text-[10.5px] text-[var(--mute)] truncate">
+              <div className="font-mono text-[11px] text-[var(--mute)] truncate">
                 {c.che?.hisDbName || "••••••"} @ {c.che?.hisHost || "••••••"}:{c.che?.hisPort || "1433"}
               </div>
             </div>
@@ -959,12 +959,12 @@ export default function QuanTriPage() {
           const initials = ten.split(/\s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() || "?";
           return (
             <div className="flex items-center gap-3 min-w-0 pr-2">
-              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] flex items-center justify-center font-mono text-[10.5px] font-bold shrink-0">
+              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal-ink)] flex items-center justify-center font-mono text-[11px] font-bold shrink-0">
                 {initials}
               </span>
               <div className="min-w-0">
                 <div className="text-[13px] font-semibold text-[var(--ink)] truncate">{ten}</div>
-                <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-[var(--mute)] min-w-0">
+                <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[var(--mute)] min-w-0">
                   <span className="font-mono font-semibold text-[var(--teal-deep)] shrink-0">@{row.original.tenDangNhap}</span>
                   {email && (
                     <>
@@ -1001,7 +1001,7 @@ export default function QuanTriPage() {
             <span className="text-[12.5px] text-[var(--ink-soft)] truncate block">{String(getValue())}</span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--navy)]">
-              <Server className="w-3 h-3 text-[var(--teal)]" />
+              <Server className="w-3 h-3 text-[var(--teal-ink)]" />
               Toàn hệ thống
             </span>
           ),
@@ -1056,7 +1056,7 @@ export default function QuanTriPage() {
               <button
                 type="button"
                 onClick={() => setInviteModal(u)}
-                className="h-6 px-2 inline-flex items-center gap-1 rounded-[6px] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white text-[10.5px] font-bold transition-colors cursor-pointer"
+                className="h-6 px-2 inline-flex items-center gap-1 rounded-[6px] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white text-[11px] font-bold transition-colors cursor-pointer"
                 title="Gửi email mời tham gia qua SMTP no-reply@visicare.com.vn"
               >
                 <Send className="w-3 h-3" />
@@ -1130,7 +1130,7 @@ export default function QuanTriPage() {
         size: 170,
         meta: { width: "170px" },
         cell: ({ row }) => (
-          <span className="inline-flex items-center max-w-full h-7 px-2 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] font-mono text-[10.5px] font-extrabold text-[var(--navy)] whitespace-nowrap truncate">
+          <span className="inline-flex items-center max-w-full h-7 px-2 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] font-mono text-[11px] font-extrabold text-[var(--navy)] whitespace-nowrap truncate">
             {row.original.maNV}
           </span>
         ),
@@ -1146,7 +1146,7 @@ export default function QuanTriPage() {
           const initials = ten.split(/s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() || "BS";
           return (
             <div className="flex items-center gap-3 min-w-0 pr-2">
-              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] flex items-center justify-center font-mono text-[10.5px] font-bold shrink-0">
+              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal-ink)] flex items-center justify-center font-mono text-[11px] font-bold shrink-0">
                 {initials}
               </span>
               <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{ten}</span>
@@ -1165,7 +1165,7 @@ export default function QuanTriPage() {
             <span className="text-[12.5px] text-[var(--ink-soft)] truncate block">{String(getValue())}</span>
           ) : (
             <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[var(--navy)]">
-              <Server className="w-3 h-3 text-[var(--teal)]" />
+              <Server className="w-3 h-3 text-[var(--teal-ink)]" />
               Toàn hệ thống
             </span>
           ),
@@ -1245,7 +1245,7 @@ export default function QuanTriPage() {
           return (
             <div className="leading-tight">
               <div className="font-mono text-[11.5px] font-semibold text-[var(--ink)]">{ngay || t}</div>
-              {ngay && <div className="font-mono text-[10.5px] text-[var(--mute)] mt-0.5">{gio}</div>}
+              {ngay && <div className="font-mono text-[11px] text-[var(--mute)] mt-0.5">{gio}</div>}
             </div>
           );
         },
@@ -1262,7 +1262,7 @@ export default function QuanTriPage() {
           return (
             <div className="min-w-0 leading-tight">
               <div className="text-[12.5px] font-semibold text-[var(--ink)] truncate">{ten || ma}</div>
-              {ten && <div className="font-mono text-[10.5px] text-[var(--navy)] mt-0.5">{ma}</div>}
+              {ten && <div className="font-mono text-[11px] text-[var(--navy)] mt-0.5">{ma}</div>}
             </div>
           );
         },
@@ -1353,9 +1353,9 @@ export default function QuanTriPage() {
             type="button"
             onClick={() => load(true)}
             title="Làm mới dữ liệu"
-            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] px-3 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition-all cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] px-3 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-[var(--teal)] ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-[var(--teal-ink)] ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Làm mới</span>
           </button>
         }
@@ -1370,17 +1370,17 @@ export default function QuanTriPage() {
               <button
                 key={k}
                 onClick={() => changeTab(k as any)}
-                className={`relative inline-flex items-center gap-2 h-8 px-3.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`relative inline-flex items-center gap-2 h-8 px-3.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition cursor-pointer ${
                   on
                     ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)]"
                     : "text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface)]"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${on ? "text-[var(--teal)]" : ""}`} />
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${on ? "text-[var(--teal-ink)]" : ""}`} />
                 <span>{label}</span>
                 {count != null && (
                   <span
-                    className={`font-mono text-[10px] font-bold px-1.5 py-px rounded-[6px] tabular-nums ${
+                    className={`font-mono text-[11px] font-bold px-1.5 py-px rounded-[6px] tabular-nums ${
                       on ? "bg-white/15 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"
                     }`}
                   >
@@ -1436,14 +1436,14 @@ export default function QuanTriPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-4 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] flex items-center justify-center shrink-0 shadow-[var(--navy-shadow)]">
-                    <Mail className="w-4 h-4 text-[var(--teal)]" />
+                    <Mail className="w-4 h-4 text-[var(--teal-ink)]" />
                   </span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[12.5px] font-bold text-[var(--ink)]">Cổng gửi email thư mời</span>
                       <QtPill tone="active">Sẵn sàng gửi</QtPill>
                     </div>
-                    <div className="mt-0.5 font-mono text-[10.5px] text-[var(--mute)] truncate">
+                    <div className="mt-0.5 font-mono text-[11px] text-[var(--mute)] truncate">
                       {smtpStatus?.host || "mail.visicare.com.vn"}:{smtpStatus?.port || 465} (SSL) · {smtpStatus?.from || "no-reply@visicare.com.vn"}
                     </div>
                   </div>
@@ -1453,19 +1453,19 @@ export default function QuanTriPage() {
                     type="button"
                     onClick={checkSmtpConnection}
                     disabled={checkingSmtp}
-                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition-all cursor-pointer"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition cursor-pointer"
                     title="Kiểm tra kết nối tới mail.visicare.com.vn"
                   >
-                    {checkingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
+                    {checkingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
                     <span>Kiểm tra kết nối</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSmtpTestModal(true)}
-                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
                     title="Gửi thư thử nghiệm"
                   >
-                    <Send className="w-3.5 h-3.5 text-[var(--teal)]" />
+                    <Send className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
                     <span>Gửi thử nghiệm</span>
                   </button>
                 </div>
@@ -1482,7 +1482,7 @@ export default function QuanTriPage() {
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
                         placeholder="Tìm tên, mã NV, đăng nhập, email…"
-                        className="h-9 w-full pl-8 pr-8 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
+                        className="h-9 w-full pl-8 pr-8 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
                       />
                       {userSearch && (
                         <button
@@ -1528,9 +1528,9 @@ export default function QuanTriPage() {
                   <button
                     type="button"
                     onClick={() => setModal({ type: "user" })}
-                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer whitespace-nowrap shrink-0"
+                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer whitespace-nowrap shrink-0"
                   >
-                    <Plus className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" />
+                    <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" />
                     <span>Thêm tài khoản</span>
                   </button>
                 </div>
@@ -1546,15 +1546,15 @@ export default function QuanTriPage() {
                       <button
                         type="button"
                         onClick={() => setBulkInviteModal(true)}
-                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
                       >
-                        <Send className="w-3.5 h-3.5 text-[var(--teal)]" />
+                        <Send className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
                         Gửi thư mời hàng loạt (<span className="font-mono">{selectedUsers.size}</span>)
                       </button>
                       <button
                         type="button"
                         onClick={bulkDeleteUsers}
-                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] text-[12px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition-all cursor-pointer"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] text-[12px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         Xoá (<span className="font-mono">{selectedUsers.size}</span>)
@@ -1571,7 +1571,7 @@ export default function QuanTriPage() {
                 )}
 
                 {/* Mobile: card list */}
-                <div className="md:hidden divide-y divide-[var(--line-soft)] bg-white">
+                <div className="md:hidden divide-y divide-[var(--line-soft)] bg-[var(--surface)]">
                   {filteredUsers.length === 0 ? (
                     <div className="py-16 text-center text-[var(--mute)] text-[13px]">
                       Không tìm thấy tài khoản nào khớp bộ lọc.
@@ -1619,8 +1619,8 @@ export default function QuanTriPage() {
                           <div className="flex items-center justify-between pt-2 border-t border-[var(--line-soft)]">
                             <div>
                               {loiMoi?.ok ? (
-                                <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-teal-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                                <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--teal-deep)]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" />
                                   Đã gửi thư mời
                                 </span>
                               ) : (
@@ -1672,7 +1672,7 @@ export default function QuanTriPage() {
                     <b className="font-mono text-[var(--ink)]">{regularUsers.length}</b> tài khoản
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-[var(--teal)]" /> Mật khẩu được băm, không thể xem lại
+                    <Lock className="w-3 h-3 text-[var(--teal-ink)]" /> Mật khẩu được băm, không thể xem lại
                   </span>
                 </div>
               </div>
@@ -1721,14 +1721,14 @@ export default function QuanTriPage() {
                       value={cosoSearch}
                       onChange={(e) => setCosoSearch(e.target.value)}
                       placeholder="Tìm theo mã, tên, địa chỉ cơ sở…"
-                      className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
+                      className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
                     />
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     {selectedCosos.size > 0 && !isIT && (
                       <button
                         onClick={bulkDeleteCosos}
-                        className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] text-[12.5px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition-all cursor-pointer"
+                        className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] text-[12.5px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Xoá <span className="font-mono">{selectedCosos.size}</span> đã chọn
                       </button>
@@ -1736,9 +1736,9 @@ export default function QuanTriPage() {
                     {!isIT && (
                       <button
                         onClick={() => setModal({ type: "coso" })}
-                        className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
+                        className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
                       >
-                        <Plus className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" /> Thêm cơ sở y tế
+                        <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" /> Thêm cơ sở y tế
                       </button>
                     )}
                   </div>
@@ -1764,7 +1764,7 @@ export default function QuanTriPage() {
                             }}
                           />
                         )}
-                        <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[10.5px] font-extrabold text-[var(--navy)] shrink-0">
+                        <span className="w-9 h-9 rounded-[8px] bg-[var(--surface-soft)] border border-[var(--line)] flex items-center justify-center font-mono text-[11px] font-extrabold text-[var(--navy)] shrink-0">
                           {c.id}
                         </span>
                         <div className="min-w-0 flex-1 space-y-1.5">
@@ -1823,7 +1823,7 @@ export default function QuanTriPage() {
                     )}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-[var(--teal)]" /> Thông tin kết nối được mã hoá, chỉ hiện bản che bớt
+                    <Lock className="w-3 h-3 text-[var(--teal-ink)]" /> Thông tin kết nối được mã hoá, chỉ hiện bản che bớt
                   </span>
                 </div>
               </div>
@@ -1845,7 +1845,7 @@ export default function QuanTriPage() {
                       value={bacsiSearch}
                       onChange={(e) => setBacsiSearch(e.target.value)}
                       placeholder="Tìm theo tên hoặc mã bác sĩ…"
-                      className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
+                      className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
                     />
                   </div>
                   {!isIT && (
@@ -1887,9 +1887,9 @@ export default function QuanTriPage() {
                       }
                     }}
                     disabled={syncingBacSi}
-                    className="h-9 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition-all cursor-pointer whitespace-nowrap"
+                    className="h-9 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition cursor-pointer whitespace-nowrap"
                   >
-                    {syncingBacSi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
+                    {syncingBacSi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
                     <span>Đồng bộ từ HIS DMNhanSu</span>
                   </button>
                   <button
@@ -1906,9 +1906,9 @@ export default function QuanTriPage() {
                         } as any,
                       })
                     }
-                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer whitespace-nowrap"
+                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer whitespace-nowrap"
                   >
-                    <Plus className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" />
+                    <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" />
                     <span>Thêm bác sĩ</span>
                   </button>
                 </div>
@@ -1942,7 +1942,7 @@ export default function QuanTriPage() {
                     value={auditSearch}
                     onChange={(e) => setAuditSearch(e.target.value)}
                     placeholder="Tìm theo người dùng, bảng, bản ghi…"
-                    className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
+                    className="h-9 w-full pl-8 pr-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)]"
                   />
                 </div>
                 <QtFilter icon={Filter} value={auditFilterHanhDong} onChange={setAuditFilterHanhDong} className="w-full sm:w-[190px]">
@@ -2037,7 +2037,7 @@ export default function QuanTriPage() {
               </button>
               <button
                 onClick={confirmDialog.onConfirm}
-                className="btn px-5 py-2.5 font-bold text-white bg-[var(--rose)] hover:bg-[#e11d48] rounded-xl shadow-xs"
+                className="btn px-5 py-2.5 font-bold text-white bg-[var(--rose)] hover:bg-[var(--rose)] rounded-xl shadow-xs"
               >
                 Xác nhận xóa
               </button>
@@ -2118,16 +2118,16 @@ function InviteUserModal({
       maxWidth="w-[95%] max-w-[560px]"
       noPadding
     >
-      <form onSubmit={handleSend} className="p-5 sm:p-7 space-y-5 bg-white">
+      <form onSubmit={handleSend} className="p-5 sm:p-7 space-y-5 bg-[var(--surface)]">
         {err && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-[13px] font-semibold text-rose-700 flex items-center gap-2">
+          <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose-deep)] flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{err}</span>
           </div>
         )}
 
         {/* Card Tóm tắt nhân sự — Chuẩn VISIHUB */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50/30 to-teal-50/20 border border-slate-200/90 flex items-center gap-3.5">
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50/30 to-teal-50/20 border border-[var(--line)]/90 flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--navy)] to-[#020f5c] text-white flex items-center justify-center font-bold text-[15px] shadow-sm shadow-[var(--navy)]/30 shrink-0">
             {user.hoTen
               .trim()
@@ -2139,15 +2139,15 @@ function InviteUserModal({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-[15px] text-slate-900 truncate">{user.hoTen}</span>
-              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
+              <span className="font-bold text-[15px] text-[var(--ink)] truncate">{user.hoTen}</span>
+              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/35">
                 {user.maNV}
               </span>
-              <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--navy-soft)] text-[var(--navy)] border border-[var(--navy-200)]">
                 @{user.tenDangNhap}
               </span>
             </div>
-            <div className="text-[12px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+            <div className="text-[12px] text-[var(--mute)] mt-1 flex flex-wrap items-center gap-2">
               <span>{roleLabel(user.vaiTro)}</span>
               <span>•</span>
               <span>{user.coSo?.ten || "Toàn hệ thống"}</span>
@@ -2157,37 +2157,37 @@ function InviteUserModal({
 
         {/* Ô nhập Email */}
         <div>
-          <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-            Địa chỉ Email nhận thư mời <span className="text-rose-500">*</span>
+          <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
+            Địa chỉ Email nhận thư mời <span className="text-[var(--rose)]">*</span>
           </label>
           <div className="relative">
-            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Mail className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="VD: nguyenvana@visicare.com.vn"
-              className="input-field pl-9 pr-3 h-10 font-medium text-[13.5px] w-full rounded-xl bg-white border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+              className="input-field pl-9 pr-3 h-10 font-medium text-[13.5px] w-full rounded-xl bg-[var(--surface)] border-[var(--line)] focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy)]/10"
             />
           </div>
-          <p className="text-[11.5px] text-slate-400 mt-1">
+          <p className="text-[11.5px] text-[var(--mute)] mt-1">
             Email cá nhân hoặc công vụ của nhân sự để nhận thông tin đăng nhập tự động
           </p>
         </div>
 
         {/* Tùy chọn Mật khẩu tạm */}
-        <div className="p-4 rounded-2xl border border-blue-100 bg-blue-50/40 space-y-3">
+        <div className="p-4 rounded-2xl border border-[var(--navy-200)] bg-[var(--navy-soft)]/40 space-y-3">
           <label className="flex items-start gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={capMatKhauMoi}
               onChange={(e) => setCapMatKhauMoi(e.target.checked)}
-              className="mt-0.5 rounded-[4px] border-slate-300 text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer"
+              className="mt-0.5 rounded-[4px] border-[var(--line-strong)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer"
             />
             <div>
-              <div className="text-[13px] font-bold text-slate-900">Cấp mật khẩu tạm mới & gửi kèm thư mời</div>
-              <div className="text-[11.5px] text-slate-500">
+              <div className="text-[13px] font-bold text-[var(--ink)]">Cấp mật khẩu tạm mới & gửi kèm thư mời</div>
+              <div className="text-[11.5px] text-[var(--mute)]">
                 Nếu tắt, thư mời sẽ hướng dẫn người dùng đăng nhập bằng mật khẩu cũ đã được cấp.
               </div>
             </div>
@@ -2197,12 +2197,12 @@ function InviteUserModal({
             <div className="space-y-2 pt-1 pl-6">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <KeyRound className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={matKhau}
                     onChange={(e) => setMatKhau(e.target.value)}
-                    className="input-field pl-9 pr-3 h-9.5 font-mono text-[13px] font-bold text-slate-900 w-full rounded-xl bg-white border-slate-200"
+                    className="input-field pl-9 pr-3 h-9.5 font-mono text-[13px] font-bold text-[var(--ink)] w-full rounded-xl bg-[var(--surface)] border-[var(--line)]"
                   />
                 </div>
                 <button
@@ -2211,11 +2211,11 @@ function InviteUserModal({
                   className="btn btn-secondary px-3 py-2 text-[12px] font-bold rounded-xl shrink-0 flex items-center gap-1.5"
                   title="Sinh mật khẩu khác"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--navy)]" />
                   <span>Đổi mã</span>
                 </button>
               </div>
-              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11.5px] text-amber-800 leading-relaxed">
+              <div className="p-2.5 rounded-xl bg-[var(--amber-soft)] border border-[var(--amber)]/30 text-[11.5px] text-[var(--amber-deep)] leading-relaxed">
                 <strong>Lưu ý:</strong> Mật khẩu này sẽ được đồng bộ ngay vào tài khoản khi gửi thư thành công.
               </div>
             </div>
@@ -2223,15 +2223,15 @@ function InviteUserModal({
         </div>
 
         {/* Khối nguồn gửi */}
-        <div className="text-[12px] text-slate-500 flex items-center justify-between px-1">
-          <span>Gửi từ: <strong className="font-mono text-slate-800">no-reply@visicare.com.vn</strong></span>
-          <span className="inline-flex items-center gap-1 font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <div className="text-[12px] text-[var(--mute)] flex items-center justify-between px-1">
+          <span>Gửi từ: <strong className="font-mono text-[var(--ink)]">no-reply@visicare.com.vn</strong></span>
+          <span className="inline-flex items-center gap-1 font-medium text-[var(--green-deep)] bg-[var(--green-soft)] px-2 py-0.5 rounded-md border border-[var(--green)]/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]" />
             SSL Port 465
           </span>
         </div>
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--line)] mt-4">
           <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl">
             Hủy bỏ
           </button>
@@ -2240,7 +2240,7 @@ function InviteUserModal({
             disabled={sending}
             className="btn btn-primary px-7 py-2.5 font-bold rounded-xl shadow-md flex items-center gap-2"
           >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--teal)] stroke-[3]" />}
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--teal-ink)] stroke-[3]" />}
             <span>{sending ? "Đang gửi thư..." : "Gửi thư mời qua Email"}</span>
           </button>
         </div>
@@ -2325,37 +2325,37 @@ function BulkInviteModal({
       maxWidth="w-[95%] max-w-[760px]"
       noPadding
     >
-      <div className="p-5 sm:p-7 space-y-5 bg-white">
+      <div className="p-5 sm:p-7 space-y-5 bg-[var(--surface)]">
         {err && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-[13px] font-semibold text-rose-700 flex items-center gap-2">
+          <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose-deep)] flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{err}</span>
           </div>
         )}
 
         {/* Thẻ đếm trạng thái email & tùy chọn mật khẩu */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50/70 rounded-2xl border border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--surface-soft)]/70 rounded-2xl border border-[var(--line)]">
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={capMatKhauMoi}
               onChange={(e) => setCapMatKhauMoi(e.target.checked)}
-              className="rounded-[4px] border-slate-300 text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer"
+              className="rounded-[4px] border-[var(--line-strong)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer"
             />
             <div>
-              <span className="text-[13px] font-bold text-slate-900">
+              <span className="text-[13px] font-bold text-[var(--ink)]">
                 Tự động sinh mật khẩu tạm ngẫu nhiên cho từng nhân sự
               </span>
-              <p className="text-[11.5px] text-slate-500">Mỗi nhân sự sẽ nhận được mật khẩu tạm riêng biệt</p>
+              <p className="text-[11.5px] text-[var(--mute)]">Mỗi nhân sự sẽ nhận được mật khẩu tạm riêng biệt</p>
             </div>
           </label>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+            <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--green-deep)] bg-[var(--green-soft)] px-2.5 py-1 rounded-lg border border-[var(--green)]/30">
               <Check className="w-3.5 h-3.5" />
               <span>{readyCount} đã có email</span>
             </span>
             {missingCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+              <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--amber-deep)] bg-[var(--amber-soft)] px-2.5 py-1 rounded-lg border border-[var(--amber)]/30">
                 <span>{missingCount} chưa có</span>
               </span>
             )}
@@ -2364,21 +2364,21 @@ function BulkInviteModal({
 
         {/* Danh sách tài khoản & ô nhập email */}
         <div className="space-y-2">
-          <div className="text-[12px] font-bold text-slate-700 px-1 flex items-center justify-between">
+          <div className="text-[12px] font-bold text-[var(--ink-soft)] px-1 flex items-center justify-between">
             <span>Danh sách nhân sự được chọn ({users.length})</span>
-            <span className="text-[11.5px] font-normal text-slate-400">Vui lòng điền email cho các tài khoản còn thiếu</span>
+            <span className="text-[11.5px] font-normal text-[var(--mute)]">Vui lòng điền email cho các tài khoản còn thiếu</span>
           </div>
 
-          <div className="max-h-[380px] overflow-y-auto space-y-2 border border-slate-200 rounded-2xl p-2.5 bg-slate-50/40">
+          <div className="max-h-[380px] overflow-y-auto space-y-2 border border-[var(--line)] rounded-2xl p-2.5 bg-[var(--surface-soft)]/40">
             {users.map((u) => {
               const hasEmail = Boolean(emails[u.maNV]?.includes("@"));
               return (
                 <div
                   key={u.maNV}
-                  className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                  className="p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--line)] hover:border-[var(--line-strong)] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0 border border-slate-200">
+                    <div className="w-9 h-9 rounded-xl bg-[var(--surface-hover)] text-[var(--ink-soft)] flex items-center justify-center font-bold text-xs shrink-0 border border-[var(--line)]">
                       {u.hoTen
                         .trim()
                         .split(/\s+/)
@@ -2389,15 +2389,15 @@ function BulkInviteModal({
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-[13.5px] text-slate-900 truncate">{u.hoTen}</span>
-                        <span className="font-mono text-[11px] font-bold text-teal-700 px-2 py-0.5 rounded bg-teal-50 border border-teal-200">
+                        <span className="font-bold text-[13.5px] text-[var(--ink)] truncate">{u.hoTen}</span>
+                        <span className="font-mono text-[11px] font-bold text-[var(--teal-deep)] px-2 py-0.5 rounded bg-[var(--teal-soft)] border border-[var(--teal)]/35">
                           {u.maNV}
                         </span>
-                        <span className="font-mono text-[11px] text-blue-700 px-2 py-0.5 rounded bg-blue-50 border border-blue-200">
+                        <span className="font-mono text-[11px] text-[var(--navy)] px-2 py-0.5 rounded bg-[var(--navy-soft)] border border-[var(--navy-200)]">
                           @{u.tenDangNhap}
                         </span>
                       </div>
-                      <div className="text-[11.5px] text-slate-500 mt-0.5">
+                      <div className="text-[11.5px] text-[var(--mute)] mt-0.5">
                         {roleLabel(u.vaiTro)} · {u.coSo?.ten || "Toàn hệ thống"}
                       </div>
                     </div>
@@ -2405,7 +2405,7 @@ function BulkInviteModal({
 
                   <div className="w-full sm:w-72 shrink-0">
                     <div className="relative">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Mail className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="email"
                         value={emails[u.maNV] || ""}
@@ -2413,10 +2413,10 @@ function BulkInviteModal({
                           setEmails((p) => ({ ...p, [u.maNV]: e.target.value }))
                         }
                         placeholder="Nhập email nhận..."
-                        className={`input-field pl-8.5 pr-3 h-9 text-[12.5px] w-full rounded-xl bg-white ${
+                        className={`input-field pl-8.5 pr-3 h-9 text-[12.5px] w-full rounded-xl bg-[var(--surface)] ${
                           !hasEmail
-                            ? "border-amber-300 focus:border-amber-400 focus:ring-amber-200 bg-amber-50/20"
-                            : "border-slate-200 focus:border-blue-500"
+                            ? "border-[var(--amber)]/40 focus:border-[var(--amber)] focus:ring-[var(--amber)]/30 bg-[var(--amber-soft)]/20"
+                            : "border-[var(--line)] focus:border-[var(--navy)]"
                         }`}
                       />
                     </div>
@@ -2427,9 +2427,9 @@ function BulkInviteModal({
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
-          <div className="text-[12px] text-slate-500">
-            Gửi qua: <strong className="font-mono text-slate-800">no-reply@visicare.com.vn</strong> (SSL 465)
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[var(--line)]">
+          <div className="text-[12px] text-[var(--mute)]">
+            Gửi qua: <strong className="font-mono text-[var(--ink)]">no-reply@visicare.com.vn</strong> (SSL 465)
           </div>
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl">
@@ -2441,7 +2441,7 @@ function BulkInviteModal({
               disabled={sending}
               className="btn btn-primary px-7 py-2.5 font-bold rounded-xl shadow-md flex items-center gap-2"
             >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--teal)] stroke-[3]" />}
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--teal-ink)] stroke-[3]" />}
               <span>{sending ? "Đang gửi thư mời..." : `Bắt đầu gửi (${users.length} tài khoản)`}</span>
             </button>
           </div>
@@ -2496,8 +2496,8 @@ function SmtpTestModal({ onClose }: { onClose: () => void }) {
           <div
             className={`p-3.5 rounded-xl border text-[13px] flex items-center gap-2 ${
               result.ok
-                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                : "bg-rose-50 text-rose-700 border-rose-200"
+                ? "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)]/30"
+                : "bg-[var(--rose-soft)] text-[var(--rose-deep)] border-[var(--rose)]/30"
             }`}
           >
             {result.ok ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
@@ -2506,37 +2506,37 @@ function SmtpTestModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div>
-          <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-            Địa chỉ email nhận thử nghiệm <span className="text-rose-500">*</span>
+          <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
+            Địa chỉ email nhận thử nghiệm <span className="text-[var(--rose)]">*</span>
           </label>
           <div className="relative">
-            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Mail className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="email"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
               required
               placeholder="VD: your-email@gmail.com"
-              className="input-field pl-9 pr-3 h-10 text-[13.5px] w-full rounded-xl bg-white border-slate-200 focus:border-blue-500 font-medium"
+              className="input-field pl-9 pr-3 h-10 text-[13.5px] w-full rounded-xl bg-[var(--surface)] border-[var(--line)] focus:border-[var(--navy)] font-medium"
             />
           </div>
-          <p className="text-[11.5px] text-slate-400 mt-1">
+          <p className="text-[11.5px] text-[var(--mute)] mt-1">
             Hộp thư nhận email thử nghiệm để kiểm tra kết nối và tính tương thích
           </p>
         </div>
 
-        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-[12px] space-y-1">
+        <div className="p-3.5 bg-[var(--surface-soft)] rounded-xl border border-[var(--line)] text-[12px] space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Máy chủ gửi:</span>
-            <strong className="font-mono text-slate-900">mail.visicare.com.vn:465 (SSL)</strong>
+            <span className="text-[var(--mute)]">Máy chủ gửi:</span>
+            <strong className="font-mono text-[var(--ink)]">mail.visicare.com.vn:465 (SSL)</strong>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Tài khoản SMTP:</span>
-            <strong className="font-mono text-blue-700">no-reply@visicare.com.vn</strong>
+            <span className="text-[var(--mute)]">Tài khoản SMTP:</span>
+            <strong className="font-mono text-[var(--navy)]">no-reply@visicare.com.vn</strong>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+        <div className="flex justify-end gap-3 pt-3 border-t border-[var(--line)]">
           <button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold rounded-xl">
             Đóng
           </button>
@@ -2545,7 +2545,7 @@ function SmtpTestModal({ onClose }: { onClose: () => void }) {
             disabled={sending}
             className="btn btn-primary px-6 py-2.5 font-bold rounded-xl shadow-sm flex items-center gap-2"
           >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--teal)] stroke-[3]" />}
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--teal-ink)] stroke-[3]" />}
             <span>{sending ? "Đang gửi..." : "Gửi thử nghiệm"}</span>
           </button>
         </div>
@@ -2753,9 +2753,9 @@ function UserModal({
       maxWidth="w-[95%] max-w-[780px]"
       noPadding
     >
-      <form onSubmit={submit} className="p-5 sm:p-7 space-y-6 bg-white">
+      <form onSubmit={submit} className="p-5 sm:p-7 space-y-6 bg-[var(--surface)]">
         {err && (
-          <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-[13px] font-semibold text-rose-700 flex items-center gap-2">
+          <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose-deep)] flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{err}</span>
           </div>
@@ -2763,7 +2763,7 @@ function UserModal({
 
         {/* Thẻ Hero Card thông tin tài khoản khi Edit (Chuẩn VISIHUB) */}
         {isEditing ? (
-          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 border border-slate-200/90 shadow-2xs">
+          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-teal-50/30 border border-[var(--line)]/90 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 {/* Avatar squircle with gradient & initials */}
@@ -2779,7 +2779,7 @@ function UserModal({
                   </div>
                   <span
                     className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                      edit?.trangThai === "active" ? "bg-emerald-500" : "bg-slate-400"
+                      edit?.trangThai === "active" ? "bg-[var(--green)]" : "bg-slate-400"
                     }`}
                     title={edit?.trangThai === "active" ? "Đang hoạt động" : "Đã khóa"}
                   />
@@ -2787,26 +2787,26 @@ function UserModal({
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-[16.5px] text-slate-900 tracking-tight truncate">
+                    <h3 className="font-bold text-[17px] text-[var(--ink)] tracking-tight truncate">
                       {hoTen || edit?.hoTen}
                     </h3>
-                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/35">
                       {maNV}
                     </span>
-                    <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded-md bg-[var(--navy-soft)] text-[var(--navy)] border border-[var(--navy-200)]">
                       @{tenDangNhap}
                     </span>
                   </div>
-                  <div className="text-[12.5px] text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                  <div className="text-[12.5px] text-[var(--mute)] mt-1 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1">
-                      <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                      <Building2 className="w-3.5 h-3.5 text-[var(--mute)]" />
                       <span>{cosos.find((c) => c.id === (coSoId || edit?.coSoId))?.ten || "Toàn hệ thống"}</span>
                     </span>
                     {email && (
                       <>
-                        <span className="text-slate-300">•</span>
-                        <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
-                          <Mail className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-[var(--mute-soft)]">•</span>
+                        <span className="inline-flex items-center gap-1 text-[var(--ink-soft)] font-medium">
+                          <Mail className="w-3.5 h-3.5 text-[var(--mute)]" />
                           <span>{email}</span>
                         </span>
                       </>
@@ -2818,7 +2818,7 @@ function UserModal({
               <div className="shrink-0 flex items-center gap-2 self-start sm:self-center">
                 <span
                   className={`text-[12px] font-bold px-3 py-1 rounded-full border shadow-2xs ${
-                    ROLE_BADGES[vaiTro]?.cls || "bg-gray-100 text-gray-700"
+                    ROLE_BADGES[vaiTro]?.cls || "bg-[var(--surface-hover)] text-[var(--ink-soft)]"
                   }`}
                 >
                   {roleLabels[vaiTro] || vaiTro}
@@ -2827,8 +2827,8 @@ function UserModal({
                   label={edit?.trangThai === "active" ? "Hoạt động" : "Đã khóa"}
                   cls={
                     edit?.trangThai === "active"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-slate-100 text-slate-500 border-slate-200"
+                      ? "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)]/30"
+                      : "bg-[var(--surface-hover)] text-[var(--mute)] border-[var(--line)]"
                   }
                   sm
                 />
@@ -2836,52 +2836,52 @@ function UserModal({
             </div>
           </div>
         ) : (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/40 border border-blue-200/80 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-              <Sparkles className="w-4 h-4 text-blue-600" />
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/40 border border-[var(--navy-200)]/80 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[var(--navy)]/10 text-[var(--navy)] flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+              <Sparkles className="w-4 h-4 text-[var(--navy)]" />
             </div>
-            <div className="text-[12.5px] text-slate-600 leading-relaxed">
-              <strong className="text-slate-900 block mb-0.5">Khởi tạo tài khoản nhân sự mới</strong>
+            <div className="text-[12.5px] text-[var(--ink-soft)] leading-relaxed">
+              <strong className="text-[var(--ink)] block mb-0.5">Khởi tạo tài khoản nhân sự mới</strong>
               Mã nhân viên được sinh tự động theo quy chuẩn vai trò. Hệ thống sẽ tự động gửi thông tin đăng nhập và hướng dẫn truy cập qua email nhân sự bằng máy chủ SMTP VISI.
             </div>
           </div>
         )}
 
         {/* Khối 1: Thông tin nhân sự & Email liên hệ */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[var(--surface-soft)]/70 border border-[var(--line)]/90 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--line)]/80">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+              <span className="w-6 h-6 rounded-lg bg-[var(--navy)]/10 text-[var(--navy)] flex items-center justify-center font-bold text-xs">
                 <Users className="w-3.5 h-3.5" />
               </span>
-              <span className="font-bold text-[13.5px] text-slate-900 tracking-tight">
+              <span className="font-bold text-[13.5px] text-[var(--ink)] tracking-tight">
                 Thông tin nhân sự & Liên hệ
               </span>
             </div>
-            <span className="text-[11px] font-medium text-slate-400">Bắt buộc họ tên</span>
+            <span className="text-[11px] font-medium text-[var(--mute)]">Bắt buộc họ tên</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                Họ và tên nhân sự <span className="text-rose-500">*</span>
+              <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
+                Họ và tên nhân sự <span className="text-[var(--rose)]">*</span>
               </label>
               <input
                 value={hoTen}
                 onChange={(e) => setHoTen(e.target.value)}
                 required
-                className="input-field h-10 font-semibold text-[14px] w-full rounded-xl bg-white border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+                className="input-field h-10 font-semibold text-[14px] w-full rounded-xl bg-[var(--surface)] border-[var(--line)] focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy)]/10"
                 placeholder="VD: Nguyễn Văn A"
               />
-              <p className="text-[11px] text-slate-400 mt-1">Tên đầy đủ hiển thị trên hệ thống và báo cáo</p>
+              <p className="text-[11px] text-[var(--mute)] mt-1">Tên đầy đủ hiển thị trên hệ thống và báo cáo</p>
             </div>
 
             <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
+              <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
                 Email nhận thư mời & tài khoản
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Mail className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="email"
                   value={email}
@@ -2889,23 +2889,23 @@ function UserModal({
                     setEmail(e.target.value);
                     if (e.target.value && !guiEmail) setGuiEmail(true);
                   }}
-                  className="input-field pl-9.5 pr-3 h-10 text-[13.5px] w-full rounded-xl bg-white border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 font-medium"
+                  className="input-field pl-9.5 pr-3 h-10 text-[13.5px] w-full rounded-xl bg-[var(--surface)] border-[var(--line)] focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy)]/10 font-medium"
                   placeholder="VD: vana@visicare.com.vn"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Dùng để gửi thông tin đăng nhập tự động qua SMTP</p>
+              <p className="text-[11px] text-[var(--mute)] mt-1">Dùng để gửi thông tin đăng nhập tự động qua SMTP</p>
             </div>
           </div>
         </div>
 
         {/* Khối 2: Phân quyền & Cơ sở làm việc */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[var(--surface-soft)]/70 border border-[var(--line)]/90 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--line)]/80">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+              <span className="w-6 h-6 rounded-lg bg-[var(--navy)]/10 text-[var(--navy)] flex items-center justify-center font-bold text-xs">
                 <ShieldCheck className="w-3.5 h-3.5" />
               </span>
-              <span className="font-bold text-[13.5px] text-slate-900 tracking-tight">
+              <span className="font-bold text-[13.5px] text-[var(--ink)] tracking-tight">
                 Phân quyền & Cơ sở làm việc
               </span>
             </div>
@@ -2913,8 +2913,8 @@ function UserModal({
 
           <div className={`grid grid-cols-1 gap-4 ${isIT ? "" : "sm:grid-cols-2"}`}>
             <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                Vai trò hệ thống <span className="text-rose-500">*</span>
+              <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
+                Vai trò hệ thống <span className="text-[var(--rose)]">*</span>
               </label>
               {/* Thẻ chọn vai trò: tên + quyền chính (thay <select> của trình duyệt) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup">
@@ -2928,7 +2928,7 @@ function UserModal({
                       role="radio"
                       aria-checked={on}
                       onClick={() => handleRoleChange(r)}
-                      className={`flex items-start gap-2.5 px-3 py-2.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                      className={`flex items-start gap-2.5 px-3 py-2.5 rounded-[12px] border text-left transition cursor-pointer ${
                         on
                           ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-[0_0_0_3px_var(--navy-100)]"
                           : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
@@ -2945,7 +2945,7 @@ function UserModal({
                         <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${on ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
                           {roleLabels[r] || r}
                           {quanTri && (
-                            <span className="h-[18px] px-1.5 rounded-full bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[10px] font-semibold inline-flex items-center">
+                            <span className="h-[18px] px-1.5 rounded-full bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[11px] font-semibold inline-flex items-center">
                               Quản trị
                             </span>
                           )}
@@ -2959,7 +2959,7 @@ function UserModal({
               {isIT ? (
                 // Quản trị viên đơn vị chỉ tạo tài khoản cho chính đơn vị mình — không cần chọn cơ sở
                 <p className="text-[11.5px] text-[var(--mute)] mt-1.5 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />
+                  <Building2 className="w-3.5 h-3.5 text-[var(--teal-ink)] shrink-0" />
                   <span>
                     Thuộc đơn vị{" "}
                     <b className="text-[var(--ink-soft)]">
@@ -2969,14 +2969,14 @@ function UserModal({
                   </span>
                 </p>
               ) : (
-                <p className="text-[11px] text-slate-400 mt-1">Xác định các quyền và phạm vi dữ liệu được truy cập</p>
+                <p className="text-[11px] text-[var(--mute)] mt-1">Xác định các quyền và phạm vi dữ liệu được truy cập</p>
               )}
             </div>
 
             {!isIT && (
               <div>
-                <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                  Cơ sở làm việc {vaiTro !== "QuanLy" && <span className="text-rose-500">*</span>}
+                <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
+                  Cơ sở làm việc {vaiTro !== "QuanLy" && <span className="text-[var(--rose)]">*</span>}
                 </label>
                 <div className="relative">
                   <select
@@ -2984,8 +2984,8 @@ function UserModal({
                     disabled={vaiTro === "QuanLy"}
                     onChange={(e) => setCoSoId(e.target.value)}
                     required={vaiTro !== "QuanLy"}
-                    className={`input-field h-10 w-full font-semibold text-[13.5px] pr-9 cursor-pointer appearance-none rounded-xl border-slate-200 focus:border-blue-500 ${
-                      vaiTro === "QuanLy" ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-white"
+                    className={`input-field h-10 w-full font-semibold text-[13.5px] pr-9 cursor-pointer appearance-none rounded-xl border-[var(--line)] focus:border-[var(--navy)] ${
+                      vaiTro === "QuanLy" ? "bg-[var(--surface-hover)] text-[var(--mute)] cursor-not-allowed" : "bg-[var(--surface)]"
                     }`}
                   >
                     {vaiTro === "QuanLy" ? (
@@ -3003,9 +3003,9 @@ function UserModal({
                       </>
                     )}
                   </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-[var(--mute)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-[var(--mute)] mt-1">
                   {vaiTro === "QuanLy" ? "Vai trò Quản lý có quyền xem dữ liệu toàn hệ thống" : "Đơn vị trực thuộc của nhân sự"}
                 </p>
               </div>
@@ -3014,13 +3014,13 @@ function UserModal({
         </div>
 
         {/* Khối 3: Thông tin đăng nhập & Bảo mật */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-4">
-          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80">
+        <div className="p-4 sm:p-5 rounded-2xl bg-[var(--surface-soft)]/70 border border-[var(--line)]/90 space-y-4">
+          <div className="flex items-center justify-between pb-2.5 border-b border-[var(--line)]/80">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs">
+              <span className="w-6 h-6 rounded-lg bg-[var(--teal)]/15 text-[var(--teal-deep)] flex items-center justify-center font-bold text-xs">
                 <KeyRound className="w-3.5 h-3.5" />
               </span>
-              <span className="font-bold text-[13.5px] text-slate-900 tracking-tight">
+              <span className="font-bold text-[13.5px] text-[var(--ink)] tracking-tight">
                 Tài khoản & Mật khẩu đăng nhập
               </span>
             </div>
@@ -3028,12 +3028,12 @@ function UserModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] font-bold text-slate-700 mb-1.5">
-                Tên đăng nhập <span className="text-rose-500">*</span>
+              <label className="block text-[12px] font-bold text-[var(--ink-soft)] mb-1.5">
+                Tên đăng nhập <span className="text-[var(--rose)]">*</span>
               </label>
               <div className="relative">
                 {isEditing && (
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Lock className="w-4 h-4 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 )}
                 <input
                   value={tenDangNhap}
@@ -3042,29 +3042,29 @@ function UserModal({
                   disabled={isEditing}
                   className={`input-field font-mono h-10 w-full rounded-xl text-[13.5px] ${
                     isEditing
-                      ? "pl-9 bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200"
-                      : "bg-white border-slate-200 focus:border-blue-500"
+                      ? "pl-9 bg-[var(--surface-hover)] text-[var(--mute)] cursor-not-allowed border-[var(--line)]"
+                      : "bg-[var(--surface)] border-[var(--line)] focus:border-[var(--navy)]"
                   }`}
                   placeholder="VD: mkt.daklak"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-[var(--mute)] mt-1">
                 {isEditing ? "Tên đăng nhập cố định, không thể sửa sau khi tạo" : "Dùng để đăng nhập vào hệ thống VISI CSR"}
               </p>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[12px] font-bold text-slate-700">
+                <label className="text-[12px] font-bold text-[var(--ink-soft)]">
                   {isEditing ? "Đặt lại mật khẩu mới" : "Mật khẩu khởi tạo"}{" "}
-                  {!isEditing && <span className="text-rose-500">*</span>}
+                  {!isEditing && <span className="text-[var(--rose)]">*</span>}
                 </label>
                 <button
                   type="button"
                   onClick={() => setMatKhau(generateTempPassword())}
-                  className="text-[11.5px] font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1 hover:underline"
+                  className="text-[11.5px] font-semibold text-[var(--navy)] hover:text-[var(--navy)] flex items-center gap-1 hover:underline"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--navy)]" />
                   <span>Sinh ngẫu nhiên</span>
                 </button>
               </div>
@@ -3074,20 +3074,20 @@ function UserModal({
                   value={matKhau}
                   onChange={(e) => setMatKhau(e.target.value)}
                   required={!isEditing}
-                  className="input-field font-mono pr-10 h-10 w-full rounded-xl text-[13.5px] bg-white border-slate-200 focus:border-blue-500"
+                  className="input-field font-mono pr-10 h-10 w-full rounded-xl text-[13.5px] bg-[var(--surface)] border-[var(--line)] focus:border-[var(--navy)]"
                   placeholder={isEditing ? "Để trống nếu giữ nguyên mật khẩu cũ..." : "Nhập hoặc sinh mật khẩu..."}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--mute)] hover:text-[var(--ink-soft)] p-1"
                   tabIndex={-1}
                   title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-[var(--mute)] mt-1">
                 {isEditing ? "Chỉ nhập nếu bạn muốn đổi mật khẩu mới cho nhân sự" : "Mật khẩu ban đầu để nhân sự đăng nhập"}
               </p>
             </div>
@@ -3095,26 +3095,26 @@ function UserModal({
 
           {/* Toggle gửi email */}
           {(!isEditing || (isEditing && Boolean(matKhau.trim()))) && (
-            <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-3.5 rounded-xl border border-[var(--navy-200)] bg-[var(--navy-soft)]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <label className="flex items-start sm:items-center gap-3 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={guiEmail && Boolean(email.trim())}
                   disabled={!email.trim()}
                   onChange={(e) => setGuiEmail(e.target.checked)}
-                  className="mt-0.5 sm:mt-0 rounded-[4px] border-slate-300 text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer"
+                  className="mt-0.5 sm:mt-0 rounded-[4px] border-[var(--line-strong)] text-[var(--navy)] focus:ring-[var(--navy)] w-4 h-4 cursor-pointer"
                 />
                 <div>
-                  <div className="text-[12.5px] font-bold text-slate-900">
+                  <div className="text-[12.5px] font-bold text-[var(--ink)]">
                     Gửi email thông tin đăng nhập tự động cho nhân sự
                   </div>
-                  <div className="text-[11px] text-slate-500">
-                    Gửi từ: <strong className="font-mono text-blue-700">no-reply@visicare.com.vn</strong> qua cổng SMTP VISI
+                  <div className="text-[11px] text-[var(--mute)]">
+                    Gửi từ: <strong className="font-mono text-[var(--navy)]">no-reply@visicare.com.vn</strong> qua cổng SMTP VISI
                   </div>
                 </div>
               </label>
               {!email.trim() && (
-                <span className="text-[11px] text-amber-700 font-semibold bg-amber-100 px-2.5 py-1 rounded-md shrink-0">
+                <span className="text-[11px] text-[var(--amber-deep)] font-semibold bg-[var(--amber)]/15 px-2.5 py-1 rounded-md shrink-0">
                   Chưa nhập email nhận thư
                 </span>
               )}
@@ -3123,17 +3123,17 @@ function UserModal({
         </div>
 
         {/* Footer actions */}
-        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-5 border-t border-slate-100 mt-6">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-5 border-t border-[var(--line)] mt-6">
           <div>
             {isEditing && email.trim() && (
               <button
                 type="button"
                 onClick={handleSendEmailNow}
                 disabled={sendingEmailNow}
-                className="btn px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[12.5px] flex items-center justify-center gap-2 transition-all shadow-2xs"
+                className="btn px-4 py-2.5 rounded-xl border border-[var(--navy-200)] bg-[var(--navy-soft)] text-[var(--navy)] hover:bg-[var(--navy)]/10 font-bold text-[12.5px] flex items-center justify-center gap-2 transition shadow-2xs"
                 title="Gửi ngay thông tin đăng nhập tới email nhân sự này"
               >
-                {sendingEmailNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-blue-600" />}
+                {sendingEmailNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-[var(--navy)]" />}
                 <span>Gửi email tài khoản ngay qua SMTP</span>
               </button>
             )}
@@ -3147,7 +3147,7 @@ function UserModal({
               disabled={saving}
               className="btn btn-primary px-7 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20 flex items-center gap-2"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal)] stroke-[3]" />}
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-[var(--teal-ink)] stroke-[3]" />}
               <span>{isEditing ? "Lưu thay đổi" : "Tạo tài khoản"}</span>
             </button>
           </div>
@@ -3160,7 +3160,7 @@ function UserModal({
 // ─── Modal Cấu hình Cơ sở (CoSoModal) ───
 /* ─── Thành phần form cơ sở — chuẩn company UI (navy/teal, Manrope + JetBrains Mono, thẻ 14px) ─── */
 const CS_INPUT =
-  "h-9 w-full px-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition-all duration-150 focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] disabled:opacity-50 disabled:cursor-not-allowed";
+  "h-9 w-full px-3 text-[12.5px] bg-[var(--surface-soft)] border border-[var(--line)] rounded-[10px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none transition duration-150 focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] disabled:opacity-50 disabled:cursor-not-allowed";
 
 function CsField({
   label,
@@ -3182,7 +3182,7 @@ function CsField({
         {required && <span className="text-[var(--rose)] ml-0.5">*</span>}
       </span>
       {children}
-      {hint && <span className="text-[10.5px] text-[var(--mute)] leading-snug">{hint}</span>}
+      {hint && <span className="text-[11px] text-[var(--mute)] leading-snug">{hint}</span>}
     </label>
   );
 }
@@ -3217,7 +3217,7 @@ function CsSecretInput({
   const icon = changing ? (
     <Pencil className="w-3.5 h-3.5 text-[var(--amber)]" />
   ) : encrypted ? (
-    <Lock className="w-3.5 h-3.5 text-[var(--teal)]" />
+    <Lock className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
   ) : (
     <LockOpen className="w-3.5 h-3.5 text-[var(--amber)]" />
   );
@@ -3279,7 +3279,7 @@ function CsSection({
       </header>
       <div className="p-4 space-y-3.5">{children}</div>
       {footer && (
-        <div className="px-4 py-2.5 border-t border-[var(--line-soft)] bg-[var(--surface-soft)] rounded-b-[14px] text-[10.5px] text-[var(--mute)] flex items-center gap-1.5">
+        <div className="px-4 py-2.5 border-t border-[var(--line-soft)] bg-[var(--surface-soft)] rounded-b-[14px] text-[11px] text-[var(--mute)] flex items-center gap-1.5">
           {footer}
         </div>
       )}
@@ -3290,12 +3290,12 @@ function CsSection({
 /** Pill trạng thái: teal = đã cấu hình, xám = chưa. */
 function CsStatePill({ on, onLabel = "Đã cấu hình", offLabel = "Chưa cấu hình" }: { on: boolean; onLabel?: string; offLabel?: string }) {
   return on ? (
-    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px] bg-[var(--teal-soft)] text-[var(--teal-deep)]">
+    <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px] bg-[var(--teal-soft)] text-[var(--teal-deep)]">
       <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" />
       {onLabel}
     </span>
   ) : (
-    <span className="inline-flex items-center font-mono text-[10px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px] bg-[var(--line-soft)] text-[var(--mute)]">
+    <span className="inline-flex items-center font-mono text-[11px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px] bg-[var(--line-soft)] text-[var(--mute)]">
       {offLabel}
     </span>
   );
@@ -3304,7 +3304,7 @@ function CsStatePill({ on, onLabel = "Đã cấu hình", offLabel = "Chưa cấu
 /** Trạng thái mã hoá thông tin kết nối HIS / BHXH của cơ sở. */
 function MaHoaBadge({ edit }: { edit?: CoSo }) {
   const amber = "bg-[var(--amber-soft)] text-[var(--amber)]";
-  const base = "inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px]";
+  const base = "inline-flex items-center gap-1 font-mono text-[11px] font-bold uppercase tracking-[0.06em] px-2 py-[3px] rounded-[6px]";
   if (!edit || edit.daMaHoa !== false) {
     return (
       <span className={`${base} bg-[var(--navy-50)] text-[var(--navy)]`} title="Thông tin kết nối được mã hoá AES-256, không gửi nguyên văn ra trình duyệt">
@@ -3332,7 +3332,7 @@ function XoaCauHinhButton({ show, on, onToggle }: { show: boolean; on: boolean; 
     <button
       type="button"
       onClick={onToggle}
-      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-[3px] rounded-[6px] bg-[var(--rose-soft)] text-[var(--rose)] hover:brightness-95 transition-all cursor-pointer"
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-[3px] rounded-[6px] bg-[var(--rose-soft)] text-[var(--rose)] hover:brightness-95 transition cursor-pointer"
       title="Bỏ chọn — giữ nguyên cấu hình"
     >
       Sẽ xoá khi lưu · Hoàn tác
@@ -3341,7 +3341,7 @@ function XoaCauHinhButton({ show, on, onToggle }: { show: boolean; on: boolean; 
     <button
       type="button"
       onClick={onToggle}
-      className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-[3px] rounded-[6px] text-[var(--mute)] hover:text-[var(--rose)] hover:bg-[var(--rose-soft)] transition-all cursor-pointer"
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-[3px] rounded-[6px] text-[var(--mute)] hover:text-[var(--rose)] hover:bg-[var(--rose-soft)] transition cursor-pointer"
       title="Xoá toàn bộ cấu hình nhóm này khi lưu"
     >
       <Trash2 className="w-3 h-3" /> Xoá
@@ -3480,7 +3480,7 @@ function CoSoModal({
       </span>
     ) : (
       <>
-        <Lock className="w-3 h-3 shrink-0 text-[var(--teal)]" />
+        <Lock className="w-3 h-3 shrink-0 text-[var(--teal-ink)]" />
         Đã mã hoá, chỉ hiện bản che bớt. Ô để trống giữ nguyên — chỉ nhập khi muốn thay đổi.
       </>
     );
@@ -3503,7 +3503,7 @@ function CoSoModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-9 px-4 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition-all cursor-pointer"
+            className="h-9 px-4 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
           >
             Huỷ bỏ
           </button>
@@ -3511,9 +3511,9 @@ function CoSoModal({
             type="submit"
             form="coso-form"
             disabled={saving}
-            className="h-9 px-4 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+            className="h-9 px-4 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-60 disabled:cursor-wait"
           >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal)] stroke-[3]" />}
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" />}
             {edit ? "Lưu thay đổi" : "Tạo cơ sở"}
           </button>
         </>
@@ -3543,7 +3543,7 @@ function CoSoModal({
               <span className="font-serif text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)] truncate">
                 {ten.trim() || edit?.ten || "Cơ sở mới"}
               </span>
-              <span className="font-mono text-[10.5px] font-bold px-1.5 py-px rounded-[6px] bg-[var(--navy-50)] text-[var(--navy)] shrink-0">
+              <span className="font-mono text-[11px] font-bold px-1.5 py-px rounded-[6px] bg-[var(--navy-50)] text-[var(--navy)] shrink-0">
                 {id || "—"}
               </span>
             </div>
@@ -3668,7 +3668,7 @@ function CoSoModal({
                 onClick={testBhxh}
                 disabled={bhxhTesting || (!coBhxh && (!bhxhUser.trim() || !bhxhPass.trim()))}
                 title="Thử đăng nhập và kiểm tra quyền tra cứu thẻ trên cổng giám định BHYT (ô trống dùng giá trị đã lưu)"
-                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy-50)] hover:border-[var(--navy-100)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy-50)] hover:border-[var(--navy-100)] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
                 {bhxhTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 Kiểm tra kết nối BHXH
@@ -3676,7 +3676,7 @@ function CoSoModal({
             </div>
             {bhxhTest?.cong && bhxhTest.cong.length > 0 && (
               <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] px-3 py-2 space-y-1">
-                <div className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">Phản hồi nguyên văn của cổng BHXH</div>
+                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">Phản hồi nguyên văn của cổng BHXH</div>
                 {bhxhTest.cong.map((line, i) => (
                   <div key={i} className="font-mono text-[11px] leading-[1.5] text-[var(--ink-soft)] break-words">
                     {line}
@@ -3958,7 +3958,7 @@ function GoogleSheetPanel() {
                   disabled={!dirty || savingId === c.id}
                   className="btn btn-secondary px-3 py-1.5 text-[12px] font-bold disabled:opacity-40 rounded-lg"
                 >
-                  {savingId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal)]" />}{" "}
+                  {savingId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}{" "}
                   Lưu
                 </button>
               )}
@@ -3991,7 +3991,7 @@ function GoogleSheetPanel() {
                   : "bg-[var(--rose-soft)]"
               }`}
             >
-              <FileSpreadsheet className={`w-[18px] h-[18px] ${status?.enabled ? "text-[var(--teal)]" : "text-[var(--rose)]"}`} />
+              <FileSpreadsheet className={`w-[18px] h-[18px] ${status?.enabled ? "text-[var(--teal-ink)]" : "text-[var(--rose)]"}`} />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -4012,7 +4012,7 @@ function GoogleSheetPanel() {
               onClick={rebuildSheet}
               disabled={rebuilding || syncing || !status?.enabled}
               title="Xoá dòng cũ & đẩy lại toàn bộ theo bộ cột hiện tại"
-              className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-50 transition-all cursor-pointer"
+              className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-50 transition cursor-pointer"
             >
               {rebuilding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--amber)]" />}
               <span>Dựng lại báo cáo</span>
@@ -4020,9 +4020,9 @@ function GoogleSheetPanel() {
             <button
               onClick={syncNow}
               disabled={syncing || rebuilding || !status?.enabled}
-              className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] disabled:opacity-50 transition-all cursor-pointer"
+              className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] disabled:opacity-50 transition cursor-pointer"
             >
-              {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
+              {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
               <span>Đồng bộ ngay</span>
             </button>
           </div>
@@ -4036,7 +4036,7 @@ function GoogleSheetPanel() {
             { label: "Hàng đợi chờ", val: `${status?.pending ?? 0} hồ sơ`, ok: (status?.pending ?? 0) === 0 },
           ].map((s) => (
             <div key={s.label} className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] px-3.5 py-2.5 min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--mute)]">
+              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] font-bold text-[var(--mute)]">
                 <span className={`w-[6px] h-[6px] rounded-full shrink-0 ${s.ok ? "bg-[var(--teal)]" : "bg-[var(--amber)]"}`} />
                 {s.label}
               </div>
@@ -4059,7 +4059,7 @@ function GoogleSheetPanel() {
                 href={sheetUrl(status.sharedSheetId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-[10.5px] font-semibold text-[var(--navy)] hover:underline truncate block"
+                className="font-mono text-[11px] font-semibold text-[var(--navy)] hover:underline truncate block"
                 title={sheetUrl(status.sharedSheetId)}
               >
                 {sheetUrl(status.sharedSheetId)}
@@ -4072,7 +4072,7 @@ function GoogleSheetPanel() {
                 navigator.clipboard?.writeText(sheetUrl(status.sharedSheetId!));
                 addToast({ type: "success", message: "Đã copy link." });
               }}
-              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition-all cursor-pointer"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
             >
               <Copy className="w-3.5 h-3.5" /> Copy
             </button>
@@ -4080,9 +4080,9 @@ function GoogleSheetPanel() {
               href={sheetUrl(status.sharedSheetId)}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition-all cursor-pointer"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[var(--teal)]" /> Mở bảng tính
+              <ExternalLink className="w-3.5 h-3.5 text-[var(--teal-ink)]" /> Mở bảng tính
             </a>
           </div>
         </div>

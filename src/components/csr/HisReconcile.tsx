@@ -220,7 +220,7 @@ export function useHisReconcile({
 const STATUS_META: Record<ItemStatus, { icon: React.ElementType; cls: string; label: string }> = {
   queued: { icon: Clock, cls: "text-[var(--mute-soft)]", label: "Chờ" },
   running: { icon: Loader2, cls: "text-[var(--navy)] animate-spin", label: "Đang tra" },
-  done: { icon: CheckCircle2, cls: "text-[var(--teal)]", label: "Xong" },
+  done: { icon: CheckCircle2, cls: "text-[var(--teal-ink)]", label: "Xong" },
   error: { icon: XCircle, cls: "text-[var(--rose)]", label: "Lỗi" },
   skipped: { icon: MinusCircle, cls: "text-[var(--mute-soft)]", label: "Không có A/B" },
   cancelled: { icon: MinusCircle, cls: "text-[var(--amber)]", label: "Đã dừng" },
@@ -273,7 +273,7 @@ export function HisReconcilePanel({
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--line)]">
           <div className="relative w-8 h-8 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center shrink-0 shadow-[var(--navy-shadow)]">
-            <Activity className="w-4 h-4 text-[var(--teal)]" />
+            <Activity className="w-4 h-4 text-[var(--teal-ink)]" />
             {running && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--teal)] ring-2 ring-[var(--surface)] animate-pulse" />}
           </div>
           <div className="flex-1 min-w-0">
@@ -320,12 +320,12 @@ export function HisReconcilePanel({
                 { label: "BN tra", value: sum("total"), cls: "text-[var(--ink)]" },
                 { label: "Khớp HIS", value: sum("found"), cls: "text-[var(--navy)]" },
                 { label: "Mổ sau khám", value: sum("surgery"), cls: "text-[var(--teal-deep)]" },
-                { label: "Mổ trước", value: sum("surgeryPrior"), cls: "text-[#7c3aed]" },
+                { label: "Mổ trước", value: sum("surgeryPrior"), cls: "text-[var(--violet)]" },
                 { label: "Lỗi", value: errors, cls: errors ? "text-[var(--rose)]" : "text-[var(--mute-soft)]" },
               ].map((s) => (
                 <div key={s.label} className="px-2.5 py-2 min-w-0">
                   <div className={`font-mono text-[17px] font-bold leading-tight tabular-nums ${s.cls}`}>{s.value.toLocaleString("vi-VN")}</div>
-                  <div className="text-[10.5px] font-medium text-[var(--mute)] whitespace-nowrap truncate">{s.label}</div>
+                  <div className="text-[11px] font-medium text-[var(--mute)] whitespace-nowrap truncate">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -340,7 +340,7 @@ export function HisReconcilePanel({
                     <Icon className={`w-3.5 h-3.5 shrink-0 ${m.cls}`} />
                     <div className="flex-1 min-w-0">
                       <div className={`text-[12px] truncate ${it.status === "skipped" ? "text-[var(--mute)]" : "text-[var(--ink)] font-semibold"}`}>{it.name}</div>
-                      <div className="text-[10.5px] font-mono text-[var(--mute)] truncate">
+                      <div className="text-[11px] font-mono text-[var(--mute)] truncate">
                         {fmtBuoiKhamCode(it.id)}
                         {it.status === "error" && it.error ? <span className="text-[var(--rose)]"> · {it.error}</span> : null}
                       </div>
@@ -361,7 +361,7 @@ export function HisReconcilePanel({
                             </button>
                           )}
                           {(it.log.choMo ?? 0) > 0 && <span className="text-[var(--amber-deep)]"> · {it.log.choMo} chờ mổ</span>}
-                          {(it.log.surgeryPrior ?? 0) > 0 && <span className="text-[#7c3aed]"> · +{it.log.surgeryPrior} trước</span>}
+                          {(it.log.surgeryPrior ?? 0) > 0 && <span className="text-[var(--violet)]"> · +{it.log.surgeryPrior} trước</span>}
                           {(() => {
                             const l = it.log;
                             const con = Math.max(0, (l.found ?? 0) - (l.surgery ?? 0) - canXacNhanCua(it).length - (l.choMo ?? 0) - (l.surgeryPrior ?? 0));
@@ -369,7 +369,7 @@ export function HisReconcilePanel({
                           })()}
                         </>
                       ) : (
-                        <span className="text-[10.5px] text-[var(--mute)]">{m.label}</span>
+                        <span className="text-[11px] text-[var(--mute)]">{m.label}</span>
                       )}
                     </span>
                   </li>
@@ -400,7 +400,7 @@ export function HisReconcilePanel({
             <button
               type="button"
               onClick={onCancel}
-              className="shrink-0 h-7 px-2.5 rounded-[8px] text-[11.5px] font-bold text-[var(--rose)] border border-rose-200 bg-[var(--rose-soft)] hover:bg-rose-100 cursor-pointer"
+              className="shrink-0 h-7 px-2.5 rounded-[8px] text-[11.5px] font-bold text-[var(--rose)] border border-[var(--rose)]/30 bg-[var(--rose-soft)] hover:bg-[var(--rose)]/12 cursor-pointer"
             >
               Dừng
             </button>
@@ -431,7 +431,7 @@ export function DoiChieuCell({
   if (running) {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-[var(--navy)]">
-        <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal)]" /> Đang đối chiếu…
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal-ink)]" /> Đang đối chiếu…
       </span>
     );
   }
@@ -470,7 +470,7 @@ export function DoiChieuCell({
         {isErr ? <AlertTriangle className="w-3 h-3 shrink-0" /> : <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] shrink-0" />}
         <span className="truncate">{fmtRelative(log.thoiDiem)}</span>
       </div>
-      <div className="text-[10.5px] font-mono text-[var(--mute)] tabular-nums truncate">
+      <div className="text-[11px] font-mono text-[var(--mute)] tabular-nums truncate">
         {isErr ? (
           "Lần gần nhất lỗi"
         ) : log.trangThai === "bo_qua" ? (
@@ -484,7 +484,7 @@ export function DoiChieuCell({
                 <span className={so.mo ? "text-[var(--teal-deep)] font-semibold" : undefined}>{so.mo} mổ</span>
                 {so.canXacNhan > 0 && <span className="text-[var(--amber-deep)]"> · {so.canXacNhan} cần xác nhận</span>}
                 {so.choMo > 0 && <span className="text-[var(--amber-deep)]"> · {so.choMo} chờ</span>}
-                {so.truoc > 0 && <span className="text-[#7c3aed]"> · +{so.truoc} trước</span>}
+                {so.truoc > 0 && <span className="text-[var(--violet)]"> · +{so.truoc} trước</span>}
                 {chuaMo > 0 && <span> · {chuaMo} chưa mổ</span>}
               </>
             )}
@@ -523,12 +523,12 @@ function Metric({
           {value === undefined ? "—" : value.toLocaleString("vi-VN")}
         </span>
         {!!delta && (
-          <span className={`font-mono text-[10px] font-bold tabular-nums ${delta > 0 ? "text-[var(--teal-deep)]" : "text-[var(--rose)]"}`}>
+          <span className={`font-mono text-[11px] font-bold tabular-nums ${delta > 0 ? "text-[var(--teal-deep)]" : "text-[var(--rose)]"}`}>
             {delta > 0 ? `+${delta}` : delta}
           </span>
         )}
       </div>
-      <div className="text-[10.5px] text-[var(--mute)] whitespace-nowrap">{label}</div>
+      <div className="text-[11px] text-[var(--mute)] whitespace-nowrap">{label}</div>
     </div>
   );
 }
@@ -609,7 +609,7 @@ export function DoiChieuHistoryModal({
             disabled={running}
             className="btn-primary h-9 px-4 text-[12.5px] rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {running ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal)]" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal)]" />}
+            {running ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal-ink)]" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
             {running ? "Đang đối chiếu…" : "Đối chiếu lại ngay"}
           </button>
         ) : undefined
@@ -683,7 +683,7 @@ export function DoiChieuHistoryModal({
                       <Metric
                         label="Mổ trước"
                         value={legacy ? undefined : r.surgeryPrior}
-                        tone="text-[#7c3aed]"
+                        tone="text-[var(--violet)]"
                         delta={!legacy && !prevLegacy ? (r.surgeryPrior ?? 0) - (prev!.surgeryPrior ?? 0) : undefined}
                         legacyTitle={legacy ? "Lần chạy cũ chưa tách mổ trước/sau" : undefined}
                       />

@@ -11,7 +11,7 @@ export const TONE_CLS: Record<Tone, string> = {
   teal: "bg-[var(--teal-soft)] text-[var(--teal-deep)]",
   amber: "bg-[var(--amber-soft)] text-[var(--amber-deep)]",
   rose: "bg-[var(--rose-soft)] text-[var(--rose)]",
-  violet: "bg-[#f3eaf8] text-[#7c3aed]",
+  violet: "bg-[var(--violet-soft)] text-[var(--violet)]",
   gray: "bg-[var(--line-soft)] text-[var(--mute)]",
 };
 
@@ -47,7 +47,7 @@ export function Fact({ label, children }: { label: string; children: React.React
 export const FIELD_LABEL = "text-[11.5px] font-semibold text-[var(--ink-soft)] mb-1.5 flex items-center gap-1.5";
 
 export const INPUT_CLS =
-  "w-full rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition-all";
+  "w-full rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition";
 
 /** Thẻ khu vực làm việc (tiêu đề + mô tả + nội dung cuộn riêng). */
 export function WorkCard({
@@ -83,6 +83,6 @@ export function WorkCard({
 export const BTN_SOFT = {
   navy: "inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12.5px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
   teal: "inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12.5px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
-  rose: "inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-rose-200 bg-[var(--rose-soft)] text-[12.5px] font-semibold text-[var(--rose)] hover:bg-[var(--rose)] hover:border-[var(--rose)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
+  rose: "inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--rose)]/30 bg-[var(--rose-soft)] text-[12.5px] font-semibold text-[var(--rose)] hover:bg-[var(--rose)] hover:border-[var(--rose)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
   ghost: "inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap",
 };

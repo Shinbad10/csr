@@ -76,22 +76,22 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
         className={`rounded-2xl border transition-all overflow-hidden shadow-xs max-w-full min-w-0 ${
           isPositive
             ? "bg-gradient-to-br from-[var(--teal-soft)]/50 via-white to-[var(--surface-bg)] dark:from-teal-950/20 dark:via-slate-900 dark:to-slate-900 border-[var(--teal)]/40"
-            : "bg-gradient-to-br from-amber-50/60 via-white to-[var(--surface-bg)] dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 border-amber-300 dark:border-amber-700/50"
+            : "bg-gradient-to-br from-amber-50/60 via-white to-[var(--surface-bg)] dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 border-[var(--amber)]/40 dark:border-amber-700/50"
         } ${className}`}
       >
         {/* Header Strip */}
         <div
           className={`px-4 py-2.5 flex items-center justify-between border-b gap-3 min-w-0 ${
             isPositive
-              ? "bg-[var(--teal)]/10 border-[var(--teal)]/20 text-[var(--teal-deep)] dark:text-[var(--teal)]"
-              : "bg-amber-100/60 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-300"
+              ? "bg-[var(--teal)]/10 border-[var(--teal)]/20 text-[var(--teal-deep)] dark:text-[var(--teal-ink)]"
+              : "bg-[var(--amber)]/9 dark:bg-amber-950/40 border-[var(--amber)]/30 dark:border-amber-800/40 text-[var(--amber-deep)] dark:text-amber-300"
           }`}
         >
           <div className="flex items-center gap-2 font-bold text-[13px] min-w-0 flex-1">
             {isPositive ? (
-              <ShieldCheck className="w-4.5 h-4.5 text-[var(--teal-deep)] dark:text-[var(--teal)] shrink-0" />
+              <ShieldCheck className="w-4.5 h-4.5 text-[var(--teal-deep)] dark:text-[var(--teal-ink)] shrink-0" />
             ) : (
-              <ShieldAlert className="w-4.5 h-4.5 text-amber-700 dark:text-amber-400 shrink-0" />
+              <ShieldAlert className="w-4.5 h-4.5 text-[var(--amber-deep)] dark:text-amber-400 shrink-0" />
             )}
             <span className="truncate min-w-0">{isPositive ? "Thẻ còn giá trị sử dụng" : (note || "Thông báo BHXH")}</span>
           </div>
@@ -106,13 +106,13 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
               <button
                 type="button"
                 onClick={() => setHistoryOpen(true)}
-                className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-white dark:bg-slate-800 text-[var(--navy)] dark:text-[var(--teal)] hover:bg-[var(--navy-50)] dark:hover:bg-slate-700 border border-[var(--navy)]/20 dark:border-white/10 flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-[var(--surface)] dark:bg-slate-800 text-[var(--navy)] dark:text-[var(--teal-ink)] hover:bg-[var(--navy-50)] dark:hover:bg-slate-700 border border-[var(--navy)]/20 dark:border-white/10 flex items-center gap-1 cursor-pointer transition shadow-2xs"
                 title="Xem chi tiết lịch sử khám chữa bệnh và các lần kiểm tra thẻ"
               >
-                <History className="w-3.5 h-3.5 text-[var(--teal-deep)] dark:text-[var(--teal)]" />
+                <History className="w-3.5 h-3.5 text-[var(--teal-deep)] dark:text-[var(--teal-ink)]" />
                 <span>Lịch sử KCB</span>
                 {hasHistoryKcb && (
-                  <span className="bg-[var(--teal)] text-white px-1.5 py-0.2 rounded-full text-[9.5px]">
+                  <span className="bg-[var(--teal)] text-white px-1.5 py-0.2 rounded-full text-[11px]">
                     {the.dsLichSuKCB?.length}
                   </span>
                 )}
@@ -126,7 +126,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 min-w-0">
             <div className="min-w-0">
               <span className="text-[var(--mute)] text-[11.5px] block">Mã thẻ BHYT:</span>
-              <strong className="font-mono text-[13.5px] text-[var(--navy-deep)] dark:text-[var(--teal)] tracking-wider truncate block">
+              <strong className="font-mono text-[13.5px] text-[var(--navy-deep)] dark:text-[var(--teal-ink)] tracking-wider truncate block">
                 {the.maThe}
               </strong>
             </div>
@@ -140,7 +140,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
 
             <div className="min-w-0">
               <span className="text-[var(--mute)] text-[11.5px] block">Hạn sử dụng thẻ:</span>
-              <strong className="font-mono text-[12.5px] text-[var(--teal-deep)] dark:text-[var(--teal)] block">
+              <strong className="font-mono text-[12.5px] text-[var(--teal-deep)] dark:text-[var(--teal-ink)] block">
                 {the.tuNgay || "?"} → {the.denNgay || "?"}
               </strong>
             </div>
@@ -148,7 +148,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
             <div className="sm:col-span-2 min-w-0">
               <span className="text-[var(--mute)] text-[11.5px] block">Nơi ĐKBĐ ban đầu:</span>
               <strong className="text-[12.5px] text-[var(--ink)] dark:text-slate-100 flex items-center gap-1.5 min-w-0" title={the.tenDKBD || ""}>
-                <Building2 className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />
+                <Building2 className="w-3.5 h-3.5 text-[var(--teal-ink)] shrink-0" />
                 <span className="truncate">{the.tenDKBD || "Chưa xác định"}</span>
                 {the.maDKBD && <span className="font-mono text-[var(--mute)] font-normal text-[11.5px] shrink-0">({the.maDKBD})</span>}
               </strong>
@@ -157,7 +157,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
             {the.namNamLienTuc && (
               <div className="min-w-0">
                 <span className="text-[var(--mute)] text-[11.5px] block">Đủ 5 năm liên tục:</span>
-                <span className="font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] text-[12px]">
+                <span className="font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal-ink)] text-[12px]">
                   ✨ {the.namNamLienTuc}
                 </span>
               </div>
@@ -186,7 +186,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 className={`relative px-4 py-2 rounded-xl text-[13px] font-bold transition-colors flex items-center gap-2 cursor-pointer z-10 ${
                   activeTab === "kcb"
                     ? "text-white"
-                    : "bg-white dark:bg-slate-800 text-[var(--mute)] hover:text-[var(--ink)] border border-[var(--line)] dark:border-white/10"
+                    : "bg-[var(--surface)] dark:bg-slate-800 text-[var(--mute)] hover:text-[var(--ink)] border border-[var(--line)] dark:border-white/10"
                 }`}
               >
                 {activeTab === "kcb" && (
@@ -198,7 +198,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 )}
                 <Activity className="w-4 h-4" />
                 <span>Lịch sử Khám Chữa Bệnh</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-white/20">
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-white/20">
                   {the.dsLichSuKCB?.length || 0}
                 </span>
               </button>
@@ -209,7 +209,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 className={`relative px-4 py-2 rounded-xl text-[13px] font-bold transition-colors flex items-center gap-2 cursor-pointer z-10 ${
                   activeTab === "kt"
                     ? "text-white"
-                    : "bg-white dark:bg-slate-800 text-[var(--mute)] hover:text-[var(--ink)] border border-[var(--line)] dark:border-white/10"
+                    : "bg-[var(--surface)] dark:bg-slate-800 text-[var(--mute)] hover:text-[var(--ink)] border border-[var(--line)] dark:border-white/10"
                 }`}
               >
                 {activeTab === "kt" && (
@@ -221,7 +221,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 )}
                 <Clock className="w-4 h-4" />
                 <span>Lịch sử Kiểm tra Thẻ</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-white/20">
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-white/20">
                   {the.dsLichSuKT?.length || 0}
                 </span>
               </button>
@@ -231,11 +231,11 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
             {activeTab === "kcb" && (
               <div className="space-y-3">
                 {!the.dsLichSuKCB || the.dsLichSuKCB.length === 0 ? (
-                  <div className="py-12 text-center text-[var(--mute)] text-[13px] italic bg-white rounded-2xl border border-[var(--line)]">
+                  <div className="py-12 text-center text-[var(--mute)] text-[13px] italic bg-[var(--surface)] rounded-2xl border border-[var(--line)]">
                     Không có lịch sử khám chữa bệnh nào được ghi nhận trên cổng BHXH.
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden shadow-xs">
+                  <div className="bg-[var(--surface)] rounded-2xl border border-[var(--line)] overflow-hidden shadow-xs">
                     <div className="overflow-x-auto max-h-[380px]">
                       <table className="w-full text-left text-[12px] border-collapse">
                         <thead className="sticky top-0 bg-[var(--navy)] text-white text-[11px] uppercase tracking-wider font-bold z-10">
@@ -280,11 +280,11 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
             {activeTab === "kt" && (
               <div className="space-y-3">
                 {!the.dsLichSuKT || the.dsLichSuKT.length === 0 ? (
-                  <div className="py-12 text-center text-[var(--mute)] text-[13px] italic bg-white rounded-2xl border border-[var(--line)]">
+                  <div className="py-12 text-center text-[var(--mute)] text-[13px] italic bg-[var(--surface)] rounded-2xl border border-[var(--line)]">
                     Không có nhật ký kiểm tra thẻ nào trên Cổng tiếp nhận.
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden shadow-xs">
+                  <div className="bg-[var(--surface)] rounded-2xl border border-[var(--line)] overflow-hidden shadow-xs">
                     <div className="overflow-x-auto max-h-[380px]">
                       <table className="w-full text-left text-[12px] border-collapse">
                         <thead className="sticky top-0 bg-[var(--navy)] text-white text-[11px] uppercase tracking-wider font-bold z-10">

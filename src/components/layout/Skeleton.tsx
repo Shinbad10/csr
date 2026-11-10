@@ -42,7 +42,7 @@ export function SkeletonList({ items = 6 }: { items?: number }) {
       {Array.from({ length: items }).map((_, i) => (
         <div
           key={i}
-          className="w-full rounded-[var(--r-md)] border border-[var(--line)] p-3 space-y-2 bg-white"
+          className="w-full rounded-[var(--r-md)] border border-[var(--line)] p-3 space-y-2 bg-[var(--surface)]"
         >
           <div className="flex items-center justify-between gap-2">
             <Skeleton className="h-4 w-[55%]" />
@@ -104,7 +104,7 @@ export function Skeleton3Column() {
   return (
     <div className="flex-1 flex flex-col xl:flex-row min-h-0 border-t border-[var(--line)] overflow-hidden bg-[var(--surface-bg)] animate-fade-in">
       {/* Cột 1: Danh sách */}
-      <aside className="w-full sm:w-[380px] xl:w-[310px] shrink-0 border-r border-[var(--line)] bg-white flex flex-col">
+      <aside className="w-full sm:w-[380px] xl:w-[310px] shrink-0 border-r border-[var(--line)] bg-[var(--surface)] flex flex-col">
         <div className="p-3.5 border-b border-[var(--line)] flex items-center justify-between">
           <Skeleton className="h-4 w-28" />
         </div>
@@ -118,7 +118,7 @@ export function Skeleton3Column() {
       </aside>
 
       {/* Cột 2: Thông tin BN + Timeline */}
-      <section className="w-full xl:w-[380px] shrink-0 border-r border-[var(--line)] bg-white flex flex-col p-4 space-y-6">
+      <section className="w-full xl:w-[380px] shrink-0 border-r border-[var(--line)] bg-[var(--surface)] flex flex-col p-4 space-y-6">
         <div className="space-y-3 pb-4 border-b border-[var(--line-soft)]">
           <Skeleton className="h-3 w-20" />
           <Skeleton className="h-6 w-56" />

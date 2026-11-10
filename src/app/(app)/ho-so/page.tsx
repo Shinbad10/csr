@@ -305,7 +305,7 @@ export default function HoSoPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm tên, mã BN, SĐT, CCCD…"
-              className="input-field pl-9 pr-8 bg-white"
+              className="input-field pl-9 pr-8 bg-[var(--surface)]"
             />
             {search && (
               <button 
@@ -336,7 +336,7 @@ export default function HoSoPage() {
                   type="button"
                   onClick={() => handleSyncGoogleSheet(false)}
                   disabled={syncing}
-                  className="btn border border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-3 text-[12.5px] font-bold flex items-center gap-1.5 rounded-l-lg rounded-r-none cursor-pointer disabled:opacity-50 transition-all"
+                  className="btn border border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-3 text-[12.5px] font-bold flex items-center gap-1.5 rounded-l-lg rounded-r-none cursor-pointer disabled:opacity-50 transition"
                 >
                   {syncing ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--navy)]" />
@@ -350,7 +350,7 @@ export default function HoSoPage() {
                   type="button"
                   onClick={() => setSyncMenuOpen((o) => !o)}
                   disabled={syncing}
-                  className="btn border border-l-0 border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-2 rounded-r-lg rounded-l-none cursor-pointer disabled:opacity-50 transition-all"
+                  className="btn border border-l-0 border-[var(--navy-100)] bg-[var(--navy-50)] text-[var(--navy)] hover:bg-[var(--navy-100)] h-9 px-2 rounded-r-lg rounded-l-none cursor-pointer disabled:opacity-50 transition"
                   title="Tùy chọn đồng bộ Sheet"
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
@@ -365,14 +365,14 @@ export default function HoSoPage() {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 4 }}
                     transition={{ type: "spring", stiffness: 450, damping: 28 }}
-                    className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-white dark:bg-slate-900 shadow-xl py-1 z-50 text-[12.5px] font-medium"
+                    className="absolute right-0 mt-1 w-64 rounded-xl border border-[var(--line-strong)] bg-[var(--surface)] dark:bg-slate-900 shadow-xl py-1 z-50 text-[12.5px] font-medium"
                   >
                     <button
                       type="button"
                       onClick={() => handleSyncGoogleSheet(false)}
                       className="w-full text-left px-3.5 py-2.5 hover:bg-[var(--surface-soft)] dark:hover:bg-slate-800 text-[var(--ink)] dark:text-slate-200 flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
-                      <RefreshCw className="w-4 h-4 text-[var(--navy)] dark:text-[var(--teal)] shrink-0" />
+                      <RefreshCw className="w-4 h-4 text-[var(--navy)] dark:text-[var(--teal-ink)] shrink-0" />
                       <div>
                         <div className="font-bold text-[12.5px]">Đồng bộ hàng đợi</div>
                         <div className="text-[11px] text-[var(--mute)]">Đẩy các thay đổi mới nhất lên Sheet</div>
@@ -422,7 +422,7 @@ export default function HoSoPage() {
       >
       <div className="card p-0 overflow-hidden flex flex-col flex-1 min-h-0">
         {/* Mobile: danh sách thẻ */}
-        <div className="md:hidden flex-1 min-h-0 overflow-y-auto divide-y divide-[var(--line-soft)] bg-white">
+        <div className="md:hidden flex-1 min-h-0 overflow-y-auto divide-y divide-[var(--line-soft)] bg-[var(--surface)]">
           {loading && rows.length === 0 ? (
             <div className="py-16 flex justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-[var(--navy)]" />

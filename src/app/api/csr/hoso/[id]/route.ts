@@ -6,7 +6,7 @@ import { can, canAny, type Capability } from "@/lib/permissions";
 import { inferNextState } from "@/lib/stateMachine";
 import { audit } from "@/lib/audit";
 import { triggerSync } from "@/lib/syncWorker";
-import { parseDiag } from "@/lib/csr";
+import { parseDiag, apDungXacNhanMo } from "@/lib/csr";
 import { parseFieldConfig, isFieldOn, huongXuTriToKhuyenNghi } from "@/lib/formFields";
 import { broadcastEvent } from "@/lib/events";
 import { dotBiKhoa, duocSuaSauNgayKham, truongPhieuKhamBiDoi, soSanhCuMoi, THONG_BAO_KHOA } from "@/lib/khoaSua";
@@ -115,6 +115,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const n = parseInt(String(body.mucHuongBHYT), 10);
       update.mucHuongBHYT = Number.isFinite(n) ? n : null;
     }
+
+    // Đánh dấu / sửa / bỏ "Đã mổ" bằng tay → ghi (hoặc xoá) tên người xác nhận
+    apDungXacNhanMo(cur, update, session.user.name || session.user.id, "Sửa hồ sơ");
 
     let data;
     try {
@@ -282,6 +285,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
     for (const f of ["benhSu", "xacNhanDieuTri"] as const)
       if (body[f] !== undefined) update[f] = body[f] == null ? null : Boolean(body[f]);
+
+    // Đánh dấu / sửa / bỏ "Đã mổ" bằng tay → ghi (hoặc xoá) tên người xác nhận
+    apDungXacNhanMo(current, update, session.user.name || session.user.id, "Theo dõi");
 
     let data;
     try {

@@ -128,7 +128,7 @@ export default function FacilitySwitcher({
             type="button"
             suppressHydrationWarning
             onClick={() => setOpen((v) => !v)}
-            className={`h-9 w-full flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl border text-[12px] font-bold transition-all cursor-pointer select-none ${
+            className={`h-9 w-full flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl border text-[12px] font-bold transition cursor-pointer select-none ${
               open
                 ? "bg-white/20 border-white/35 text-white shadow-inner"
                 : "bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/25"
@@ -136,7 +136,7 @@ export default function FacilitySwitcher({
             title={facilityName}
           >
             <div className="flex items-center gap-1.5 min-w-0 flex-1 text-left" suppressHydrationWarning>
-              <div className="w-5.5 h-5.5 rounded-lg bg-[var(--teal)]/20 text-[var(--teal)] flex items-center justify-center shrink-0">
+              <div className="w-5.5 h-5.5 rounded-lg bg-[var(--teal)]/20 text-[var(--teal-ink)] flex items-center justify-center shrink-0">
                 <Building2 className="w-3 h-3" />
               </div>
               <span className="truncate text-white font-bold" suppressHydrationWarning>{facilityName}</span>
@@ -151,20 +151,20 @@ export default function FacilitySwitcher({
             type="button"
             suppressHydrationWarning
             onClick={() => setOpen((v) => !v)}
-            className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer select-none flex items-center justify-between gap-2.5 ${
+            className={`w-full p-2.5 rounded-xl border transition cursor-pointer select-none flex items-center justify-between gap-2.5 ${
               open
-                ? "bg-white dark:bg-slate-800 border-[var(--teal)] shadow-sm ring-2 ring-[var(--teal)]/15"
-                : "bg-white dark:bg-slate-800 border-[var(--line-strong)] dark:border-white/10 hover:border-[var(--teal)] shadow-2xs"
+                ? "bg-[var(--surface)] dark:bg-slate-800 border-[var(--teal)] shadow-sm ring-2 ring-[var(--teal)]/15"
+                : "bg-[var(--surface)] dark:bg-slate-800 border-[var(--line-strong)] dark:border-white/10 hover:border-[var(--teal)] shadow-2xs"
             }`}
             title={facilityName}
           >
             <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left" suppressHydrationWarning>
-              <div className="w-7 h-7 rounded-lg bg-[var(--navy-50)] text-[var(--navy)] dark:text-[var(--teal)] flex items-center justify-center shrink-0 border border-[var(--navy-100)]">
+              <div className="w-7 h-7 rounded-lg bg-[var(--navy-50)] text-[var(--navy)] dark:text-[var(--teal-ink)] flex items-center justify-center shrink-0 border border-[var(--navy-100)]">
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="min-w-0" suppressHydrationWarning>
                 <div className="text-[12.5px] font-bold text-[var(--ink)] dark:text-white truncate leading-tight" suppressHydrationWarning>{facilityName}</div>
-                <div className="text-[9.5px] font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] uppercase tracking-wider mt-0.5">
+                <div className="text-[11px] font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal-ink)] uppercase tracking-wider mt-0.5">
                   Đang hoạt động
                 </div>
               </div>
@@ -184,11 +184,11 @@ export default function FacilitySwitcher({
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               suppressHydrationWarning
-              className="overflow-hidden mt-2 bg-white dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-xl shadow-xs p-1.5 text-[var(--ink)]"
+              className="overflow-hidden mt-2 bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-xl shadow-xs p-1.5 text-[var(--ink)]"
             >
-              <div className="px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1 flex items-center justify-between">
+              <div className="px-2 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1 flex items-center justify-between">
                 <span>Chọn cơ sở làm việc</span>
-                <span className="text-[9.5px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] font-sans">{coSos.length} cơ sở</span>
+                <span className="text-[11px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal-ink)] font-sans">{coSos.length} cơ sở</span>
               </div>
               <div className="max-h-[220px] overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar">
                 {coSos.length === 0 ? (
@@ -201,7 +201,7 @@ export default function FacilitySwitcher({
                         key={c.id}
                         type="button"
                         onClick={() => { setOpen(false); onChange(c.id); }}
-                        className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[12px] font-bold transition-all text-left cursor-pointer ${
+                        className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[12px] font-bold transition text-left cursor-pointer ${
                           active
                             ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
                             : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
@@ -210,7 +210,7 @@ export default function FacilitySwitcher({
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <div
                             className={`w-5.5 h-5.5 rounded-md flex items-center justify-center shrink-0 ${
-                              active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
+                              active ? "bg-white/20 text-[var(--teal-ink)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
                             }`}
                           >
                             <Building2 className="w-3 h-3" />
@@ -218,9 +218,9 @@ export default function FacilitySwitcher({
                           <span className="leading-snug break-words flex-1 min-w-0">{c.ten}</span>
                         </div>
                         {active ? (
-                          <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" strokeWidth={3} />
+                          <Check className="w-3.5 h-3.5 text-[var(--teal-ink)] shrink-0" strokeWidth={3} />
                         ) : (
-                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
+                          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
                             {c.id}
                           </span>
                         )}
@@ -242,11 +242,11 @@ export default function FacilitySwitcher({
               exit={{ opacity: 0, scale: 0.95, y: 6 }}
               transition={{ type: "spring", stiffness: 450, damping: 30 }}
               suppressHydrationWarning
-              className="absolute left-0 top-full mt-2 w-[290px] z-50 bg-white dark:bg-slate-900 border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 text-[var(--ink)]"
+              className="absolute left-0 top-full mt-2 w-[290px] z-50 bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 text-[var(--ink)]"
             >
-              <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1.5 flex items-center justify-between">
+              <div className="px-2.5 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1.5 flex items-center justify-between">
                 <span>Danh sách cơ sở</span>
-                <span className="text-[9px] font-bold text-[var(--teal-deep)] font-sans">{coSos.length} cơ sở</span>
+                <span className="text-[11px] font-bold text-[var(--teal-deep)] font-sans">{coSos.length} cơ sở</span>
               </div>
               <div className="max-h-[240px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                 {coSos.length === 0 ? (
@@ -259,7 +259,7 @@ export default function FacilitySwitcher({
                         key={c.id}
                         type="button"
                         onClick={() => { setOpen(false); onChange(c.id); }}
-                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition-all text-left cursor-pointer ${
+                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition text-left cursor-pointer ${
                           active
                             ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
                             : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
@@ -268,7 +268,7 @@ export default function FacilitySwitcher({
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <div
                             className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                              active ? "bg-white/20 text-[var(--teal)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
+                              active ? "bg-white/20 text-[var(--teal-ink)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
                             }`}
                           >
                             <Building2 className="w-3.5 h-3.5" />
@@ -276,9 +276,9 @@ export default function FacilitySwitcher({
                           <span className="leading-snug break-words flex-1 min-w-0">{c.ten}</span>
                         </div>
                         {active ? (
-                          <Check className="w-4 h-4 text-[var(--teal)] shrink-0" strokeWidth={3} />
+                          <Check className="w-4 h-4 text-[var(--teal-ink)] shrink-0" strokeWidth={3} />
                         ) : (
-                          <span className="text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
+                          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
                             {c.id}
                           </span>
                         )}
@@ -301,7 +301,7 @@ export default function FacilitySwitcher({
       className={`h-9 flex items-center gap-2 bg-white/10 text-white border border-white/15 rounded-xl px-2.5 py-1 text-[12px] font-bold shadow-xs ${className}`}
       title={facilityName}
     >
-      <div className="w-5.5 h-5.5 rounded-lg bg-[var(--teal)]/20 text-[var(--teal)] flex items-center justify-center shrink-0">
+      <div className="w-5.5 h-5.5 rounded-lg bg-[var(--teal)]/20 text-[var(--teal-ink)] flex items-center justify-center shrink-0">
         <Building2 className="w-3 h-3" />
       </div>
       <span className="truncate text-white font-bold" suppressHydrationWarning>{facilityName}</span>
@@ -309,15 +309,15 @@ export default function FacilitySwitcher({
   ) : (
     <div
       suppressHydrationWarning
-      className={`p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-[var(--line-strong)] dark:border-white/10 shadow-2xs flex items-center gap-2.5 ${className}`}
+      className={`p-2.5 rounded-xl bg-[var(--surface)] dark:bg-slate-800 border border-[var(--line-strong)] dark:border-white/10 shadow-2xs flex items-center gap-2.5 ${className}`}
       title={facilityName}
     >
-      <div className="w-7 h-7 rounded-lg bg-[var(--navy-50)] text-[var(--navy)] dark:text-[var(--teal)] flex items-center justify-center shrink-0 border border-[var(--navy-100)]">
+      <div className="w-7 h-7 rounded-lg bg-[var(--navy-50)] text-[var(--navy)] dark:text-[var(--teal-ink)] flex items-center justify-center shrink-0 border border-[var(--navy-100)]">
         <Building2 className="w-4 h-4" />
       </div>
       <div className="min-w-0" suppressHydrationWarning>
         <div className="text-[12.5px] font-bold text-[var(--ink)] dark:text-white truncate leading-tight" suppressHydrationWarning>{facilityName}</div>
-        <div className="text-[9.5px] font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] uppercase tracking-wider mt-0.5">
+        <div className="text-[11px] font-mono font-bold text-[var(--teal-deep)] dark:text-[var(--teal-ink)] uppercase tracking-wider mt-0.5">
           Cơ sở trực thuộc
         </div>
       </div>

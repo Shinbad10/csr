@@ -28,7 +28,7 @@ import {
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
-import { fmtDate, parseDiag, statusOf, fmtSinhTuoi, ageOf, fmtNgaySinh, mucHuongHienThi } from "@/lib/csr";
+import { fmtDate, parseDiag, statusOf, fmtSinhTuoi, ageOf, fmtNgaySinh, mucHuongHienThi, docXacNhanMo } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -201,7 +201,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center font-serif text-[20px] font-bold shadow-[var(--navy-shadow)] shrink-0">
-                {data?.hoTen ? String(data.hoTen).trim().split(/\s+/).pop()!.charAt(0).toUpperCase() : <User className="w-5 h-5 text-[var(--teal)]" />}
+                {data?.hoTen ? String(data.hoTen).trim().split(/\s+/).pop()!.charAt(0).toUpperCase() : <User className="w-5 h-5 text-[var(--teal-ink)]" />}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -209,7 +209,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                     {data?.hoTen || (loading ? "Đang tải hồ sơ…" : "Hồ sơ bệnh nhân")}
                   </h2>
                   {data?.nhom && (
-                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${data.nhom === "A" ? "bg-[var(--rose-soft)] text-[var(--rose)] border-rose-200/70" : "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-amber-200/70"}`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border ${data.nhom === "A" ? "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]/21" : "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/21"}`}>
                       Nhóm {data.nhom}
                     </span>
                   )}
@@ -253,11 +253,11 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                 return (
                   <li key={s.label} className={`${next ? "flex-1" : "shrink-0"} min-w-0 flex items-start`}>
                     <div className="flex items-center gap-2 min-w-0 shrink-0 max-w-full">
-                      <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-mono font-bold shrink-0 ${dot}`}>
+                      <span className={`w-5 h-5 rounded-full border flex items-center justify-center text-[11px] font-mono font-bold shrink-0 ${dot}`}>
                         {s.fail ? <X className="w-3 h-3" /> : s.done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
                       </span>
                       <div className="min-w-0 leading-tight">
-                        <div className="text-[9.5px] font-mono font-bold uppercase tracking-[0.08em] text-[var(--mute)] whitespace-nowrap">{s.label}</div>
+                        <div className="text-[11px] font-mono font-bold uppercase tracking-[0.08em] text-[var(--mute)] whitespace-nowrap">{s.label}</div>
                         <div className={`text-[12px] font-semibold truncate ${s.fail ? "text-[var(--rose)]" : s.done ? "text-[var(--ink)]" : "text-[var(--mute)]"}`}>
                           {s.sub}
                         </div>
@@ -411,8 +411,8 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                 <InfoRow label="Thẻ BHYT">
                   {data.bhyt ? (
                     <span className="inline-flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-indigo-700">{data.bhyt}</span>
-                      <span className="px-1.5 py-px rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                      <span className="font-mono text-[var(--navy)]">{data.bhyt}</span>
+                      <span className="px-1.5 py-px rounded-md text-[11px] font-bold bg-[var(--navy-soft)] text-[var(--navy)] border border-[var(--navy-200)]/70">
                         {mucHuongHienThi(data).hetHan ? "Thẻ hết hạn" : mucHuongHienThi(data).text}
                       </span>
                     </span>
@@ -455,6 +455,18 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
                   ) : null}
                 </InfoRow>
                 <InfoRow label="Ngày mổ" mono>{data.ngayMoThucTe ? fmtDate(data.ngayMoThucTe) : null}</InfoRow>
+                {(() => {
+                  const xn = docXacNhanMo(data.ghiChuMat2);
+                  return xn ? (
+                    <InfoRow label="Xác nhận mổ">
+                      <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
+                        <span className="font-semibold text-[var(--ink)]">{xn.ten}</span>
+                        {xn.luc && <span className="font-mono text-[12px] text-[var(--mute)] tabular-nums">{xn.luc}</span>}
+                        {xn.nguon && <span className="text-[12px] text-[var(--mute)]">· {xn.nguon}</span>}
+                      </span>
+                    </InfoRow>
+                  ) : null;
+                })()}
                 <InfoRow label="Chi phí thực thu" mono>{fmtMoney(data.soTienThucThu)}</InfoRow>
                 <InfoRow label="Ngày tái khám" mono>{data.ngayTaiKham ? fmtDate(data.ngayTaiKham) : null}</InfoRow>
               </InfoSection>
@@ -543,12 +555,12 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
   }, [hoSoId]);
 
   const getEventIcon = (type: string, isSystem?: boolean) => {
-    if (isSystem) return <Zap className="w-[12px] h-[12px] text-[#7c3aed]" />;
+    if (isSystem) return <Zap className="w-[12px] h-[12px] text-[var(--violet)]" />;
     switch (type) {
       case "create": return <PlusCircle className="w-[12px] h-[12px] text-[var(--navy)]" />;
-      case "clinical": return <Stethoscope className="w-[12px] h-[12px] text-[var(--teal)]" />;
+      case "clinical": return <Stethoscope className="w-[12px] h-[12px] text-[var(--teal-ink)]" />;
       case "group": return <Tag className="w-[12px] h-[12px] text-[var(--amber)]" />;
-      case "his": return <Zap className="w-[12px] h-[12px] text-[#7c3aed]" />;
+      case "his": return <Zap className="w-[12px] h-[12px] text-[var(--violet)]" />;
       case "surgery": return <HeartPulse className="w-[12px] h-[12px] text-[var(--teal-deep)]" />;
       case "log": return <MessageSquare className="w-[12px] h-[12px] text-[var(--amber)]" />;
       case "edit": return <Edit3 className="w-[12px] h-[12px] text-[var(--navy)]" />;
@@ -557,7 +569,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
   };
 
   const getAvatarStyle = (role: string, isSystem?: boolean) => {
-    if (isSystem) return "bg-[#f3eaf8] text-[#7c3aed] border-[#e9d5ff]";
+    if (isSystem) return "bg-[var(--violet-soft)] text-[var(--violet)] border-[var(--violet)]/30";
     if (role.toLowerCase().includes("quản lý") || role.toLowerCase().includes("admin"))
       return "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]/20";
     if (role.toLowerCase().includes("bác sĩ") || role.toLowerCase().includes("lâm sàng"))
@@ -573,7 +585,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
     if (cls === "badge-red" || cls === "badge-rose") return "bg-[var(--rose-soft)] text-[var(--rose)] border-[var(--rose)]/20";
     if (cls === "badge-amber" || cls === "badge-orange" || type === "group" || type === "log") return "bg-[var(--amber-soft)] text-[var(--amber)] border-[var(--amber)]/20";
     if (cls === "badge-teal" || cls === "badge-green" || type === "clinical" || type === "surgery") return "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/20";
-    if (cls === "badge-purple" || type === "his") return "bg-[#f3eaf8] text-[#7c3aed] border-[#e9d5ff]";
+    if (cls === "badge-purple" || type === "his") return "bg-[var(--violet-soft)] text-[var(--violet)] border-[var(--violet)]/30";
     if (cls === "badge-blue" || type === "create") return "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/20";
     return "bg-[var(--line-soft)] text-[var(--ink-soft)] border-[var(--line)]";
   };
@@ -599,7 +611,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 6 }}
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-[1600px] max-h-full flex flex-col overflow-hidden border border-slate-200 dark:border-white/10"
+        className="bg-[var(--surface)] dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-[1600px] max-h-full flex flex-col overflow-hidden border border-[var(--line)] dark:border-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Editorial Navy Gradient & Teal Glow */}
@@ -609,12 +621,12 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-[10px] bg-white/10 flex items-center justify-center border border-white/20 shadow-inner shrink-0">
-              <Clock className="w-4.5 h-4.5 text-[var(--teal)] animate-pulse" />
+              <Clock className="w-4.5 h-4.5 text-[var(--teal-ink)] animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="font-serif text-[20px] font-bold tracking-[-0.02em] text-white">
-                  Lịch sử <span className="italic font-normal text-[var(--teal)]">thao tác</span> &amp; thay đổi dữ liệu
+                  Lịch sử <span className="italic font-normal text-[var(--teal-ink)]">thao tác</span> &amp; thay đổi dữ liệu
                 </h2>
               </div>
               <p className="text-[12.5px] text-white/80 font-mono mt-[3px] flex items-center gap-2 font-sans">
@@ -661,12 +673,12 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
               {data.events.map((ev: any) => (
                 <div key={ev.id} className="relative group animate-fade-in">
                   {/* Timeline node icon */}
-                  <div className="absolute -left-6 top-3 w-5 h-5 rounded-full bg-[var(--surface)] border-2 border-[var(--line-strong)] shadow-[var(--shadow-xs)] flex items-center justify-center z-10 group-hover:border-[var(--teal)] group-hover:scale-110 transition-all">
+                  <div className="absolute -left-6 top-3 w-5 h-5 rounded-full bg-[var(--surface)] border-2 border-[var(--line-strong)] shadow-[var(--shadow-xs)] flex items-center justify-center z-10 group-hover:border-[var(--teal)] group-hover:scale-110 transition">
                     {getEventIcon(ev.type, ev.userInfo?.isSystem)}
                   </div>
 
                   {/* Event card - Standard Card Pattern */}
-                  <div className="bg-[var(--surface)] rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] transition-all duration-200 overflow-hidden">
+                  <div className="bg-[var(--surface)] rounded-[var(--r-lg)] border border-[var(--line)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] transition duration-200 overflow-hidden">
                     {/* Card Header: Người thao tác */}
                     <div className="bg-[var(--surface-soft)] px-3.5 py-2 border-b border-[var(--line-soft)] flex flex-wrap items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2.5">
@@ -686,7 +698,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
                             <span className="font-sans font-bold text-[12.5px] text-[var(--ink)]">
                               {ev.userInfo?.name || "Nhân viên hệ thống"}
                             </span>
-                            <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-[4px] bg-[var(--line-soft)] text-[var(--ink-soft)] border border-[var(--line)]">
+                            <span className="font-mono text-[11px] font-semibold px-1.5 py-0.5 rounded-[4px] bg-[var(--line-soft)] text-[var(--ink-soft)] border border-[var(--line)]">
                               Mã: {ev.userInfo?.maNV || "N/A"}
                             </span>
                           </div>
@@ -698,7 +710,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
                       </div>
 
                       {/* Thời gian */}
-                      <div className="font-mono text-[10.5px] font-medium text-[var(--ink-soft)] bg-[var(--surface)] px-2 py-1 rounded-[6px] border border-[var(--line)] shadow-[var(--shadow-xs)] flex items-center gap-1">
+                      <div className="font-mono text-[11px] font-medium text-[var(--ink-soft)] bg-[var(--surface)] px-2 py-1 rounded-[6px] border border-[var(--line)] shadow-[var(--shadow-xs)] flex items-center gap-1">
                         <Clock className="w-3 h-3 text-[var(--mute)]" />
                         {new Date(ev.time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                         {" · "}
@@ -714,7 +726,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
                           {ev.action}
                         </h4>
                         {ev.badge && (
-                          <span className={`font-mono text-[10px] font-bold uppercase tracking-[0.05em] px-2 py-0.5 rounded-[6px] border ${getBadgeStyle(ev.badge.cls, ev.type)}`}>
+                          <span className={`font-mono text-[11px] font-bold uppercase tracking-[0.05em] px-2 py-0.5 rounded-[6px] border ${getBadgeStyle(ev.badge.cls, ev.type)}`}>
                             {ev.badge.label}
                           </span>
                         )}
@@ -724,7 +736,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
                       {ev.message && (
                         <div className="bg-[var(--surface-soft)] p-2.5 rounded-[8px] border border-[var(--line)] text-[12px] text-[var(--ink)] font-sans leading-[1.5] shadow-2xs">
                           <div className="flex items-start gap-2">
-                            <MessageSquare className="w-3.5 h-3.5 text-[var(--teal)] mt-0.5 shrink-0" />
+                            <MessageSquare className="w-3.5 h-3.5 text-[var(--teal-ink)] mt-0.5 shrink-0" />
                             <div className="whitespace-pre-wrap flex-1">{ev.message}</div>
                           </div>
                         </div>
@@ -734,10 +746,10 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
                       {ev.changes && ev.changes.length > 0 && (
                         <div className="border border-[var(--line)] rounded-[8px] overflow-hidden bg-[var(--surface)]">
                           <div className="bg-[var(--surface-soft)] px-3 py-1.5 border-b border-[var(--line)] flex items-center justify-between">
-                            <span className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
+                            <span className="font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--mute)]">
                               Chi tiết cập nhật ({ev.changes.length} trường)
                             </span>
-                            <span className="font-sans text-[10px] text-[var(--mute)] font-medium">
+                            <span className="font-sans text-[11px] text-[var(--mute)] font-medium">
                               {ev.changes.some((c: { oldValue?: string }) => c.oldValue !== undefined) ? "Giá trị cũ → mới" : "* Giá trị mới ghi nhận"}
                             </span>
                           </div>
@@ -784,7 +796,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
         {/* Footer */}
         <div className="bg-[var(--surface)] p-[16px] px-[24px] border-t border-[var(--line)] flex items-center justify-between">
           <div className="flex items-center gap-2 text-[11.5px] text-[var(--mute)] font-sans">
-            <ShieldAlert className="w-[14px] h-[14px] text-[var(--teal)] shrink-0" />
+            <ShieldAlert className="w-[14px] h-[14px] text-[var(--teal-ink)] shrink-0" />
             <span>
               Lịch sử lưu trữ toàn bộ thao tác, hiển thị <strong className="text-[var(--ink)] font-semibold">mã nhân viên</strong> và <strong className="text-[var(--ink)] font-semibold">chức vụ thực tế</strong> của người chỉnh sửa.
             </span>

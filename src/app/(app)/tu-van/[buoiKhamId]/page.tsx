@@ -33,33 +33,33 @@ const PHUONG_AN_TU_VAN = [
     key: "A",
     label: "Đồng ý điều trị tại BV",
     sub: "Lên lịch mổ & xếp xe đón bệnh nhân",
-    activeClass: "bg-emerald-50 text-emerald-950 border-emerald-600 font-extrabold",
-    badgeClass: "bg-emerald-600",
-    tone: "bg-emerald-600 text-white border-emerald-600",
+    activeClass: "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)] font-extrabold",
+    badgeClass: "bg-[var(--green)]",
+    tone: "bg-[var(--green)] text-white border-[var(--green)]",
   },
   {
     key: "B",
     label: "Cần suy nghĩ thêm",
     sub: "Cần tư vấn thêm & hẹn liên hệ lại",
-    activeClass: "bg-amber-50 text-amber-950 border-amber-600 font-extrabold",
-    badgeClass: "bg-amber-600",
-    tone: "bg-amber-500 text-white border-amber-500",
+    activeClass: "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)] font-extrabold",
+    badgeClass: "bg-[var(--amber)]",
+    tone: "bg-[var(--amber)] text-white border-[var(--amber)]",
   },
   {
     key: "HoiGiaDinh",
     label: "Hỏi lại gia đình",
     sub: "Chờ người nhà trao đổi & chốt sau",
-    activeClass: "bg-purple-50 text-purple-950 border-purple-600 font-extrabold",
-    badgeClass: "bg-purple-600",
-    tone: "bg-purple-500 text-white border-purple-500",
+    activeClass: "bg-[var(--violet-soft)] text-[var(--violet-deep)] border-[var(--violet)] font-extrabold",
+    badgeClass: "bg-[var(--violet)]",
+    tone: "bg-[var(--violet)] text-white border-[var(--violet)]",
   },
   {
     key: "TheoDoi",
     label: "Theo dõi tại nhà",
     sub: "Chưa có chỉ định can thiệp tại viện",
-    activeClass: "bg-sky-50 text-sky-950 border-sky-600 font-extrabold",
-    badgeClass: "bg-sky-600",
-    tone: "bg-sky-600 text-white border-sky-600",
+    activeClass: "bg-[var(--navy-soft)] text-[var(--navy)] border-[var(--navy)] font-extrabold",
+    badgeClass: "bg-[var(--navy)]",
+    tone: "bg-[var(--navy)] text-white border-[var(--navy)]",
   },
 ];
 
@@ -190,8 +190,8 @@ function isBenhLyPatient(p: HoSo): boolean {
 
 function Info({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   return (
-    <div className="bg-white border border-[var(--line-soft)] rounded-[var(--r-md)] px-3.5 py-2.5 shadow-[var(--shadow-sm)]">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--mute)]">{label}</div>
+    <div className="bg-[var(--surface)] border border-[var(--line-soft)] rounded-[var(--r-md)] px-3.5 py-2.5 shadow-[var(--shadow-sm)]">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--mute)]">{label}</div>
       <div className={`text-[13.5px] font-semibold text-[var(--ink)] mt-0.5 ${mono ? "font-mono" : ""}`}>{value || "—"}</div>
     </div>
   );
@@ -537,9 +537,9 @@ export default function TuVanSessionPage() {
             onClick={handleExportRutGon}
             disabled={exportingExcel}
             title="Xuất file Excel mẫu rút gọn (TT, Họ tên, Năm sinh, SĐT, Ghi chú XNĐ / KNM)"
-            className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-emerald-600/30 bg-emerald-50 text-[12.5px] font-semibold text-emerald-800 hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
+            className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-[var(--green)]/30 bg-[var(--green-soft)] text-[12.5px] font-semibold text-[var(--green-deep)] hover:bg-[var(--green)] hover:text-white transition-colors cursor-pointer disabled:opacity-60 shadow-2xs"
           >
-            {exportingExcel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />}
+            {exportingExcel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-[var(--green-deep)] group-hover:text-white" />}
             <span>Xuất Excel rút gọn</span>
           </button>
         }
@@ -557,17 +557,17 @@ export default function TuVanSessionPage() {
           </div>
           <div className="px-3 pb-2 flex items-center justify-between gap-2">
             <div className="relative">
-              <button onClick={() => setFilterOpen((v) => !v)} className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-[var(--r-sm)] border transition-colors ${filter ? "text-[var(--gold-deep)] bg-[var(--gold-soft)] border-[var(--gold-line)]" : "text-[var(--ink-soft)] bg-white border-[var(--line)] hover:bg-[var(--surface-hover)]"}`}><SlidersHorizontal className="w-3.5 h-3.5" /> Bộ lọc{filter ? " · 1" : ""}</button>
+              <button onClick={() => setFilterOpen((v) => !v)} className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-[var(--r-sm)] border transition-colors ${filter ? "text-[var(--gold-deep)] bg-[var(--gold-soft)] border-[var(--gold-line)]" : "text-[var(--ink-soft)] bg-[var(--surface)] border-[var(--line)] hover:bg-[var(--surface-hover)]"}`}><SlidersHorizontal className="w-3.5 h-3.5" /> Bộ lọc{filter ? " · 1" : ""}</button>
               {filterOpen && (<>
                 <div className="fixed inset-0 z-20" onClick={() => setFilterOpen(false)} />
-                <div className="absolute left-0 top-full mt-1 z-30 w-[210px] bg-white border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-lg)] p-1 animate-fade-in">
+                <div className="absolute left-0 top-full mt-1 z-30 w-[210px] bg-[var(--surface)] border border-[var(--line)] rounded-[var(--r-md)] shadow-[var(--shadow-lg)] p-1 animate-fade-in">
                   {FILTERS.map((ft) => <button key={ft.key} onClick={() => { setFilter(ft.key); setFilterOpen(false); }} className={`w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-[12.5px] font-semibold flex items-center justify-between ${filter === ft.key ? "bg-[var(--navy-50)] text-[var(--navy)]" : "text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"}`}>{ft.label}{filter === ft.key && <Check className="w-3.5 h-3.5" />}</button>)}
                 </div>
               </>)}
             </div>
 
             {/* Sắp xếp Toggle */}
-            <div className="flex items-center gap-0.5 bg-[var(--surface-soft)] p-0.5 rounded-md border border-[var(--line-soft)] text-[10.5px]">
+            <div className="flex items-center gap-0.5 bg-[var(--surface-soft)] p-0.5 rounded-md border border-[var(--line-soft)] text-[11px]">
               <button
                 type="button"
                 onClick={() => {
@@ -575,8 +575,8 @@ export default function TuVanSessionPage() {
                   sortOrderMapRef.current = computeOrderMap(patients);
                   setSortVersion((v) => v + 1);
                 }}
-                className={`px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer ${sortBy === "loai"
-                    ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                className={`px-1.5 py-0.5 rounded font-semibold transition cursor-pointer ${sortBy === "loai"
+                    ? "bg-[var(--surface)] text-[var(--navy)] shadow-2xs font-bold"
                     : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
               >
@@ -585,8 +585,8 @@ export default function TuVanSessionPage() {
               <button
                 type="button"
                 onClick={() => setSortBy("stt")}
-                className={`px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer ${sortBy === "stt"
-                    ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                className={`px-1.5 py-0.5 rounded font-semibold transition cursor-pointer ${sortBy === "stt"
+                    ? "bg-[var(--surface)] text-[var(--navy)] shadow-2xs font-bold"
                     : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
               >
@@ -615,13 +615,13 @@ export default function TuVanSessionPage() {
                     // Thẻ tên chuẩn UI/UX — Viền 4 cạnh đồng đều, tinh tế, KHÔNG dùng vệt màu 1 bên
                     let cardBgCls = "";
                     if (active) {
-                      cardBgCls = "bg-indigo-50/75 border-2 border-[#002b7f] shadow-sm ring-2 ring-indigo-500/15";
+                      cardBgCls = "bg-[var(--navy-soft)]/75 border-2 border-[#002b7f] shadow-sm ring-2 ring-[var(--navy)]/15";
                     } else if (hasCallLog) {
                       // Đã gọi: Nền trắng viền nhạt Xanh Emerald đồng đều 4 cạnh
-                      cardBgCls = "bg-emerald-50/25 border border-emerald-300/80 hover:border-emerald-500 hover:shadow-xs shadow-2xs";
+                      cardBgCls = "bg-[var(--green-soft)]/25 border border-[var(--green)]/32 hover:border-[var(--green)] hover:shadow-xs shadow-2xs";
                     } else {
                       // Chưa gọi: Nền trắng viền nhạt Đỏ Hồng đồng đều 4 cạnh
-                      cardBgCls = "bg-rose-50/15 border border-rose-200/90 hover:border-rose-400 hover:shadow-xs shadow-2xs";
+                      cardBgCls = "bg-[var(--rose-soft)]/15 border border-[var(--rose)]/27 hover:border-[var(--rose)] hover:shadow-xs shadow-2xs";
                     }
 
                     return (
@@ -629,15 +629,15 @@ export default function TuVanSessionPage() {
                         key={p.id}
                         type="button"
                         onClick={() => pick(p)}
-                        className={`w-full text-left rounded-xl px-3 py-2.5 transition-all duration-150 relative cursor-pointer space-y-1.5 ${cardBgCls}`}
+                        className={`w-full text-left rounded-xl px-3 py-2.5 transition duration-150 relative cursor-pointer space-y-1.5 ${cardBgCls}`}
                       >
                         {/* Dòng 1: STT nhỏ + Tên bệnh nhân + Badges trạng thái */}
                         <div className="flex items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-mono text-[11px] font-extrabold text-[#031da6] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200/90 shrink-0">
+                            <span className="font-mono text-[11px] font-extrabold text-[var(--navy)] bg-[var(--navy-soft)] px-1.5 py-0.5 rounded border border-[var(--navy-200)]/90 shrink-0">
                               #{sttPadded}
                             </span>
-                            <h4 className={`text-[14px] font-extrabold truncate leading-tight ${active ? "text-[#031da6]" : "text-slate-900"}`}>
+                            <h4 className={`text-[14px] font-extrabold truncate leading-tight ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
                               {p.hoTen}
                             </h4>
                           </div>
@@ -645,29 +645,29 @@ export default function TuVanSessionPage() {
                           {/* Status Badges */}
                           <div className="flex items-center gap-1 shrink-0">
                             {p.nhom === "A" || p.xacNhanDieuTri === true ? (
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs">
+                              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[var(--green)]/15 text-[var(--green-deep)] border border-[var(--green)]/40 shadow-2xs">
                                 Đồng ý
                               </span>
                             ) : p.nhom === "HoiGiaDinh" ? (
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300 shadow-2xs">
+                              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[var(--violet)]/15 text-[var(--violet-deep)] border border-[var(--violet)]/40 shadow-2xs">
                                 Hỏi gia đình
                               </span>
                             ) : p.nhom === "B" || p.xacNhanDieuTri === false ? (
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
+                              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[var(--amber)]/15 text-[var(--amber-deep)] border border-[var(--amber)]/40 shadow-2xs">
                                 Suy nghĩ
                               </span>
                             ) : p.nhom === "TheoDoi" ? (
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-sky-100 text-sky-950 border border-sky-300 shadow-2xs">
+                              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[var(--navy)]/10 text-[var(--navy)] border border-[var(--navy-200)] shadow-2xs">
                                 Theo dõi
                               </span>
                             ) : null}
 
                             {hasCallLog ? (
-                              <span className="text-[10.5px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-600 text-white shadow-2xs flex items-center gap-0.5">
+                              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-[var(--green)] text-white shadow-2xs flex items-center gap-0.5">
                                 ✓ Đã gọi
                               </span>
                             ) : (
-                              <span className="text-[10.5px] font-extrabold text-rose-800 bg-rose-100 px-2 py-0.5 rounded-md border border-rose-300 shadow-2xs flex items-center gap-0.5">
+                              <span className="text-[11px] font-extrabold text-[var(--rose-deep)] bg-[var(--rose)]/12 px-2 py-0.5 rounded-md border border-[var(--rose)]/40 shadow-2xs flex items-center gap-0.5">
                                 📞 Chưa gọi
                               </span>
                             )}
@@ -676,15 +676,15 @@ export default function TuVanSessionPage() {
                               const timing = checkSurgeryTiming(p, buoiKham?.ngayKham);
                               if (timing.isDaMo) {
                                 return (
-                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs flex items-center gap-0.5" title={p.ngayMoThucTe ? `Đã mổ ngày: ${fmtDate(p.ngayMoThucTe)}` : "Đã phẫu thuật"}>
-                                    <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
+                                  <span className="text-[11px] font-extrabold px-1.5 py-0.5 rounded-md bg-[var(--green)]/15 text-[var(--green-deep)] border border-[var(--green)]/40 shadow-2xs flex items-center gap-0.5" title={p.ngayMoThucTe ? `Đã mổ ngày: ${fmtDate(p.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                                    <Check className="w-3 h-3 text-[var(--green-deep)] stroke-[3]" />
                                     <span>Đã mổ</span>
                                   </span>
                                 );
                               }
                               if (timing.isDaMoTruoc) {
                                 return (
-                                  <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300 shadow-2xs flex items-center gap-0.5" title={p.ngayMoThucTe ? `Đã mổ trước ngày khám (${fmtDate(p.ngayMoThucTe)})` : "Mổ trước đây"}>
+                                  <span className="text-[11px] font-extrabold px-1.5 py-0.5 rounded-md bg-[var(--violet)]/15 text-[var(--violet-deep)] border border-[var(--violet)]/40 shadow-2xs flex items-center gap-0.5" title={p.ngayMoThucTe ? `Đã mổ trước ngày khám (${fmtDate(p.ngayMoThucTe)})` : "Mổ trước đây"}>
                                     <span>🟣 Mổ trước</span>
                                   </span>
                                 );
@@ -695,10 +695,10 @@ export default function TuVanSessionPage() {
                         </div>
 
                         {/* Dòng 2: Tóm tắt thông tin: Giới tính · Tuổi · BHYT · Chẩn đoán bệnh lý */}
-                        <div className="flex items-center gap-1.5 text-[12px] text-slate-600 font-semibold truncate">
+                        <div className="flex items-center gap-1.5 text-[12px] text-[var(--ink-soft)] font-semibold truncate">
                           {infoSub && <span className="shrink-0">{infoSub}</span>}
                           {diags.length > 0 && (
-                            <span className="text-rose-700 font-extrabold truncate">
+                            <span className="text-[var(--rose-deep)] font-extrabold truncate">
                               {infoSub ? "· " : ""}{diags.join(", ")}
                             </span>
                           )}
@@ -706,28 +706,28 @@ export default function TuVanSessionPage() {
 
                         {/* Dòng 3 & 4: Ghi chú tư vấn & Nhật ký cuộc gọi gần nhất */}
                         {(p.ghiChuTuVan || (hasCallLog && latestCallLog?.noiDung)) ? (
-                          <div className="pt-1.5 border-t border-slate-200/70 space-y-1">
+                          <div className="pt-1.5 border-t border-[var(--line)]/70 space-y-1">
                             {p.ghiChuTuVan && (
-                              <div className="text-[12px] font-medium text-slate-800 flex items-center gap-1.5 truncate">
-                                <span className="font-extrabold text-[#031da6] shrink-0 font-sans not-italic">Note TV:</span>
-                                <span className="truncate italic text-slate-700" title={p.ghiChuTuVan}>{p.ghiChuTuVan}</span>
+                              <div className="text-[12px] font-medium text-[var(--ink)] flex items-center gap-1.5 truncate">
+                                <span className="font-extrabold text-[var(--navy)] shrink-0 font-sans not-italic">Note TV:</span>
+                                <span className="truncate italic text-[var(--ink-soft)]" title={p.ghiChuTuVan}>{p.ghiChuTuVan}</span>
                               </div>
                             )}
 
                             {hasCallLog && latestCallLog?.noiDung ? (
-                              <div className="text-[12px] font-semibold text-emerald-950 flex items-center gap-1.5 truncate">
-                                <PhoneCall className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                <span className="font-extrabold text-emerald-950 shrink-0 font-sans not-italic">Gọi:</span>
-                                <span className="truncate text-slate-900" title={latestCallLog.noiDung}>{latestCallLog.noiDung}</span>
+                              <div className="text-[12px] font-semibold text-[var(--green-deep)] flex items-center gap-1.5 truncate">
+                                <PhoneCall className="w-3.5 h-3.5 text-[var(--green-deep)] shrink-0" />
+                                <span className="font-extrabold text-[var(--green-deep)] shrink-0 font-sans not-italic">Gọi:</span>
+                                <span className="truncate text-[var(--ink)]" title={latestCallLog.noiDung}>{latestCallLog.noiDung}</span>
                                 {latestCallLog.ngay && (
-                                  <span className="text-[10px] text-slate-400 shrink-0 font-mono ml-auto font-medium">({fmtDate(latestCallLog.ngay)})</span>
+                                  <span className="text-[11px] text-[var(--mute)] shrink-0 font-mono ml-auto font-medium">({fmtDate(latestCallLog.ngay)})</span>
                                 )}
                               </div>
                             ) : null}
                           </div>
                         ) : (
-                          <div className="text-[11.5px] text-rose-700 italic flex items-center gap-1 pt-1 border-t border-slate-200/70 truncate">
-                            <span className="font-bold text-rose-800 shrink-0 font-sans not-italic">Note:</span>
+                          <div className="text-[11.5px] text-[var(--rose-deep)] italic flex items-center gap-1 pt-1 border-t border-[var(--line)]/70 truncate">
+                            <span className="font-bold text-[var(--rose-deep)] shrink-0 font-sans not-italic">Note:</span>
                             <span className="truncate font-sans not-italic font-medium">Chưa gọi điện</span>
                           </div>
                         )}
@@ -745,34 +745,34 @@ export default function TuVanSessionPage() {
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <h2 className="font-serif font-bold text-[18px] text-[var(--ink)] uppercase tracking-tight">{selected.hoTen}</h2>
-                    <span className="font-mono font-bold text-[var(--navy)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
+                    <span className="font-mono font-bold text-[var(--navy)] bg-[var(--surface)] px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line)] text-xs shadow-2xs">{selected.maBN}</span>
 
                     {/* Badge đã tư vấn sau khám */}
                     {isTuVanDone(selected) ? (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-300 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5 text-teal-600" />
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/45 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
                         <span>Đã tư vấn sau khám {selected.nhatKy?.length ? `(${selected.nhatKy.length} cuộc gọi)` : ""}</span>
                       </span>
                     ) : (
-                      <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-300 flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="text-xs font-bold text-[var(--rose-deep)] bg-[var(--rose-soft)] px-2 py-0.5 rounded border border-[var(--rose)]/40 flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5 text-[var(--rose)]" />
                         <span>Chưa tư vấn sau khám</span>
                       </span>
                     )}
 
                     {selected.nhom === "A" || selected.xacNhanDieuTri === true ? (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-300">Đồng ý điều trị</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-[var(--green-soft)] text-[var(--green-deep)] border border-[var(--green)]/40">Đồng ý điều trị</span>
                     ) : selected.nhom === "B" || selected.xacNhanDieuTri === false ? (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">Cần suy nghĩ</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-[var(--amber-soft)] text-[var(--amber-deep)] border border-[var(--amber)]/40">Cần suy nghĩ</span>
                     ) : selected.nhom === "TheoDoi" ? (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-300">Theo dõi tại nhà</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-[var(--navy-soft)] text-[var(--navy)] border border-[var(--navy-200)]">Theo dõi tại nhà</span>
                     ) : null}
 
                     {(() => {
                       const timingSel = selected ? checkSurgeryTiming(selected, buoiKham?.ngayKham) : null;
                       if (timingSel?.isDaMo) {
                         return (
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-emerald-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Ngày mổ sau đợt khám: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-[var(--green)] text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Ngày mổ sau đợt khám: ${fmtDate(selected.ngayMoThucTe)}` : "Đã phẫu thuật"}>
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                             <span>Đã mổ</span>
                             {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-emerald-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
@@ -781,7 +781,7 @@ export default function TuVanSessionPage() {
                       }
                       if (timingSel?.isDaMoTruoc) {
                         return (
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-purple-600 text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Đã từng mổ trước ngày khám tầm soát (${fmtDate(selected.ngayMoThucTe)})` : "Mổ trước đây"}>
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-[var(--violet)] text-white shadow-2xs flex items-center gap-1" title={selected.ngayMoThucTe ? `Đã từng mổ trước ngày khám tầm soát (${fmtDate(selected.ngayMoThucTe)})` : "Mổ trước đây"}>
                             <span>🟣 Mổ trước đây</span>
                             {selected.ngayMoThucTe && <span className="font-mono text-[11px] text-purple-100 font-normal">({fmtDate(selected.ngayMoThucTe)})</span>}
                           </span>
@@ -789,10 +789,10 @@ export default function TuVanSessionPage() {
                       }
                       return null;
                     })()}
-                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-white px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{[selected.gioiTinh, fmtSinhTuoi(selected)].filter(Boolean).join(" · ")}</span>
+                    <span className="text-xs font-bold text-[var(--ink-soft)] bg-[var(--surface)] px-2 py-0.5 rounded-[var(--r-sm)] border border-[var(--line-soft)]">{[selected.gioiTinh, fmtSinhTuoi(selected)].filter(Boolean).join(" · ")}</span>
                   </div>
                   {getPatientDiags(selected).length > 0 && (
-                    <div className="text-[11.5px] font-bold text-[var(--rose)] bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    <div className="text-[11.5px] font-bold text-[var(--rose)] bg-[var(--rose-soft)] px-2 py-0.5 rounded border border-[var(--rose)]/30">
                       Chẩn đoán: {getPatientDiags(selected).join(" · ")}
                     </div>
                   )}
@@ -808,14 +808,14 @@ export default function TuVanSessionPage() {
                   {selected.bhyt && (
                     <div className="flex items-center gap-1">
                       <span className="text-[var(--mute)] font-semibold">BHYT:</span>
-                      <span className="font-mono font-bold text-[var(--teal-deep)] bg-white px-1.5 py-0.5 rounded border border-[var(--line)]">{selected.bhyt} <span className="text-[10px] text-[var(--teal)]">({bhytLevel(selected.bhyt)})</span></span>
+                      <span className="font-mono font-bold text-[var(--teal-deep)] bg-[var(--surface)] px-1.5 py-0.5 rounded border border-[var(--line)]">{selected.bhyt} <span className="text-[11px] text-[var(--teal-ink)]">({bhytLevel(selected.bhyt)})</span></span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
                     <span className="text-[var(--mute)] font-semibold">Điện thoại:</span>
                     {selected.sdt ? (
-                      <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded border border-[var(--line)]">
-                        <Phone className="w-3 h-3 text-[var(--teal)]" /> {selected.sdt}
+                      <a href={`tel:${selected.sdt}`} className="font-mono font-bold text-[var(--navy)] hover:text-[var(--teal-deep)] inline-flex items-center gap-1 bg-[var(--surface)] px-2 py-0.5 rounded border border-[var(--line)]">
+                        <Phone className="w-3 h-3 text-[var(--teal-ink)]" /> {selected.sdt}
                       </a>
                     ) : (
                       <span className="font-mono text-[var(--mute)]">—</span>
@@ -846,15 +846,15 @@ export default function TuVanSessionPage() {
               {/* HAI CỘT VỚI CHIỀU CAO CỐ ĐỊNH, CUỘN ĐỘC LẬP TRONG TỪNG CARD */}
               <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-4 items-stretch overflow-hidden">
                 {/* CỘT TRÁI: PHƯƠNG ÁN & KẾ HOẠCH ĐIỀU TRỊ */}
-                <div className="card p-0 shadow-xs border border-slate-200 bg-white flex flex-col h-full min-h-0 overflow-hidden">
-                  <div className="p-3.5 px-4 sm:px-5 border-b border-slate-100 shrink-0">
-                    <h3 className="font-serif text-[15px] sm:text-[16px] font-black text-slate-900 flex items-center gap-2">
-                      <UserCog className="w-5 h-5 text-[#031da6]" /> Phương án & Kế hoạch điều trị
+                <div className="card p-0 shadow-xs border border-[var(--line)] bg-[var(--surface)] flex flex-col h-full min-h-0 overflow-hidden">
+                  <div className="p-3.5 px-4 sm:px-5 border-b border-[var(--line)] shrink-0">
+                    <h3 className="font-serif text-[15px] sm:text-[16px] font-black text-[var(--ink)] flex items-center gap-2">
+                      <UserCog className="w-5 h-5 text-[var(--navy)]" /> Phương án & Kế hoạch điều trị
                     </h3>
                   </div>
                   <div className="p-4 sm:p-5 flex-1 overflow-y-auto custom-scrollbar space-y-4">
                     <div>
-                      <label className="text-[13px] font-extrabold text-[#031da6] uppercase tracking-wider block mb-2">
+                      <label className="text-[13px] font-extrabold text-[var(--navy)] uppercase tracking-wider block mb-2">
                         Phương án / Quyết định của bệnh nhân *
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -869,20 +869,20 @@ export default function TuVanSessionPage() {
                                 nhom: opt.key,
                                 ngayHen: opt.key === "A" && !s.ngayHen ? tomorrowISO() : s.ngayHen,
                               }))}
-                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${active
-                                  ? `${opt.tone} shadow-sm ring-2 ring-indigo-500/20 font-bold`
-                                  : "bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-400 hover:shadow-2xs"
+                              className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${active
+                                  ? `${opt.tone} shadow-sm ring-2 ring-[var(--navy)]/20 font-bold`
+                                  : "bg-[var(--surface-soft)]/80 border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--surface)] hover:border-[var(--line-strong)] hover:shadow-2xs"
                                 }`}
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-extrabold text-[13.5px]">{opt.label}</span>
                                 {active && (
-                                  <span className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                                  <span className="w-5 h-5 rounded-full bg-[var(--green)] flex items-center justify-center shrink-0 shadow-2xs">
                                     <Check className="w-3 h-3 text-white stroke-[3]" />
                                   </span>
                                 )}
                               </div>
-                              <span className={`text-[11.5px] mt-1.5 leading-snug ${active ? "opacity-95 font-semibold" : "text-slate-500 font-medium"}`}>
+                              <span className={`text-[11.5px] mt-1.5 leading-snug ${active ? "opacity-95 font-semibold" : "text-[var(--mute)] font-medium"}`}>
                                 {opt.sub}
                               </span>
                             </button>
@@ -892,17 +892,17 @@ export default function TuVanSessionPage() {
                     </div>
 
                     {f.nhom === "A" ? (
-                      <div className="pt-3 border-t border-slate-200 animate-fade-in space-y-3">
+                      <div className="pt-3 border-t border-[var(--line)] animate-fade-in space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           <div>
-                            <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+                            <label className="text-[12px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1 block">
                               Số tiền dự kiến (đồng)
                             </label>
                             <input
                               inputMode="numeric"
                               value={f.soTienBao ? new Intl.NumberFormat("vi-VN").format(Number(f.soTienBao)) : ""}
                               onChange={(e) => setF((s) => ({ ...s, soTienBao: e.target.value.replace(/[^\d]/g, "") }))}
-                              className="w-full h-10 px-3 font-mono font-bold text-teal-800 bg-white border border-slate-300 rounded-lg text-[14px] focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs"
+                              className="w-full h-10 px-3 font-mono font-bold text-[var(--teal-deep)] bg-[var(--surface)] border border-[var(--line-strong)] rounded-lg text-[14px] focus:ring-2 focus:ring-[var(--navy)]/20 focus:border-[var(--navy)] shadow-2xs"
                               placeholder="VD: 5.000.000"
                             />
                           </div>
@@ -915,7 +915,7 @@ export default function TuVanSessionPage() {
                             />
                           </div>
                           <div className="sm:col-span-2">
-                            <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                            <label className="text-[12px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
                               <Bus className="w-4 h-4 text-[var(--navy)]" />
                               <span>Đoàn xe đón (Điểm đón & Giờ xe đón)</span>
                             </label>
@@ -935,8 +935,8 @@ export default function TuVanSessionPage() {
                             />
                             {f.diemDon && (
                               <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-fade-in">
-                                <span className="text-[11.5px] font-bold text-slate-700">Chuyến xe đón:</span>
-                                <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 shadow-2xs items-center gap-0.5 flex-wrap">
+                                <span className="text-[11.5px] font-bold text-[var(--ink-soft)]">Chuyến xe đón:</span>
+                                <div className="inline-flex p-0.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--line)] shadow-2xs items-center gap-0.5 flex-wrap">
                                   {availableConvoys.map((num) => {
                                     const curDoan = parseDoanXe({ ghiChuTuVan: f.ghiChuTuVan, diemDon: f.diemDon });
                                     const isSelected = curDoan === num;
@@ -951,10 +951,10 @@ export default function TuVanSessionPage() {
                                             ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, num),
                                           }));
                                         }}
-                                        className={`px-3 py-1 rounded-md text-[11.5px] font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                        className={`px-3 py-1 rounded-md text-[11.5px] font-black transition cursor-pointer flex items-center gap-1.5 ${
                                           isSelected
                                             ? `${color.activeBg} shadow-2xs`
-                                            : `text-slate-600 hover:${color.text} hover:bg-white`
+                                            : `text-[var(--ink-soft)] hover:${color.text} hover:bg-[var(--surface)]`
                                         }`}
                                       >
                                         <Bus className="w-3.5 h-3.5" />
@@ -973,28 +973,28 @@ export default function TuVanSessionPage() {
                                       ghiChuTuVan: formatGhiChuWithDoanXe(s.ghiChuTuVan, nextNum),
                                     }));
                                   }}
-                                  className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-dashed border-slate-300 hover:border-slate-400 transition-colors flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                                  className="px-2.5 py-1 rounded-lg text-[11.5px] font-bold text-[var(--ink-soft)] bg-[var(--surface)] hover:bg-[var(--surface-soft)] border border-dashed border-[var(--line-strong)] hover:border-[var(--line-strong)] transition-colors flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
                                   title="Thêm chuyến xe mới (Đoàn 3, Đoàn 4...)"
                                 >
-                                  <Plus className="w-3.5 h-3.5 text-slate-500" />
+                                  <Plus className="w-3.5 h-3.5 text-[var(--mute)]" />
                                   <span>Thêm đoàn {Math.max(...availableConvoys, 1) + 1}</span>
                                 </button>
                               </div>
                             )}
 
                             {/* Khu vực Người nhà đi kèm xe đón */}
-                            <div className="mt-3 pt-2.5 border-t border-slate-200/80">
-                              <div className="rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50/50 via-white to-purple-50/30 p-3 shadow-2xs space-y-2.5">
+                            <div className="mt-3 pt-2.5 border-t border-[var(--line)]/80">
+                              <div className="rounded-xl border border-[var(--violet)]/30 bg-[var(--violet-soft)]/40 p-3 shadow-2xs space-y-2.5">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                    <div className="w-6 h-6 rounded-lg bg-[var(--violet)]/15 text-[var(--violet-deep)] flex items-center justify-center shrink-0">
                                       <Users className="w-3.5 h-3.5" />
                                     </div>
                                     <div>
-                                      <span className="text-[12px] font-extrabold text-purple-950 uppercase tracking-wide">
+                                      <span className="text-[12px] font-extrabold text-[var(--violet-deep)] uppercase tracking-wide">
                                         Người nhà đi kèm xe đón
                                       </span>
-                                      <span className="text-[11px] text-purple-600/80 ml-2 hidden sm:inline">
+                                      <span className="text-[11px] text-[var(--violet)]/80 ml-2 hidden sm:inline">
                                         (Tính vào số lượng chỗ trên xe đón)
                                       </span>
                                     </div>
@@ -1012,9 +1012,9 @@ export default function TuVanSessionPage() {
                                           soNguoiNha: checked ? (s.soNguoiNha || 1) : 0,
                                         }));
                                       }}
-                                      className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer"
+                                      className="w-4 h-4 text-[var(--violet)] rounded border-[var(--line-strong)] focus:ring-[var(--violet)] cursor-pointer"
                                     />
-                                    <span className="text-[12px] font-bold text-purple-900">
+                                    <span className="text-[12px] font-bold text-[var(--violet-deep)]">
                                       {f.coNguoiNha ? "Có người nhà đi cùng" : "Đi một mình"}
                                     </span>
                                   </label>
@@ -1024,24 +1024,24 @@ export default function TuVanSessionPage() {
                                   <div className="space-y-2.5 pt-1 animate-fade-in">
                                     {/* Số lượng người nhà */}
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-[11px] font-bold text-slate-600">Số lượng người nhà:</span>
+                                      <span className="text-[11px] font-bold text-[var(--ink-soft)]">Số lượng người nhà:</span>
                                       <div className="inline-flex items-center gap-1">
                                         {[1, 2, 3].map((cnt) => (
                                           <button
                                             key={cnt}
                                             type="button"
                                             onClick={() => setF((s) => ({ ...s, soNguoiNha: cnt }))}
-                                            className={`px-2.5 py-0.5 rounded-md text-[11.5px] font-bold transition-all cursor-pointer ${
+                                            className={`px-2.5 py-0.5 rounded-md text-[11.5px] font-bold transition cursor-pointer ${
                                               f.soNguoiNha === cnt
-                                                ? "bg-purple-600 text-white shadow-2xs"
-                                                : "bg-white text-slate-700 border border-slate-200 hover:border-purple-300 hover:bg-purple-50/50"
+                                                ? "bg-[var(--violet)] text-white shadow-2xs"
+                                                : "bg-[var(--surface)] text-[var(--ink-soft)] border border-[var(--line)] hover:border-[var(--violet)]/40 hover:bg-[var(--violet-soft)]/50"
                                             }`}
                                           >
                                             {cnt} người
                                           </button>
                                         ))}
                                         <div className="inline-flex items-center gap-1 ml-2">
-                                          <span className="text-[11px] text-slate-400">Khác:</span>
+                                          <span className="text-[11px] text-[var(--mute)]">Khác:</span>
                                           <input
                                             type="number"
                                             min="1"
@@ -1050,7 +1050,7 @@ export default function TuVanSessionPage() {
                                             onChange={(e) =>
                                               setF((s) => ({ ...s, soNguoiNha: Math.max(1, parseInt(e.target.value) || 1) }))
                                             }
-                                            className="w-12 h-6 text-center font-mono font-bold text-[11.5px] rounded border border-slate-300 bg-white"
+                                            className="w-12 h-6 text-center font-mono font-bold text-[11.5px] rounded border border-[var(--line-strong)] bg-[var(--surface)]"
                                           />
                                         </div>
                                       </div>
@@ -1061,14 +1061,14 @@ export default function TuVanSessionPage() {
                                       {/* Mối quan hệ / Tên */}
                                       <div>
                                         <div className="flex items-center justify-between mb-1">
-                                          <label className="text-[11px] font-bold text-slate-700">Mối quan hệ / Tên:</label>
+                                          <label className="text-[11px] font-bold text-[var(--ink-soft)]">Mối quan hệ / Tên:</label>
                                           <div className="flex items-center gap-1">
                                             {["Con gái", "Con trai", "Vợ", "Chồng", "Cháu"].map((tag) => (
                                               <button
                                                 key={tag}
                                                 type="button"
                                                 onClick={() => setF((s) => ({ ...s, tenQuanHe: tag }))}
-                                                className="text-[10px] px-1.5 py-0.5 rounded bg-white hover:bg-purple-100 text-purple-900 border border-purple-200/80 cursor-pointer font-medium transition-colors"
+                                                className="text-[11px] px-1.5 py-0.5 rounded bg-[var(--surface)] hover:bg-[var(--violet)]/15 text-[var(--violet-deep)] border border-[var(--violet)]/24 cursor-pointer font-medium transition-colors"
                                               >
                                                 {tag}
                                               </button>
@@ -1080,33 +1080,33 @@ export default function TuVanSessionPage() {
                                           value={f.tenQuanHe}
                                           onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
                                           placeholder="VD: Con gái, Vợ, Chồng, Cháu..."
-                                          className="w-full h-8 px-2.5 text-[12px] font-medium text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-200 bg-white"
+                                          className="w-full h-8 px-2.5 text-[12px] font-medium text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-[var(--violet)] focus:ring-1 focus:ring-[var(--violet)]/30 bg-[var(--surface)]"
                                         />
                                       </div>
 
                                       {/* SĐT người nhà */}
                                       <div>
                                         <div className="flex items-center gap-1 mb-1">
-                                          <Phone className="w-3 h-3 text-purple-600" />
-                                          <label className="text-[11px] font-bold text-slate-700">Số điện thoại người nhà:</label>
+                                          <Phone className="w-3 h-3 text-[var(--violet)]" />
+                                          <label className="text-[11px] font-bold text-[var(--ink-soft)]">Số điện thoại người nhà:</label>
                                         </div>
                                         <input
                                           type="tel"
                                           value={f.sdtNguoiNha}
                                           onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
                                           placeholder="09xx xxx xxx"
-                                          className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-200 bg-white"
+                                          className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-[var(--violet)] focus:ring-1 focus:ring-[var(--violet)]/30 bg-[var(--surface)]"
                                         />
                                       </div>
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="text-[11.5px] text-slate-500 italic bg-white/70 px-2.5 py-1.5 rounded-lg border border-purple-100 flex items-center justify-between">
+                                  <div className="text-[11.5px] text-[var(--mute)] italic bg-white/70 px-2.5 py-1.5 rounded-lg border border-[var(--violet)]/20 flex items-center justify-between">
                                     <span>Bệnh nhân đi một mình, không đăng ký chỗ cho người nhà.</span>
                                     <button
                                       type="button"
                                       onClick={() => setF((s) => ({ ...s, coNguoiNha: true, soNguoiNha: s.soNguoiNha || 1 }))}
-                                      className="text-purple-700 font-bold hover:underline not-italic cursor-pointer text-[11px]"
+                                      className="text-[var(--violet-deep)] font-bold hover:underline not-italic cursor-pointer text-[11px]"
                                     >
                                       + Thêm người nhà đi kèm xe
                                     </button>
@@ -1118,9 +1118,9 @@ export default function TuVanSessionPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="space-y-2 pt-3 border-t border-slate-200 animate-fade-in">
-                        <div className="text-[12px] text-slate-700 font-medium flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-300">
-                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-amber-500" : f.nhom === "HoiGiaDinh" ? "bg-purple-500" : f.nhom === "TheoDoi" ? "bg-sky-500" : "bg-slate-400"}`} />
+                      <div className="space-y-2 pt-3 border-t border-[var(--line)] animate-fade-in">
+                        <div className="text-[12px] text-[var(--ink-soft)] font-medium flex items-center gap-2.5 bg-[var(--surface-soft)] p-3 rounded-xl border border-dashed border-[var(--line-strong)]">
+                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${f.nhom === "B" ? "bg-[var(--amber)]" : f.nhom === "HoiGiaDinh" ? "bg-[var(--violet)]" : f.nhom === "TheoDoi" ? "bg-[var(--navy)]" : "bg-slate-400"}`} />
                           <span>
                             {f.nhom === "B"
                               ? "Bệnh nhân cần suy nghĩ thêm — Thông tin lịch đón và viện phí được tạm khóa. Vui lòng ghi lại lý do/hẹn gọi lại vào ô ghi chú bên dưới."
@@ -1132,9 +1132,9 @@ export default function TuVanSessionPage() {
                           </span>
                         </div>
                         {f.nhom === "HoiGiaDinh" && (
-                          <div className="p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2">
-                            <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-purple-950">
-                              <Users className="w-3.5 h-3.5 text-purple-600" />
+                          <div className="p-2.5 rounded-xl border border-[var(--violet)]/30 bg-[var(--violet-soft)]/50 space-y-2">
+                            <div className="flex items-center gap-1.5 text-[11.5px] font-bold text-[var(--violet-deep)]">
+                              <Users className="w-3.5 h-3.5 text-[var(--violet)]" />
                               <span>Thông tin người nhà cần liên hệ lại:</span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1143,14 +1143,14 @@ export default function TuVanSessionPage() {
                                 value={f.tenQuanHe}
                                 onChange={(e) => setF((s) => ({ ...s, tenQuanHe: e.target.value }))}
                                 placeholder="Tên / Mối quan hệ (VD: Con gái, Vợ...)"
-                                className="w-full h-8 px-2.5 text-[12px] font-medium text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 bg-white"
+                                className="w-full h-8 px-2.5 text-[12px] font-medium text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-[var(--violet)] bg-[var(--surface)]"
                               />
                               <input
                                 type="tel"
                                 value={f.sdtNguoiNha}
                                 onChange={(e) => setF((s) => ({ ...s, sdtNguoiNha: e.target.value }))}
                                 placeholder="SĐT người nhà: 09xx xxx xxx"
-                                className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:border-purple-600 bg-white"
+                                className="w-full h-8 px-2.5 text-[12px] font-mono font-bold text-[var(--ink)] border border-[var(--line-strong)] rounded-lg focus:outline-none focus:border-[var(--violet)] bg-[var(--surface)]"
                               />
                             </div>
                           </div>
@@ -1158,8 +1158,8 @@ export default function TuVanSessionPage() {
                       </div>
                     )}
 
-                    <div className="pt-3 border-t border-slate-200">
-                      <label className="text-[12px] font-bold text-slate-800 uppercase tracking-wider mb-1.5 block">
+                    <div className="pt-3 border-t border-[var(--line)]">
+                      <label className="text-[12px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1.5 block">
                         Ghi chú tư vấn / Dặn dò bệnh nhân
                       </label>
                       <textarea
@@ -1167,29 +1167,29 @@ export default function TuVanSessionPage() {
                         onChange={(e) => setF((s) => ({ ...s, ghiChuTuVan: e.target.value }))}
                         placeholder="Nhập ghi chú tư vấn, nguyện vọng, người liên hệ, hẹn gọi lại…"
                         rows={2}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 text-[13px] font-medium bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none shadow-2xs"
+                        className="w-full p-2.5 rounded-lg border border-[var(--line-strong)] text-[13px] font-medium bg-[var(--surface)] focus:ring-2 focus:ring-[var(--navy)]/20 focus:border-[var(--navy)] resize-none shadow-2xs"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* CỘT PHẢI: LỊCH SỬ GỌI ĐIỆN & NHẬT KÝ TƯ VẤN (RỘNG 520PX THOẢI MÁI) */}
-                <div className="card p-0 shadow-xs border border-slate-200 bg-white flex flex-col h-full min-h-0 overflow-hidden">
-                  <div className="p-3.5 px-4 sm:px-5 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2">
+                <div className="card p-0 shadow-xs border border-[var(--line)] bg-[var(--surface)] flex flex-col h-full min-h-0 overflow-hidden">
+                  <div className="p-3.5 px-4 sm:px-5 border-b border-[var(--line)] shrink-0 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 text-[#031da6] flex items-center justify-center shrink-0 border border-indigo-200 shadow-2xs">
-                        <PhoneCall className="w-4 h-4 text-[#031da6]" />
+                      <div className="w-8 h-8 rounded-xl bg-[var(--navy-soft)] text-[var(--navy)] flex items-center justify-center shrink-0 border border-[var(--navy-200)] shadow-2xs">
+                        <PhoneCall className="w-4 h-4 text-[var(--navy)]" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-extrabold text-[13.5px] text-slate-900 uppercase tracking-wider truncate">
+                        <h3 className="font-extrabold text-[13.5px] text-[var(--ink)] uppercase tracking-wider truncate">
                           Lịch sử gọi điện & Nhật ký tư vấn
                         </h3>
-                        <p className="text-[11.5px] text-slate-500 font-medium truncate">
+                        <p className="text-[11.5px] text-[var(--mute)] font-medium truncate">
                           Ghi nhận các cuộc gọi chăm sóc bệnh nhân
                         </p>
                       </div>
                     </div>
-                    <span className="font-mono text-[11.5px] font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-indigo-900 border border-slate-200 shrink-0">
+                    <span className="font-mono text-[11.5px] font-extrabold px-2.5 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--navy)] border border-[var(--line)] shrink-0">
                       {selected.nhatKy?.length || 0} cuộc gọi
                     </span>
                   </div>
@@ -1197,9 +1197,9 @@ export default function TuVanSessionPage() {
                   {/* Vùng cuộn riêng của cột phải */}
                   <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-3.5">
                     {/* Ghi nhật ký cuộc gọi mới */}
-                    <div className="space-y-2.5 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
-                      <label className="text-[12px] font-extrabold text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                        <Pencil className="w-3.5 h-3.5 text-teal-700" />
+                    <div className="space-y-2.5 bg-[var(--surface-soft)]/80 p-3.5 rounded-xl border border-[var(--line)]">
+                      <label className="text-[12px] font-extrabold text-[var(--ink)] uppercase tracking-wide flex items-center gap-1.5">
+                        <Pencil className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
                         Ghi nhật ký cuộc gọi mới
                       </label>
 
@@ -1224,9 +1224,9 @@ export default function TuVanSessionPage() {
                                   setF((s) => ({ ...s, nhom: "B" }));
                                 }
                               }}
-                              className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer shadow-2xs ${isSelected
-                                  ? "bg-[#018a7f] text-white font-extrabold border-[#018a7f] shadow-xs"
-                                  : "bg-white border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+                              className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer shadow-2xs ${isSelected
+                                  ? "bg-[var(--teal-deep)] text-white font-extrabold border-[var(--teal-deep)] shadow-xs"
+                                  : "bg-[var(--surface)] border-[var(--line-strong)] text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
                                 }`}
                             >
                               {isSelected ? `✓ ${tag}` : `+ ${tag}`}
@@ -1241,14 +1241,14 @@ export default function TuVanSessionPage() {
                           onChange={(e) => setCallNote(e.target.value)}
                           placeholder="Nhập nội dung cuộc gọi tư vấn..."
                           rows={2}
-                          className="w-full p-2.5 rounded-lg border border-slate-300 text-[13px] font-medium bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 resize-none shadow-2xs min-h-[58px]"
+                          className="w-full p-2.5 rounded-lg border border-[var(--line-strong)] text-[13px] font-medium bg-[var(--surface)] focus:ring-2 focus:ring-[var(--teal)]/20 focus:border-[var(--teal-deep)] resize-none shadow-2xs min-h-[58px]"
                         />
                         <div className="flex justify-end">
                           <button
                             type="button"
                             onClick={() => saveCallLog()}
                             disabled={savingCallNote || !callNote.trim()}
-                            className="btn px-3.5 py-1.5 text-[12px] font-extrabold shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 shadow-sm bg-[#018a7f] hover:bg-[#016e65] text-white rounded-lg active:scale-95"
+                            className="btn px-3.5 py-1.5 text-[12px] font-extrabold shrink-0 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 shadow-sm bg-[var(--teal-deep)] hover:bg-[#016e65] text-white rounded-lg active:scale-95"
                           >
                             {savingCallNote ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
@@ -1262,13 +1262,13 @@ export default function TuVanSessionPage() {
                     </div>
 
                     {/* Danh sách nhật ký cuộc gọi đã lưu */}
-                    <div className="space-y-2 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                    <div className="space-y-2 bg-[var(--surface-soft)]/80 p-3.5 rounded-xl border border-[var(--line)]">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-slate-600">
+                        <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[var(--ink-soft)]">
                           Lịch sử cuộc gọi ({selected.nhatKy?.length || 0})
                         </span>
                         {selected.nhatKy && selected.nhatKy.length > 0 && (
-                          <span className="text-[11px] font-bold text-teal-900 bg-teal-100 px-2 py-0.5 rounded-md border border-teal-300">
+                          <span className="text-[11px] font-bold text-[var(--teal-deep)] bg-[var(--teal)]/15 px-2 py-0.5 rounded-md border border-[var(--teal)]/45">
                             Đã gọi {selected.nhatKy.length} lần
                           </span>
                         )}
@@ -1279,24 +1279,24 @@ export default function TuVanSessionPage() {
                           {selected.nhatKy.map((log) => (
                             <div
                               key={log.id}
-                              className="p-2.5 rounded-xl border border-slate-200 bg-white text-[13px] space-y-1 hover:border-indigo-300 transition-colors shadow-2xs"
+                              className="p-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-[13px] space-y-1 hover:border-[var(--navy-200)] transition-colors shadow-2xs"
                             >
-                              <div className="flex items-center justify-between text-[11.5px] text-slate-500">
-                                <span className="font-bold text-indigo-900 flex items-center gap-1.5">
-                                  <PhoneCall className="w-3 h-3 text-teal-700" />
+                              <div className="flex items-center justify-between text-[11.5px] text-[var(--mute)]">
+                                <span className="font-bold text-[var(--navy)] flex items-center gap-1.5">
+                                  <PhoneCall className="w-3 h-3 text-[var(--teal-deep)]" />
                                   {log.nguoiGoi?.hoTen || "Tư vấn viên"}
                                 </span>
                                 <span className="font-mono font-bold">{fmtDate(log.ngay)} {fmtTime(log.ngay)}</span>
                               </div>
-                              <p className="text-[13px] text-slate-900 font-semibold leading-relaxed whitespace-pre-wrap">
+                              <p className="text-[13px] text-[var(--ink)] font-semibold leading-relaxed whitespace-pre-wrap">
                                 {log.noiDung}
                               </p>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-slate-300 rounded-xl bg-white text-[12.5px] text-slate-500 gap-1 font-medium">
-                          <Phone className="w-5 h-5 text-slate-400" />
+                        <div className="flex flex-col items-center justify-center text-center p-4 border border-dashed border-[var(--line-strong)] rounded-xl bg-[var(--surface)] text-[12.5px] text-[var(--mute)] gap-1 font-medium">
+                          <Phone className="w-5 h-5 text-[var(--mute)]" />
                           <span>Chưa có lịch sử cuộc gọi nào.</span>
                         </div>
                       )}
@@ -1306,20 +1306,20 @@ export default function TuVanSessionPage() {
               </div>
             </div>
 
-            <div className="shrink-0 border-t border-[var(--line)] px-6 py-3 flex items-center justify-between gap-4 bg-white sticky bottom-0 z-20">
+            <div className="shrink-0 border-t border-[var(--line)] px-6 py-3 flex items-center justify-between gap-4 bg-[var(--surface)] sticky bottom-0 z-20">
               <span className="text-[12.5px] flex items-center gap-2 min-w-0 font-medium">
                 {dirty ? (
-                  <span className="inline-flex items-center gap-1.5 font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Chưa lưu
+                  <span className="inline-flex items-center gap-1.5 font-bold text-[var(--amber-deep)] bg-[var(--amber-soft)] px-2.5 py-0.5 rounded border border-[var(--amber)]/30">
+                    <span className="w-2 h-2 rounded-full bg-[var(--amber)] animate-pulse" /> Chưa lưu
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 text-teal-800 bg-teal-50 px-2.5 py-0.5 rounded border border-teal-200 font-bold">
-                    <Check className="w-4 h-4 text-teal-600 stroke-[3]" /> Đã lưu
+                  <span className="inline-flex items-center gap-1.5 text-[var(--teal-deep)] bg-[var(--teal-soft)] px-2.5 py-0.5 rounded border border-[var(--teal)]/35 font-bold">
+                    <Check className="w-4 h-4 text-[var(--teal-deep)] stroke-[3]" /> Đã lưu
                   </span>
                 )}
                 {selected.tuVanVien && (
-                  <span className="text-slate-600 truncate hidden md:inline">
-                    · Người chốt: <b className="text-slate-900 font-bold">{selected.tuVanVien.hoTen}</b>
+                  <span className="text-[var(--ink-soft)] truncate hidden md:inline">
+                    · Người chốt: <b className="text-[var(--ink)] font-bold">{selected.tuVanVien.hoTen}</b>
                   </span>
                 )}
               </span>
@@ -1337,8 +1337,8 @@ export default function TuVanSessionPage() {
               </button>
             </div>
           </>) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-center px-8 gap-3 font-medium">
-              <Stethoscope className="w-12 h-12 text-slate-300" />
+            <div className="flex-1 flex flex-col items-center justify-center text-[var(--mute)] text-center px-8 gap-3 font-medium">
+              <Stethoscope className="w-12 h-12 text-[var(--mute-soft)]" />
               <span className="text-[15px]">Chọn bệnh nhân trong hàng chờ để tư vấn điều trị.</span>
             </div>
           )}

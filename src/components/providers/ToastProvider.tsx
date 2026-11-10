@@ -19,17 +19,17 @@ const ICON = { success: CheckCircle2, error: AlertCircle, info: Info };
 const ACCENT: Record<ToastType, { iconCls: string; borderCls: string; bgGlow: string }> = {
   success: {
     iconCls: "text-[var(--teal-deep)]",
-    borderCls: "border-l-4 border-l-[var(--teal)]",
+    borderCls: "border-[var(--teal)]/45",
     bgGlow: "bg-[var(--teal-soft)]/50",
   },
   error: {
     iconCls: "text-[var(--rose)]",
-    borderCls: "border-l-4 border-l-[var(--rose)]",
+    borderCls: "border-[var(--rose)]/40",
     bgGlow: "bg-[var(--rose-soft)]/50",
   },
   info: {
     iconCls: "text-[var(--navy)]",
-    borderCls: "border-l-4 border-l-[var(--navy)]",
+    borderCls: "border-[var(--navy)]/30",
     bgGlow: "bg-[var(--navy-50)]/50",
   },
 };
@@ -59,7 +59,7 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
                 animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: 40, transition: { duration: 0.2 } }}
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                className={`pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-[var(--line-strong)] ${conf.borderCls} rounded-xl shadow-xl p-3.5 flex items-start gap-3 relative overflow-hidden`}
+                className={`pointer-events-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border ${conf.borderCls} rounded-xl shadow-xl p-3.5 flex items-start gap-3 relative overflow-hidden`}
               >
                 <div className={`p-1.5 rounded-lg ${conf.bgGlow} shrink-0`}>
                   <Icon className={`w-4 h-4 ${conf.iconCls} stroke-[2.5]`} />

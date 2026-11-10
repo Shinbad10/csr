@@ -381,7 +381,7 @@ export default function DoanXeAutocomplete({
             onSelect({ diemDon: "Tự túc / Xe riêng", gioDon: gioDon || "07:30", ngayHen: ngayHen });
             if (!isInline) setOpen(false);
           }}
-          className={`rounded-[12px] border px-3 py-2.5 transition-all cursor-pointer flex items-center justify-between gap-3 flex-wrap ${
+          className={`rounded-[12px] border px-3 py-2.5 transition cursor-pointer flex items-center justify-between gap-3 flex-wrap ${
             isTuTuc ? "border-[var(--navy)] bg-[var(--navy-50)]" : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
           }`}
         >
@@ -410,7 +410,7 @@ export default function DoanXeAutocomplete({
                     onSelect({ diemDon: "Tự túc / Xe riêng", gioDon: t, ngayHen: ngayHen });
                     if (!isInline) setOpen(false);
                   }}
-                  className={`h-6 px-2 rounded-[7px] font-mono text-[11px] font-semibold transition-all cursor-pointer ${
+                  className={`h-6 px-2 rounded-[7px] font-mono text-[11px] font-semibold transition cursor-pointer ${
                     on ? "bg-[var(--navy)] text-white" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
                   }`}
                 >
@@ -470,7 +470,7 @@ export default function DoanXeAutocomplete({
                   <Bus className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" />
                   <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{dx.tenDoan}</span>
                   {isXaMatch && (
-                    <span className="hidden sm:inline-flex h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[10.5px] font-semibold items-center">
+                    <span className="hidden sm:inline-flex h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold items-center">
                       Cùng xã
                     </span>
                   )}
@@ -567,7 +567,7 @@ export default function DoanXeAutocomplete({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm tuyến, điểm đón, xã, giờ…"
-                className="w-full h-9 pl-8 pr-8 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition-all"
+                className="w-full h-9 pl-8 pr-8 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition"
               />
               {searchQuery && (
                 <button
@@ -598,12 +598,12 @@ export default function DoanXeAutocomplete({
                 key={k}
                 type="button"
                 onClick={() => setQuickFilter(k as typeof quickFilter)}
-                className={`shrink-0 h-7 px-2.5 rounded-[8px] text-[12px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                className={`shrink-0 h-7 px-2.5 rounded-[8px] text-[12px] font-semibold transition cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                   quickFilter === k ? "bg-[var(--navy)] text-white shadow-[var(--navy-shadow)]" : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
                 }`}
               >
                 {label}
-                <span className={`font-mono text-[10.5px] ${quickFilter === k ? "text-white/75" : "text-[var(--mute)]"}`}>{n}</span>
+                <span className={`font-mono text-[11px] ${quickFilter === k ? "text-white/75" : "text-[var(--mute)]"}`}>{n}</span>
               </button>
             ))}
           </div>
@@ -617,7 +617,7 @@ export default function DoanXeAutocomplete({
           {isSelected ? (
             /* Hai dòng: tên điểm đón + nút | giờ + ngày. Trước đây dồn một dòng cao cố định 44px nên
                trên điện thoại ngày hẹn đè lên nút "Đổi đoàn". */
-            <div className="px-3 py-2.5 rounded-[12px] border border-[var(--navy)]/15 bg-[var(--navy-50)]/60 flex items-start gap-2.5 transition-all">
+            <div className="px-3 py-2.5 rounded-[12px] border border-[var(--navy)]/15 bg-[var(--navy-50)]/60 flex items-start gap-2.5 transition">
               <div className="w-8 h-8 rounded-[9px] bg-[var(--surface)] border border-[var(--navy)]/15 flex items-center justify-center shrink-0">
                 {isTuTuc ? <Car className="w-4 h-4 text-[var(--ink-soft)]" /> : <Bus className="w-4 h-4 text-[var(--navy)]" />}
               </div>
@@ -675,12 +675,12 @@ export default function DoanXeAutocomplete({
             </div>
           ) : (
             <div
-              className={`h-11 px-3.5 rounded-xl border border-slate-300 bg-white hover:border-[#031da6] flex items-center justify-between gap-2 transition-all shadow-2xs ${
-                open ? "border-[#031da6] ring-2 ring-blue-100" : ""
-              } ${disabled ? "opacity-60 cursor-not-allowed bg-slate-50" : ""}`}
+              className={`h-11 px-3.5 rounded-xl border border-[var(--line-strong)] bg-[var(--surface)] hover:border-[var(--navy)] flex items-center justify-between gap-2 transition shadow-2xs ${
+                open ? "border-[var(--navy)] ring-2 ring-[var(--navy-200)]" : ""
+              } ${disabled ? "opacity-60 cursor-not-allowed bg-[var(--surface-soft)]" : ""}`}
             >
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                <Bus className="w-4 h-4 text-[#031da6] shrink-0" />
+                <Bus className="w-4 h-4 text-[var(--navy)] shrink-0" />
                 <input
                   ref={inputRef}
                   disabled={disabled}
@@ -691,13 +691,13 @@ export default function DoanXeAutocomplete({
                     if (!open) setOpen(true);
                   }}
                   placeholder="Chọn hoặc tìm đoàn xe, điểm đón, giờ đón..."
-                  className="w-full h-full bg-transparent text-[13px] font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+                  className="w-full h-full bg-transparent text-[13px] font-semibold text-[var(--ink)] outline-none placeholder:text-[var(--mute)]"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="text-slate-400 hover:text-slate-600 p-1"
+                    className="text-[var(--mute)] hover:text-[var(--ink-soft)] p-1"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -708,14 +708,14 @@ export default function DoanXeAutocomplete({
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="text-[11.5px] font-extrabold text-[#031da6] bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="text-[11.5px] font-extrabold text-[var(--navy)] bg-[var(--navy-soft)] hover:bg-[var(--navy)]/10 px-2.5 py-1 rounded-lg border border-[var(--navy-200)] transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                   <span>Tạo đoàn</span>
                 </button>
                 <ChevronDown
                   onClick={() => !disabled && setOpen(!open)}
-                  className={`w-4 h-4 text-slate-400 cursor-pointer transition-transform ${open ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-[var(--mute)] cursor-pointer transition-transform ${open ? "rotate-180" : ""}`}
                 />
               </div>
             </div>
@@ -723,15 +723,15 @@ export default function DoanXeAutocomplete({
 
           {/* Popover chỉnh nhanh giờ đón */}
           {isEditingTime && !disabled && (
-            <div className="mt-1.5 p-2.5 bg-white rounded-xl border border-blue-200 shadow-lg flex items-center gap-2 flex-wrap animate-fade-in z-40">
-              <span className="text-[12px] font-bold text-slate-700">Giờ xe đón:</span>
+            <div className="mt-1.5 p-2.5 bg-[var(--surface)] rounded-xl border border-[var(--navy-200)] shadow-lg flex items-center gap-2 flex-wrap animate-fade-in z-40">
+              <span className="text-[12px] font-bold text-[var(--ink-soft)]">Giờ xe đón:</span>
               <input
                 type="text"
                 value={timeInput}
                 onChange={(e) => setTimeInput(e.target.value)}
                 placeholder="06:00"
                 maxLength={5}
-                className="w-18 h-7 px-1 text-[12.5px] font-mono font-bold text-center border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-[#031da6]"
+                className="w-18 h-7 px-1 text-[12.5px] font-mono font-bold text-center border border-[var(--line-strong)] rounded-lg bg-[var(--surface)] focus:outline-none focus:border-[var(--navy)]"
               />
               <button
                 type="button"
@@ -739,7 +739,7 @@ export default function DoanXeAutocomplete({
                   onSelect({ diemDon, gioDon: timeInput, ngayHen });
                   setIsEditingTime(false);
                 }}
-                className="px-2.5 py-1 text-[11.5px] font-bold bg-[#031da6] text-white rounded-lg cursor-pointer"
+                className="px-2.5 py-1 text-[11.5px] font-bold bg-[var(--navy)] text-white rounded-lg cursor-pointer"
               >
                 Lưu giờ
               </button>
@@ -754,8 +754,8 @@ export default function DoanXeAutocomplete({
                     }}
                     className={`text-[11px] font-mono px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
                       gioDon === t
-                        ? "bg-[#031da6] text-white border-[#031da6] font-bold"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        ? "bg-[var(--navy)] text-white border-[var(--navy)] font-bold"
+                        : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:bg-[var(--surface-hover)]"
                     }`}
                   >
                     {t}
@@ -767,16 +767,16 @@ export default function DoanXeAutocomplete({
 
           {/* Popover Dropdown khi mở */}
           {open && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[380px] animate-dropdown">
+            <div className="absolute left-0 right-0 top-full mt-1.5 bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[380px] animate-dropdown">
               {renderRoutesList(false)}
 
               {/* Footer popover */}
-              <div className="p-2.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-[12px]">
-                <span className="text-slate-500 font-medium">Chưa có đoàn xe phù hợp?</span>
+              <div className="p-2.5 border-t border-[var(--line)] bg-[var(--surface-soft)] flex items-center justify-between text-[12px]">
+                <span className="text-[var(--mute)] font-medium">Chưa có đoàn xe phù hợp?</span>
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="font-extrabold text-[#031da6] hover:underline flex items-center gap-1 cursor-pointer"
+                  className="font-extrabold text-[var(--navy)] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                   <span>Tạo đoàn xe mới (nhiều điểm & giờ)</span>
@@ -800,7 +800,7 @@ export default function DoanXeAutocomplete({
             <button
               type="button"
               onClick={() => setShowCreateModal(false)}
-              className="px-4 py-2 rounded-xl text-[12.5px] font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+              className="px-4 py-2 rounded-xl text-[12.5px] font-bold text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
             >
               Hủy
             </button>
@@ -808,7 +808,7 @@ export default function DoanXeAutocomplete({
               type="button"
               disabled={creating}
               onClick={handleSaveNewDoanXe}
-              className="px-4 py-2 rounded-xl text-[12.5px] font-extrabold bg-[#031da6] hover:bg-[#021473] text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-xl text-[12.5px] font-extrabold bg-[var(--navy)] hover:bg-[#021473] text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {creating ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -822,45 +822,45 @@ export default function DoanXeAutocomplete({
       >
         <div className="space-y-4">
           <div>
-            <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+            <label className="text-[11.5px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1 block">
               Tên đoàn xe / Tuyến xe đón *
             </label>
             <input
               value={newTenDoan}
               onChange={(e) => setNewTenDoan(e.target.value)}
               placeholder="VD: Tuyến Xã Thông Hòa, Tuyến Cầu Kè - Trà Cú..."
-              className="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-[13px] font-semibold text-slate-900 outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 transition-all"
+              className="w-full h-10 px-3.5 rounded-xl border border-[var(--line-strong)] text-[13px] font-semibold text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-200)] transition"
             />
           </div>
 
           <div>
-            <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+            <label className="text-[11.5px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1 block">
               Ngày đón xe đến bệnh viện *
             </label>
             <input
               type="date"
               value={newNgayDon}
               onChange={(e) => setNewNgayDon(e.target.value)}
-              className="w-full h-10 px-3.5 rounded-xl border border-slate-300 font-mono text-[13px] font-bold text-slate-900 outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 transition-all"
+              className="w-full h-10 px-3.5 rounded-xl border border-[var(--line-strong)] font-mono text-[13px] font-bold text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-200)] transition"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider">
+              <label className="text-[11.5px] font-bold text-[var(--ink)] uppercase tracking-wider">
                 Lộ trình đón (Điểm đón & Giờ đón) *
               </label>
-              <span className="text-[11px] text-slate-500 font-medium">Tích chọn để gán cho BN này</span>
+              <span className="text-[11px] text-[var(--mute)] font-medium">Tích chọn để gán cho BN này</span>
             </div>
 
             <div className="space-y-2 max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
               {newChangs.map((c, idx) => (
                 <div
                   key={c.id}
-                  className={`p-2 rounded-xl border transition-all flex items-center gap-2 ${
+                  className={`p-2 rounded-xl border transition flex items-center gap-2 ${
                     selectedChangIndex === idx
-                      ? "border-[#031da6] bg-blue-50/50 ring-1 ring-[#031da6]"
-                      : "border-slate-200 bg-white"
+                      ? "border-[var(--navy)] bg-[var(--navy-soft)]/50 ring-1 ring-[var(--navy)]"
+                      : "border-[var(--line)] bg-[var(--surface)]"
                   }`}
                 >
                   <input
@@ -868,7 +868,7 @@ export default function DoanXeAutocomplete({
                     name="selected_chang"
                     checked={selectedChangIndex === idx}
                     onChange={() => setSelectedChangIndex(idx)}
-                    className="w-4 h-4 text-[#031da6] cursor-pointer shrink-0 ml-1"
+                    className="w-4 h-4 text-[var(--navy)] cursor-pointer shrink-0 ml-1"
                     title="Chọn điểm đón này cho bệnh nhân hiện tại"
                   />
                   <input
@@ -880,7 +880,7 @@ export default function DoanXeAutocomplete({
                       );
                     }}
                     placeholder={`Điểm đón ${idx + 1} (Trạm Y tế, UBND, Cầu...)`}
-                    className="flex-1 h-8 px-2.5 text-[12.5px] rounded-lg border border-slate-300 bg-white outline-none focus:border-[#031da6]"
+                    className="flex-1 h-8 px-2.5 text-[12.5px] rounded-lg border border-[var(--line-strong)] bg-[var(--surface)] outline-none focus:border-[var(--navy)]"
                   />
                   <input
                     value={c.gioDon}
@@ -891,13 +891,13 @@ export default function DoanXeAutocomplete({
                       );
                     }}
                     placeholder="05:30"
-                    className="w-22 h-8 px-1 text-[12.5px] font-mono font-bold text-center rounded-lg border border-slate-300 bg-white outline-none focus:border-[#031da6]"
+                    className="w-22 h-8 px-1 text-[12.5px] font-mono font-bold text-center rounded-lg border border-[var(--line-strong)] bg-[var(--surface)] outline-none focus:border-[var(--navy)]"
                   />
                   {newChangs.length > 1 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveChang(idx)}
-                      className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center text-[var(--mute)] hover:text-[var(--rose)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -909,7 +909,7 @@ export default function DoanXeAutocomplete({
             <button
               type="button"
               onClick={handleAddChang}
-              className="mt-2 text-[12px] font-bold text-[#031da6] hover:underline flex items-center gap-1 cursor-pointer py-1.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
+              className="mt-2 text-[12px] font-bold text-[var(--navy)] hover:underline flex items-center gap-1 cursor-pointer py-1.5 px-3 rounded-xl bg-[var(--navy-soft)] hover:bg-[var(--navy)]/10 transition-colors"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Thêm điểm đón & giờ đón tiếp theo</span>
@@ -931,7 +931,7 @@ export default function DoanXeAutocomplete({
             <button
               type="button"
               onClick={() => setShowAddStopModal(false)}
-              className="px-4 py-2 text-[12.5px] font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              className="px-4 py-2 text-[12.5px] font-bold text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] rounded-xl transition-colors cursor-pointer"
             >
               Hủy
             </button>
@@ -939,7 +939,7 @@ export default function DoanXeAutocomplete({
               type="button"
               disabled={savingStop}
               onClick={handleSaveAddStop}
-              className="px-4 py-2 text-[12.5px] font-bold bg-[#031da6] hover:bg-[#020f5c] text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+              className="px-4 py-2 text-[12.5px] font-bold bg-[var(--navy)] hover:bg-[#020f5c] text-white rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
             >
               {savingStop && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>Lưu & Chọn điểm này</span>
@@ -949,7 +949,7 @@ export default function DoanXeAutocomplete({
       >
         <div className="space-y-4">
           <div>
-            <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+            <label className="text-[11.5px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1 block">
               Tên vị trí / Điểm đón mới *
             </label>
             <input
@@ -957,12 +957,12 @@ export default function DoanXeAutocomplete({
               value={newStopDiem}
               onChange={(e) => setNewStopDiem(e.target.value)}
               placeholder="VD: Trụ sở ấp 2, Ngã ba Chợ Xếp, Cầu Hàm Luông..."
-              className="w-full h-10 px-3.5 text-[13px] border border-slate-300 rounded-xl focus:outline-none focus:border-[#031da6] focus:ring-2 focus:ring-blue-100 transition-all font-medium text-slate-900"
+              className="w-full h-10 px-3.5 text-[13px] border border-[var(--line-strong)] rounded-xl focus:outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-200)] transition font-medium text-[var(--ink)]"
             />
           </div>
 
           <div>
-            <label className="text-[11.5px] font-bold text-slate-800 uppercase tracking-wider mb-1 block">
+            <label className="text-[11.5px] font-bold text-[var(--ink)] uppercase tracking-wider mb-1 block">
               Khung giờ xe đón tại điểm này *
             </label>
             <div className="space-y-2">
@@ -973,7 +973,7 @@ export default function DoanXeAutocomplete({
                   onChange={(e) => setNewStopGio(e.target.value)}
                   placeholder="06:00"
                   maxLength={5}
-                  className="w-24 h-10 px-3 text-[13px] font-mono font-bold border border-slate-300 rounded-xl text-center focus:outline-none focus:border-[#031da6]"
+                  className="w-24 h-10 px-3 text-[13px] font-mono font-bold border border-[var(--line-strong)] rounded-xl text-center focus:outline-none focus:border-[var(--navy)]"
                 />
                 <div className="flex items-center gap-1 flex-wrap">
                   {COMMON_TIMES.map((t) => (
@@ -983,8 +983,8 @@ export default function DoanXeAutocomplete({
                       onClick={() => setNewStopGio(t)}
                       className={`text-[11px] font-mono px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
                         newStopGio === t
-                          ? "bg-[#031da6] text-white border-[#031da6] font-bold"
-                          : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                          ? "bg-[var(--navy)] text-white border-[var(--navy)] font-bold"
+                          : "bg-[var(--surface-soft)] text-[var(--ink-soft)] border-[var(--line)] hover:bg-[var(--surface-hover)]"
                       }`}
                     >
                       {t}
@@ -992,7 +992,7 @@ export default function DoanXeAutocomplete({
                   ))}
                 </div>
               </div>
-              <p className="text-[11.5px] text-slate-500">
+              <p className="text-[11.5px] text-[var(--mute)]">
                 Gợi ý: Nếu cùng 1 vị trí đón nhưng bổ sung thêm chuyến/giờ mới, chỉ cần nhập lại tên điểm đón và chọn khung giờ này.
               </p>
             </div>

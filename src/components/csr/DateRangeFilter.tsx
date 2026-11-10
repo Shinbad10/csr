@@ -220,7 +220,7 @@ export default function DateRangeFilter({
               className="overflow-hidden rounded-xl border border-[var(--line-strong)] bg-[var(--surface)] shadow-2xl"
             >
               <div className="border-b border-[var(--line-soft)] bg-[var(--surface-soft)] px-3 py-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--mute)]">
+                <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--mute)]">
                   Lọc nhanh
                 </span>
               </div>
@@ -247,7 +247,7 @@ export default function DateRangeFilter({
               </div>
 
               <div className="border-t border-[var(--line-soft)] px-3 py-3">
-                <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--mute)]">
+                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--mute)]">
                   Khoảng tuỳ chọn
                 </span>
                 <div className="grid grid-cols-2 gap-2">

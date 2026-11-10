@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,43 @@ export default function Modal({
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  /* Quản lý focus (WCAG 2.4.3): mở → đưa focus vào hộp thoại; Tab / Shift+Tab chỉ chạy trong hộp;
+     đóng → trả focus về nút đã mở hộp. */
+  useEffect(() => {
+    if (!open) return;
+    const truoc = document.activeElement as HTMLElement | null;
+    const t = window.setTimeout(() => {
+      const el = dialogRef.current;
+      if (!el || el.contains(document.activeElement)) return; // ô có autoFocus đã nhận focus thì giữ nguyên
+      const dau = el.querySelector<HTMLElement>("[autofocus], input:not([disabled]), select:not([disabled]), textarea:not([disabled])");
+      (dau || el).focus({ preventScroll: true });
+    }, 30);
+    return () => {
+      window.clearTimeout(t);
+      if (truoc && document.contains(truoc)) truoc.focus({ preventScroll: true });
+    };
+  }, [open]);
+
+  const giuTabTrongHop = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab" || !dialogRef.current) return;
+    const ds = Array.from(
+      dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((x) => x.offsetParent !== null);
+    if (ds.length === 0) return;
+    const dau = ds[0], cuoi = ds[ds.length - 1];
+    if (e.shiftKey && (document.activeElement === dau || document.activeElement === dialogRef.current)) {
+      e.preventDefault();
+      cuoi.focus();
+    } else if (!e.shiftKey && document.activeElement === cuoi) {
+      e.preventDefault();
+      dau.focus();
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -74,24 +111,31 @@ export default function Modal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 6 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl w-full ${maxWidth} flex flex-col max-h-full overflow-hidden`}
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
+            tabIndex={-1}
+            onKeyDown={giuTabTrongHop}
+            className={`bg-[var(--surface)] dark:bg-slate-900 rounded-2xl border border-[var(--line)] dark:border-white/10 shadow-2xl w-full ${maxWidth} flex flex-col max-h-full overflow-hidden outline-none`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Editorial Header */}
             {(title || Icon) && (
-              <div className={`px-4 sm:px-6 py-3 sm:py-4.5 border-b border-[var(--line)] flex items-start sm:items-center justify-between gap-2 shrink-0 ${headerStyle || "bg-white dark:bg-slate-900"}`}>
+              <div className={`px-4 sm:px-6 py-3 sm:py-4.5 border-b border-[var(--line)] flex items-start sm:items-center justify-between gap-2 shrink-0 ${headerStyle || "bg-[var(--surface)] dark:bg-slate-900"}`}>
                 <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 pr-2">
                   {Icon && (
                     <motion.div
+                      aria-hidden="true"
                       whileHover={{ scale: 1.05, rotate: 3 }}
                       whileTap={{ scale: 0.95 }}
                       className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0 border border-white/20"
                     >
-                      <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[var(--teal)] stroke-[2.5]" />
+                      <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[var(--teal-ink)] stroke-[2.5]" />
                     </motion.div>
                   )}
                   <div className="min-w-0">
-                    <h2 className="font-serif text-[17px] sm:text-[21px] font-bold text-[var(--ink)] leading-tight truncate">
+                    <h2 id={titleId} className="font-serif text-[17px] sm:text-[21px] font-bold text-[var(--ink)] leading-tight truncate">
                       {title}
                     </h2>
                     {subtitle && (
@@ -108,6 +152,7 @@ export default function Modal({
                   onClick={onClose}
                   className="w-9 h-9 sm:w-8 sm:h-8 -mr-1.5 sm:mr-0 flex items-center justify-center rounded-lg hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] transition-colors shrink-0 cursor-pointer"
                   title="Đóng (Esc)"
+                  aria-label="Đóng"
                 >
                   <X className="w-5 h-5" />
                 </motion.button>
@@ -115,7 +160,7 @@ export default function Modal({
             )}
 
             {/* Body */}
-            <div className={`flex-1 min-w-0 max-w-full ${bodyClassName || `${noPadding ? "" : "p-5 sm:p-6"} overflow-y-auto overflow-x-hidden`} bg-white dark:bg-slate-900`}>
+            <div className={`flex-1 min-w-0 max-w-full ${bodyClassName || `${noPadding ? "" : "p-5 sm:p-6"} overflow-y-auto overflow-x-hidden`} bg-[var(--surface)] dark:bg-slate-900`}>
               {children}
             </div>
 

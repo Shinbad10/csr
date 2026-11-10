@@ -105,6 +105,79 @@ export function laChoMo(h: Parameters<typeof checkSurgeryTiming>[0]): boolean {
   return !t.isDaMo && !t.isDaMoTruoc;
 }
 
+/* ───────── Xác nhận "Đã mổ" thủ công ─────────
+   Khi NGƯỜI DÙNG đánh dấu đã mổ (Theo dõi, sửa hồ sơ, nút Đánh dấu / Xác nhận / Đồng bộ ở Đối chiếu HIS),
+   máy chủ ghi một dòng riêng vào ghiChuMat2, NGOÀI khối "[HIS]" (khối đó bị thay mỗi lần đối chiếu):
+     [✓ Xác nhận thủ công đã mổ]: Nguyễn Văn A · 10/11/2026 14:32 · Theo dõi
+   Dòng chứa "Xác nhận thủ công" nên isReportValidSurgery / laCanXacNhanMo / đối chiếu đều coi là đã xác nhận,
+   và đối chiếu HIS KHÔNG BAO GIỜ trả hồ sơ có dòng này về "chưa mổ". */
+export const DAU_XAC_NHAN_MO = "[✓ Xác nhận thủ công đã mổ]";
+export interface XacNhanMo { ten: string; luc: string; nguon: string }
+
+function gioVN(d: Date): string {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })
+      .formatToParts(d)
+      .map((x) => [x.type, x.value])
+  );
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
+}
+
+/** Đọc người xác nhận đã mổ từ ghi chú (dòng mới, hoặc ghi chú xác nhận khớp HIS kiểu cũ). */
+export function docXacNhanMo(note?: string | null): XacNhanMo | null {
+  const t = note || "";
+  const m = t.match(/\[✓ Xác nhận thủ công đã mổ\]:\s*([^·\n]+?)\s*·\s*([^·\n]+?)(?:\s*·\s*([^\n]+?))?\s*(?:\n|$)/);
+  if (m) return { ten: m[1].trim(), luc: m[2].trim(), nguon: (m[3] || "").trim() };
+  const c = t.match(/\[✓ Đã xác nhận khớp HIS\]:\s*(.+?) xác nhận thủ công/);
+  if (c) return { ten: c[1].trim(), luc: "", nguon: "Đối chiếu HIS" };
+  return null;
+}
+
+export function boXacNhanMo(note?: string | null): string {
+  return (note || "").split("\n").filter((l) => !l.trim().startsWith(DAU_XAC_NHAN_MO)).join("\n").trim();
+}
+
+/** Ghi (thay) dòng xác nhận lên đầu ghi chú — đầu ghi chú nên không bị cắt khi ghi chú dài. */
+export function ghiXacNhanMo(note: string | null | undefined, ten: string, nguon: string, luc = new Date()): string {
+  const con = boXacNhanMo(note);
+  const dong = `${DAU_XAC_NHAN_MO}: ${ten.trim() || "Người dùng"} · ${gioVN(luc)} · ${nguon}`;
+  return con ? `${dong}\n${con}` : dong;
+}
+
+/**
+ * Áp dấu xác nhận vào `update` (dữ liệu sắp ghi) theo trạng thái TRƯỚC / SAU của hồ sơ:
+ * - vừa chuyển sang đã mổ, hoặc sửa ngày mổ → ghi tên người đang thao tác;
+ * - vẫn đã mổ mà ghi chú gửi lên lỡ mất dòng xác nhận → giữ lại dòng cũ;
+ * - bỏ đã mổ → xoá dòng xác nhận.
+ */
+export function apDungXacNhanMo(
+  cur: { trangThaiDieuTri?: string | null; ngayMoThucTe?: Date | string | null; ghiChuMat2?: string | null },
+  update: Record<string, unknown>,
+  ten: string,
+  nguon: string
+): void {
+  const co = (k: string) => update[k] !== undefined;
+  const laMo = (tt: unknown, ngay: unknown) =>
+    tt === "Đã mổ" || (Boolean(ngay) && tt !== "Đã mổ trước đây" && tt !== "Đã đến trước đây");
+  const ngayStr = (v: unknown) => (v ? new Date(v as string).toISOString().slice(0, 10) : "");
+  const ttSau = co("trangThaiDieuTri") ? update.trangThaiDieuTri : cur.trangThaiDieuTri;
+  const ngaySau = co("ngayMoThucTe") ? update.ngayMoThucTe : cur.ngayMoThucTe;
+  const truoc = laMo(cur.trangThaiDieuTri, cur.ngayMoThucTe);
+  const sau = laMo(ttSau, ngaySau);
+  const doiNgay = co("ngayMoThucTe") && ngayStr(update.ngayMoThucTe) !== ngayStr(cur.ngayMoThucTe);
+  const goc = (co("ghiChuMat2") ? (update.ghiChuMat2 as string | null) : cur.ghiChuMat2) || "";
+  let note = goc;
+  if (sau && (!truoc || doiNgay)) {
+    note = ghiXacNhanMo(goc, ten, nguon);
+  } else if (sau && !goc.includes(DAU_XAC_NHAN_MO)) {
+    const cu = (cur.ghiChuMat2 || "").split("\n").find((l) => l.trim().startsWith(DAU_XAC_NHAN_MO));
+    if (cu) note = goc ? `${cu.trim()}\n${goc}` : cu.trim();
+  } else if (!sau && goc.includes(DAU_XAC_NHAN_MO)) {
+    note = boXacNhanMo(goc);
+  }
+  if (note !== goc) update.ghiChuMat2 = note;
+}
+
 export function isReportValidSurgery(h: {
   ngayMoThucTe?: Date | string | null;
   trangThaiDieuTri?: string | null;

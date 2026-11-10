@@ -141,7 +141,7 @@ export function DataTable<TData>({
                           ? 'bg-[var(--navy)] text-white border-r border-white/10'
                           : 'bg-[var(--surface-soft)] text-[var(--mute)] font-mono',
                         'group transition-colors duration-200',
-                        dense ? 'px-3.5 py-2.5 text-[10px]' : 'px-3.5 py-3 text-[10px]',
+                        dense ? 'px-3.5 py-2.5 text-[11px]' : 'px-3.5 py-3 text-[11px]',
                         'font-bold tracking-[0.12em] uppercase first:pl-[18px]',
                         isLast && 'border-r-0',
                         canSort && (headerVariant === 'navy'
@@ -167,7 +167,7 @@ export function DataTable<TData>({
                         {canSort && (
                           <div
                             className={cn(
-                              'flex flex-col items-center justify-center -space-y-1.5 transition-all duration-200 shrink-0',
+                              'flex flex-col items-center justify-center -space-y-1.5 transition duration-200 shrink-0',
                               sorted ? 'opacity-100' : 'opacity-30 group-hover:opacity-75',
                             )}
                           >
@@ -175,7 +175,7 @@ export function DataTable<TData>({
                               className={cn(
                                 'w-3 h-3',
                                 headerVariant === 'navy'
-                                  ? (sorted === 'asc' ? 'text-[var(--teal)] scale-125' : 'text-white')
+                                  ? (sorted === 'asc' ? 'text-[var(--teal-ink)] scale-125' : 'text-white')
                                   : (sorted === 'asc' ? 'text-[var(--navy)] scale-125' : 'text-[var(--mute)]'),
                               )}
                               strokeWidth={3}
@@ -184,7 +184,7 @@ export function DataTable<TData>({
                               className={cn(
                                 'w-3 h-3',
                                 headerVariant === 'navy'
-                                  ? (sorted === 'desc' ? 'text-[var(--teal)] scale-125' : 'text-white')
+                                  ? (sorted === 'desc' ? 'text-[var(--teal-ink)] scale-125' : 'text-white')
                                   : (sorted === 'desc' ? 'text-[var(--navy)] scale-125' : 'text-[var(--mute)]'),
                               )}
                               strokeWidth={3}
@@ -238,7 +238,7 @@ export function DataTable<TData>({
                                     value={(header.column.getFilterValue() ?? '') as string}
                                     onChange={(e) => header.column.setFilterValue(e.target.value)}
                                     placeholder="Lọc…"
-                                    className="w-full h-7 pl-6 pr-6 py-1 bg-[var(--surface)] border border-[var(--line-soft)] rounded-md text-[10px] text-[var(--ink)] outline-none focus:border-[var(--navy)]/40 transition-all placeholder:text-[var(--mute)] min-w-0"
+                                    className="w-full h-7 pl-6 pr-6 py-1 bg-[var(--surface)] border border-[var(--line-soft)] rounded-md text-[11px] text-[var(--ink)] outline-none focus:border-[var(--navy)]/40 transition-all placeholder:text-[var(--mute)] min-w-0"
                                   />
                                   {(header.column.getFilterValue() as string) && (
                                     <button
@@ -345,6 +345,19 @@ function DataTableRowInternal<TData>({
                 return;
               }
               onRowClick(row.original);
+            }
+          : undefined
+      }
+      // Hàng bấm được thì cũng dùng được bằng bàn phím (WCAG 2.1.1): Tab tới hàng, Enter / Space để mở
+      tabIndex={onRowClick ? 0 : undefined}
+      onKeyDown={
+        onRowClick
+          ? (e) => {
+              if (e.target !== e.currentTarget) return; // phím trong nút / ô nhập của hàng giữ nguyên hành vi
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onRowClick(row.original);
+              }
             }
           : undefined
       }

@@ -31,7 +31,10 @@ import { fmtDate } from "@/lib/csr";
 import { useRealtimeEvent } from "@/lib/useRealtime";
 import { DataView, DataTable, DataPagination } from "@/components/data";
 import DateRangeFilter, { resolvePreset, type DateRange } from "@/components/csr/DateRangeFilter";
-import ReportDetailModal, { type ReportModalTarget } from "@/components/csr/ReportDetailModal";
+import dynamic from "next/dynamic";
+import type { ReportModalTarget } from "@/components/csr/ReportDetailModal";
+// Modal chi tiết (bảng + xuất Excel) chỉ cần khi bấm vào số liệu — tách khỏi lần tải trang
+const ReportDetailModal = dynamic(() => import("@/components/csr/ReportDetailModal"), { ssr: false });
 import AnimatedNumber from "@/components/csr/AnimatedNumber";
 import PageHeader from "@/components/layout/PageHeader";
 
@@ -73,11 +76,11 @@ type ToneKey = "navy" | "indigo" | "amber" | "violet" | "green" | "rose";
 
 const TONES: Record<ToneKey, { bar: string; fg: string; dot: string; softBg: string }> = {
   navy: { bar: "border-l-[3.5px] border-l-[var(--navy)]", fg: "text-[var(--navy)]", dot: "bg-[var(--navy)]", softBg: "bg-[var(--navy-50)] text-[var(--navy)]" },
-  indigo: { bar: "border-l-[3.5px] border-l-indigo-500", fg: "text-indigo-600", dot: "bg-indigo-500", softBg: "bg-indigo-50 text-indigo-600" },
-  amber: { bar: "border-l-[3.5px] border-l-amber-500", fg: "text-amber-600", dot: "bg-amber-500", softBg: "bg-amber-50 text-amber-600" },
-  violet: { bar: "border-l-[3.5px] border-l-violet-500", fg: "text-violet-600", dot: "bg-violet-500", softBg: "bg-violet-50 text-violet-600" },
-  green: { bar: "border-l-[3.5px] border-l-emerald-500", fg: "text-emerald-600", dot: "bg-emerald-500", softBg: "bg-emerald-50 text-emerald-600" },
-  rose: { bar: "border-l-[3.5px] border-l-rose-500", fg: "text-rose-600", dot: "bg-rose-500", softBg: "bg-rose-50 text-rose-600" },
+  indigo: { bar: "border-l-[3.5px] border-l-[var(--navy)]", fg: "text-[var(--navy)]", dot: "bg-[var(--navy)]", softBg: "bg-[var(--navy-soft)] text-[var(--navy)]" },
+  amber: { bar: "border-l-[3.5px] border-l-[var(--amber)]", fg: "text-[var(--amber-deep)]", dot: "bg-[var(--amber)]", softBg: "bg-[var(--amber-soft)] text-[var(--amber-deep)]" },
+  violet: { bar: "border-l-[3.5px] border-l-[var(--violet)]", fg: "text-[var(--violet)]", dot: "bg-[var(--violet)]", softBg: "bg-[var(--violet-soft)] text-[var(--violet)]" },
+  green: { bar: "border-l-[3.5px] border-l-[var(--green)]", fg: "text-[var(--green-deep)]", dot: "bg-[var(--green)]", softBg: "bg-[var(--green-soft)] text-[var(--green-deep)]" },
+  rose: { bar: "border-l-[3.5px] border-l-[var(--rose)]", fg: "text-[var(--rose)]", dot: "bg-[var(--rose)]", softBg: "bg-[var(--rose-soft)] text-[var(--rose)]" },
 };
 
 function KpiCard({
@@ -100,10 +103,10 @@ function KpiCard({
     <button
       type="button"
       onClick={onClick}
-      className={`group relative flex flex-col justify-between rounded-2xl border border-[var(--line)] ${t.bar} bg-[var(--surface)] p-3.5 sm:p-4 text-left shadow-[var(--shadow-xs)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] cursor-pointer overflow-hidden select-none`}
+      className={`group relative flex flex-col justify-between rounded-2xl border border-[var(--line)] ${t.bar} bg-[var(--surface)] p-3.5 sm:p-4 text-left shadow-[var(--shadow-xs)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] cursor-pointer overflow-hidden select-none`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] sm:text-[10.5px] font-bold tracking-[0.06em] uppercase text-[var(--mute)] truncate">
+        <span className="font-mono text-[11px] sm:text-[11px] font-bold tracking-[0.06em] uppercase text-[var(--mute)] truncate">
           {label}
         </span>
         <div className={`grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-xl transition-transform group-hover:scale-110 ${t.softBg} shrink-0`}>
@@ -111,13 +114,13 @@ function KpiCard({
         </div>
       </div>
 
-      <div className="my-2 sm:my-2.5 font-serif text-[24px] sm:text-[28px] font-bold leading-none tracking-tight text-[var(--ink)]">
+      <div className="my-2 sm:my-2.5 font-serif text-[26px] font-bold leading-none tracking-tight text-[var(--ink)]">
         <AnimatedNumber value={value} />
       </div>
 
-      <div className="flex items-center justify-between gap-1 text-[10.5px] sm:text-[11px] font-medium text-[var(--mute)] pt-2 border-t border-[var(--line-soft)]">
+      <div className="flex items-center justify-between gap-1 text-[11px] sm:text-[11px] font-medium text-[var(--mute)] pt-2 border-t border-[var(--line-soft)]">
         <span className="truncate group-hover:text-[var(--ink-soft)] transition-colors">{subtext || "Xem danh sách"}</span>
-        <ArrowRight className={`h-3 w-3 shrink-0 opacity-70 transition-all group-hover:translate-x-1 group-hover:opacity-100 ${t.fg}`} />
+        <ArrowRight className={`h-3 w-3 shrink-0 opacity-70 transition group-hover:translate-x-1 group-hover:opacity-100 ${t.fg}`} />
       </div>
     </button>
   );
@@ -152,7 +155,7 @@ function NumCell({
       data-no-row-click
       title={title}
       onClick={onClick}
-      className={`cursor-pointer rounded-md px-1.5 py-0.5 font-mono text-[12.5px] font-bold tabular-nums transition-all hover:bg-[var(--surface-hover)] hover:scale-105 active:scale-95 ${color}`}
+      className={`cursor-pointer rounded-md px-1.5 py-0.5 font-mono text-[12.5px] font-bold tabular-nums transition hover:bg-[var(--surface-hover)] hover:scale-105 active:scale-95 ${color}`}
     >
       {fN(value)}
     </button>
@@ -161,7 +164,7 @@ function NumCell({
 
 /** Ô "tỷ lệ": thanh nhỏ gradient + phần trăm, tô màu theo mức. */
 function RateCell({ value, tone }: { value: number; tone: "emerald" | "fuchsia" }) {
-  const on = tone === "emerald" ? "bg-[var(--teal)]" : "bg-[#7c3aed]";
+  const on = tone === "emerald" ? "bg-[var(--teal)]" : "bg-[var(--violet)]";
   const fg =
     value === 0
       ? "text-[var(--mute)]"
@@ -169,7 +172,7 @@ function RateCell({ value, tone }: { value: number; tone: "emerald" | "fuchsia" 
         ? value >= 50
           ? "text-[var(--teal-deep)]"
           : "text-[var(--amber)]"
-        : "text-[#7c3aed]";
+        : "text-[var(--violet)]";
   const barGradient =
     value === 0
       ? "bg-transparent"
@@ -206,7 +209,7 @@ function Legend({
     <Component
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1 transition-all ${
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1 transition ${
         onClick ? "cursor-pointer hover:bg-[var(--surface-hover)] active:scale-95 select-none" : ""
       }`}
     >
@@ -377,7 +380,7 @@ export default function Dashboard() {
         cell: ({ row }) => (
           <NumCell
             value={row.original.nhomB}
-            color="text-[#7c3aed]"
+            color="text-[var(--violet)]"
             title="Xem bệnh nhân Nhóm B (theo dõi) của đợt khám này"
             onClick={() => openSessionDetail(row.original, "nhomB")}
           />
@@ -429,7 +432,7 @@ export default function Dashboard() {
         cell: ({ row }) => (
           <NumCell
             value={row.original.phaco2Lan}
-            color="text-[#7c3aed]"
+            color="text-[var(--violet)]"
             title="Xem bệnh nhân mổ Phaco 2 lần (mắt thứ hai) của đợt khám này"
             onClick={() => openSessionDetail(row.original, "phaco2")}
           />
@@ -487,7 +490,7 @@ export default function Dashboard() {
                 loadStats();
               }}
               title="Làm mới"
-              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-2.5 sm:px-3 text-[12px] font-bold text-[var(--ink-soft)] shadow-xs transition-all hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] hover:text-[var(--navy)] active:scale-95 cursor-pointer"
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-2.5 sm:px-3 text-[12px] font-bold text-[var(--ink-soft)] shadow-xs transition hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] hover:text-[var(--navy)] active:scale-95 cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[var(--navy)]" : "text-[var(--mute)]"}`} />
               <span className="hidden sm:inline">Làm mới</span>
@@ -573,8 +576,8 @@ export default function Dashboard() {
               </div>
 
               {chuaPhanLoai > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-xl border border-rose-200/70 bg-rose-50 px-2.5 py-1 font-mono text-[11px] font-bold text-rose-700 shadow-xs">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                <span className="inline-flex items-center gap-1 rounded-xl border border-[var(--rose)]/21 bg-[var(--rose-soft)] px-2.5 py-1 font-mono text-[11px] font-bold text-[var(--rose-deep)] shadow-xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--rose)] animate-pulse" />
                   Còn {fN(chuaPhanLoai)} ca chưa phân loại
                 </span>
               )}
@@ -590,10 +593,10 @@ export default function Dashboard() {
                       icon: UserX,
                     })
                   }
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200/80 bg-amber-50 hover:bg-amber-100/80 px-2.5 py-1 font-mono text-[11px] font-bold text-amber-800 transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--amber)]/24 bg-[var(--amber-soft)] hover:bg-[var(--amber)]/12 px-2.5 py-1 font-mono text-[11px] font-bold text-[var(--amber-deep)] transition cursor-pointer shadow-xs active:scale-95"
                   title="Xem danh sách bệnh nhân có đến nhưng không mổ"
                 >
-                  <UserX className="w-3.5 h-3.5 text-amber-600" />
+                  <UserX className="w-3.5 h-3.5 text-[var(--amber-deep)]" />
                   <span>Đến chưa mổ:</span>
                   <span className="font-bold underline decoration-amber-400">{fN(Number(stats?.denKhongMo))}</span>
                 </button>
@@ -603,17 +606,17 @@ export default function Dashboard() {
 
           <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-[var(--line-soft)] p-0.5 ring-1 ring-[var(--line)]">
             <div
-              className="h-full rounded-l-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+              className="h-full rounded-l-full bg-[var(--green)] transition-all duration-500"
               style={{ width: `${pctOf(daMo, tongBN)}%` }}
               title={`Đã mổ: ${fN(daMo)} ca (${fPct(pctOf(daMo, tongBN))})`}
             />
             <div
-              className="h-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
+              className="h-full bg-[var(--amber)] transition-all duration-500"
               style={{ width: `${pctOf(chuaMo, tongBN)}%` }}
               title={`Chờ mổ: ${fN(chuaMo)} ca (${fPct(pctOf(chuaMo, tongBN))})`}
             />
             <div
-              className="h-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500"
+              className="h-full bg-[var(--violet)] transition-all duration-500"
               style={{ width: `${pctOf(nhomB, tongBN)}%` }}
               title={`Theo dõi (B): ${fN(nhomB)} ca (${fPct(pctOf(nhomB, tongBN))})`}
             />
@@ -671,7 +674,7 @@ export default function Dashboard() {
               </div>
               <Link
                 href="/bao-cao"
-                className="inline-flex h-8.5 shrink-0 items-center gap-2 rounded-xl bg-[var(--teal)] px-3.5 text-[12px] font-bold text-[var(--navy-ink)] shadow-xs transition-all hover:bg-[var(--teal-deep)] hover:text-white hover:shadow-sm active:scale-95"
+                className="inline-flex h-8.5 shrink-0 items-center gap-2 rounded-xl bg-[var(--teal)] px-3.5 text-[12px] font-bold text-[var(--navy-ink)] shadow-xs transition hover:bg-[var(--teal-deep)] hover:text-white hover:shadow-sm active:scale-95"
               >
                 <BarChart3 className="h-3.5 w-3.5" />
                 <span>Báo cáo chi tiết &amp; Xuất Excel</span>
@@ -713,7 +716,7 @@ export default function Dashboard() {
                 <Link
                   key={tile.id}
                   href={tile.href}
-                  className={`group relative flex items-center gap-3.5 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3.5 shadow-[var(--shadow-xs)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] overflow-hidden`}
+                  className={`group relative flex items-center gap-3.5 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3.5 shadow-[var(--shadow-xs)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] hover:border-[var(--line-strong)] overflow-hidden`}
                 >
                   <div className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${t.dot}`} />
 
@@ -731,7 +734,7 @@ export default function Dashboard() {
                   </div>
 
                   <ArrowRight
-                    className={`h-4 w-4 shrink-0 text-[var(--mute-soft)] opacity-60 transition-all group-hover:translate-x-1 group-hover:opacity-100 ${t.fg}`}
+                    className={`h-4 w-4 shrink-0 text-[var(--mute-soft)] opacity-60 transition group-hover:translate-x-1 group-hover:opacity-100 ${t.fg}`}
                   />
                 </Link>
               );

@@ -284,7 +284,7 @@ export function BarcodeScannerInput({
 
   if (compact) {
     return (
-      <div className="p-2.5 bg-[var(--teal-soft)]/40 rounded-xl border border-[var(--teal)]/20 flex items-center justify-between gap-3 flex-wrap transition-all">
+      <div className="p-2.5 bg-[var(--teal-soft)]/40 rounded-xl border border-[var(--teal)]/20 flex items-center justify-between gap-3 flex-wrap transition">
         <span className="font-bold text-[13.5px] text-[var(--teal-deep)] shrink-0 flex items-center gap-2">
           <Scan className="w-4 h-4 text-[var(--teal-deep)] shrink-0" />
           <span>Quét thẻ BHYT & CCCD</span>
@@ -292,7 +292,7 @@ export function BarcodeScannerInput({
         <div className="flex items-center gap-2 flex-1 sm:flex-initial sm:w-[310px] min-w-[200px]">
           <div
             onClick={() => inputRef.current?.focus()}
-            className="bg-white rounded-lg border border-[var(--teal)]/50 px-3 h-9 flex items-center gap-2 focus-within:border-[var(--teal-deep)] focus-within:ring-2 focus-within:ring-[var(--teal)]/15 shadow-2xs transition-all w-full cursor-text relative group"
+            className="bg-[var(--surface)] rounded-lg border border-[var(--teal)]/50 px-3 h-9 flex items-center gap-2 focus-within:border-[var(--teal-deep)] focus-within:ring-2 focus-within:ring-[var(--teal)]/15 shadow-2xs transition w-full cursor-text relative group"
           >
             <input
               ref={inputRef}
@@ -334,7 +334,7 @@ export function BarcodeScannerInput({
             <button
               type="button"
               onClick={onOpenCamera}
-              className="sm:hidden w-9 h-9 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-white hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition-all flex items-center justify-center shadow-xs cursor-pointer"
+              className="sm:hidden w-9 h-9 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-[var(--surface)] hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition flex items-center justify-center shadow-xs cursor-pointer"
               title="Quét bằng camera (Mobile)"
             >
               <Camera className="w-4 h-4" />
@@ -344,7 +344,7 @@ export function BarcodeScannerInput({
             <button
               type="button"
               onClick={onClear}
-              className="w-9 h-9 shrink-0 rounded-lg border border-[var(--line-strong)] bg-white hover:bg-[var(--rose-soft)] text-[var(--mute)] hover:text-[var(--rose)] hover:border-[var(--rose)]/40 transition-all flex items-center justify-center shadow-xs cursor-pointer"
+              className="w-9 h-9 shrink-0 rounded-lg border border-[var(--line-strong)] bg-[var(--surface)] hover:bg-[var(--rose-soft)] text-[var(--mute)] hover:text-[var(--rose)] hover:border-[var(--rose)]/40 transition flex items-center justify-center shadow-xs cursor-pointer"
               title="Làm mới form (Xóa trắng dữ liệu)"
             >
               <RefreshCw className="w-4 h-4" />
@@ -368,7 +368,7 @@ export function BarcodeScannerInput({
         {/* Ô focus quét thẻ — liền mạch, sạch sẽ, không viền kép */}
         <div
           onClick={() => inputRef.current?.focus()}
-          className="bg-white rounded-lg border border-[var(--teal)]/50 px-3 h-9 sm:h-10 flex items-center gap-2.5 focus-within:border-[var(--teal-deep)] focus-within:ring-2 focus-within:ring-[var(--teal)]/15 shadow-2xs transition-all w-full cursor-text relative group"
+          className="bg-[var(--surface)] rounded-lg border border-[var(--teal)]/50 px-3 h-9 sm:h-10 flex items-center gap-2.5 focus-within:border-[var(--teal-deep)] focus-within:ring-2 focus-within:ring-[var(--teal)]/15 shadow-2xs transition w-full cursor-text relative group"
         >
           <input
             ref={inputRef}
@@ -413,7 +413,7 @@ export function BarcodeScannerInput({
           <button
             type="button"
             onClick={onOpenCamera}
-            className="sm:hidden w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-white hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition-all flex items-center justify-center shadow-xs cursor-pointer"
+            className="sm:hidden w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-[var(--surface)] hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition flex items-center justify-center shadow-xs cursor-pointer"
             title="Quét bằng camera (Mobile)"
           >
             <Camera className="w-4 h-4" />
@@ -423,7 +423,7 @@ export function BarcodeScannerInput({
           <button
             type="button"
             onClick={onClear}
-            className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg border border-[var(--line-strong)] bg-white hover:bg-[var(--rose-soft)] text-[var(--mute)] hover:text-[var(--rose)] hover:border-[var(--rose)]/40 transition-all flex items-center justify-center shadow-xs cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg border border-[var(--line-strong)] bg-[var(--surface)] hover:bg-[var(--rose-soft)] text-[var(--mute)] hover:text-[var(--rose)] hover:border-[var(--rose)]/40 transition flex items-center justify-center shadow-xs cursor-pointer"
             title="Làm mới form (Xóa trắng dữ liệu)"
           >
             <RefreshCw className="w-4 h-4" />
@@ -439,16 +439,16 @@ export function BarcodeScannerInput({
         </div>
       )}
       {lookupStatus === "fail" && (
-        <div className="flex items-center justify-between gap-2 text-[12px] font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200 animate-fade-in w-full min-w-0">
+        <div className="flex items-center justify-between gap-2 text-[12px] font-semibold text-[var(--amber-deep)] bg-[var(--amber-soft)] px-3 py-1.5 rounded-lg border border-[var(--amber)]/30 animate-fade-in w-full min-w-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-[var(--amber-deep)]" />
             <span className="truncate flex-1 min-w-0">{lookupMsg || "Chưa kết nối cổng BHXH"}</span>
           </div>
           {onRetryLookup && (
             <button
               type="button"
               onClick={onRetryLookup}
-              className="text-[12px] font-bold text-amber-900 underline hover:no-underline shrink-0 cursor-pointer ml-1"
+              className="text-[12px] font-bold text-[var(--amber-deep)] underline hover:no-underline shrink-0 cursor-pointer ml-1"
             >
               Thử lại
             </button>

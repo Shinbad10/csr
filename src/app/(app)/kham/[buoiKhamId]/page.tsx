@@ -30,7 +30,9 @@ import { Field, Select, InputGoiY, ChoiceRow, PillGroup, MultiSelect, SectionHea
 import { DoctorAutocomplete, parseDoctorList } from "@/components/csr/DoctorAutocomplete";
 import PageHeader from "@/components/layout/PageHeader";
 import Modal from "@/components/layout/Modal";
-import { CameraScannerModal } from "@/components/csr/CameraScannerModal";
+import dynamic from "next/dynamic";
+// Máy quét QR (html5-qrcode + jsqr) chỉ cần khi mở camera — tách khỏi lần tải trang
+const CameraScannerModal = dynamic(() => import("@/components/csr/CameraScannerModal").then((m) => m.CameraScannerModal), { ssr: false });
 import { BarcodeScannerInput } from "@/components/csr/BarcodeScannerInput";
 import { Skeleton3Column, SkeletonList, SkeletonForm } from "@/components/layout/Skeleton";
 
@@ -398,7 +400,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
                   type="button"
                   onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
                   disabled={(!bhyt.trim() && !cccd.trim()) || lookup === "loading"}
-                  className="btn btn-secondary px-3.5 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-white hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                  className="btn btn-secondary px-3.5 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-[var(--surface)] hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
                   title="Bấm để tra cứu thông tin thẻ BHYT trên cổng BHXH"
                 >
                   {lookup === "loading" ? (
@@ -447,14 +449,14 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
 
           {/* Thông báo lỗi tra cứu BHYT kèm hướng dẫn trấn an không ảnh hưởng tiếp nhận */}
           {lookup === "fail" && (
-            <div className="sm:col-span-12 p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-[12.5px] text-amber-900 flex items-start justify-between gap-3 animate-fade-in shadow-2xs">
+            <div className="sm:col-span-12 p-3.5 rounded-xl bg-[var(--amber-soft)]/90 border border-[var(--amber)]/30 text-[12.5px] text-[var(--amber-deep)] flex items-start justify-between gap-3 animate-fade-in shadow-2xs">
               <div className="flex items-start gap-2.5 min-w-0">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-4 h-4 text-[var(--amber-deep)] shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-bold text-amber-900">
+                  <div className="font-bold text-[var(--amber-deep)]">
                     {lookupMsg || "Chưa kết nối được cổng BHXH"}
                   </div>
-                  <div className="text-[12px] text-amber-700 mt-0.5 leading-relaxed">
+                  <div className="text-[12px] text-[var(--amber-deep)] mt-0.5 leading-relaxed">
                     Lỗi tra cứu không ảnh hưởng đến tiếp nhận. Bạn vẫn có thể nhập Mã thẻ BH hoặc chọn <b>Mức hưởng BHYT (%)</b> để tiếp nhận bình thường.
                   </div>
                 </div>
@@ -462,7 +464,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
               <button
                 type="button"
                 onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
-                className="px-3 py-1.5 text-xs font-bold bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-100 shrink-0 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+                className="px-3 py-1.5 text-xs font-bold bg-[var(--surface)] text-[var(--amber-deep)] border border-[var(--amber)]/40 rounded-lg hover:bg-[var(--amber)]/15 shrink-0 flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Thử lại
               </button>
@@ -481,7 +483,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           <button
             type="button"
             onClick={handleResetForm}
-            className="btn btn-secondary px-4 py-2.5 font-bold h-11 rounded-xl text-[var(--mute)] hover:text-[var(--rose)] border border-dashed hover:border-[var(--rose)]/40 flex items-center gap-1.5 cursor-pointer transition-all text-[13px]"
+            className="btn btn-secondary px-4 py-2.5 font-bold h-11 rounded-xl text-[var(--mute)] hover:text-[var(--rose)] border border-dashed hover:border-[var(--rose)]/40 flex items-center gap-1.5 cursor-pointer transition text-[13px]"
             title="Xóa trắng toàn bộ form để nhập lại từ đầu"
           >
             <RefreshCw className="w-4 h-4" /> Làm mới form
@@ -489,7 +491,7 @@ function RegisterModal({ buoiKham, cfg, onClose, onCreated }: { buoiKham: BuoiKh
           <div className="flex items-center gap-3">
             <button type="button" onClick={onClose} className="btn btn-secondary px-6 py-2.5 font-bold h-11 rounded-xl">Hủy bỏ</button>
             <button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold h-11 rounded-xl shadow-lg shadow-[var(--navy)]/20 min-w-[160px] justify-center">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 stroke-[3] text-[var(--teal)]" /> Tiếp nhận mới</>}
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 stroke-[3] text-[var(--teal-ink)]" /> Tiếp nhận mới</>}
             </button>
           </div>
         </div>
@@ -763,7 +765,7 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
       maxWidth="max-w-[650px]"
       noPadding
     >
-      <form onSubmit={submit} className="px-6 py-3.5 space-y-3 bg-white">
+      <form onSubmit={submit} className="px-6 py-3.5 space-y-3 bg-[var(--surface)]">
         {err && <div className="p-3 bg-[var(--rose-soft)] border border-[var(--rose)] rounded-[var(--r-md)] text-[12px] font-semibold text-[var(--rose)]">{err}</div>}
 
         {/* Quét mã vạch (Tối ưu cách ly re-render và khóa phím tắt Tiếng Việt) */}
@@ -799,25 +801,25 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
               type="button"
               onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
               disabled={(!bhyt.trim() && !cccd.trim()) || lookup === "loading"}
-              className="btn btn-secondary px-4 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-white hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              className="btn btn-secondary px-4 h-10 font-bold shrink-0 border-[var(--teal)]/40 hover:border-[var(--teal-deep)] bg-[var(--surface)] hover:bg-[var(--teal-soft)]/50 text-[var(--teal-deep)] text-[13px] flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
               title="Bấm để tra cứu thông tin thẻ BHYT trên cổng BHXH"
             >
               {lookup === "loading" ? <Loader2 className="w-4 h-4 animate-spin text-[var(--teal-deep)]" /> : <Search className="w-4 h-4 text-[var(--teal-deep)]" />} Tra cứu BHYT
             </button>
           </div>
           {lookup === "fail" && (
-            <div className="mt-2.5 p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-[12px] text-amber-900 flex items-start justify-between gap-2.5 animate-fade-in shadow-2xs">
+            <div className="mt-2.5 p-3 rounded-xl bg-[var(--amber-soft)]/90 border border-[var(--amber)]/30 text-[12px] text-[var(--amber-deep)] flex items-start justify-between gap-2.5 animate-fade-in shadow-2xs">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-4 h-4 text-[var(--amber-deep)] shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-bold text-amber-900">{lookupMsg || "Chưa kết nối được cổng BHXH"}</div>
-                  <div className="text-[11.5px] text-amber-700 mt-0.5">Không ảnh hưởng đến lưu hồ sơ. Bạn có thể tự chỉnh sửa thông tin hoặc bấm Thử lại.</div>
+                  <div className="font-bold text-[var(--amber-deep)]">{lookupMsg || "Chưa kết nối được cổng BHXH"}</div>
+                  <div className="text-[11.5px] text-[var(--amber-deep)] mt-0.5">Không ảnh hưởng đến lưu hồ sơ. Bạn có thể tự chỉnh sửa thông tin hoặc bấm Thử lại.</div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => lookupBhxh(bhyt || cccd, hoTen, ngaySinh, true)}
-                className="px-2.5 py-1 text-xs font-bold bg-white text-amber-900 border border-amber-300 rounded-lg hover:bg-amber-100 shrink-0 flex items-center gap-1 cursor-pointer transition-all shadow-2xs"
+                className="px-2.5 py-1 text-xs font-bold bg-[var(--surface)] text-[var(--amber-deep)] border border-[var(--amber)]/40 rounded-lg hover:bg-[var(--amber)]/15 shrink-0 flex items-center gap-1 cursor-pointer transition shadow-2xs"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Thử lại
               </button>
@@ -865,7 +867,7 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
         {isFieldOn(cfg, "diaChi") && (
           <Field label="Địa chỉ"><input value={diaChi} onChange={(e) => setDiaChi(e.target.value)} className="input-field" placeholder="Số nhà, đường, thôn/ấp..." /></Field>
         )}
-        <div className="flex justify-end gap-3 pt-1"><button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button><button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal)]" />} Lưu</button></div>
+        <div className="flex justify-end gap-3 pt-1"><button type="button" onClick={onClose} className="btn btn-secondary px-5 py-2.5 font-bold">Hủy</button><button type="submit" disabled={saving} className="btn btn-primary px-8 py-2.5 font-bold">{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-[var(--teal-ink)]" />} Lưu</button></div>
       </form>
       <CameraScannerModal
         open={cameraOpen}
@@ -1647,9 +1649,9 @@ export default function ExamPage() {
       </div>
 
       {readOnly && (
-        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/40 border-y border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-[12px] flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 py-2 bg-[var(--amber-soft)] dark:bg-amber-950/40 border-y border-[var(--amber)]/30 dark:border-amber-800/60 text-[var(--amber-deep)] dark:text-amber-200 text-[12px] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 font-medium">
-            <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <Eye className="w-4 h-4 text-[var(--amber-deep)] dark:text-amber-400 shrink-0" />
             {khoaQuaNgay ? (
               <span>
                 <strong>Đợt khám đã qua ngày và đang khoá</strong> — phiếu khám chỉ xem. Cần sửa thì nhờ <strong>Quản trị viên</strong> mở khoá đợt ở trang Đợt khám; tư vấn, xếp xe, theo dõi vẫn làm bình thường ở trang Tư vấn / Theo dõi.
@@ -1660,7 +1662,7 @@ export default function ExamPage() {
           </div>
           <Link
             href="/buoi-kham"
-            className="text-[11.5px] font-bold text-[#031da6] hover:underline shrink-0"
+            className="text-[11.5px] font-bold text-[var(--navy)] hover:underline shrink-0"
           >
             ← Về danh sách đợt khám
           </Link>
@@ -1672,13 +1674,13 @@ export default function ExamPage() {
         {showList && <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-[2px] transition-opacity xl:hidden" onClick={() => setShowList(false)} />}
 
         {/* COL 1 — danh sách (Drawer on mobile, Static on desktop) */}
-        <aside className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[360px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${showList ? "translate-x-0" : "translate-x-full"} xl:static xl:translate-x-0 xl:w-[320px] xl:shrink-0 xl:border-r xl:border-[var(--line)] xl:shadow-none xl:z-0`}>
+        <aside className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[360px] bg-[var(--surface)] shadow-2xl flex flex-col transition-transform duration-300 ${showList ? "translate-x-0" : "translate-x-full"} xl:static xl:translate-x-0 xl:w-[320px] xl:shrink-0 xl:border-r xl:border-[var(--line)] xl:shadow-none xl:z-0`}>
           {/* Header */}
-          <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[var(--line)] bg-white">
+          <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-[var(--line)] bg-[var(--surface)]">
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-[var(--navy)]" />
               <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[var(--navy)]">Bệnh nhân</span>
-              <span className="font-mono text-[10.5px] font-bold bg-[var(--surface-soft)] text-[var(--ink-soft)] px-1.5 py-0.2 rounded-full">
+              <span className="font-mono text-[11px] font-bold bg-[var(--surface-soft)] text-[var(--ink-soft)] px-1.5 py-0.2 rounded-full">
                 {counts.total}
               </span>
             </div>
@@ -1688,7 +1690,7 @@ export default function ExamPage() {
                   data-tour="kh-reg"
                   onClick={() => setShowReg(true)}
                   title="Tiếp nhận bệnh nhân mới"
-                  className="h-7 px-2 rounded-md bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] flex items-center gap-1 text-[11px] font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                  className="h-7 px-2 rounded-md bg-[var(--teal)] text-white hover:bg-[var(--teal-deep)] flex items-center gap-1 text-[11px] font-bold transition shadow-xs cursor-pointer active:scale-95"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Tiếp nhận</span>
@@ -1708,7 +1710,7 @@ export default function ExamPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="STT, Tên, BHYT, CCCD…"
-                className="w-full h-8 rounded-lg border border-[var(--line)] bg-[var(--surface-bg)]/80 pl-8 pr-7 text-[12px] outline-none focus:border-[var(--navy)] focus:bg-white focus:ring-1 focus:ring-[var(--navy-100)] transition-all"
+                className="w-full h-8 rounded-lg border border-[var(--line)] bg-[var(--surface-bg)]/80 pl-8 pr-7 text-[12px] outline-none focus:border-[var(--navy)] focus:bg-[var(--surface)] focus:ring-1 focus:ring-[var(--navy-100)] transition"
               />
               {search && (
                 <button
@@ -1729,54 +1731,54 @@ export default function ExamPage() {
               <button
                 type="button"
                 onClick={() => setFilter("")}
-                className={`flex-1 py-1 rounded-md font-semibold text-center transition-all cursor-pointer truncate ${!filter
-                  ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                className={`flex-1 py-1 rounded-md font-semibold text-center transition cursor-pointer truncate ${!filter
+                  ? "bg-[var(--surface)] text-[var(--navy)] shadow-2xs font-bold"
                   : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
               >
-                Tất cả <span className="font-mono text-[10px] opacity-75">{counts.total}</span>
+                Tất cả <span className="font-mono text-[11px] opacity-75">{counts.total}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilter("TiepNhan")}
-                className={`flex-1 py-1 rounded-md font-semibold text-center transition-all cursor-pointer truncate ${filter === "TiepNhan"
-                  ? "bg-white text-[var(--teal-deep)] shadow-2xs font-bold"
+                className={`flex-1 py-1 rounded-md font-semibold text-center transition cursor-pointer truncate ${filter === "TiepNhan"
+                  ? "bg-[var(--surface)] text-[var(--teal-deep)] shadow-2xs font-bold"
                   : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
               >
-                Chờ <span className="font-mono text-[10px] opacity-75">{counts.waiting}</span>
+                Chờ <span className="font-mono text-[11px] opacity-75">{counts.waiting}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilter("DaKham")}
-                className={`flex-1 py-1 rounded-md font-semibold text-center transition-all cursor-pointer truncate ${filter === "DaKham"
-                  ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                className={`flex-1 py-1 rounded-md font-semibold text-center transition cursor-pointer truncate ${filter === "DaKham"
+                  ? "bg-[var(--surface)] text-[var(--navy)] shadow-2xs font-bold"
                   : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
               >
-                Đã khám <span className="font-mono text-[10px] opacity-75">{counts.done}</span>
+                Đã khám <span className="font-mono text-[11px] opacity-75">{counts.done}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFilter("PhauThuat")}
-                className={`flex-1 py-1 rounded-md font-semibold text-center transition-all cursor-pointer truncate ${filter === "PhauThuat"
-                  ? "bg-white text-[var(--rose)] shadow-2xs font-bold"
+                className={`flex-1 py-1 rounded-md font-semibold text-center transition cursor-pointer truncate ${filter === "PhauThuat"
+                  ? "bg-[var(--surface)] text-[var(--rose)] shadow-2xs font-bold"
                   : "text-[var(--mute)] hover:text-[var(--ink)]"
                   }`}
               >
-                Cần mổ <span className="font-mono text-[10px] opacity-75">{counts.surgery}</span>
+                Cần mổ <span className="font-mono text-[11px] opacity-75">{counts.surgery}</span>
               </button>
             </div>
           </div>
 
           {/* Thanh công cụ phụ: Sắp xếp + Các thao tác nhanh */}
-          <div className="px-2 py-1.5 flex items-center justify-between gap-1 border-b border-[var(--line-soft)] bg-slate-50/50 min-w-0">
+          <div className="px-2 py-1.5 flex items-center justify-between gap-1 border-b border-[var(--line-soft)] bg-[var(--surface-soft)]/50 min-w-0">
             {/* Dropdown Sắp xếp gọn gàng */}
             <div className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setSortMenuOpen((v) => !v)}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-[var(--navy)] bg-white border border-slate-200 px-1.5 py-1 rounded-md shadow-2xs hover:bg-slate-50 cursor-pointer transition-all whitespace-nowrap"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] bg-[var(--surface)] border border-[var(--line)] px-1.5 py-1 rounded-md shadow-2xs hover:bg-[var(--surface-soft)] cursor-pointer transition whitespace-nowrap"
                 title="Thay đổi cách sắp xếp danh sách"
               >
                 <ArrowUpDown className="w-3 h-3 text-[var(--teal-deep)] shrink-0" />
@@ -1789,7 +1791,7 @@ export default function ExamPage() {
               {sortMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setSortMenuOpen(false)} />
-                  <div className="absolute left-0 top-full mt-1 z-40 w-[210px] bg-white border border-[var(--line-strong)] rounded-lg shadow-[var(--shadow-lg)] p-1 animate-dropdown">
+                  <div className="absolute left-0 top-full mt-1 z-40 w-[210px] bg-[var(--surface)] border border-[var(--line-strong)] rounded-lg shadow-[var(--shadow-lg)] p-1 animate-dropdown">
                     {SORT_OPTS.map((opt) => (
                       <button
                         key={opt.key}
@@ -1818,12 +1820,12 @@ export default function ExamPage() {
                   type="button"
                   onClick={startBatchBhytCheck}
                   disabled={batchBhytProgress?.running}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 transition-all cursor-pointer shrink-0 active:scale-95 disabled:opacity-50 whitespace-nowrap shadow-2xs"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold text-[var(--green-deep)] bg-[var(--green-soft)] hover:bg-[var(--green)]/15 border border-[var(--green)]/32 transition cursor-pointer shrink-0 active:scale-95 disabled:opacity-50 whitespace-nowrap shadow-2xs"
                   title={`Tự động kiểm tra nhanh BHYT cho ${missingBhytPatients.length} ca`}
                 >
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <ShieldCheck className="w-3 h-3 text-[var(--green-deep)] shrink-0" />
                   <span>Tra BH</span>
-                  <span className="font-mono text-[9.5px] font-extrabold bg-emerald-200/70 text-emerald-900 px-1 rounded-full">{missingBhytPatients.length}</span>
+                  <span className="font-mono text-[11px] font-extrabold bg-emerald-200/70 text-[var(--green-deep)] px-1 rounded-full">{missingBhytPatients.length}</span>
                 </button>
               )}
 
@@ -1831,19 +1833,19 @@ export default function ExamPage() {
                 <button
                   type="button"
                   onClick={() => setShowCompletePending(true)}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10.5px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300/80 transition-all cursor-pointer shrink-0 active:scale-95 whitespace-nowrap shadow-2xs"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-bold text-[var(--amber-deep)] bg-[var(--amber-soft)] hover:bg-[var(--amber)]/15 border border-[var(--amber)]/32 transition cursor-pointer shrink-0 active:scale-95 whitespace-nowrap shadow-2xs"
                   title={`Tự động kết luận Bình thường cho ${counts.waiting} ca chờ`}
                 >
-                  <Zap className="w-3 h-3 text-amber-600 fill-amber-600 shrink-0" />
+                  <Zap className="w-3 h-3 text-[var(--amber-deep)] fill-[var(--amber-deep)] shrink-0" />
                   <span>Chốt</span>
-                  <span className="font-mono text-[9.5px] font-extrabold bg-amber-200/70 text-amber-900 px-1 rounded-full">{counts.waiting}</span>
+                  <span className="font-mono text-[11px] font-extrabold bg-[var(--amber)]/18 text-[var(--amber-deep)] px-1 rounded-full">{counts.waiting}</span>
                 </button>
               )}
             </div>
           </div>
 
           {/* Danh sách thẻ bệnh nhân */}
-          <div data-tour="kh-list" className="flex-1 overflow-y-auto p-1.5 space-y-1 bg-slate-50/50 dark:bg-slate-900/40">
+          <div data-tour="kh-list" className="flex-1 overflow-y-auto p-1.5 space-y-1 bg-[var(--surface-soft)]/50 dark:bg-slate-900/40">
             {searching ? (
               <SkeletonList items={5} />
             ) : patients.length === 0 ? (
@@ -1852,7 +1854,7 @@ export default function ExamPage() {
                 <span>Chưa có bệnh nhân.</span>
               </div>
             ) : visible.length === 0 ? (
-              <div className="text-center text-[var(--mute)] text-[12px] py-10 px-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-white/10">
+              <div className="text-center text-[var(--mute)] text-[12px] py-10 px-4 bg-[var(--surface)] dark:bg-slate-800 rounded-lg border border-[var(--line)] dark:border-white/10">
                 Không khớp bộ lọc.
               </div>
             ) : (
@@ -1865,13 +1867,13 @@ export default function ExamPage() {
                 const hasBhyt = p.mucHuongBHYT !== 0 && Boolean((p.bhyt && p.bhyt.trim().length > 0) || (p.mucHuongBHYT != null && p.mucHuongBHYT > 0));
 
                 // Badge màu cho STT
-                let sttBadgeCls = "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
+                let sttBadgeCls = "bg-[var(--surface-hover)] dark:bg-slate-800 text-[var(--ink-soft)] dark:text-slate-300 border-[var(--line)] dark:border-slate-700";
                 if (p.nhom === "A" || p.khuyenNghi === "Phẫu thuật") {
-                  sttBadgeCls = "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40";
+                  sttBadgeCls = "bg-[var(--rose-soft)] dark:bg-rose-950/40 text-[var(--rose-deep)] dark:text-rose-300 border-[var(--rose)]/30 dark:border-rose-800/40";
                 } else if (p.nhom === "B") {
-                  sttBadgeCls = "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/40";
+                  sttBadgeCls = "bg-[var(--amber-soft)] dark:bg-amber-950/40 text-[var(--amber-deep)] dark:text-amber-300 border-[var(--amber)]/30 dark:border-amber-800/40";
                 } else if (!isWaiting) {
-                  sttBadgeCls = "bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border-teal-200 dark:border-teal-800/40";
+                  sttBadgeCls = "bg-[var(--teal-soft)] dark:bg-teal-950/40 text-[var(--teal-deep)] dark:text-teal-300 border-[var(--teal)]/35 dark:border-teal-800/40";
                 }
 
                 // Tóm tắt kết quả (nếu có)
@@ -1889,11 +1891,11 @@ export default function ExamPage() {
                       pick(p);
                       setShowList(false);
                     }}
-                    className={`w-full text-left rounded-lg border px-2 py-1.5 transition-all duration-150 relative cursor-pointer select-none ${active
-                      ? "border-[var(--navy)] bg-white dark:bg-slate-800 shadow-xs border-l-[3px] border-l-[var(--navy)]"
+                    className={`w-full text-left rounded-lg border px-2 py-1.5 transition duration-150 relative cursor-pointer select-none ${active
+                      ? "border-[var(--navy)] bg-[var(--surface)] dark:bg-slate-800 shadow-xs border-l-[3px] border-l-[var(--navy)]"
                       : isWaiting
-                        ? "bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                        : "bg-white/80 dark:bg-slate-800/80 border-slate-200 dark:border-white/10 hover:bg-white hover:border-slate-300 opacity-90 hover:opacity-100"
+                        ? "bg-[var(--surface)] dark:bg-slate-800 border-[var(--line)] dark:border-white/10 hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)] dark:hover:bg-slate-700"
+                        : "bg-white/80 dark:bg-slate-800/80 border-[var(--line)] dark:border-white/10 hover:bg-[var(--surface)] hover:border-[var(--line-strong)] opacity-90 hover:opacity-100"
                       }`}
                   >
                     <div className="flex items-center gap-2">
@@ -1911,32 +1913,32 @@ export default function ExamPage() {
                             active
                               ? "text-[var(--navy)] dark:text-teal-300"
                               : hasBhyt
-                                ? "text-emerald-700 dark:text-emerald-400 font-bold"
-                                : "text-slate-900 dark:text-slate-100"
+                                ? "text-[var(--green-deep)] dark:text-emerald-400 font-bold"
+                                : "text-[var(--ink)] dark:text-slate-100"
                           }`}>
                             {p.hoTen}
                           </h4>
-                          <span className={`text-[9.5px] font-semibold px-1.5 py-0.2 rounded shrink-0 border ${st.cls}`}>
+                          <span className={`text-[11px] font-semibold px-1.5 py-0.2 rounded shrink-0 border ${st.cls}`}>
                             {st.label}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--mute)] dark:text-slate-400 mt-0.5 truncate">
                           <span>{p.gioiTinh} · {ageOf(p)}t</span>
                           {p.mucHuongBHYT === 0 ? (
                             <span className="text-[var(--rose)] font-bold bg-[var(--rose-soft)] px-1 rounded border border-[var(--rose)]/25">
                               BH hết hạn
                             </span>
                           ) : p.mucHuongBHYT ? (
-                            <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                            <span className="text-[var(--green-deep)] dark:text-emerald-300 font-bold bg-[var(--green-soft)] dark:bg-emerald-950/40 px-1 rounded border border-[var(--green)]/18 dark:border-emerald-800/40">
                               BH {p.mucHuongBHYT}%
                             </span>
                           ) : p.bhyt ? (
-                            <span className="text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded border border-emerald-200/60 dark:border-emerald-800/40">
+                            <span className="text-[var(--green-deep)] dark:text-emerald-300 font-bold bg-[var(--green-soft)] dark:bg-emerald-950/40 px-1 rounded border border-[var(--green)]/18 dark:border-emerald-800/40">
                               {bhytLevel(p.bhyt)}
                             </span>
                           ) : null}
-                          {diagSummary && <span className="text-teal-700 dark:text-teal-300 font-medium truncate">· {diagSummary}</span>}
+                          {diagSummary && <span className="text-[var(--teal-deep)] dark:text-teal-300 font-medium truncate">· {diagSummary}</span>}
                         </div>
                       </div>
                     </div>
@@ -1948,14 +1950,14 @@ export default function ExamPage() {
         </aside>
 
         {/* COL 2 — thông tin + timeline (Hiển thị cố định trên Desktop, trên Mobile có strip thu gọn riêng) */}
-        <section className="hidden xl:flex xl:w-[380px] xl:shrink-0 xl:border-r border-[var(--line)] bg-white flex-col h-auto xl:min-h-0">
+        <section className="hidden xl:flex xl:w-[380px] xl:shrink-0 xl:border-r border-[var(--line)] bg-[var(--surface)] flex-col h-auto xl:min-h-0">
           {selected ? (<>
             <div className="px-4 pt-4 pb-3">
               <h2 className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--navy)] mb-2">Thực hiện</h2>
               <div className="flex items-start justify-between gap-2">
                 <h3 className={`font-serif text-[19px] font-bold leading-tight uppercase ${
                   selected.mucHuongBHYT !== 0 && ((selected.bhyt && selected.bhyt.trim().length > 0) || (selected.mucHuongBHYT != null && selected.mucHuongBHYT > 0))
-                    ? "text-emerald-700 font-black"
+                    ? "text-[var(--green-deep)] font-black"
                     : "text-[var(--ink)]"
                 }`}>
                   {selected.hoTen}
@@ -2003,7 +2005,7 @@ export default function ExamPage() {
                 <span className="absolute left-[9px] top-1 bottom-3 w-px bg-[var(--line)]" />
                 {steps.map((s) => (
                   <li key={s.label} className="relative flex items-start gap-3 mb-4 last:mb-0">
-                    <span className={`relative z-10 w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 ${s.done ? "bg-[var(--teal)] text-white shadow-2xs" : "bg-white border-2 border-[var(--line-strong)]"}`}>{s.done && <Check className="w-3 h-3 stroke-[3]" />}</span>
+                    <span className={`relative z-10 w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 ${s.done ? "bg-[var(--teal)] text-white shadow-2xs" : "bg-[var(--surface)] border-2 border-[var(--line-strong)]"}`}>{s.done && <Check className="w-3 h-3 stroke-[3]" />}</span>
                     <div>
                       <div className={`text-[13px] font-bold leading-tight ${s.done ? "text-[var(--ink)]" : "text-[var(--mute)]"}`}>{s.label}</div>
                       <div className="text-[11px] font-medium text-[var(--mute)] mt-0.5">{s.desc}</div>
@@ -2028,7 +2030,7 @@ export default function ExamPage() {
                     className="h-8 px-2 rounded-lg bg-[var(--teal-soft)] text-[var(--teal-deep)] border border-[var(--teal)]/25 font-mono font-extrabold text-xs flex items-center gap-1 shrink-0 active:scale-95 transition-transform cursor-pointer"
                     title="Mở danh sách bệnh nhân"
                   >
-                    <span className="text-[8px] font-sans font-bold opacity-70">STT</span>
+                    <span className="text-[11px] font-sans font-bold opacity-70">STT</span>
                     <span>{String(selected.stt ?? 0).padStart(2, "0")}</span>
                   </button>
                   <div className="min-w-0">
@@ -2036,7 +2038,7 @@ export default function ExamPage() {
                       <h3 className="font-bold text-[13px] sm:text-[13.5px] text-[var(--ink)] truncate leading-tight uppercase">{selected.hoTen}</h3>
                       <StatusBadge label={statusOf(selected.trangThai).label} cls={statusOf(selected.trangThai).cls} sm />
                     </div>
-                    <div className="text-[10.5px] sm:text-[11px] text-[var(--mute)] truncate font-medium mt-0.5">
+                    <div className="text-[11px] sm:text-[11px] text-[var(--mute)] truncate font-medium mt-0.5">
                       <span>{selected.gioiTinh} · {ageOf(selected)}t</span>
                       {selected.mucHuongBHYT === 0 ? <span className="text-[var(--rose)] font-semibold"> · BH hết hạn</span> : selected.mucHuongBHYT ? <span> · BH {selected.mucHuongBHYT}%</span> : selected.bhyt ? <span> · {bhytLevel(selected.bhyt)}</span> : null}
                       {selected.sdt && <span> · {selected.sdt}</span>}
@@ -2056,9 +2058,9 @@ export default function ExamPage() {
                   <button
                     type="button"
                     onClick={() => setShowMobileDetail((v) => !v)}
-                    className={`px-2 py-1 rounded-md text-[10.5px] sm:text-[11px] font-bold border transition-colors flex items-center gap-1 cursor-pointer ${showMobileDetail
+                    className={`px-2 py-1 rounded-md text-[11px] sm:text-[11px] font-bold border transition-colors flex items-center gap-1 cursor-pointer ${showMobileDetail
                       ? "bg-[var(--navy)] text-white border-[var(--navy)]"
-                      : "bg-white text-[var(--ink-soft)] border-[var(--line)] hover:bg-[var(--surface-soft)]"
+                      : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:bg-[var(--surface-soft)]"
                       }`}
                   >
                     <span>Tiến độ ({doneCount}/4)</span>
@@ -2087,7 +2089,7 @@ export default function ExamPage() {
                       <span className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--ink)]">
                         <ClipboardList className="w-3.5 h-3.5 text-[var(--navy)]" /> Các bước thực hiện
                       </span>
-                      <span className="font-mono text-[10.5px] font-bold text-[var(--navy)] bg-[var(--navy-50)] px-1.5 py-0.2 rounded">
+                      <span className="font-mono text-[11px] font-bold text-[var(--navy)] bg-[var(--navy-50)] px-1.5 py-0.2 rounded">
                         {doneCount}/{steps.length}
                       </span>
                     </div>
@@ -2096,7 +2098,7 @@ export default function ExamPage() {
                       {steps.map((s) => (
                         <li key={s.label} className="relative flex items-start gap-2.5 mb-2 last:mb-0">
                           <span
-                            className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${s.done ? "bg-[var(--teal)] text-white shadow-2xs" : "bg-white border-2 border-[var(--line-strong)]"
+                            className={`relative z-10 w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${s.done ? "bg-[var(--teal)] text-white shadow-2xs" : "bg-[var(--surface)] border-2 border-[var(--line-strong)]"
                               }`}
                           >
                             {s.done && <Check className="w-2.5 h-2.5 stroke-[3]" />}
@@ -2105,7 +2107,7 @@ export default function ExamPage() {
                             <div className={`text-[12px] font-bold leading-tight ${s.done ? "text-[var(--ink)]" : "text-[var(--mute)]"}`}>
                               {s.label}
                             </div>
-                            <div className="text-[10.5px] font-medium text-[var(--mute)]">{s.desc}</div>
+                            <div className="text-[11px] font-medium text-[var(--mute)]">{s.desc}</div>
                           </div>
                         </li>
                       ))}
@@ -2180,11 +2182,11 @@ export default function ExamPage() {
                           KCĐT ở chân bảng. Khung hẹp (điện thoại) tự xếp lại theo từng mắt, mỗi ô có nhãn riêng. */}
                       {showThiLuc && (() => {
                         const COT = "@lg:grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1.3fr)_repeat(4,minmax(0,1fr))]";
-                        const nhanNho = "@lg:hidden block font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--mute)] mb-1";
+                        const nhanNho = "@lg:hidden block font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--mute)] mb-1";
                         const oNhap = "input-field !h-8 !py-0 !px-2 !text-[12.5px] font-mono tabular-nums w-full";
                         return (
                           <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface)] overflow-hidden">
-                            <div className={`hidden @lg:grid ${COT} gap-1.5 px-3 py-1.5 bg-[var(--surface-soft)] border-b border-[var(--line)] font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--mute)]`}>
+                            <div className={`hidden @lg:grid ${COT} gap-1.5 px-3 py-1.5 bg-[var(--surface-soft)] border-b border-[var(--line)] font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--mute)]`}>
                               <span>Mắt</span>
                               <span>Không kính</span>
                               <span>Có kính</span>
@@ -2239,7 +2241,7 @@ export default function ExamPage() {
                             ))}
                             <div className="flex items-center justify-between gap-3 px-3 py-2 bg-[var(--surface-soft)] border-t border-[var(--line)]">
                               <label htmlFor="kh-kcdt" className="text-[12px] text-[var(--ink-soft)]">
-                                <span className="font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--mute)]">KCĐT</span>
+                                <span className="font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--mute)]">KCĐT</span>
                                 <span className="ml-1.5">Khoảng cách đồng tử</span>
                               </label>
                               <span className="relative w-24 shrink-0">
@@ -2299,7 +2301,7 @@ export default function ExamPage() {
                           <span className="text-[13px] sm:text-[11.5px] font-semibold text-[var(--ink-soft)]">Chẩn đoán bệnh lý</span>
                           {!readOnly && (
                             <div className="flex items-center gap-1 flex-wrap">
-                              <span className="text-[12px] sm:text-[10.5px] text-[var(--mute)] mr-0.5">Nhanh:</span>
+                              <span className="text-[12px] sm:text-[11px] text-[var(--mute)] mr-0.5">Nhanh:</span>
                               {([
                                 ["Đục thủy tinh thể", "ĐTT 2 mắt"],
                                 ["Mộng", "Mộng 2 mắt"],
@@ -2312,7 +2314,7 @@ export default function ExamPage() {
                                     type="button"
                                     onClick={() => setBothEyes(diag)}
                                     title={`Chọn ${diag} cho cả 2 mắt`}
-                                    className={`h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border text-[12.5px] sm:text-[10.5px] font-semibold transition-colors cursor-pointer ${
+                                    className={`h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border text-[12.5px] sm:text-[11px] font-semibold transition-colors cursor-pointer ${
                                       on
                                         ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30"
                                         : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--line-strong)]"
@@ -2326,7 +2328,7 @@ export default function ExamPage() {
                                 type="button"
                                 onClick={copyMPtoMT}
                                 title="Sao chép chẩn đoán từ Mắt phải sang Mắt trái"
-                                className="h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border border-[var(--line)] bg-[var(--surface)] text-[12.5px] sm:text-[10.5px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
+                                className="h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border border-[var(--line)] bg-[var(--surface)] text-[12.5px] sm:text-[11px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
                               >
                                 MP → MT
                               </button>
@@ -2335,7 +2337,7 @@ export default function ExamPage() {
                                   type="button"
                                   onClick={clearBothEyes}
                                   title="Xoá chẩn đoán cả 2 mắt"
-                                  className="h-8 sm:h-6 px-1.5 text-[12.5px] sm:text-[10.5px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
+                                  className="h-8 sm:h-6 px-1.5 text-[12.5px] sm:text-[11px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
                                 >
                                   Xoá
                                 </button>
@@ -2420,7 +2422,7 @@ export default function ExamPage() {
                                 >
                                   {on ? <Check className="w-3 h-3" strokeWidth={3} /> : <span className={`w-1.5 h-1.5 rounded-full ${mau.dot}`} />}
                                   {t.nhan}
-                                  <span className="font-mono text-[11.5px] sm:text-[10.5px] font-bold">{mat}</span>
+                                  <span className="font-mono text-[11.5px] sm:text-[11px] font-bold">{mat}</span>
                                 </button>
                               );
                             }),
@@ -2598,7 +2600,7 @@ export default function ExamPage() {
                               <button
                                 type="button"
                                 onClick={() => setF((s) => ({ ...s, nhanVienTuVan: session?.user?.name || "" }))}
-                                className="absolute right-1.5 px-2 py-0.5 rounded text-[10.5px] font-bold bg-[#eef2ff] hover:bg-[#031da6] text-[#031da6] hover:text-white transition-colors border border-[#c7d2fe] cursor-pointer"
+                                className="absolute right-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-[var(--navy-soft)] hover:bg-[var(--navy)] text-[var(--navy)] hover:text-white transition-colors border border-[var(--navy-200)] cursor-pointer"
                                 title="Gán tên tôi làm nhân viên tư vấn ca này"
                               >
                                 Tôi tư vấn
@@ -2634,20 +2636,20 @@ export default function ExamPage() {
                   <button
                     type="button"
                     onClick={() => setShowList(true)}
-                    className={`xl:hidden h-8 px-2.5 rounded-lg bg-[#002b7f] hover:bg-[var(--navy-deep)] text-white font-bold text-[12px] flex items-center gap-1.5 shrink-0 transition-all shadow-xs cursor-pointer active:scale-95 ${
-                      newPatientAnimation ? "ring-2 ring-emerald-400 scale-105" : ""
+                    className={`xl:hidden h-8 px-2.5 rounded-lg bg-[#002b7f] hover:bg-[var(--navy-deep)] text-white font-bold text-[12px] flex items-center gap-1.5 shrink-0 transition shadow-xs cursor-pointer active:scale-95 ${
+                      newPatientAnimation ? "ring-2 ring-[var(--green)] scale-105" : ""
                     }`}
                   >
-                    <Users className={`w-3.5 h-3.5 ${newPatientAnimation ? "text-emerald-300 animate-bounce" : "text-[#00d2d3]"}`} />
+                    <Users className={`w-3.5 h-3.5 ${newPatientAnimation ? "text-emerald-300 animate-tin-moi" : "text-[#00d2d3]"}`} />
                     <span className="font-extrabold text-[12px] text-white">DS</span>
-                    <span className={`min-w-[18px] h-[18px] px-1 bg-[#e11d48] text-white font-mono text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs transition-transform ${
-                      newPatientAnimation ? "scale-125 bg-emerald-500 animate-bounce" : ""
+                    <span className={`min-w-[18px] h-[18px] px-1 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-full flex items-center justify-center shadow-xs transition-transform ${
+                      newPatientAnimation ? "scale-125 bg-[var(--green)] animate-tin-moi" : ""
                     }`}>
                       {counts.total}
                     </span>
                   </button>
                   {newPatientAnimation && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white font-mono font-black text-[9.5px] px-1.5 py-0.5 rounded-full shadow-md animate-bounce pointer-events-none border border-white whitespace-nowrap z-40">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--green)] text-white font-mono font-black text-[11px] px-1.5 py-0.5 rounded-full shadow-md animate-tin-moi pointer-events-none border border-white whitespace-nowrap z-40">
                       +1
                     </span>
                   )}
@@ -2659,19 +2661,19 @@ export default function ExamPage() {
                     type="button"
                     onClick={() => prevPatient && pick(prevPatient)}
                     disabled={!prevPatient}
-                    className="p-1 rounded text-[var(--ink-soft)] hover:bg-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                    className="p-1 rounded text-[var(--ink-soft)] hover:bg-[var(--surface)] disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                     title="Ca trước"
                   >
                     <ChevronLeft className="w-3 h-3" />
                   </button>
-                  <span className="text-[9.5px] sm:text-[10px] font-mono font-bold px-0.5 text-[var(--mute)]">
+                  <span className="text-[11px] sm:text-[11px] font-mono font-bold px-0.5 text-[var(--mute)]">
                     {curPatientIndex >= 0 ? `${curPatientIndex + 1}/${sortedPatients.length}` : "—"}
                   </span>
                   <button
                     type="button"
                     onClick={() => nextPatient && pick(nextPatient)}
                     disabled={!nextPatient}
-                    className="p-1 rounded text-[var(--ink-soft)] hover:bg-white disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
+                    className="p-1 rounded text-[var(--ink-soft)] hover:bg-[var(--surface)] disabled:opacity-25 disabled:pointer-events-none cursor-pointer"
                     title="Ca tiếp"
                   >
                     <ChevronRight className="w-3 h-3" />
@@ -2685,7 +2687,7 @@ export default function ExamPage() {
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[var(--mute)] truncate">
-                      <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" /> Đã lưu
+                      <Check className="w-3.5 h-3.5 text-[var(--teal-ink)] shrink-0" /> Đã lưu
                     </span>
                   )}
                 </span>
@@ -2693,8 +2695,8 @@ export default function ExamPage() {
 
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 {readOnly ? (
-                  <div className="h-8 sm:h-9 px-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 font-semibold text-[11.5px] sm:text-[12.5px] flex items-center gap-1.5 shadow-2xs">
-                    <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <div className="h-8 sm:h-9 px-3 rounded-lg bg-[var(--amber-soft)] dark:bg-amber-950/40 border border-[var(--amber)]/24 dark:border-amber-800/60 text-[var(--amber-deep)] dark:text-amber-300 font-semibold text-[11.5px] sm:text-[12.5px] flex items-center gap-1.5 shadow-2xs">
+                    <Eye className="w-4 h-4 text-[var(--amber-deep)] dark:text-amber-400 shrink-0" />
                     <span>Chế độ chỉ xem</span>
                   </div>
                 ) : (
@@ -2703,7 +2705,7 @@ export default function ExamPage() {
                       type="button"
                       onClick={handleQuickNormal}
                       disabled={saving || !!isDone}
-                      className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white active:scale-95 transition-all flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                      className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-[var(--green)] hover:bg-[var(--green-deep)] active:bg-emerald-800 text-white active:scale-95 transition flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
                       title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 20/20, Theo dõi) và tự động chuyển ca kế tiếp"}
                     >
                       <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
@@ -2716,10 +2718,10 @@ export default function ExamPage() {
                       disabled={saving || !dirty}
                       className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:cursor-not-allowed disabled:pointer-events-none disabled:bg-none disabled:!bg-[var(--surface-soft)] disabled:!text-[var(--mute)] disabled:!border disabled:!border-[var(--line)] disabled:!shadow-none"
                     >
-                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
                       <span>Lưu</span>
                       <span className="hidden sm:inline"> kết quả</span>
-                      <span className="hidden md:inline font-mono text-[10.5px] opacity-70 font-normal">(Ctrl+S)</span>
+                      <span className="hidden md:inline font-mono text-[11px] opacity-70 font-normal">(Ctrl+S)</span>
                     </button>
                   </>
                 )}
@@ -2728,7 +2730,7 @@ export default function ExamPage() {
           </>) : (
             <div className="flex-1 flex flex-col justify-between min-h-0">
               <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-16 gap-3.5">
-                <div className="w-13 h-13 rounded-2xl bg-white border border-[var(--line)] shadow-sm flex items-center justify-center text-[var(--navy)]">
+                <div className="w-13 h-13 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-sm flex items-center justify-center text-[var(--navy)]">
                   <UserPlus className="w-6 h-6 text-[var(--teal-deep)]" />
                 </div>
                 <div className="max-w-[320px]">
@@ -2774,7 +2776,7 @@ export default function ExamPage() {
                 >
                   <Users className="w-3.5 h-3.5 text-[#00d2d3]" />
                   <span className="font-extrabold text-[12px] text-white">DS</span>
-                  <span className="min-w-[18px] h-[18px] px-1 bg-[#e11d48] text-white font-mono text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                  <span className="min-w-[18px] h-[18px] px-1 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-full flex items-center justify-center shadow-xs">
                     {counts.total}
                   </span>
                 </button>
@@ -2809,17 +2811,17 @@ export default function ExamPage() {
         >
           <div className="space-y-4 p-1">
             <div className="flex items-center justify-between text-[13px] font-semibold">
-              <span className="text-slate-700 flex items-center gap-2">
-                {batchBhytProgress.running && <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />}
+              <span className="text-[var(--ink-soft)] flex items-center gap-2">
+                {batchBhytProgress.running && <Loader2 className="w-4 h-4 text-[var(--green-deep)] animate-spin" />}
                 {batchBhytProgress.running ? "Đang truy xuất Cổng tiếp nhận BHXH..." : "Đã hoàn tất tra cứu!"}
               </span>
-              <span className="font-mono text-emerald-700 font-bold text-[13px]">
+              <span className="font-mono text-[var(--green-deep)] font-bold text-[13px]">
                 {batchBhytProgress.current} / {batchBhytProgress.total} ca
               </span>
             </div>
 
             {/* Thanh tiến trình */}
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div className="w-full h-3 bg-[var(--surface-hover)] rounded-full overflow-hidden border border-[var(--line)]">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300 rounded-full"
                 style={{
@@ -2828,16 +2830,16 @@ export default function ExamPage() {
               />
             </div>
 
-            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-xl space-y-2 text-[12.5px]">
+            <div className="p-3.5 bg-[var(--green-soft)]/80 border border-[var(--green)]/24 rounded-xl space-y-2 text-[12.5px]">
               <div className="flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Bệnh nhân đang tra cứu:</span>
-                <span className="font-bold text-slate-900 truncate max-w-[240px]">
+                <span className="text-[var(--ink-soft)] font-medium">Bệnh nhân đang tra cứu:</span>
+                <span className="font-bold text-[var(--ink)] truncate max-w-[240px]">
                   {batchBhytProgress.currentName || "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between pt-1.5 border-t border-emerald-200/60">
-                <span className="text-slate-600 font-medium">Thẻ BHYT mới tìm thấy:</span>
-                <span className="font-mono font-black text-emerald-700 text-[14px]">
+              <div className="flex items-center justify-between pt-1.5 border-t border-[var(--green)]/18">
+                <span className="text-[var(--ink-soft)] font-medium">Thẻ BHYT mới tìm thấy:</span>
+                <span className="font-mono font-black text-[var(--green-deep)] text-[14px]">
                   {batchBhytProgress.foundCount} thẻ
                 </span>
               </div>
@@ -2850,7 +2852,7 @@ export default function ExamPage() {
                   onClick={() => {
                     batchCancelRef.current = true;
                   }}
-                  className="px-4 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-95"
+                  className="px-4 py-2 text-xs font-bold text-[var(--rose-deep)] bg-[var(--rose-soft)] hover:bg-[var(--rose)]/12 border border-[var(--rose)]/40 rounded-xl transition cursor-pointer shadow-2xs active:scale-95"
                 >
                   Dừng tra cứu
                 </button>
@@ -2858,7 +2860,7 @@ export default function ExamPage() {
                 <button
                   type="button"
                   onClick={() => setBatchBhytProgress(null)}
-                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[var(--green)] hover:bg-[var(--green-deep)] rounded-xl transition cursor-pointer shadow-xs active:scale-95"
                 >
                   Đóng
                 </button>
@@ -2876,20 +2878,20 @@ export default function ExamPage() {
           onClose={() => !completingPending && setShowCompletePending(false)}
         >
           <div className="space-y-4 p-1">
-            <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-2">
-              <div className="flex items-center gap-2 text-amber-900 font-bold text-[13.5px]">
-                <Zap className="w-4 h-4 text-amber-600 fill-amber-600" />
+            <div className="p-3.5 bg-[var(--amber-soft)]/80 border border-[var(--amber)]/30 rounded-xl space-y-2">
+              <div className="flex items-center gap-2 text-[var(--amber-deep)] font-bold text-[13.5px]">
+                <Zap className="w-4 h-4 text-[var(--amber-deep)] fill-[var(--amber-deep)]" />
                 <span>Tự động hoàn tất các ca chưa có kết luận</span>
               </div>
-              <p className="text-[12px] text-amber-800/90 leading-relaxed">
-                Đợt khám hiện có <b className="font-bold text-amber-950">{counts.total} bệnh nhân</b>. Trong đó còn{" "}
-                <b className="font-bold text-amber-950">{counts.waiting} bệnh nhân</b> đang ở trạng thái <i>Tiếp nhận (chưa khám)</i>.
+              <p className="text-[12px] text-[var(--amber-deep)]/90 leading-relaxed">
+                Đợt khám hiện có <b className="font-bold text-[var(--amber-deep)]">{counts.total} bệnh nhân</b>. Trong đó còn{" "}
+                <b className="font-bold text-[var(--amber-deep)]">{counts.waiting} bệnh nhân</b> đang ở trạng thái <i>Tiếp nhận (chưa khám)</i>.
               </p>
             </div>
 
             <div className="space-y-2 text-[12.5px] text-[var(--ink-soft)] bg-[var(--surface-soft)]/60 p-3 rounded-xl border border-[var(--line-soft)]">
               <div className="font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <CheckCheck className="w-4 h-4 text-emerald-600" />
+                <CheckCheck className="w-4 h-4 text-[var(--green-deep)]" />
                 <span>Quy trình tự động thực hiện:</span>
               </div>
               <ul className="list-disc list-inside space-y-1 text-[12px] text-[var(--mute)] pl-1">
@@ -2922,7 +2924,7 @@ export default function ExamPage() {
                   </>
                 ) : (
                   <>
-                    <Zap className="w-3.5 h-3.5 text-[var(--teal)] fill-[var(--teal)]" />
+                    <Zap className="w-3.5 h-3.5 text-[var(--teal-ink)] fill-[var(--teal)]" />
                     <span>Xác nhận chốt {counts.waiting} ca chờ</span>
                   </>
                 )}

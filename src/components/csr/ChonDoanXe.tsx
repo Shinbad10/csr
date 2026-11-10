@@ -143,7 +143,7 @@ export default function ChonDoanXe({
               tabIndex={0}
               onClick={() => onChonDoan(d)}
               onKeyDown={(e) => e.key === "Enter" && onChonDoan(d)}
-              className={`flex items-center gap-2.5 pl-2.5 pr-1 py-1.5 rounded-[10px] border transition-all cursor-pointer ${
+              className={`flex items-center gap-2.5 pl-2.5 pr-1 py-1.5 rounded-[10px] border transition cursor-pointer ${
                 active ? "border-[var(--navy)] bg-[var(--navy-50)]" : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
               }`}
             >
@@ -154,7 +154,7 @@ export default function ChonDoanXe({
                 <div className="flex items-center gap-2">
                   <span className={`text-[12.5px] font-semibold ${active ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>Đoàn {d}</span>
                   <span
-                    className={`font-mono text-[10.5px] font-semibold tabular-nums ${dung > ghe ? "text-[var(--rose)]" : "text-[var(--mute)]"}`}
+                    className={`font-mono text-[11px] font-semibold tabular-nums ${dung > ghe ? "text-[var(--rose)]" : "text-[var(--mute)]"}`}
                     title="Ghế đã dùng / ghế chở khách (gồm người nhà)"
                   >
                     {dung}/{ghe}

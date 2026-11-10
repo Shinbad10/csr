@@ -48,7 +48,7 @@ export function Donut({ data, size = 200, thickness = 26, centerLabel = "Tổng"
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="font-mono text-[26px] font-bold leading-none text-[var(--ink)]">{fmt(hover !== null ? data[hover].value : total)}</span>
-          <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--mute)] mt-1">{hover !== null ? data[hover].label : centerLabel}</span>
+          <span className="text-[11px] uppercase tracking-wide font-bold text-[var(--mute)] mt-1">{hover !== null ? data[hover].label : centerLabel}</span>
         </div>
       </div>
       <div className="flex-1 w-full grid grid-cols-1 gap-1.5 min-w-0">
@@ -91,7 +91,7 @@ export function BarChart({ data, height = 200, unit, onBarClick }: { data: Slice
               onClick={() => onBarClick && onBarClick(d, i)}
               onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
               <span className="font-mono text-[12px] font-bold text-[var(--ink)] mb-1">{fmt(d.value)}</span>
-              <div className="w-full max-w-[64px] rounded-t-[4px] transition-all" style={{ height: Math.max(h, 2), background: color, opacity: hover === null || hover === i ? 1 : 0.55 }} />
+              <div className="w-full max-w-[64px] rounded-t-[4px] transition" style={{ height: Math.max(h, 2), background: color, opacity: hover === null || hover === i ? 1 : 0.55 }} />
               <span className="text-[11px] text-[var(--mute)] mt-2 text-center leading-tight line-clamp-2 group-hover:text-[var(--ink)]">{d.label}{unit ? ` (${unit})` : ""}</span>
             </div>
           );

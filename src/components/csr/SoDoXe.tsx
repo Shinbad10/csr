@@ -84,7 +84,7 @@ export function SoDoXe({
         <div className="p-4 overflow-x-auto">
           {/* Thân xe: đầu xe ở trên */}
           <div className="mx-auto w-max rounded-t-[28px] rounded-b-[14px] border-2 border-[var(--line-strong)] bg-[var(--surface-soft)]/50 px-3 pt-2 pb-3">
-            <div className="text-center font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[var(--mute-soft)] mb-2">Đầu xe</div>
+            <div className="text-center font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--mute-soft)] mb-2">Đầu xe</div>
             <div className="space-y-1.5">
               {so.hang.map((row, ri) => (
                 <div key={ri} className="flex gap-1.5">
@@ -130,13 +130,13 @@ function Ghe({ o, nguoi }: { o: OGhe; nguoi?: NguoiTrenXe }) {
   if (o === "taiXe")
     return (
       <div className={`${base} bg-[var(--ink-soft)] border-[var(--ink-soft)] text-white/90 items-center justify-center`}>
-        <span className="text-[10.5px] font-semibold">Tài xế</span>
+        <span className="text-[11px] font-semibold">Tài xế</span>
       </div>
     );
   if (!nguoi)
     return (
       <div className={`${base} bg-[var(--surface)] border-dashed border-[var(--line-strong)]`}>
-        <span className="font-mono text-[9.5px] text-[var(--mute-soft)]">{o}</span>
+        <span className="font-mono text-[11px] text-[var(--mute-soft)]">{o}</span>
       </div>
     );
   const cls =
@@ -153,11 +153,11 @@ function Ghe({ o, nguoi }: { o: OGhe; nguoi?: NguoiTrenXe }) {
       className={`${base} ${cls} cursor-pointer hover:brightness-95 transition`}
     >
       <span className="flex items-center justify-between w-full">
-        <span className="font-mono text-[9.5px] opacity-70">{o}</span>
+        <span className="font-mono text-[11px] opacity-70">{o}</span>
         {nguoi.loai === "bn" && nguoi.daLenXe && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-        {nguoi.loai === "nn" && <span className="font-mono text-[8.5px] font-bold">NN</span>}
+        {nguoi.loai === "nn" && <span className="font-mono text-[11px] font-bold">NN</span>}
       </span>
-      <span className="text-[10.5px] font-semibold leading-tight truncate w-full">{tenNgan(nguoi.ten)}</span>
+      <span className="text-[11px] font-semibold leading-tight truncate w-full">{tenNgan(nguoi.ten)}</span>
     </button>
   );
 }
@@ -230,7 +230,7 @@ export function ChonXeModal({
                   key={n}
                   type="button"
                   onClick={() => setSoCho(n)}
-                  className={`rounded-[12px] border px-3 py-2.5 text-left transition-all cursor-pointer ${
+                  className={`rounded-[12px] border px-3 py-2.5 text-left transition cursor-pointer ${
                     on ? "border-[var(--navy)] bg-[var(--navy-50)] shadow-[0_0_0_3px_var(--navy-100)]" : "border-[var(--line)] hover:border-[var(--line-strong)]"
                   }`}
                 >

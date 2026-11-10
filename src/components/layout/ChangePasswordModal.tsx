@@ -70,7 +70,7 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
     >
       <form onSubmit={submit} className="p-5 sm:p-7 flex flex-col gap-6 bg-[var(--surface-bg)]">
         {err && (
-          <div className="p-3.5 rounded-[12px] bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-semibold flex items-center gap-2.5">
+          <div className="p-3.5 rounded-[12px] bg-[var(--rose)]/10 border border-[var(--rose)]/20 text-[var(--rose)] text-sm font-semibold flex items-center gap-2.5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{err}</span>
           </div>
@@ -89,7 +89,7 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
               required
               autoFocus
               placeholder="Nhập mật khẩu hiện tại..."
-              className="w-full h-11 px-3.5 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] font-mono text-sm placeholder:text-[var(--mute)] outline-none transition-all focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal)]/15"
+              className="w-full h-11 px-3.5 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] font-mono text-sm placeholder:text-[var(--mute)] outline-none transition focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal)]/15"
             />
           </div>
         </div>
@@ -107,7 +107,7 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
               required
               minLength={6}
               placeholder="Nhập mật khẩu mới..."
-              className="w-full h-11 px-3.5 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] font-mono text-sm placeholder:text-[var(--mute)] outline-none transition-all focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal)]/15"
+              className="w-full h-11 px-3.5 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] font-mono text-sm placeholder:text-[var(--mute)] outline-none transition focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal)]/15"
             />
           </div>
           <div className="space-y-1.5">
@@ -121,7 +121,7 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
               required
               minLength={6}
               placeholder="Nhập lại mật khẩu mới..."
-              className="w-full h-11 px-3.5 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] font-mono text-sm placeholder:text-[var(--mute)] outline-none transition-all focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal)]/15"
+              className="w-full h-11 px-3.5 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink)] font-mono text-sm placeholder:text-[var(--mute)] outline-none transition focus:border-[var(--teal)] focus:ring-2 focus:ring-[var(--teal)]/15"
             />
           </div>
         </div>
@@ -130,14 +130,14 @@ export function ChangePasswordModal({ open, onClose, userId }: ChangePasswordMod
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] text-sm font-bold transition-all cursor-pointer"
+            className="px-4 py-2 rounded-[12px] border border-[var(--line-strong)] bg-[var(--surface)] text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] text-sm font-bold transition cursor-pointer"
           >
             Hủy bỏ
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2 rounded-[12px] bg-gradient-to-r from-[var(--teal)] to-[var(--navy)] text-white hover:opacity-95 text-sm font-bold shadow-md shadow-[var(--teal)]/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2 rounded-[12px] bg-gradient-to-r from-[var(--teal)] to-[var(--navy)] text-white hover:opacity-95 text-sm font-bold shadow-md shadow-[var(--teal)]/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[3]" />}
             <span>Cập nhật mật khẩu</span>

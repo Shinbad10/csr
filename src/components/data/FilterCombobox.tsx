@@ -47,7 +47,7 @@ export function FilterCombobox({ value, onChange, options, placeholder = 'Lọc�
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setOpen(true)}
         placeholder={placeholder}
-        className="w-full h-8 pl-7 pr-12 py-1.5 bg-[var(--surface)] border border-[var(--line-soft)] rounded-lg text-[11px] text-[var(--ink)] outline-none focus:border-[var(--navy)]/40 transition-all placeholder:text-[var(--mute)]"
+        className="w-full h-8 pl-7 pr-12 py-1.5 bg-[var(--surface)] border border-[var(--line-soft)] rounded-lg text-[11px] text-[var(--ink)] outline-none focus:border-[var(--navy)]/40 transition placeholder:text-[var(--mute)]"
       />
 
       <div className="absolute right-0 top-0 h-full flex items-center pr-1.5 gap-1">
@@ -58,7 +58,7 @@ export function FilterCombobox({ value, onChange, options, placeholder = 'Lọc�
               e.stopPropagation();
               onChange('');
             }}
-            className="w-5 h-5 flex items-center justify-center rounded-md text-[var(--mute)] hover:bg-rose-50 hover:text-[var(--rose)] transition-colors"
+            className="w-5 h-5 flex items-center justify-center rounded-md text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition-colors"
             title="Xóa lọc"
           >
             <X className="w-2.5 h-2.5" />
@@ -112,7 +112,7 @@ export function FilterCombobox({ value, onChange, options, placeholder = 'Lọc�
                       onChange('');
                       setOpen(false);
                     }}
-                    className="text-[10px] font-bold text-[var(--navy)] mt-2 hover:underline"
+                    className="text-[11px] font-bold text-[var(--navy)] mt-2 hover:underline"
                   >
                     Xóa lọc
                   </button>

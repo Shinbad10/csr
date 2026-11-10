@@ -154,6 +154,8 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const listId = useId();
   const disp = (o: string) => (o ? labels?.[o] ?? o : placeholder);
   const { ready, style, update } = usePortalPosition(open, ref, 280);
 
@@ -162,6 +164,23 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
     const next = !open;
     setOpen(next);
     if (next) update();
+  };
+  /** Đóng danh sách; `traFocus` đưa focus về nút để người dùng bàn phím không bị lạc. */
+  const dong = (traFocus = false) => {
+    setOpen(false);
+    if (traFocus) btnRef.current?.focus();
+  };
+  const cacLuaChon = () => Array.from(popupRef.current?.querySelectorAll<HTMLElement>('[role="option"]') || []);
+  /** Bàn phím trong danh sách: ↑/↓/Home/End di chuyển, Esc đóng và trả focus, Tab đóng. */
+  const phimDanhSach = (e: React.KeyboardEvent) => {
+    const ds = cacLuaChon();
+    const i = ds.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); ds[Math.min(ds.length - 1, i + 1)]?.focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (i <= 0) popupRef.current?.querySelector<HTMLElement>("input")?.focus(); else ds[i - 1]?.focus(); }
+    else if (e.key === "Home") { e.preventDefault(); ds[0]?.focus(); }
+    else if (e.key === "End") { e.preventDefault(); ds[ds.length - 1]?.focus(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); dong(true); }
+    else if (e.key === "Tab") dong();
   };
 
   useEffect(() => {
@@ -185,6 +204,16 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
   }, [open]);
 
   const showSearch = options.length > 8;
+
+  // Mở bằng bàn phím / chuột mà không có ô tìm: focus vào mục đang chọn (hoặc mục đầu) để dùng ↑/↓ ngay
+  useEffect(() => {
+    if (!open || !ready || showSearch) return;
+    const t = window.setTimeout(() => {
+      const ds = cacLuaChon();
+      (ds.find((x) => x.getAttribute("aria-selected") === "true") || ds[0])?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open, ready, showSearch]);
   const filtered = showSearch && search.trim()
     ? options.filter((o) => (labels?.[o] ?? o).toLowerCase().includes(search.toLowerCase()))
     : options;
@@ -192,15 +221,22 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={btnRef}
         type="button"
         onClick={toggle}
+        onKeyDown={(e) => {
+          if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) { e.preventDefault(); toggle(); }
+        }}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
         className={`input-field flex items-center justify-between gap-2 text-left w-full cursor-pointer select-none ${size === "sm" ? "!h-8 !text-[12px] !px-2.5 !rounded-[9px] font-semibold" : "h-10 text-[13px] px-3"} transition-colors ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)] cursor-not-allowed" : ""}`}
       >
         <span className={`${value ? `text-[var(--ink)] font-medium ${mono && !labels ? "font-mono" : ""}` : "text-[var(--mute-soft)]"} truncate`}>
           {value ? disp(value) : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 shrink-0 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
+        <ChevronDown aria-hidden="true" className={`w-4 h-4 shrink-0 text-[var(--mute)] transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
       </button>
       {/* AnimatePresence phải nằm TRONG portal: nó lọc children bằng isValidElement,
           mà createPortal(...) trả về $$typeof = react.portal nên bị loại sạch → không render gì. */}
@@ -210,12 +246,13 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
           <motion.div
             key="dropdown-pop"
             ref={popupRef} data-portal-popover
+            onKeyDown={phimDanhSach}
             style={style}
             initial={{ opacity: 0, scale: 0.98, y: 3 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 3 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
-            className="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-1 text-[12.5px] overflow-hidden"
+            className="flex flex-col bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line)] dark:border-white/10 rounded-xl shadow-2xl p-1 text-[12.5px] overflow-hidden"
           >
             {showSearch && (
               <div className="p-1.5 border-b border-[var(--line)] mb-1">
@@ -224,11 +261,13 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Tìm nhanh..."
-                  className="w-full px-2.5 py-1 text-[12px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-all"
+                  aria-label="Tìm trong danh sách"
+                  onKeyDown={(e) => { if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); cacLuaChon()[0]?.focus(); } }}
+                  className="w-full px-2.5 py-1 text-[12px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] transition"
                 />
               </div>
             )}
-            <div className="overflow-y-auto flex-1 p-0.5 space-y-0.5 custom-scrollbar max-h-[240px]">
+            <div id={listId} role="listbox" className="overflow-y-auto flex-1 p-0.5 space-y-0.5 custom-scrollbar max-h-[240px]">
               {filtered.length === 0 ? (
                 <div className="px-3 py-2 text-center text-xs text-[var(--mute)]">Không tìm thấy kết quả</div>
               ) : (
@@ -238,7 +277,9 @@ export function Dropdown({ value, onChange, options, placeholder = "Chọn…", 
                     <button 
                       key={o || "__empty"} 
                       type="button" 
-                      onClick={() => { onChange(o); setOpen(false); }}
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => { onChange(o); dong(true); }}
                       className={`w-full text-left px-3 py-2 rounded-lg text-[12.5px] flex items-center justify-between gap-2 transition-colors cursor-pointer ${
                         isSelected ? "bg-[var(--navy-50)] text-[var(--navy)] font-bold" : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 hover:text-[var(--ink)]"} ${mono && o && !labels ? "font-mono" : ""}`}
                     >
@@ -341,7 +382,7 @@ export function InputGoiY({ value, onChange, options, placeholder, mono, disable
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 3 }}
               transition={{ duration: 0.1, ease: "easeOut" }}
-              className="flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-1 text-[12.5px] overflow-hidden"
+              className="flex flex-col bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line)] dark:border-white/10 rounded-xl shadow-2xl p-1 text-[12.5px] overflow-hidden"
             >
               <div id={listId} role="listbox" className="overflow-y-auto p-0.5 space-y-0.5 custom-scrollbar max-h-[240px]">
                 {loc.length === 0 ? (
@@ -734,7 +775,7 @@ export function DateField({
 
             {view === "day" && (
               <>
-                <div className="grid grid-cols-7 gap-0.5 mb-1 text-center text-[10px] font-extrabold tracking-wider text-[var(--mute)]">
+                <div className="grid grid-cols-7 gap-0.5 mb-1 text-center text-[11px] font-extrabold tracking-wider text-[var(--mute)]">
                   {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d, i) => (
                     <div key={d} className={`py-0.5 ${i === 0 ? "text-[var(--rose)]" : ""}`}>
                       {d}
@@ -777,7 +818,7 @@ export function DateField({
             {/* Chân popup */}
             <div className="flex items-center justify-between gap-2 pt-2 mt-2 border-t border-[var(--line-soft)] -mx-2.5 -mb-2.5 px-2.5 py-1.5 bg-[var(--surface-soft)] text-[11.5px]">
               {birth ? (
-                <span className="text-[10.5px] text-[var(--mute)] truncate">
+                <span className="text-[11px] text-[var(--mute)] truncate">
                   Gõ nhanh: <b className="font-mono text-[var(--ink-soft)]">06031952</b>
                 </span>
               ) : (
@@ -787,7 +828,7 @@ export function DateField({
                   onClick={() => selectDate(todayStr)}
                   className="inline-flex items-center gap-1 font-bold text-[var(--teal-deep)] px-1.5 py-0.5 rounded-[6px] hover:bg-[var(--teal-soft)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Sparkles className="w-3 h-3 text-[var(--teal)]" /> Hôm nay
+                  <Sparkles className="w-3 h-3 text-[var(--teal-ink)]" /> Hôm nay
                 </button>
               )}
               <div className="flex items-center gap-1 shrink-0">
@@ -827,6 +868,18 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
   const ref = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const { ready, style } = usePortalPosition(open, ref, 200);
+  const listId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const chon = (v: string) => { onChange(v); setOpen(false); inputRef.current?.focus(); };
+  /** ↑/↓ giữa ô nhập và các gợi ý, Esc đóng và trả focus về ô nhập. */
+  const phim = (e: React.KeyboardEvent) => {
+    const ds = Array.from(popupRef.current?.querySelectorAll<HTMLElement>('[role="option"]') || []);
+    const i = ds.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); if (!open) setOpen(true); else ds[Math.min(ds.length - 1, i + 1)]?.focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (i <= 0) inputRef.current?.focus(); else ds[i - 1]?.focus(); }
+    else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); inputRef.current?.focus(); }
+    else if (e.key === "Tab") setOpen(false);
+  };
   
   useEffect(() => {
     if (!open) return;
@@ -847,29 +900,35 @@ export function Combobox({ value, onChange, options, placeholder, disabled }: { 
   return (
     <div className={`relative ${disabled ? "opacity-70 pointer-events-none" : ""}`} ref={ref}>
       <div className="relative">
-        <input 
-          value={value} 
+        <input
+          ref={inputRef}
+          value={value}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={open ? listId : undefined}
+          aria-autocomplete="list"
+          onKeyDown={phim}
           onChange={(e) => { onChange(e.target.value); setOpen(true); }}
           onFocus={() => !disabled && setOpen(true)}
           disabled={disabled}
           className={`input-field w-full pr-8 ${open ? "border-[var(--navy)] ring-2 ring-[var(--navy-100)]" : ""} ${disabled ? "bg-[var(--surface-bg)] text-[var(--mute)]" : ""}`} 
           placeholder={placeholder} 
         />
-        <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)] pointer-events-none transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
+        <ChevronDown aria-hidden="true" className={`absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)] pointer-events-none transition-transform duration-200 ${open ? "rotate-180 text-[var(--navy)]" : ""}`} />
       </div>
       {open && ready && typeof document !== "undefined" && createPortal(
-        <div ref={popupRef} data-portal-popover style={style} className="overflow-y-auto bg-white border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-dropdown">
+        <div ref={popupRef} id={listId} role="listbox" onKeyDown={phim} data-portal-popover style={style} className="overflow-y-auto bg-[var(--surface)] border border-[var(--line-strong)] rounded-[var(--r-md)] shadow-[var(--shadow-xl)] p-1 animate-dropdown">
           {options.length === 0 && !showAdd && (
             <div className="px-3 py-2.5 text-[12.5px] text-[var(--mute)] text-center">Chưa có điểm đón nào.<br/>Nhập để tạo mới.</div>
           )}
           {filtered.map(o => (
-            <button key={o} type="button" onMouseDown={(e) => { e.preventDefault(); onChange(o); setOpen(false); }}
+            <button key={o} type="button" role="option" aria-selected={value === o} onMouseDown={(e) => e.preventDefault()} onClick={() => chon(o)}
               className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-[13px] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] cursor-pointer">
               {o}
             </button>
           ))}
           {showAdd && (
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); onChange(value.trim()); setOpen(false); }}
+            <button type="button" role="option" aria-selected={false} onMouseDown={(e) => e.preventDefault()} onClick={() => chon(value.trim())}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-[var(--r-sm)] text-[13px] font-semibold text-[var(--teal-deep)] bg-[var(--teal-soft)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer">
               <span className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center text-[11px] shrink-0 font-black">+</span> 
               Thêm: &quot;{value.trim()}&quot;
@@ -901,7 +960,8 @@ export function ChoiceRow({ options, value, onChange, render, disabled }: {
             type="button"
             onClick={() => !disabled && onChange(on ? "" : o)}
             disabled={disabled}
-            className={`h-9 sm:h-8 px-3.5 rounded-[8px] text-[14px] sm:text-[12px] transition-all cursor-pointer select-none ${
+            aria-pressed={on}
+            className={`h-9 sm:h-8 px-3.5 rounded-[8px] text-[14px] sm:text-[12px] transition cursor-pointer select-none ${
               on
                 ? "bg-[var(--navy)] text-white font-semibold shadow-[var(--navy-shadow)]"
                 : "text-[var(--ink-soft)] font-semibold hover:text-[var(--ink)]"
@@ -929,6 +989,7 @@ export function PillGroup({ options, selected, onToggle, disabled }: {
             type="button"
             onClick={() => !disabled && onToggle(o)}
             disabled={disabled}
+            aria-pressed={on}
             className={`inline-flex items-center gap-1 h-8 px-3 rounded-full text-[13.5px] sm:text-[12px] font-semibold border transition-colors cursor-pointer select-none active:scale-[0.98] ${
               on
                 ? "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/60"
@@ -1006,11 +1067,11 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 4 }}
             transition={{ type: "spring", stiffness: 450, damping: 28 }}
-            className="fixed z-[99999] flex flex-col max-h-[300px] bg-white dark:bg-slate-900 border border-[var(--line-strong)] rounded-xl shadow-2xl"
+            className="fixed z-[99999] flex flex-col max-h-[300px] bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] rounded-xl shadow-2xl"
           >
             <div className="p-1.5 border-b border-[var(--line-soft)] shrink-0">
               <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={searchPlaceholder}
-                className="w-full px-2.5 py-1.5 text-[13px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-white focus:border-[var(--navy)] transition-colors" />
+                className="w-full px-2.5 py-1.5 text-[13px] rounded-lg bg-[var(--surface-bg)] border border-transparent outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] transition-colors" />
             </div>
             <div className="overflow-y-auto p-1 space-y-0.5 custom-scrollbar">
               {filtered.length === 0 ? (
@@ -1022,7 +1083,7 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
                     className={`w-full text-left px-2.5 py-2 rounded-lg text-[13px] flex items-center gap-2.5 transition-colors cursor-pointer ${
                       on ? "bg-[var(--navy-50)] text-[var(--navy)] font-semibold" : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"}`}>
                     <span className={`w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 ${
-                      on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "border-[var(--line-heavy)] bg-white"}`}>
+                      on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "border-[var(--line-heavy)] bg-[var(--surface)]"}`}>
                       {on && <Check className="w-3 h-3 stroke-[3]" />}
                     </span>
                     <span className="min-w-0 flex-1">{o}</span>
@@ -1042,7 +1103,7 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
 // Badge trạng thái dùng chung với chỉ báo Glowing Dot
 export function StatusBadge({ label, cls, sm }: { label: string; cls: string; sm?: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 ${sm ? "text-[10px] px-2 py-[3px]" : "text-[10.5px] px-2.5 py-1"} font-mono font-bold uppercase tracking-[0.05em] rounded-[6px] whitespace-nowrap ${cls}`}>
+    <span className={`inline-flex items-center gap-1.5 ${sm ? "text-[11px] px-2 py-[3px]" : "text-[11px] px-2.5 py-1"} font-mono font-bold uppercase tracking-[0.05em] rounded-[6px] whitespace-nowrap ${cls}`}>
       <span className="w-[5px] h-[5px] rounded-full bg-current shrink-0" />
       {label}
     </span>

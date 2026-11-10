@@ -98,7 +98,7 @@ export function ToolbarSelect({
         aria-label={ariaLabel}
         onClick={() => (open ? close() : openPanel())}
         className={cn(
-          'flex items-center gap-1.5 w-full px-2.5 rounded-xl border text-[11.5px] font-semibold transition-all duration-150 select-none',
+          'flex items-center gap-1.5 w-full px-2.5 rounded-xl border text-[11.5px] font-semibold transition duration-150 select-none',
           h,
           open
             ? 'bg-[var(--surface)] border-[var(--navy)] text-[var(--ink)] ring-2 ring-[var(--navy-100)]'
@@ -112,7 +112,7 @@ export function ToolbarSelect({
         {selected?.count !== undefined && (
           <span
             className={cn(
-              'shrink-0 font-mono text-[10.5px] font-bold tabular-nums px-1.5 rounded-md leading-[18px]',
+              'shrink-0 font-mono text-[11px] font-bold tabular-nums px-1.5 rounded-md leading-[18px]',
               active ? 'bg-[var(--navy)] text-white' : 'bg-[var(--surface)] border border-[var(--line)] text-[var(--mute)]',
             )}
           >

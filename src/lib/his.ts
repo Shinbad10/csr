@@ -1080,7 +1080,19 @@ export async function batchCheckHISForPatients(
            Không đụng ca người dùng đã xác nhận tay. */
         const csrGhiDaMo = p.trangThaiDieuTri === "Đã mổ" || (p as Record<string, unknown>).trangThai === "DaMoHauPhau";
         const xacNhanTay = /Đã xác nhận|Xác nhận thủ công/.test(p.ghiChuMat2 || "");
-        const traVeChuaMo = matchType === "exact" && csrGhiDaMo && !xacNhanTay && !dec.daMo && !dec.daMoTruoc && !dec.choMo;
+        let traVeChuaMo = matchType === "exact" && csrGhiDaMo && !xacNhanTay && !dec.daMo && !dec.daMoTruoc && !dec.choMo;
+        if (traVeChuaMo) {
+          // Dữ liệu cũ chưa có dòng xác nhận: người dùng từng tự sửa trạng thái / ngày mổ → coi là đánh dấu tay, giữ nguyên
+          const suaTay = await prisma.auditLog.findFirst({
+            where: {
+              bang: "HoSoBenhNhan",
+              banGhiId: p.id,
+              OR: [{ thayDoi: { contains: "ngayMoThucTe" } }, { thayDoi: { contains: "trangThaiDieuTri" } }],
+            },
+            select: { id: true },
+          }).catch(() => ({ id: 0 }));
+          if (suaTay) traVeChuaMo = false;
+        }
         if (matchType === "exact") {
           Object.assign(updateData, dec.data);
           if (traVeChuaMo) {

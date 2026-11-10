@@ -6,6 +6,7 @@ import { triggerSync } from "@/lib/syncWorker";
 import sql from "mssql";
 import { appendHisNote, getHisConfig, fetchHisRevenue, clearPhacoCache, hisNgayLuu, ngayKhamVN } from "@/lib/his";
 import { broadcastEvent } from "@/lib/events";
+import { ghiXacNhanMo } from "@/lib/csr";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -88,6 +89,12 @@ export async function POST(request: Request) {
         updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, exactNote);
       } else if (item.chiTiet) {
         updateData.ghiChuMat2 = appendHisNote(hoSo.ghiChuMat2, item.chiTiet);
+      }
+
+      // Người dùng bấm Đánh dấu / Xác nhận / Đồng bộ → ghi tên người xác nhận (ngoài khối [HIS] nên không bị
+      // lần đối chiếu sau xoá). Mắt 2 tự lưu khi quét thì không tính là xác nhận tay.
+      if (!isMat2) {
+        updateData.ghiChuMat2 = ghiXacNhanMo(updateData.ghiChuMat2 ?? hoSo.ghiChuMat2, session.user.name || session.user.id, "Đối chiếu HIS");
       }
 
       await prisma.hoSoBenhNhan.update({

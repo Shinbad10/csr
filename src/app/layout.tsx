@@ -5,6 +5,7 @@ import ToastProvider from "@/components/providers/ToastProvider";
 import ConfirmProvider from "@/components/providers/ConfirmProvider";
 import { RealtimeProvider } from "@/components/providers/RealtimeProvider";
 import PWARegister from "@/components/providers/PWARegister";
+import MotionPrefs from "@/components/providers/MotionPrefs";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -30,8 +31,8 @@ export const viewport: Viewport = {
   themeColor: "#031da6",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Không chặn phóng to (WCAG 1.4.4) — người lớn tuổi cần phóng chữ. iOS tự phóng khi bấm ô nhập < 16px
+  // thì xử lý bằng cỡ chữ ô nhập trên điện thoại (globals.css), không khoá zoom.
   viewportFit: "cover",
 };
 
@@ -68,7 +69,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SessionProvider>
           <RealtimeProvider>
             <ToastProvider>
-              <ConfirmProvider>{children}</ConfirmProvider>
+              <ConfirmProvider>
+                <MotionPrefs>{children}</MotionPrefs>
+              </ConfirmProvider>
             </ToastProvider>
           </RealtimeProvider>
         </SessionProvider>

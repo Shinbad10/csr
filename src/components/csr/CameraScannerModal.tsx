@@ -121,7 +121,7 @@ function DesktopScanner({ onClose, onScan }: Omit<CameraScannerModalProps, "open
       maxWidth="max-w-[480px]"
       noPadding
     >
-      <div className="p-6 bg-white space-y-5">
+      <div className="p-6 bg-[var(--surface)] space-y-5">
         <div className="relative w-full overflow-hidden rounded-2xl border-2 border-dashed border-[var(--navy)]/30 bg-[var(--surface-soft)] min-h-[300px] flex flex-col items-center justify-center">
           {starting && !error && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--surface-soft)]/90 z-10 gap-3 text-[var(--navy)] font-semibold text-[14px]">

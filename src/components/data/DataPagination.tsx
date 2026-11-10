@@ -86,7 +86,7 @@ function PageBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'inline-flex items-center justify-center min-w-[30px] h-7 px-2 rounded-lg font-mono text-[11.5px] font-bold transition-all duration-150 cursor-pointer',
+        'inline-flex items-center justify-center min-w-[30px] h-7 px-2 rounded-lg font-mono text-[11.5px] font-bold transition duration-150 cursor-pointer',
         active
           ? 'bg-[var(--navy)] text-white shadow-xs'
           : 'text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]',

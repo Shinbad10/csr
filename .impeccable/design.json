@@ -1,0 +1,511 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T00:00:00Z",
+  "title": "Design System: VISI CSR",
+  "extensions": {
+    "colorMeta": {
+      "navy": {
+        "role": "primary",
+        "displayName": "VISI Ultramarine",
+        "canonical": "#031da6",
+        "darkMode": "#02b8a9",
+        "tonalRamp": [
+          "#010833",
+          "#020f5c",
+          "#031da6",
+          "#2a43c4",
+          "#5a6fd6",
+          "#8f9ee6",
+          "#c7d2fe",
+          "#eef2ff"
+        ]
+      },
+      "navy-deep": {
+        "role": "primary",
+        "displayName": "Midnight Navy",
+        "canonical": "#020f5c",
+        "darkMode": "#017a70"
+      },
+      "navy-ink": {
+        "role": "primary",
+        "displayName": "Ink Navy",
+        "canonical": "#010833"
+      },
+      "navy-soft": {
+        "role": "primary",
+        "displayName": "Navy Wash",
+        "canonical": "#eef2ff",
+        "darkMode": "rgba(2, 184, 169, 0.12)",
+        "note": "Also --navy-50 rgba(3,29,166,0.04) and --navy-100 rgba(3,29,166,0.08) for selection and focus halos."
+      },
+      "teal": {
+        "role": "secondary",
+        "displayName": "Clinic Teal",
+        "canonical": "#02b8a9",
+        "tonalRamp": [
+          "#013f3a",
+          "#015e57",
+          "#017a70",
+          "#02b8a9",
+          "#3fcfc2",
+          "#86e3da",
+          "#c4f2ed",
+          "#e6faf7"
+        ]
+      },
+      "teal-deep": {
+        "role": "secondary",
+        "displayName": "Deep Teal",
+        "canonical": "#017a70"
+      },
+      "teal-soft": {
+        "role": "secondary",
+        "displayName": "Teal Wash",
+        "canonical": "#e6faf7",
+        "darkMode": "rgba(2, 184, 169, 0.1)"
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Pending Amber",
+        "canonical": "#d97706",
+        "tonalRamp": [
+          "#5a3003",
+          "#8a4a05",
+          "#b45309",
+          "#d97706",
+          "#f0a23b",
+          "#f7c77f",
+          "#fbe3bd",
+          "#fef6eb"
+        ]
+      },
+      "amber-deep": {
+        "role": "tertiary",
+        "displayName": "Amber Deep",
+        "canonical": "#b45309",
+        "darkMode": "#fbbf24"
+      },
+      "amber-soft": {
+        "role": "tertiary",
+        "displayName": "Amber Wash",
+        "canonical": "#fef6eb",
+        "darkMode": "rgba(217, 119, 6, 0.1)"
+      },
+      "rose": {
+        "role": "tertiary",
+        "displayName": "Alert Rose",
+        "canonical": "#d41a43",
+        "tonalRamp": [
+          "#5c0a1d",
+          "#8f102e",
+          "#be123c",
+          "#d41a43",
+          "#f0587a",
+          "#f692a8",
+          "#fbcad5",
+          "#fef1f4"
+        ]
+      },
+      "rose-soft": {
+        "role": "tertiary",
+        "displayName": "Rose Wash",
+        "canonical": "#fef1f4",
+        "darkMode": "rgba(225, 29, 72, 0.1)"
+      },
+      "green": {
+        "role": "tertiary",
+        "displayName": "Confirm Green",
+        "canonical": "#059669",
+        "darkMode": "#34d399 (green-deep)"
+      },
+      "green-soft": {
+        "role": "tertiary",
+        "displayName": "Green Wash",
+        "canonical": "#ecfdf5"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0d1025",
+        "darkMode": "#f8fafc"
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "#45495e",
+        "darkMode": "#cbd5e1"
+      },
+      "mute": {
+        "role": "neutral",
+        "displayName": "Mute",
+        "canonical": "#666b80",
+        "darkMode": "#94a3b8"
+      },
+      "mute-soft": {
+        "role": "neutral",
+        "displayName": "Mute Soft",
+        "canonical": "#7d8296",
+        "darkMode": "#64748b"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#eef0f5",
+        "darkMode": "rgba(255, 255, 255, 0.06)"
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Faint Line",
+        "canonical": "#f4f5f9",
+        "darkMode": "rgba(255, 255, 255, 0.03)"
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Firm Line",
+        "canonical": "#d3dbe8",
+        "darkMode": "rgba(255, 255, 255, 0.12)"
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "#f7f8fc",
+        "darkMode": "#020617"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#ffffff",
+        "darkMode": "#0f172a"
+      },
+      "surface-soft": {
+        "role": "neutral",
+        "displayName": "Surface Soft",
+        "canonical": "#fafbfd",
+        "darkMode": "#1e293b"
+      },
+      "surface-hover": {
+        "role": "neutral",
+        "displayName": "Surface Hover",
+        "canonical": "#f1f4f9",
+        "darkMode": "#334155"
+      },
+      "violet": {
+        "role": "tertiary",
+        "displayName": "Second-Eye Violet",
+        "canonical": "#7c3aed",
+        "darkMode": "#a78bfa",
+        "note": "CSS token --violet; reserved for Mắt 2 only"
+      },
+      "violet-deep": {
+        "role": "tertiary",
+        "displayName": "Violet Deep",
+        "canonical": "#6d28d9",
+        "darkMode": "#c4b5fd"
+      },
+      "violet-soft": {
+        "role": "tertiary",
+        "displayName": "Violet Wash",
+        "canonical": "#f5f0ff",
+        "darkMode": "rgba(124, 58, 237, 0.16)"
+      },
+      "teal-ink": {
+        "role": "secondary",
+        "displayName": "Teal Ink",
+        "canonical": "#017a70",
+        "darkMode": "#02b8a9",
+        "note": "teal text/icons; switches to plain teal inside navy blocks"
+      },
+      "rose-deep": {
+        "role": "tertiary",
+        "displayName": "Rose Deep",
+        "canonical": "#be123c",
+        "darkMode": "#fb7185"
+      },
+      "gold": {
+        "role": "tertiary",
+        "displayName": "Gold",
+        "canonical": "#c08a1e",
+        "darkMode": "#e0b04a"
+      },
+      "gold-deep": {
+        "role": "tertiary",
+        "displayName": "Gold Deep",
+        "canonical": "#8a5a00",
+        "darkMode": "#fbbf24"
+      },
+      "gold-soft": {
+        "role": "tertiary",
+        "displayName": "Gold Soft",
+        "canonical": "#fdf6e3",
+        "darkMode": "rgba(192, 138, 30, 0.12)"
+      },
+      "gold-line": {
+        "role": "tertiary",
+        "displayName": "Gold Line",
+        "canonical": "#f0dfb3",
+        "darkMode": "rgba(192, 138, 30, 0.3)"
+      }
+    },
+    "typographyMeta": {
+      "page-title": {
+        "displayName": "Page title",
+        "purpose": "One per page in PageHeader; 17px mobile, 19px from sm; last 1-2 words italic 400 in teal-deep."
+      },
+      "modal-title": {
+        "displayName": "Modal title",
+        "purpose": "Dialog headers; 17px mobile, 21px from sm."
+      },
+      "section-title": {
+        "displayName": "Section title",
+        "purpose": "Numbered form sections, after a mono 01/02 tile."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Inputs, table cells, options."
+      },
+      "body-compact": {
+        "displayName": "Compact body",
+        "purpose": "Buttons, nav, toolbars, segmented options."
+      },
+      "field-label": {
+        "displayName": "Field label",
+        "purpose": "Form labels; 13px mobile, 11.5-12px desktop, ink-soft."
+      },
+      "micro-label": {
+        "displayName": "Micro label",
+        "purpose": "Table headers, status badges, counters. Uppercase. The 11px floor."
+      },
+      "data-mono": {
+        "displayName": "Data",
+        "purpose": "Dates dd/mm/yyyy, BHYT codes, IDs, acuity, refraction, totals; tabular numerals."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hairline",
+        "value": "0 1px 2px rgba(13, 16, 37, 0.04)",
+        "purpose": "Cards, page header, secondary buttons at rest."
+      },
+      {
+        "name": "soft",
+        "value": "0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03)",
+        "purpose": "Secondary button hover."
+      },
+      {
+        "name": "raised",
+        "value": "0 4px 12px rgba(13, 16, 37, 0.06), 0 2px 4px rgba(13, 16, 37, 0.03)",
+        "purpose": "Interactive card hover."
+      },
+      {
+        "name": "floating",
+        "value": "0 12px 32px rgba(13, 16, 37, 0.08)",
+        "purpose": "Calendar and popovers."
+      },
+      {
+        "name": "navy-glow",
+        "value": "0 4px 12px -2px rgba(3, 29, 166, 0.35)",
+        "purpose": "Primary and selected elements only; hover 0.45. Teal-tinted in dark mode."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Cards, inputs, modal entrance (0.18s)."
+      },
+      {
+        "name": "state-fast",
+        "value": "0.15s ease",
+        "purpose": "Button and row hover transitions."
+      },
+      {
+        "name": "popover-in",
+        "value": "0.12-0.15s ease-out, opacity + 3-4px rise + scale 0.98",
+        "purpose": "Dropdowns, combobox and nav menus."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px",
+        "purpose": "Density tightens; desktop type sizes."
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "Below this on coarse pointers, inputs render at 16px."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "Masthead reorders; full horizontal nav."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid var(--navy); outline-offset: 2px",
+      "dark": "outline-color: var(--teal)",
+      "scope": ":focus-visible on buttons, links, options, tabs, switches, tabindex"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action on a surface.",
+      "html": "<button class=\"ds-btn-primary\">Lưu phiếu khám</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid transparent; font-family: Manrope, ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 12.5px; color: #fff; background: linear-gradient(135deg, var(--navy, #031da6) 0%, var(--navy-deep, #020f5c) 100%); box-shadow: 0 4px 12px -2px rgba(3,29,166,0.35); cursor: pointer; transition: background-color .15s ease, box-shadow .15s ease, opacity .15s ease; } .ds-btn-primary:hover { background: linear-gradient(135deg, var(--navy-deep, #020f5c) 0%, var(--navy-ink, #010833) 100%); box-shadow: 0 6px 16px -2px rgba(3,29,166,0.45); } .ds-btn-primary:active { opacity: .94; } .ds-btn-primary:focus-visible { outline: 2px solid var(--navy, #031da6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral actions beside the primary.",
+      "html": "<button class=\"ds-btn-secondary\">Huỷ</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line-strong, #d3dbe8); background: var(--surface, #fff); color: var(--ink, #0d1025); font-family: Manrope, ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 12.5px; box-shadow: 0 1px 2px rgba(13,16,37,0.04); cursor: pointer; transition: all .15s ease; } .ds-btn-secondary:hover { background: var(--surface-soft, #fafbfd); border-color: rgba(3,29,166,0.08); color: var(--navy, #031da6); box-shadow: 0 1px 3px rgba(13,16,37,0.04), 0 1px 2px rgba(13,16,37,0.03); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--navy, #031da6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions such as Xoá.",
+      "html": "<button class=\"ds-btn-danger\">Xoá</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid rgba(225,29,72,0.2); background: var(--rose-soft, #fef1f4); color: var(--rose, #d41a43); font-family: Manrope, ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 12.5px; cursor: pointer; transition: all .15s ease; } .ds-btn-danger:hover { background: var(--rose, #d41a43); color: #fff; } .ds-btn-danger:focus-visible { outline: 2px solid var(--navy, #031da6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Default text and date input; mono for dates and codes.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Ngày sinh <b>*</b></span><input class=\"ds-input ds-input-mono\" placeholder=\"dd/mm/yyyy\" value=\"06/03/1952\"></label>",
+      "css": ".ds-field { display: block; width: 240px; } .ds-field-label { display: block; margin-bottom: 4px; font-family: Manrope, ui-sans-serif, sans-serif; font-size: 11.5px; font-weight: 600; color: var(--ink-soft, #45495e); } .ds-field-label b { color: var(--rose, #d41a43); } .ds-input { width: 100%; height: 40px; padding: 7px 12px; background: var(--surface, #fff); border: 1px solid var(--line-strong, #d3dbe8); border-radius: 10px; color: var(--ink, #0d1025); font-family: Manrope, ui-sans-serif, sans-serif; font-size: 13px; line-height: 1.45; outline: none; transition: all .15s cubic-bezier(0.16,1,0.3,1); } .ds-input::placeholder { color: var(--mute, #666b80); } .ds-input:focus { border-color: var(--navy, #031da6); box-shadow: 0 0 0 3px rgba(3,29,166,0.04); } .ds-input-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: .05em; }"
+    },
+    {
+      "name": "Segmented Choice",
+      "kind": "chip",
+      "refersTo": "choice-row-selected",
+      "description": "ChoiceRow: single choice such as Có/Không.",
+      "html": "<div class=\"ds-choice\"><button class=\"ds-choice-on\" aria-pressed=\"true\">Có</button><button aria-pressed=\"false\">Không</button></div>",
+      "css": ".ds-choice { display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px; background: var(--surface-soft, #fafbfd); border: 1px solid var(--line, #eef0f5); } .ds-choice button { height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-soft, #45495e); font-family: Manrope, ui-sans-serif, sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s ease; } .ds-choice button:hover { color: var(--ink, #0d1025); } .ds-choice button.ds-choice-on { background: var(--navy, #031da6); color: #fff; box-shadow: 0 4px 12px -2px rgba(3,29,166,0.35); } .ds-choice button:focus-visible { outline: 2px solid var(--navy, #031da6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Diagnosis Pills",
+      "kind": "chip",
+      "refersTo": "pill-selected",
+      "description": "PillGroup: multi-select, selected in amber.",
+      "html": "<div class=\"ds-pills\"><button class=\"ds-pill ds-pill-on\">Đục thủy tinh thể ✕</button><button class=\"ds-pill\">Glôcôm</button></div>",
+      "css": ".ds-pills { display: flex; flex-wrap: wrap; gap: 6px; } .ds-pill { height: 32px; padding: 0 12px; border-radius: 9999px; border: 1px solid var(--line-strong, #d3dbe8); background: var(--surface, #fff); color: var(--ink-soft, #45495e); font-family: Manrope, ui-sans-serif, sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: color .15s, border-color .15s; } .ds-pill:hover { border-color: rgba(217,119,6,0.5); color: var(--amber-deep, #b45309); } .ds-pill-on { background: var(--amber-soft, #fef6eb); color: var(--amber-deep, #b45309); border-color: rgba(217,119,6,0.6); } .ds-pill:focus-visible { outline: 2px solid var(--navy, #031da6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "table-header",
+      "description": "StatusBadge with dot; hue from the status token.",
+      "html": "<span class=\"ds-badge ds-badge-amber\"><i></i>Chờ mổ</span> <span class=\"ds-badge ds-badge-teal\"><i></i>Đã mổ</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; } .ds-badge i { width: 5px; height: 5px; border-radius: 9999px; background: currentColor; } .ds-badge-amber { background: var(--amber-soft, #fef6eb); color: var(--amber-deep, #b45309); } .ds-badge-teal { background: var(--teal-soft, #e6faf7); color: var(--teal-deep, #017a70); }"
+    },
+    {
+      "name": "Masthead Nav",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Navy gradient top bar with grouped nav; active link in teal.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-brand\">VISI CSR</span><a class=\"ds-nav-item ds-nav-on\" href=\"#\">Buổi khám</a><a class=\"ds-nav-item\" href=\"#\">Tư vấn</a><a class=\"ds-nav-item\" href=\"#\">Báo cáo</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 6px; height: 52px; padding: 0 20px; background: linear-gradient(to right, #010833, #031da6, #020f5c); border-bottom: 1px solid rgba(255,255,255,0.1); } .ds-nav-brand { margin-right: 14px; font-family: Fraunces, ui-serif, Georgia, serif; font-weight: 900; font-size: 16px; letter-spacing: -0.02em; color: #fff; } .ds-nav-item { display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 14px; border: 1px solid transparent; font-family: Manrope, ui-sans-serif, sans-serif; font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,0.8); text-decoration: none; transition: color .15s, background-color .15s; } .ds-nav-item:hover { color: #fff; background: rgba(255,255,255,0.1); } .ds-nav-on, .ds-nav-on:hover { background: var(--teal, #02b8a9); border-color: var(--teal, #02b8a9); color: var(--navy-ink, #010833); } .ds-nav-item:focus-visible { outline: 2px solid var(--teal, #02b8a9); outline-offset: 2px; }"
+    },
+    {
+      "name": "Page Header",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "PageHeader: navy icon tile, serif title with teal italic accent.",
+      "html": "<div class=\"ds-ph\"><span class=\"ds-ph-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></span><div><h1 class=\"ds-ph-title\">Danh sách <em>buổi khám</em></h1><div class=\"ds-ph-desc\">Đợt khám tầm soát ngoại viện</div></div></div>",
+      "css": ".ds-ph { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--surface, #fff); border: 1px solid var(--line, #eef0f5); border-radius: 18px; box-shadow: 0 1px 2px rgba(13,16,37,0.04); } .ds-ph-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--teal, #02b8a9); background: linear-gradient(to bottom right, var(--navy, #031da6), var(--navy-deep, #020f5c)); box-shadow: 0 4px 12px -2px rgba(3,29,166,0.35); } .ds-ph-title { margin: 0; font-family: Fraunces, ui-serif, Georgia, serif; font-size: 19px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.25; color: var(--ink, #0d1025); } .ds-ph-title em { font-weight: 400; color: var(--teal-deep, #017a70); } .ds-ph-desc { margin-top: 2px; font-family: Manrope, ui-sans-serif, sans-serif; font-size: 12px; color: var(--mute, #666b80); }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": "table-header",
+      "description": "DataTable: mono uppercase headers, faint dividers, navy-wash hover.",
+      "html": "<table class=\"ds-table\"><thead><tr><th>Mã BN</th><th>Họ tên</th><th>Ngày khám</th><th class=\"r\">Thị lực MP</th></tr></thead><tbody><tr><td class=\"m\">BN-00421</td><td>Nguyễn Văn An</td><td class=\"m\">06/03/2026</td><td class=\"m r\">20/40</td></tr><tr><td class=\"m\">BN-00422</td><td>Trần Thị Bình</td><td class=\"m\">06/03/2026</td><td class=\"m r\">20/200</td></tr></tbody></table>",
+      "css": ".ds-table { border-collapse: collapse; width: 100%; font-family: Manrope, ui-sans-serif, sans-serif; font-size: 13px; color: var(--ink, #0d1025); background: var(--surface, #fff); } .ds-table th { padding: 12px 14px; text-align: left; background: var(--surface-soft, #fafbfd); color: var(--mute, #666b80); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; border-bottom: 1px solid var(--line, #eef0f5); } .ds-table th:hover { background: var(--surface-hover, #f1f4f9); color: var(--navy, #031da6); cursor: pointer; } .ds-table td { padding: 10px 14px; border-bottom: 1px solid var(--line-soft, #f4f5f9); } .ds-table tbody tr { transition: background-color .15s ease; } .ds-table tbody tr:hover { background: rgba(3,29,166,0.04); } .ds-table .m { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; } .ds-table .r { text-align: right; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Field Clinic Ledger",
+    "overview": "VISI CSR is an Operate-mode tool: staff at screening sites, on the bus fleet (đoàn xe) and at the hospital desk work through long lists of patients, eye measurements and surgery schedules, often on a phone in poor light. The system is a ledger first. Dense tables, compact segmented controls and monospace numbers carry the work. A navy masthead and a navy-to-teal accent pair give it a clinical, institutional identity without decoration getting in the way.\n\nEvery screen is Vietnamese. Dates are always `dd/mm/yyyy` (typed as `06031952`, auto-formatted). BHYT codes, mã bệnh nhân, visual acuity (Snellen `20/xx`), refraction values and counts are set in JetBrains Mono with tabular figures so columns line up. Fraunces, a warm serif, is kept for titles only: page titles, modal titles and numbered section headers. Manrope does everything else.\n\nDensity goes up on desktop and touch size goes up on mobile. Controls are commonly sized `h-9 sm:h-8` or `h-8 sm:h-6`, and type steps the same way (`14px` on a phone to `12px` from `sm`). This keeps the desktop ledger tight while every target on the phone stays tappable.",
+    "keyCharacteristics": [
+      "Operate mode: dense tables, toolbars, segmented controls; Vietnamese copy; `dd/mm/yyyy`.",
+      "Navy is the one brand voice; teal means alive or done; amber pending; rose error; violet only for \"Mắt 2\".",
+      "Three faces with fixed jobs: Fraunces titles, Manrope UI, JetBrains Mono for every number, code and column label.",
+      "Flat tonal surfaces on a cool off-white page; shadows are hairline-soft, except the navy glow on primary actions.",
+      "Mobile first in touch size, desktop first in density.",
+      "Full dark theme through token remapping (navy becomes teal in dark)."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Navy is the only color that means \"act here\". Teal never labels a primary action on light mode; it marks what is active, alive or done.",
+        "section": "colors"
+      },
+      {
+        "name": "The Eye Pairing Rule",
+        "body": "Right eye \"MP\" is always teal and left eye \"MT\" is always navy (the dot beside each eye's row). Never swap them and never reuse them as status.",
+        "section": "colors"
+      },
+      {
+        "name": "The Violet Is Mắt 2 Rule",
+        "body": "`var(--violet)` appears only for second-eye surgery. Anything else violet is a bug.",
+        "section": "colors"
+      },
+      {
+        "name": "The Token Or Nothing Rule",
+        "body": "Color comes from `var(--token)`. Dark mode works by remapping tokens under `.dark`, so a raw hex or Tailwind palette class is a hole in dark mode.",
+        "section": "colors"
+      },
+      {
+        "name": "The 11px Floor Rule",
+        "body": "Nothing a user must read goes below 11px. 11px is the micro-label size; 10.5px and smaller are drift.",
+        "section": "typography"
+      },
+      {
+        "name": "The Numbers Are Mono Rule",
+        "body": "Any value that is compared down a column (a date, a code, a count, a measurement) is JetBrains Mono with `tabular-nums`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Serif Is For Titles Rule",
+        "body": "Fraunces never sets body, labels, buttons or numbers.",
+        "section": "typography"
+      },
+      {
+        "name": "The Touch Up, Dense Down Rule",
+        "body": "Size controls for the phone first and tighten from `sm`: `h-9 sm:h-8`, `h-8 sm:h-6`, `text-[14px] sm:text-[12px]`. On touch screens under 768px, inputs render at 16px so iOS does not zoom.",
+        "section": "layout"
+      },
+      {
+        "name": "The Glow Means Chosen Rule",
+        "body": "The navy glow sits only on the primary action or the selected item. Never put it on a card or a passive element.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do take every color from a `var(--token)` so the `.dark` remap reaches it.",
+      "Do set dates as `dd/mm/yyyy` and every compared number, code or date in JetBrains Mono with `tabular-nums`.",
+      "Do keep MP teal and MT navy, and keep violet (`var(--violet)`) for \"Mắt 2\" only.",
+      "Do size controls touch-first and tighten from `sm` (`h-9 sm:h-8`, `h-8 sm:h-6`).",
+      "Do use mute (`#666b80`) for helper text and keep mute-soft for placeholders and empty hints.",
+      "Do keep the 11px floor for anything a user reads.",
+      "Do use the shared field primitives (\"Field\", \"Dropdown\", \"ChoiceRow\", \"PillGroup\", \"DateField\", \"InputGoiY\") instead of native `<select>` or one-off inputs."
+    ],
+    "donts": [
+      "Don't use raw Tailwind palette classes (`emerald-700`, `amber-700`, `slate-*`, `purple-*`, `blue-50`) for meaning; use the amber, rose, green, teal and navy tokens.",
+      "Don't hard-code hex in components (`#031da6`, `#7c3aed`, `#d41a43`, `#16a34a`); add or reuse a token. The fixed masthead navies (`#002b7f`, `#010833`, `#020f5c`) are the only exception: they stay dark in both themes.",
+      "Don't use `bg-white` or `bg-white dark:bg-slate-900` for surfaces; use `var(--surface)`, which already handles dark mode.",
+      "Don't use plain `--teal` for text or icons on light grounds (2.5:1); use `text-[var(--teal-ink)]`.",
+      "Don't reference a `var(--token)` that is not defined in `globals.css` for both `:root` and `.dark`.",
+      "Don't set text at 10.5px or smaller.",
+      "Don't use emoji or Unicode glyphs (⚠ ⚡ 👁️ 💡) as icons; use a lucide icon or plain text.",
+      "- Don't apply these rules to `src/lib/email.ts`: email HTML needs inline styles and mail-safe fonts, so it is exempt.",
+      "Don't put the navy glow on passive elements, or use teal as the primary call to action on light mode."
+    ]
+  }
+}

@@ -167,7 +167,7 @@ export function ChiTietCaMo({ his, csr, cot }: { his: ChiTietHis; csr?: CsrCtXac
   if (rows.length === 0) return null;
   return (
     <div className="mt-1.5">
-      <div className={`grid ${cot} gap-x-2 pt-2 pb-1 font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--mute)]`}>
+      <div className={`grid ${cot} gap-x-2 pt-2 pb-1 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--mute)]`}>
         <span />
         <span>Ca mổ trên HIS</span>
         <span />
@@ -211,7 +211,7 @@ export function HisSideCell({ r }: { r: HisRow }) {
       </div>
       <div className={`${DONG} font-mono`}>{r.cccd || <span className="text-[var(--mute-soft)]">—</span>}</div>
       <div className={`${DONG} font-mono`}>{r.sdt || <span className="text-[var(--mute-soft)]">—</span>}</div>
-      <div className={`${DONG} text-[10.5px] text-[var(--mute)]`} title={r.diaChi || undefined}>
+      <div className={`${DONG} text-[11px] text-[var(--mute)]`} title={r.diaChi || undefined}>
         <span className="truncate">{r.diaChi || "—"}</span>
       </div>
     </div>
@@ -242,7 +242,7 @@ export function CsrSideCell({ r }: { r: HisRow }) {
       {val(ns, ns.csr || "—", true)}
       {val(cccd, m.cccd || "—", true)}
       {val(sdt, m.sdt || "—", true)}
-      <div className={`${DONG} text-[10.5px] text-[var(--mute)]`}>
+      <div className={`${DONG} text-[11px] text-[var(--mute)]`}>
         <span
           className={`shrink-0 rounded px-1 font-bold ${
             isPartial ? "bg-[var(--amber-soft)] text-[var(--amber-deep)]" : "bg-[var(--teal-soft)] text-[var(--teal-deep)]"
@@ -253,7 +253,7 @@ export function CsrSideCell({ r }: { r: HisRow }) {
         </span>
         <span className="truncate">
           Khám {m.buoiKham?.ngayKham ? fmtDate(m.buoiKham.ngayKham) : "—"} · {m.buoiKham?.xa || m.buoiKham?.diaDiem || "—"}
-          {isSecondEye && <b className="text-[#7c3aed]"> · Mắt 2</b>}
+          {isSecondEye && <b className="text-[var(--violet)]"> · Mắt 2</b>}
         </span>
       </div>
     </div>
@@ -317,7 +317,7 @@ export function HisCsrCompareModal({
       <div className="p-5">
         <table className="w-full text-[13px] border-separate border-spacing-0">
           <thead>
-            <tr className="text-[10.5px] uppercase tracking-wider text-[var(--mute)]">
+            <tr className="text-[11px] uppercase tracking-wider text-[var(--mute)]">
               <th className="w-[110px] pb-2 text-left font-bold"></th>
               <th className="pb-2 text-left font-bold">
                 HIS <span className="font-mono normal-case text-[var(--navy)]">{row.maHIS}</span>
@@ -459,7 +459,7 @@ export function XacNhanListModal({ entries, onClose }: { entries: XacNhanEntry[]
                   <div className="font-mono text-[11px] text-[var(--ink-soft)]">
                     Mổ <b className="text-[var(--ink)]">{x.ngayMo ? fmtDate(x.ngayMo.slice(0, 10)) : "—"}</b> · HIS <b className="text-[var(--navy)]">{x.his.maHIS}</b>
                   </div>
-                  <div className="mt-1 inline-flex items-center gap-1.5 text-[10.5px] font-bold">
+                  <div className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-bold">
                     <span className="rounded-md px-1.5 py-px bg-[var(--teal-soft)] text-[var(--teal-deep)]">{khop} khớp</span>
                     {lech > 0 && <span className="rounded-md px-1.5 py-px bg-[var(--rose-soft)] text-[var(--rose)]">{lech} lệch</span>}
                     {canhBao > 0 && <span className="rounded-md px-1.5 py-px bg-[var(--amber-soft)] text-[var(--amber-deep)]">{canhBao} cảnh báo</span>}
@@ -470,7 +470,7 @@ export function XacNhanListModal({ entries, onClose }: { entries: XacNhanEntry[]
               {/* Bảng so sánh có nhãn trường */}
               <div className="flex items-stretch">
                 <div className="flex-1 min-w-0 px-4 py-2">
-                  <div className="grid grid-cols-[96px_minmax(0,1fr)_24px_minmax(0,1fr)] gap-x-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-[var(--mute)] pb-1">
+                  <div className="grid grid-cols-[96px_minmax(0,1fr)_24px_minmax(0,1fr)] gap-x-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--mute)] pb-1">
                     <span />
                     <span>Trên HIS</span>
                     <span />
@@ -516,11 +516,11 @@ export function XacNhanListModal({ entries, onClose }: { entries: XacNhanEntry[]
                     </button>
                   )}
                   {!done && (
-                    <span className={`text-[10.5px] text-center leading-snug ${lech ? "text-[var(--rose)] font-semibold" : canhBao ? "text-[var(--amber-deep)] font-semibold" : "text-[var(--mute)]"}`}>
+                    <span className={`text-[11px] text-center leading-snug ${lech ? "text-[var(--rose)] font-semibold" : canhBao ? "text-[var(--amber-deep)] font-semibold" : "text-[var(--mute)]"}`}>
                       {lech ? "Có trường lệch — kiểm tra kỹ" : canhBao ? "SĐT khác — chỉ cảnh báo" : "Ghi nhận đã mổ & tính tiến độ"}
                     </span>
                   )}
-                  {st && st !== "dang" && st !== "xong" && <span className="text-[10.5px] text-[var(--rose)] text-center">{st}</span>}
+                  {st && st !== "dang" && st !== "xong" && <span className="text-[11px] text-[var(--rose)] text-center">{st}</span>}
                 </div>
               </div>
             </div>

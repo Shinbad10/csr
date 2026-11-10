@@ -73,7 +73,7 @@ export function DataToolbar({
             onChange={(e) => setGlobalFilter(e.target.value)}
             placeholder={searchPlaceholder}
             className={cn(
-              'w-full h-9 pl-9 pr-8 text-[13px] bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-xl outline-none transition-all duration-200',
+              'w-full h-9 pl-9 pr-8 text-[13px] bg-[var(--surface-soft)] border border-[var(--line-soft)] rounded-xl outline-none transition duration-200',
               'text-ellipsis placeholder:text-[var(--mute)] text-[var(--ink)] font-medium',
               'focus:border-[var(--teal)]/40 focus:bg-[var(--surface)] focus:shadow-[0_0_0_3px_var(--teal-soft)]',
             )}
@@ -82,7 +82,7 @@ export function DataToolbar({
             <button
               type="button"
               onClick={() => setGlobalFilter('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-lg text-[var(--mute)] hover:bg-rose-50 hover:text-[var(--rose)] transition-all"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-lg text-[var(--mute)] hover:bg-[var(--rose-soft)] hover:text-[var(--rose)] transition"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -104,7 +104,7 @@ export function DataToolbar({
                   type="button"
                   onClick={() => setViewMode(mode)}
                   className={cn(
-                    'flex items-center justify-center w-8 h-7.5 rounded-lg transition-all duration-200',
+                    'flex items-center justify-center w-8 h-7.5 rounded-lg transition duration-200',
                     viewMode === mode ? 'text-white bg-[var(--navy)] shadow-xs' : 'text-[var(--mute)] hover:text-[var(--ink)]',
                   )}
                   title={mode === 'table' ? 'Dạng bảng' : 'Dạng lưới'}
@@ -120,7 +120,7 @@ export function DataToolbar({
             onClick={() => setShowFilters(!showFilters)}
             disabled={viewMode === 'grid'}
             className={cn(
-              'flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200',
+              'flex items-center justify-center w-9 h-9 rounded-xl border transition duration-200',
               viewMode === 'grid'
                 ? 'opacity-50 cursor-not-allowed bg-[var(--surface-soft)] border-[var(--line-soft)] text-[var(--mute)]'
                 : showFilters
@@ -152,7 +152,7 @@ export function DataToolbar({
               table.resetColumnFilters();
               setGlobalFilter('');
             }}
-            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[11px] font-semibold text-[var(--rose)] bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-all active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg text-[11px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] border border-[var(--rose)]/30 hover:bg-[var(--rose)]/12 transition active:scale-95 shrink-0"
           >
             <X className="w-3 h-3" />
             <span>Xóa lọc</span>
@@ -162,7 +162,7 @@ export function DataToolbar({
         <div className="flex items-center h-9 rounded-xl border border-[var(--line-soft)] bg-[var(--surface-soft)] shrink-0 divide-x divide-[var(--line-soft)]">
           <div className="flex items-center gap-1 px-3 h-full shrink-0">
             <span className="text-[12px] font-extrabold text-[var(--navy)] tabular-nums">{totalRows}</span>
-            <span className="text-[10px] font-semibold text-[var(--mute)]">kq</span>
+            <span className="text-[11px] font-semibold text-[var(--mute)]">kq</span>
           </div>
 
           {hasGridView &&
@@ -200,7 +200,7 @@ export function DataToolbar({
             onClick={() => setColMenuOpen((v) => !v)}
             disabled={viewMode === 'grid'}
             className={cn(
-              'flex items-center gap-1.5 px-3 h-9 rounded-xl border text-[11.5px] font-semibold transition-all duration-150',
+              'flex items-center gap-1.5 px-3 h-9 rounded-xl border text-[11.5px] font-semibold transition duration-150',
               'bg-[var(--surface-soft)] border-[var(--line-soft)]',
               viewMode === 'grid'
                 ? 'opacity-40 cursor-not-allowed text-[var(--mute)]'
@@ -228,11 +228,11 @@ export function DataToolbar({
                     <span className="text-[11px] font-extrabold text-[var(--navy)] uppercase tracking-wider">
                       Cấu hình cột
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-[var(--surface)] rounded-full border border-[var(--line-soft)] text-[var(--mute)]">
+                    <span className="text-[11px] font-bold px-2 py-0.5 bg-[var(--surface)] rounded-full border border-[var(--line-soft)] text-[var(--mute)]">
                       {visibleCount}/{totalCount}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[var(--mute)]">Chọn các thông tin bạn muốn hiển thị</p>
+                  <p className="text-[11px] text-[var(--mute)]">Chọn các thông tin bạn muốn hiển thị</p>
                 </div>
                 <div className="py-2 max-h-[320px] overflow-y-auto custom-scrollbar">
                   {table
@@ -248,7 +248,7 @@ export function DataToolbar({
                             type="checkbox"
                             checked={col.getIsVisible()}
                             onChange={col.getToggleVisibilityHandler()}
-                            className="peer appearance-none w-4 h-4 border-2 border-[var(--line-strong)] rounded-md checked:bg-[var(--navy)] checked:border-[var(--navy)] transition-all cursor-pointer"
+                            className="peer appearance-none w-4 h-4 border-2 border-[var(--line-strong)] rounded-md checked:bg-[var(--navy)] checked:border-[var(--navy)] transition cursor-pointer"
                           />
                           <Check className="w-2.5 h-2.5 absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" strokeWidth={4} />
                         </div>
@@ -262,14 +262,14 @@ export function DataToolbar({
                   <button
                     type="button"
                     onClick={() => table.toggleAllColumnsVisible(true)}
-                    className="flex-1 py-1.5 text-[11px] font-bold text-[var(--navy)] bg-[var(--surface)] border border-[var(--line-soft)] rounded-lg hover:border-[var(--navy)] transition-all"
+                    className="flex-1 py-1.5 text-[11px] font-bold text-[var(--navy)] bg-[var(--surface)] border border-[var(--line-soft)] rounded-lg hover:border-[var(--navy)] transition"
                   >
                     Hiện tất cả
                   </button>
                   <button
                     type="button"
                     onClick={() => table.toggleAllColumnsVisible(false)}
-                    className="flex-1 py-1.5 text-[11px] font-bold text-[var(--mute)] bg-[var(--surface)] border border-[var(--line-soft)] rounded-lg hover:border-[var(--ink-soft)] transition-all"
+                    className="flex-1 py-1.5 text-[11px] font-bold text-[var(--mute)] bg-[var(--surface)] border border-[var(--line-soft)] rounded-lg hover:border-[var(--ink-soft)] transition"
                   >
                     Ẩn tất cả
                   </button>

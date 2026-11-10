@@ -88,11 +88,11 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
           <img src="/logo.png" alt="VISI" className="relative w-7 h-7 sm:w-8 sm:h-8 object-contain drop-shadow" />
         </motion.div>
         <div className="leading-none">
-          <div className="font-serif font-black text-[15px] sm:text-[16px] tracking-[-0.02em] text-white whitespace-nowrap group-hover:text-[var(--teal)] transition-colors flex items-center">
+          <div className="font-serif font-black text-[15px] sm:text-[16px] tracking-[-0.02em] text-white whitespace-nowrap group-hover:text-[var(--teal-ink)] transition-colors flex items-center">
             <span>VISI</span>
-            <span className="text-[var(--teal)] ml-0.5 font-sans font-bold">CSR</span>
+            <span className="text-[var(--teal-ink)] ml-0.5 font-sans font-bold">CSR</span>
           </div>
-          <div className="font-mono font-bold text-[8.5px] uppercase tracking-[0.18em] text-white/75 whitespace-nowrap hidden sm:block mt-0.5">
+          <div className="font-mono font-bold text-[11px] uppercase tracking-[0.14em] text-white/75 whitespace-nowrap hidden sm:block mt-0.5">
             Khám ngoại viện
           </div>
         </div>
@@ -114,7 +114,7 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
           whileTap={{ scale: 0.97 }}
           suppressHydrationWarning
           onClick={() => setOpen((o) => !o)}
-          className={`h-9 flex items-center gap-2 rounded-xl pl-1.5 pr-2.5 py-1 transition-all border cursor-pointer ${
+          className={`h-9 flex items-center gap-2 rounded-xl pl-1.5 pr-2.5 py-1 transition border cursor-pointer ${
             open
               ? "bg-white/20 border-white/40 text-white shadow-inner ring-2 ring-white/20"
               : "bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/25"
@@ -125,7 +125,7 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
           </div>
           <div className="text-left leading-tight hidden sm:flex sm:flex-col justify-center min-w-[70px] max-w-[150px]" suppressHydrationWarning>
             <div className="text-[12px] font-bold text-white truncate" suppressHydrationWarning>{displayName}</div>
-            <div className="text-[9.5px] font-medium text-[var(--teal)] opacity-90 truncate leading-none mt-0.5 min-h-[11px]" suppressHydrationWarning>{roleLabel(roleCode) || "\u00A0"}</div>
+            <div className="text-[11px] font-medium text-[var(--teal-ink)] opacity-90 truncate leading-none mt-0.5 min-h-[11px]" suppressHydrationWarning>{roleLabel(roleCode) || "\u00A0"}</div>
           </div>
           <ChevronDown className={`w-3 h-3 text-white/70 transition-transform duration-200 shrink-0 ${open ? "rotate-180 text-white" : ""}`} />
         </motion.button>
@@ -137,10 +137,10 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="absolute right-0 top-full mt-2 z-50 w-[270px] bg-white dark:bg-slate-900 border border-[var(--line-strong)] rounded-2xl shadow-2xl overflow-hidden text-[var(--ink)]"
+              className="absolute right-0 top-full mt-2 z-50 w-[270px] bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] rounded-2xl shadow-2xl overflow-hidden text-[var(--ink)]"
             >
               <div className="px-4 py-3.5 bg-[var(--surface-soft)] dark:bg-slate-800/80 border-b border-[var(--line)] flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal-ink)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-sm">
                   {initial}
                 </div>
                 <div className="min-w-0">
@@ -153,7 +153,7 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
                   <ShieldCheck className="w-4 h-4 text-[var(--teal-deep)]" /> Vai trò: <b className="text-[var(--ink)] dark:text-white">{roleLabel(session?.user?.role)}</b>
                 </div>
                 <div className="flex items-center gap-2 text-[var(--ink-soft)] dark:text-slate-300">
-                  <UserRound className="w-4 h-4 text-[var(--navy)] dark:text-[var(--teal)]" /> {session?.user?.coSoId ? `Cơ sở: ${session.user.coSoId}` : "Toàn hệ thống"}
+                  <UserRound className="w-4 h-4 text-[var(--navy)] dark:text-[var(--teal-ink)]" /> {session?.user?.coSoId ? `Cơ sở: ${session.user.coSoId}` : "Toàn hệ thống"}
                 </div>
               </div>
               <button

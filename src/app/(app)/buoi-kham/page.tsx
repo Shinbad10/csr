@@ -119,7 +119,7 @@ function JoinAction({
   }
   return (
     <Link href={`/kham/${b.id}`} className={`${BTN_PRIMARY} ${w}`}>
-      <Stethoscope className="w-3.5 h-3.5 text-[var(--teal)]" />
+      <Stethoscope className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
       Tham gia khám
     </Link>
   );
@@ -165,14 +165,14 @@ function MenuItem({
         >
           {label}
         </div>
-        {hint && <div className="text-[10.5px] text-[var(--mute)] mt-0.5 truncate">{hint}</div>}
+        {hint && <div className="text-[11px] text-[var(--mute)] mt-0.5 truncate">{hint}</div>}
       </div>
     </button>
   );
 }
 
 function MenuGroup({ label }: { label: string }) {
-  return <div className="px-2.5 pt-2 pb-1 text-[9.5px] font-mono font-bold uppercase tracking-[0.14em] text-[var(--mute-soft)]">{label}</div>;
+  return <div className="px-2.5 pt-2 pb-1 text-[11px] font-mono font-bold uppercase tracking-[0.14em] text-[var(--mute-soft)]">{label}</div>;
 }
 
 /** Cụm thao tác của một đợt khám: menu ⋮ + nút chính theo pha. */
@@ -284,7 +284,7 @@ function BuoiKhamRowActions({
         }`}
         title="Thao tác khác"
       >
-        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal)]" /> : <MoreVertical className="w-4 h-4" />}
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--teal-ink)]" /> : <MoreVertical className="w-4 h-4" />}
       </button>
 
       {menuOpen && coords && typeof document !== "undefined" &&
@@ -407,9 +407,9 @@ function MoProgress({ done, waiting, daMoTruoc }: { done: number; waiting: numbe
         <span>
           <b className={done ? "text-[var(--teal-deep)]" : "text-[var(--ink)]"}>{done}</b>
           <span className="text-[var(--mute)]">/{need}</span>
-          {Boolean(daMoTruoc) && <span className="ml-1 text-[10px] font-semibold text-[#7c3aed]">+{daMoTruoc} trước</span>}
+          {Boolean(daMoTruoc) && <span className="ml-1 text-[11px] font-semibold text-[var(--violet)]">+{daMoTruoc} trước</span>}
         </span>
-        <span className="text-[10px] text-[var(--mute)]">{pct}%</span>
+        <span className="text-[11px] text-[var(--mute)]">{pct}%</span>
       </div>
       <div className="mt-1 h-1 rounded-full bg-[var(--line)] overflow-hidden">
         <div className="h-full rounded-full bg-[var(--teal)] transition-all" style={{ width: `${pct}%` }} />
@@ -426,7 +426,7 @@ function Mat2Badge({ count, onClick }: { count: number; onClick?: () => void }) 
       type="button"
       data-no-row-click
       onClick={onClick}
-      className="inline-flex items-center gap-1 font-mono font-bold text-[11px] tabular-nums bg-[#f3eaf8] text-[#7c3aed] px-2 py-0.5 rounded-[6px] hover:bg-[#7c3aed] hover:text-white transition-colors cursor-pointer"
+      className="inline-flex items-center gap-1 font-mono font-bold text-[11px] tabular-nums bg-[var(--violet-soft)] text-[var(--violet)] px-2 py-0.5 rounded-[6px] hover:bg-[var(--violet)] hover:text-white transition-colors cursor-pointer"
       title={`${count} bệnh nhân mổ Phaco 2 lần (mắt 2). Bấm để xem danh sách.`}
     >
       <Eye className="w-3 h-3" />
@@ -499,7 +499,7 @@ function ReconcileAllButton({
       ) : (
         <>
           {compact ? "HIS" : "Đối chiếu HIS"}
-          <span className="font-mono text-[10.5px] font-bold px-1.5 rounded-[5px] bg-[var(--navy)] text-white group-hover:bg-white group-hover:text-[var(--navy)] tabular-nums transition-colors">{eligible}</span>
+          <span className="font-mono text-[11px] font-bold px-1.5 rounded-[5px] bg-[var(--navy)] text-white group-hover:bg-[var(--surface)] group-hover:text-[var(--navy)] tabular-nums transition-colors">{eligible}</span>
         </>
       )}
     </button>
@@ -1027,7 +1027,7 @@ export default function BuoiKhamPage() {
                 {name}
               </div>
               <div className="flex items-center gap-2 mt-0.5 min-w-0">
-                <span className="font-mono text-[10.5px] font-bold text-[var(--navy)] shrink-0">{fmtBuoiKhamCode(b.id)}</span>
+                <span className="font-mono text-[11px] font-bold text-[var(--navy)] shrink-0">{fmtBuoiKhamCode(b.id)}</span>
                 {place && (
                   <span className="flex items-center gap-1 text-[11px] text-[var(--mute)] min-w-0 shrink-0 max-w-[45%]" title={place}>
                     <MapPin className="w-3 h-3 shrink-0" />
@@ -1065,7 +1065,7 @@ export default function BuoiKhamPage() {
           return (
             <div className="min-w-0" title={docs.map(cleanDoctorName).join(", ")}>
               <div className="text-[12.5px] text-[var(--ink-soft)] font-medium truncate">{cleanDoctorName(docs[0])}</div>
-              {docs.length > 1 && <div className="text-[10.5px] text-[var(--mute)]">+{docs.length - 1} bác sĩ khác</div>}
+              {docs.length > 1 && <div className="text-[11px] text-[var(--mute)]">+{docs.length - 1} bác sĩ khác</div>}
             </div>
           );
         },
@@ -1220,7 +1220,7 @@ export default function BuoiKhamPage() {
                   {t.dot && <span className={`relative w-1.5 h-1.5 rounded-full bg-[var(--teal)] ${active ? "" : "animate-pulse"}`} />}
                   <span className="relative">{t.label}</span>
                   <span
-                    className={`relative text-[10px] font-bold font-mono tabular-nums px-1.5 py-px rounded-md ${
+                    className={`relative text-[11px] font-bold font-mono tabular-nums px-1.5 py-px rounded-md ${
                       active ? "bg-white/20 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"
                     }`}
                   >
@@ -1301,7 +1301,7 @@ export default function BuoiKhamPage() {
             primaryAction={
               canManage ? (
                 <button data-tour="bk-create" type="button" onClick={openCreateModal} className="btn-primary inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-[12px] font-semibold whitespace-nowrap">
-                  <Plus className="w-3.5 h-3.5 text-[var(--teal)]" />
+                  <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
                   <span className="md:hidden">Tạo đợt</span>
                   <span className="hidden md:inline">Tổ chức đợt khám</span>
                 </button>
@@ -1362,7 +1362,7 @@ export default function BuoiKhamPage() {
                           <div className={`mt-2.5 grid ${mat2 ? "grid-cols-4" : "grid-cols-3"} rounded-[10px] border border-[var(--line)] bg-[var(--surface)] divide-x divide-[var(--line-soft)] overflow-hidden`}>
                             <button type="button" onClick={() => setViewPatientsBuoiKham(b)} className="px-2.5 py-2 text-left cursor-pointer active:bg-[var(--navy-50)]">
                               <div className="font-mono text-[15px] font-bold text-[var(--navy)] tabular-nums leading-tight">{(b._count?.hoSo ?? 0).toLocaleString("vi-VN")}</div>
-                              <div className="text-[10.5px] text-[var(--mute)]">Bệnh nhân</div>
+                              <div className="text-[11px] text-[var(--mute)]">Bệnh nhân</div>
                             </button>
                             <div className="px-2.5 py-2">
                               <div className="font-mono text-[13px] font-bold tabular-nums leading-tight whitespace-nowrap">
@@ -1370,7 +1370,7 @@ export default function BuoiKhamPage() {
                                 <span className="text-[var(--mute-soft)]"> · </span>
                                 <span className="text-[var(--amber-deep)]">B {b.stats?.nhomB ?? 0}</span>
                               </div>
-                              <div className="text-[10.5px] text-[var(--mute)] mt-px">Phân nhóm</div>
+                              <div className="text-[11px] text-[var(--mute)] mt-px">Phân nhóm</div>
                             </div>
                             <div className="px-2.5 py-2 min-w-0">
                               <div className="font-mono text-[13px] tabular-nums leading-tight whitespace-nowrap">
@@ -1381,17 +1381,17 @@ export default function BuoiKhamPage() {
                                 <div className="h-full bg-[var(--teal)] rounded-full" style={{ width: `${pct}%` }} />
                               </div>
                               {(b.stats?.daMoTruoc ?? 0) > 0 && (
-                                <div className="text-[10px] font-semibold text-[#7c3aed] mt-0.5 whitespace-nowrap">+{b.stats?.daMoTruoc} mổ trước</div>
+                                <div className="text-[11px] font-semibold text-[var(--violet)] mt-0.5 whitespace-nowrap">+{b.stats?.daMoTruoc} mổ trước</div>
                               )}
                             </div>
                             {mat2 > 0 && (
                               <button
                                 type="button"
                                 onClick={() => { setPatientInitialFilter("PHACO_2_LAN"); setViewPatientsBuoiKham(b); }}
-                                className="px-2.5 py-2 text-left cursor-pointer active:bg-[#f3eaf8]"
+                                className="px-2.5 py-2 text-left cursor-pointer active:bg-[var(--violet-soft)]"
                               >
-                                <div className="font-mono text-[15px] font-bold text-[#7c3aed] tabular-nums leading-tight">{mat2}</div>
-                                <div className="text-[10.5px] text-[var(--mute)]">Mắt 2</div>
+                                <div className="font-mono text-[15px] font-bold text-[var(--violet)] tabular-nums leading-tight">{mat2}</div>
+                                <div className="text-[11px] text-[var(--mute)]">Mắt 2</div>
                               </button>
                             )}
                           </div>
@@ -1473,9 +1473,9 @@ export default function BuoiKhamPage() {
         maxWidth="max-w-[580px]"
         noPadding
       >
-        <form onSubmit={create} className="p-5 sm:p-6 space-y-4 bg-white">
+        <form onSubmit={create} className="p-5 sm:p-6 space-y-4 bg-[var(--surface)]">
           {err && (
-            <div className="p-3.5 bg-[#fef1f4] border border-[#e11d48]/30 rounded-xl text-[13px] font-semibold text-[#e11d48] flex items-center gap-2">
+            <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2">
               <X className="w-4 h-4 shrink-0" /> {err}
             </div>
           )}
@@ -1505,7 +1505,7 @@ export default function BuoiKhamPage() {
             <textarea value={ghiChu} onChange={(e) => setGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2" placeholder="Ghi chú thêm về công tác chuẩn bị, nhân sự, số lượng dự kiến..." />
           </Field>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#e2e8f0]">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--line)]">
             <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary px-4 py-2 text-xs font-semibold">
               Hủy
             </button>
@@ -1527,9 +1527,9 @@ export default function BuoiKhamPage() {
         maxWidth="max-w-[580px]"
         noPadding
       >
-        <form onSubmit={handleSaveEdit} className="p-5 sm:p-6 space-y-4 bg-white">
+        <form onSubmit={handleSaveEdit} className="p-5 sm:p-6 space-y-4 bg-[var(--surface)]">
           {editErr && (
-            <div className="p-3.5 bg-[#fef1f4] border border-[#e11d48]/30 rounded-xl text-[13px] font-semibold text-[#e11d48] flex items-center gap-2">
+            <div className="p-3.5 bg-[var(--rose-soft)] border border-[var(--rose)]/30 rounded-xl text-[13px] font-semibold text-[var(--rose)] flex items-center gap-2">
               <X className="w-4 h-4 shrink-0" /> {editErr}
             </div>
           )}
@@ -1559,7 +1559,7 @@ export default function BuoiKhamPage() {
             <textarea value={editGhiChu} onChange={(e) => setEditGhiChu(e.target.value)} rows={3} className="input-field resize-none py-2" placeholder="Ghi chú cập nhật..." />
           </Field>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#e2e8f0]">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--line)]">
             <button type="button" onClick={() => setEditModal(null)} className="btn btn-secondary px-4 py-2 text-xs font-semibold">
               Hủy
             </button>
@@ -1593,7 +1593,7 @@ export default function BuoiKhamPage() {
                 type="button"
                 onClick={handleCompleteBuoiKham}
                 disabled={completing}
-                className="btn btn-primary px-4 py-2 text-[13px] font-bold bg-amber-600 hover:bg-amber-700 text-white cursor-pointer"
+                className="btn btn-primary px-4 py-2 text-[13px] font-bold bg-[var(--amber)] hover:bg-[var(--amber-deep)] text-white cursor-pointer"
               >
                 {completing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
                 Xác nhận kết thúc đợt
@@ -1601,13 +1601,13 @@ export default function BuoiKhamPage() {
             </div>
           }
         >
-          <div className="space-y-3.5 text-[13.5px] text-[#334155] p-1">
+          <div className="space-y-3.5 text-[13.5px] text-[var(--ink-soft)] p-1">
             <p>
-              Bạn có chắc chắn muốn kết thúc đợt khám <strong className="text-[#0f172a]">{fmtBuoiKhamName(confirmCompleteModal)}</strong> (<span className="font-mono text-[#031da6] font-bold">{fmtBuoiKhamCode(confirmCompleteModal.id)}</span>)?
+              Bạn có chắc chắn muốn kết thúc đợt khám <strong className="text-[var(--ink)]">{fmtBuoiKhamName(confirmCompleteModal)}</strong> (<span className="font-mono text-[var(--navy)] font-bold">{fmtBuoiKhamCode(confirmCompleteModal.id)}</span>)?
             </p>
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-amber-800">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <div className="p-3 bg-[var(--amber-soft)] border border-[var(--amber)]/30 rounded-xl text-[var(--amber-deep)] text-xs space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-[var(--amber-deep)]">
+                <AlertTriangle className="w-4 h-4 text-[var(--amber-deep)] shrink-0" />
                 Lưu ý hành động này:
               </div>
               <div>Tất cả bệnh nhân đang ở trạng thái <strong>Tiếp nhận (chờ khám)</strong> trong đợt này sẽ được tự động chuyển sang <strong>Đã khám</strong> với kết quả <strong>Bình thường (Thị lực 20/20, Chưa phát hiện bất thường, Theo dõi)</strong>.</div>

@@ -38,7 +38,7 @@ import {
   statusOf,
   TT_DIEU_TRI,
   type HoSo,
-  fmtSinhTuoi, mucHuongHienThi
+  fmtSinhTuoi, mucHuongHienThi, docXacNhanMo
 } from "@/lib/csr";
 import { Dropdown, StatusBadge, DateField, ChoiceRow, labelCls } from "@/components/csr/fields";
 import { SkeletonList } from "@/components/layout/Skeleton";
@@ -639,7 +639,7 @@ export default function TheoDoiPage() {
   ];
   const TONE_ACTIVE: Record<Tone, string> = {
     teal: "bg-[var(--teal)] border-[var(--teal)] text-white",
-    violet: "bg-[#7c3aed] border-[#7c3aed] text-white",
+    violet: "bg-[var(--violet)] border-[var(--violet)] text-white",
     rose: "bg-[var(--rose)] border-[var(--rose)] text-white",
     amber: "bg-[var(--amber)] border-[var(--amber)] text-white",
     navy: "bg-[var(--navy)] border-[var(--navy)] text-white",
@@ -712,7 +712,7 @@ export default function TheoDoiPage() {
           ].map((s) => (
             <div key={s.k} className="relative pl-3 sm:pl-3.5 pr-2.5 sm:pr-3 py-1.5 sm:py-2 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-xs)] overflow-hidden">
               <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: s.bar }} />
-              <div className="text-[10px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">{s.k}</div>
+              <div className="text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">{s.k}</div>
               <div className="flex items-baseline gap-1 mt-0.5">
                 <span className={`font-mono text-[17px] sm:text-[19px] font-bold leading-tight tabular-nums ${s.tone}`}>{s.v}</span>
                 {s.sub && <span className="font-mono text-[11px] text-[var(--mute)]">{s.sub}</span>}
@@ -732,7 +732,7 @@ export default function TheoDoiPage() {
             Chọn một đợt khám tầm soát để tải danh sách bệnh nhân và theo dõi, chăm sóc.
           </p>
           <button type="button" onClick={() => setShowBkModal(true)} className="btn-primary inline-flex items-center gap-2 h-10 px-5 rounded-[10px] text-[13px] font-semibold mt-5">
-            <CalendarDays className="w-4 h-4 text-[var(--teal)]" />
+            <CalendarDays className="w-4 h-4 text-[var(--teal-ink)]" />
             Chọn đợt khám
           </button>
         </div>
@@ -774,9 +774,9 @@ export default function TheoDoiPage() {
                           className="absolute inset-0 bg-[var(--navy)] rounded-lg shadow-[var(--navy-shadow)]"
                         />
                       )}
-                      <Icon className={`relative w-3.5 h-3.5 ${on ? "text-[var(--teal)]" : ""}`} />
+                      <Icon className={`relative w-3.5 h-3.5 ${on ? "text-[var(--teal-ink)]" : ""}`} />
                       <span className="relative truncate">{label}</span>
-                      <span className={`relative font-mono text-[10px] font-bold px-1.5 rounded-md tabular-nums ${on ? "bg-white/20 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"}`}>{n}</span>
+                      <span className={`relative font-mono text-[11px] font-bold px-1.5 rounded-md tabular-nums ${on ? "bg-white/20 text-white" : "bg-[var(--line-soft)] text-[var(--mute)]"}`}>{n}</span>
                     </button>
                   );
                 })}
@@ -816,7 +816,7 @@ export default function TheoDoiPage() {
                     }`}
                   >
                     {sf.label}
-                    <span className={`font-mono text-[10px] font-bold tabular-nums ${on ? "text-white/80" : "text-[var(--mute)]"}`}>{sf.n}</span>
+                    <span className={`font-mono text-[11px] font-bold tabular-nums ${on ? "text-white/80" : "text-[var(--mute)]"}`}>{sf.n}</span>
                   </button>
                 );
               })}
@@ -883,7 +883,10 @@ export default function TheoDoiPage() {
                         </div>
                         <span className="text-[11px] font-mono tabular-nums shrink-0">
                           {p.ngayMoThucTe ? (
-                            <span className="text-[var(--teal-deep)]">Mổ {fmtDate(p.ngayMoThucTe)}</span>
+                            <span className="text-[var(--teal-deep)]" title={docXacNhanMo(p.ghiChuMat2) ? `Xác nhận đã mổ: ${docXacNhanMo(p.ghiChuMat2)!.ten}` : undefined}>
+                              Mổ {fmtDate(p.ngayMoThucTe)}
+                              {docXacNhanMo(p.ghiChuMat2) && <span className="font-sans text-[var(--mute)]"> · {docXacNhanMo(p.ghiChuMat2)!.ten}</span>}
+                            </span>
                           ) : p.ngayDieuTri ? (
                             <span className="text-[var(--ink-soft)]">Hẹn {fmtDate(p.ngayDieuTri)}</span>
                           ) : (
@@ -1033,7 +1036,7 @@ export default function TheoDoiPage() {
                               return { ...s, daDon: next, ngayDenBV: next ? s.ngayDenBV || new Date().toISOString().slice(0, 10) : s.ngayDenBV };
                             })
                           }
-                          className={`w-full flex items-center gap-3 p-3.5 rounded-[12px] border text-left transition-all cursor-pointer ${
+                          className={`w-full flex items-center gap-3 p-3.5 rounded-[12px] border text-left transition cursor-pointer ${
                             f.daDon ? "border-[var(--teal)]/50 bg-[var(--teal-softer)] shadow-[0_0_0_3px_var(--teal-soft)]" : "border-[var(--line)] bg-[var(--surface-soft)] hover:border-[var(--line-strong)]"
                           }`}
                         >
@@ -1046,6 +1049,18 @@ export default function TheoDoiPage() {
                           </div>
                         </button>
 
+                        {sel && docXacNhanMo(sel.ghiChuMat2) && (() => {
+                          const xn = docXacNhanMo(sel.ghiChuMat2)!;
+                          return (
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-softer)] px-3 py-2 text-[12.5px]">
+                              <CheckCircle2 aria-hidden="true" className="w-4 h-4 text-[var(--teal-ink)] shrink-0" />
+                              <span className="text-[var(--ink-soft)]">Đã mổ — xác nhận bởi</span>
+                              <span className="font-semibold text-[var(--ink)]">{xn.ten}</span>
+                              {xn.luc && <span className="font-mono text-[12px] text-[var(--mute)] tabular-nums">{xn.luc}</span>}
+                              {xn.nguon && <span className="text-[12px] text-[var(--mute)]">· {xn.nguon}</span>}
+                            </div>
+                          );
+                        })()}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <DateField label="Ngày đến bệnh viện" value={f.ngayDenBV} onChange={(v) => setF((s) => ({ ...s, ngayDenBV: v, daDon: v ? true : s.daDon }))} />
                           <DateField
@@ -1181,7 +1196,7 @@ export default function TheoDoiPage() {
                     >
                       <Users className="w-3.5 h-3.5" />
                       DS
-                      <span className="font-mono text-[10.5px] font-bold px-1.5 rounded-[5px] bg-[var(--navy)] text-white tabular-nums">{rows.length}</span>
+                      <span className="font-mono text-[11px] font-bold px-1.5 rounded-[5px] bg-[var(--navy)] text-white tabular-nums">{rows.length}</span>
                     </button>
                     <div className="flex items-center gap-0.5 p-[2px] rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] shrink-0">
                       <button
@@ -1214,7 +1229,7 @@ export default function TheoDoiPage() {
                         </>
                       ) : (
                         <>
-                          <Check className="w-3.5 h-3.5 text-[var(--teal)] shrink-0" />
+                          <Check className="w-3.5 h-3.5 text-[var(--teal-ink)] shrink-0" />
                           <span className="text-[var(--mute)]">Đã lưu</span>
                         </>
                       )}
@@ -1227,7 +1242,7 @@ export default function TheoDoiPage() {
                       disabled={savingDieuTri || !dirtyDieuTri}
                       className="btn-primary inline-flex items-center gap-1.5 h-9 px-5 rounded-[10px] text-[13px] font-semibold shrink-0 disabled:opacity-40 disabled:pointer-events-none"
                     >
-                      {savingDieuTri ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal)]" />}
+                      {savingDieuTri ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
                       Lưu điều trị
                     </button>
                   )}
@@ -1247,7 +1262,7 @@ export default function TheoDoiPage() {
                   </div>
                   {rows.length > 0 ? (
                     <button type="button" onClick={() => setShowList(true)} className="xl:hidden btn-primary inline-flex items-center gap-2 h-10 px-5 rounded-[10px] text-[13px] font-semibold mt-2">
-                      <Users className="w-4 h-4 text-[var(--teal)]" />
+                      <Users className="w-4 h-4 text-[var(--teal-ink)]" />
                       Mở danh sách ({rows.length})
                     </button>
                   ) : (
@@ -1275,7 +1290,7 @@ export default function TheoDoiPage() {
       <Modal
         open={showBkModal}
         onClose={() => setShowBkModal(false)}
-        title={<>Chọn <span className="italic font-normal text-[var(--teal)]">đợt khám</span></>}
+        title={<>Chọn <span className="italic font-normal text-[var(--teal-ink)]">đợt khám</span></>}
         subtitle="Lấy danh sách bệnh nhân để theo dõi & chăm sóc"
         icon={CalendarDays}
         maxWidth="max-w-[660px]"
@@ -1290,7 +1305,7 @@ export default function TheoDoiPage() {
               placeholder="Tìm theo xã, địa điểm hoặc mã đợt khám..."
               value={bkSearch}
               onChange={(e) => setBkSearch(e.target.value)}
-              className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-white pl-10 pr-9 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs"
+              className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-[var(--surface)] pl-10 pr-9 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition shadow-xs"
             />
             {bkSearch && (
               <button
@@ -1316,10 +1331,10 @@ export default function TheoDoiPage() {
                   setSelBk(b.id);
                   setShowBkModal(false);
                 }}
-                className={`w-full text-left p-3.5 sm:p-4 rounded-[var(--r-lg)] transition-all duration-200 flex items-start gap-3.5 sm:gap-4 border cursor-pointer ${
+                className={`w-full text-left p-3.5 sm:p-4 rounded-[var(--r-lg)] transition duration-200 flex items-start gap-3.5 sm:gap-4 border cursor-pointer ${
                   active
-                    ? "bg-white border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]"
-                    : "bg-white border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"
+                    ? "bg-[var(--surface)] border-[var(--navy)] shadow-md ring-1 ring-[var(--navy)]"
+                    : "bg-[var(--surface)] border-[var(--line)] shadow-xs hover:border-[var(--line-strong)] hover:shadow-sm"
                 }`}
               >
                 <div
@@ -1329,7 +1344,7 @@ export default function TheoDoiPage() {
                       : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"
                   }`}
                 >
-                  {active ? <Check className="w-5 h-5 text-[var(--teal)]" /> : <MapPin className="w-5 h-5" />}
+                  {active ? <Check className="w-5 h-5 text-[var(--teal-ink)]" /> : <MapPin className="w-5 h-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
@@ -1359,10 +1374,10 @@ export default function TheoDoiPage() {
                     </span>
 
                     <div className="inline-flex rounded-md overflow-hidden border border-[var(--line)] font-mono text-[11px] font-bold shadow-2xs">
-                      <span className="px-2 py-0.5 bg-[#fef1f4] text-[#e11d48] border-r border-[#e11d48]/20" title="Nhóm A: Đồng ý điều trị / Chỉ định mổ">
+                      <span className="px-2 py-0.5 bg-[var(--rose-soft)] text-[var(--rose)] border-r border-[var(--rose)]/20" title="Nhóm A: Đồng ý điều trị / Chỉ định mổ">
                         Nhóm A: {b.stats?.nhomA ?? 0}
                       </span>
-                      <span className="px-2 py-0.5 bg-[#fef6eb] text-[#d97706]" title="Nhóm B: Cần suy nghĩ thêm / Theo dõi">
+                      <span className="px-2 py-0.5 bg-[var(--amber-soft)] text-[var(--amber-deep)]" title="Nhóm B: Cần suy nghĩ thêm / Theo dõi">
                         Nhóm B: {b.stats?.nhomB ?? 0}
                       </span>
                     </div>
@@ -1370,12 +1385,12 @@ export default function TheoDoiPage() {
                     <span
                       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono text-[11px] font-bold border shadow-2xs ${
                         (b.stats?.daMo ?? 0) > 0
-                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                          : "bg-slate-50 text-slate-500 border-slate-200"
+                          ? "bg-[var(--green-soft)] text-[var(--green-deep)] border-[var(--green)]/30"
+                          : "bg-[var(--surface-soft)] text-[var(--mute)] border-[var(--line)]"
                       }`}
                       title={`Đã mổ thực tế: ${b.stats?.daMo ?? 0} ca${(b.stats?.nhomA ?? 0) > 0 ? ` trên tổng ${b.stats?.nhomA} ca nhóm A` : ""}`}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${(b.stats?.daMo ?? 0) > 0 ? "bg-emerald-600" : "bg-slate-400"}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${(b.stats?.daMo ?? 0) > 0 ? "bg-[var(--green)]" : "bg-slate-400"}`} />
                       <span>
                         Đã mổ: {b.stats?.daMo ?? 0}
                         {(b.stats?.nhomA ?? 0) > 0 ? `/${b.stats?.nhomA ?? 0}` : ""}
@@ -1394,7 +1409,7 @@ export default function TheoDoiPage() {
           })}
           {filteredBks.length === 0 && (
             <div className="text-center py-14 flex flex-col items-center justify-center text-[var(--mute)]">
-              <div className="w-12 h-12 rounded-[var(--r-lg)] bg-white shadow-xs border border-[var(--line)] flex items-center justify-center mb-4 text-[var(--mute)]">
+              <div className="w-12 h-12 rounded-[var(--r-lg)] bg-[var(--surface)] shadow-xs border border-[var(--line)] flex items-center justify-center mb-4 text-[var(--mute)]">
                 <Search className="w-6 h-6" />
               </div>
               <div className="font-bold text-[15px] text-[var(--ink)] font-serif">Không tìm thấy đợt khám</div>
@@ -1408,13 +1423,13 @@ export default function TheoDoiPage() {
       <Modal
         open={hisSearchOpen}
         onClose={() => setHisSearchOpen(false)}
-        title={<>Tìm <span className="italic font-normal text-[var(--teal)]">HIS thủ công</span></>}
+        title={<>Tìm <span className="italic font-normal text-[var(--teal-ink)]">HIS thủ công</span></>}
         subtitle="Khi đối chiếu tự động không khớp — tự tìm & chọn đúng ca mổ để xác nhận"
         icon={Search}
         maxWidth="max-w-[720px]"
         noPadding
       >
-        <div className="p-5 bg-white">
+        <div className="p-5 bg-[var(--surface)]">
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--mute)]" />
@@ -1429,7 +1444,7 @@ export default function TheoDoiPage() {
                   }
                 }}
                 placeholder="Nhập CCCD / Mã thẻ BHYT / Họ tên / Mã HIS…"
-                className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-white pl-10 pr-9 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition-all shadow-xs"
+                className="w-full h-11 rounded-[var(--r-md)] border border-[var(--line-strong)] bg-[var(--surface)] pl-10 pr-9 text-[13.5px] font-medium text-[var(--ink)] outline-none focus:border-[var(--navy)] focus:ring-2 focus:ring-[var(--navy-100)] placeholder:text-[var(--mute-soft)] transition shadow-xs"
               />
               {hisQuery && (
                 <button
@@ -1479,7 +1494,7 @@ export default function TheoDoiPage() {
                       <span className="font-mono text-[11px] font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] px-1.5 py-px rounded-md">
                         Mã HIS: {item.maHIS}
                       </span>
-                      {item.namSinh && <span className="text-[12px] text-slate-500 font-medium">({item.namSinh})</span>}
+                      {item.namSinh && <span className="text-[12px] text-[var(--mute)] font-medium">({item.namSinh})</span>}
 
                       {item.hasSurgery ? (
                         <Badge tone="teal">{item.ngayMo ? <>Đã mổ / nhập viện <span className="font-mono font-medium">{fmtDate(item.ngayMo)}</span></> : "Ghi nhận mổ / nội trú"}</Badge>
@@ -1489,12 +1504,12 @@ export default function TheoDoiPage() {
                     </div>
 
                     <div className="text-[12px] text-[var(--mute)] flex items-center gap-3 flex-wrap">
-                      {item.cccd && <span>CCCD: <b className="text-slate-900 font-mono">{item.cccd}</b></span>}
-                      {item.bhyt && <span>BHYT: <b className="text-indigo-700 font-mono">{item.bhyt}</b></span>}
-                      {item.sdt && <span>SĐT: <b className="text-slate-800 font-mono">{item.sdt}</b></span>}
+                      {item.cccd && <span>CCCD: <b className="text-[var(--ink)] font-mono">{item.cccd}</b></span>}
+                      {item.bhyt && <span>BHYT: <b className="text-[var(--navy)] font-mono">{item.bhyt}</b></span>}
+                      {item.sdt && <span>SĐT: <b className="text-[var(--ink)] font-mono">{item.sdt}</b></span>}
                       {item.ngayKham && (
                         <span>
-                          Ngày khám: <b className="text-slate-800 font-mono">{fmtDate(item.ngayKham)}</b>
+                          Ngày khám: <b className="text-[var(--ink)] font-mono">{fmtDate(item.ngayKham)}</b>
                         </span>
                       )}
                     </div>
@@ -1556,7 +1571,7 @@ export default function TheoDoiPage() {
               }}
               className={`inline-flex items-center h-[34px] px-4 rounded-[10px] text-[12.5px] font-semibold text-white cursor-pointer transition-colors ${
                 confirmModal.variant === "danger"
-                  ? "bg-[var(--rose)] hover:bg-rose-700"
+                  ? "bg-[var(--rose)] hover:bg-[var(--rose-deep)]"
                   : confirmModal.variant === "warning"
                   ? "bg-[var(--amber)] hover:bg-[var(--amber-deep)]"
                   : "bg-[var(--navy)] hover:bg-[var(--navy-deep)]"
@@ -1600,7 +1615,7 @@ export default function TheoDoiPage() {
             <div className="flex flex-col items-center justify-center space-y-4 py-4">
               <div className="relative flex items-center justify-center">
                 <div className="w-14 h-14 rounded-full border-[3px] border-[var(--line)] border-t-[var(--navy)] animate-spin" />
-                <Zap className="w-6 h-6 text-[var(--teal)] absolute" />
+                <Zap className="w-6 h-6 text-[var(--teal-ink)] absolute" />
               </div>
               <div className="space-y-1">
                 <p className="text-[13.5px] font-semibold text-[var(--ink)]">
@@ -1624,18 +1639,18 @@ export default function TheoDoiPage() {
               </p>
 
               {progressModal.summary && (
-                <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                  <div className="p-2 bg-white rounded-lg border border-slate-200/80">
-                    <div className="text-[10.5px] text-slate-500 font-bold uppercase">Tổng Nhóm A</div>
-                    <div className="text-[18px] font-black text-slate-900 font-mono">{progressModal.summary.total}</div>
+                <div className="grid grid-cols-3 gap-2 p-3 bg-[var(--surface-soft)] rounded-xl border border-[var(--line)] text-center">
+                  <div className="p-2 bg-[var(--surface)] rounded-lg border border-[var(--line)]/80">
+                    <div className="text-[11px] text-[var(--mute)] font-bold uppercase">Tổng Nhóm A</div>
+                    <div className="text-[18px] font-black text-[var(--ink)] font-mono">{progressModal.summary.total}</div>
                   </div>
-                  <div className="p-2 bg-teal-50 rounded-lg border border-teal-200">
-                    <div className="text-[10.5px] text-teal-700 font-bold uppercase">Khớp HIS</div>
-                    <div className="text-[18px] font-black text-teal-900 font-mono">{progressModal.summary.found}</div>
+                  <div className="p-2 bg-[var(--teal-soft)] rounded-lg border border-[var(--teal)]/35">
+                    <div className="text-[11px] text-[var(--teal-deep)] font-bold uppercase">Khớp HIS</div>
+                    <div className="text-[18px] font-black text-[var(--teal-deep)] font-mono">{progressModal.summary.found}</div>
                   </div>
-                  <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <div className="text-[10.5px] text-emerald-700 font-bold uppercase">Đã Mổ</div>
-                    <div className="text-[18px] font-black text-emerald-900 font-mono">{progressModal.summary.surgery}</div>
+                  <div className="p-2 bg-[var(--green-soft)] rounded-lg border border-[var(--green)]/30">
+                    <div className="text-[11px] text-[var(--green-deep)] font-bold uppercase">Đã Mổ</div>
+                    <div className="text-[18px] font-black text-[var(--green-deep)] font-mono">{progressModal.summary.surgery}</div>
                   </div>
                 </div>
               )}

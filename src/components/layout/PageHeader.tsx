@@ -47,7 +47,7 @@ export default function PageHeader({ title, accent, icon: Icon, badge, descripti
         <div className="flex items-center gap-3 min-w-0">
           {Icon && (
             <span className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
-              <Icon className="w-[18px] h-[18px] text-[var(--teal)]" />
+              <Icon className="w-[18px] h-[18px] text-[var(--teal-ink)]" />
             </span>
           )}
           <div className="min-w-0">

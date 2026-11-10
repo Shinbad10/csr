@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import {
   fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, parseDiag, checkSurgeryTiming, classifyCSRNhom, laMat2, bhytLevel, type HoSo,
-  fmtSinhTuoi,
+  fmtSinhTuoi, docXacNhanMo
 } from "@/lib/csr";
 import { useToast } from "@/components/providers/ToastProvider";
 import { DataView, DataToolbar, DataTable, DataPagination } from "@/components/data";
@@ -47,7 +47,7 @@ function EyeLine({ eye, items }: { eye: "MP" | "MT"; items: string[] }) {
   if (items.length === 0) return null;
   return (
     <div className="flex items-baseline gap-1.5 min-w-0">
-      <span className="shrink-0 font-mono text-[9.5px] font-bold px-1 rounded-[4px] bg-[var(--line-soft)] text-[var(--mute)]">{eye}</span>
+      <span className="shrink-0 font-mono text-[11px] font-bold px-1 rounded-[4px] bg-[var(--line-soft)] text-[var(--mute)]">{eye}</span>
       <span className="text-[12px] text-[var(--ink)] truncate" title={items.join(", ")}>{items.join(", ")}</span>
     </div>
   );
@@ -192,8 +192,8 @@ export default function BuoiKhamPatientsModal({
     { key: "B", label: "Nhóm B", tone: "text-[var(--amber-deep)]" },
     { key: "CHUA_MO", label: "Chờ mổ", tone: "text-[var(--amber-deep)]" },
     { key: "DA_MO", label: "Đã mổ", tone: "text-[var(--teal-deep)]" },
-    { key: "DA_MO_TRUOC", label: "Mổ trước", tone: "text-[#7c3aed]" },
-    { key: "PHACO_2_LAN", label: "Mắt 2", tone: "text-[#7c3aed]" },
+    { key: "DA_MO_TRUOC", label: "Mổ trước", tone: "text-[var(--violet)]" },
+    { key: "PHACO_2_LAN", label: "Mắt 2", tone: "text-[var(--violet)]" },
   ];
   const counts = Object.fromEntries(tabs.map((t) => [t.key, classified.filter((x) => match(x, t.key)).length])) as Record<PatientFilter, number>;
 
@@ -265,7 +265,7 @@ export default function BuoiKhamPatientsModal({
               <div className="flex items-center gap-1.5 font-mono text-[12px] text-[var(--ink)] tabular-nums">
                 <Phone className="w-3 h-3 text-[var(--mute)] shrink-0" />
                 {phone}
-                {!validPhone(p.sdt) && <span className="font-sans text-[10px] text-[var(--mute)]">(người nhà)</span>}
+                {!validPhone(p.sdt) && <span className="font-sans text-[11px] text-[var(--mute)]">(người nhà)</span>}
               </div>
             ) : (
               <span className="text-[11.5px] text-[var(--mute-soft)]">Chưa có SĐT</span>
@@ -287,8 +287,8 @@ export default function BuoiKhamPatientsModal({
         if (!p.bhyt) return <span className="text-[11.5px] text-[var(--mute-soft)]">Không có</span>;
         return (
           <div className="min-w-0">
-            <div className="font-mono text-[11.5px] font-semibold text-indigo-700 truncate" title={p.bhyt}>{p.bhyt}</div>
-            <div className="text-[10.5px] text-[var(--mute)]">
+            <div className="font-mono text-[11.5px] font-semibold text-[var(--navy)] truncate" title={p.bhyt}>{p.bhyt}</div>
+            <div className="text-[11px] text-[var(--mute)]">
               Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT === 0 ? "Thẻ hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function BuoiKhamPatientsModal({
               <span className="w-[5px] h-[5px] rounded-full bg-current" />
               {isNhomA ? "Nhóm A" : "Nhóm B"}
             </span>
-            {sub && <div className="text-[10.5px] text-[var(--mute)] mt-0.5 truncate">{sub}</div>}
+            {sub && <div className="text-[11px] text-[var(--mute)] mt-0.5 truncate">{sub}</div>}
           </div>
         );
       },
@@ -404,12 +404,20 @@ export default function BuoiKhamPatientsModal({
               <div className="flex items-center gap-1 flex-wrap">
                 {timing.isDaMo
                   ? badge("bg-[var(--teal-soft)] text-[var(--teal-deep)]", <CheckCircle2 className="w-3 h-3" />, "Đã mổ")
-                  : badge("bg-[#f3eaf8] text-[#7c3aed]", null, "Mổ trước")}
+                  : badge("bg-[var(--violet-soft)] text-[var(--violet)]", null, "Mổ trước")}
                 {laMat2(timing.isDaMo, p.isPhaco2Lan, p.ghiChuMat2) && (
-                  <span className="px-1.5 py-0.5 rounded-md text-[10.5px] font-semibold bg-[#f3eaf8] text-[#7c3aed]" title="Đã mổ Phaco 2 lần (mắt 2)">Mắt 2</span>
+                  <span className="px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-[var(--violet-soft)] text-[var(--violet)]" title="Đã mổ Phaco 2 lần (mắt 2)">Mắt 2</span>
                 )}
               </div>
-              {p.ngayMoThucTe && <div className="mt-0.5 font-mono text-[10.5px] text-[var(--mute)] tabular-nums">{fmtDate(p.ngayMoThucTe)}</div>}
+              {p.ngayMoThucTe && <div className="mt-0.5 font-mono text-[11px] text-[var(--mute)] tabular-nums">{fmtDate(p.ngayMoThucTe)}</div>}
+              {(() => {
+                const xn = docXacNhanMo(p.ghiChuMat2);
+                return xn ? (
+                  <div className="mt-0.5 text-[11px] text-[var(--ink-soft)] truncate" title={`Xác nhận đã mổ: ${xn.ten}${xn.luc ? ` · ${xn.luc}` : ""}${xn.nguon ? ` · ${xn.nguon}` : ""}`}>
+                    <span className="text-[var(--mute)]">XN:</span> {xn.ten}
+                  </div>
+                ) : null;
+              })()}
             </div>
           );
         }
@@ -506,7 +514,7 @@ export default function BuoiKhamPatientsModal({
                       {t.label}
                       <span
                         className={cn(
-                          "text-[10px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded-md",
+                          "text-[11px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded-md",
                           active ? "bg-[var(--navy-50)] text-[var(--navy)]" : "bg-[var(--line)] text-[var(--mute)]",
                         )}
                       >
@@ -546,7 +554,7 @@ export default function BuoiKhamPatientsModal({
                     <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
                       {[
                         { f: "tiepNhan" as const, label: "Mẫu tiếp nhận", hint: "DS đăng ký / không đăng ký phẫu thuật", icon: "text-[var(--navy)]" },
-                        { f: "rutGon" as const, label: "Mẫu Rút Gọn (XNĐ / KNM)", hint: "5 cột: TT, Tên, Năm sinh, SĐT, Ghi chú", icon: "text-amber-600" },
+                        { f: "rutGon" as const, label: "Mẫu Rút Gọn (XNĐ / KNM)", hint: "5 cột: TT, Tên, Năm sinh, SĐT, Ghi chú", icon: "text-[var(--amber-deep)]" },
                         { f: "khamSucKhoe" as const, label: "Mẫu Khám Sức Khỏe (101 cột)", hint: "Mẫu chuẩn nộp HIS & trạm y tế", icon: "text-[var(--teal-deep)]" },
                         { f: "default" as const, label: "Mẫu Google Sheet (25 cột)", hint: "Danh sách khám sàng lọc", icon: "text-[var(--mute)]" },
                       ].map((o) => (
@@ -559,7 +567,7 @@ export default function BuoiKhamPatientsModal({
                           <FileSpreadsheet className={cn("w-4 h-4 mt-px shrink-0", o.icon)} />
                           <div>
                             <div className="text-[12.5px] font-semibold text-[var(--ink)] leading-tight">{o.label}</div>
-                            <div className="text-[10.5px] text-[var(--mute)] mt-0.5">{o.hint}</div>
+                            <div className="text-[11px] text-[var(--mute)] mt-0.5">{o.hint}</div>
                           </div>
                         </button>
                       ))}

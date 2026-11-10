@@ -248,7 +248,7 @@ export function DoctorAutocomplete({
           disabled={disabled}
           required={required && !safeVal.trim()}
           className={`input-field w-full pr-7 h-8 sm:h-8.5 text-[12px] ${
-            disabled ? "bg-[var(--surface-soft)] text-[var(--ink-soft)] cursor-not-allowed font-medium" : "bg-white"
+            disabled ? "bg-[var(--surface-soft)] text-[var(--ink-soft)] cursor-not-allowed font-medium" : "bg-[var(--surface)]"
           }`}
         />
         {!disabled && (
@@ -259,10 +259,10 @@ export function DoctorAutocomplete({
               if (open) setOpen(false);
               else handleOpen();
             }}
-            className="absolute right-1 text-[var(--mute)] hover:text-[#031da6] p-1 rounded transition-colors cursor-pointer"
+            className="absolute right-1 text-[var(--mute)] hover:text-[var(--navy)] p-1 rounded transition-colors cursor-pointer"
             title="Xem danh sách bác sĩ"
           >
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-180 text-[var(--teal)]" : ""}`} />
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? "rotate-180 text-[var(--teal-ink)]" : ""}`} />
           </button>
         )}
       </div>
@@ -278,12 +278,12 @@ export function DoctorAutocomplete({
             maxHeight: `${coords.maxHeight}px`,
             zIndex: 99999,
           }}
-          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl shadow-2xl py-1 text-[12px] flex flex-col overflow-hidden animate-dropdown"
+          className="bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-xl shadow-2xl py-1 text-[12px] flex flex-col overflow-hidden animate-dropdown"
         >
           {/* Header */}
-          <div className="px-2.5 py-1 text-[10px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[#e2e8f0] dark:border-white/5 mb-0.5 shrink-0 bg-slate-50 dark:bg-slate-800/50">
+          <div className="px-2.5 py-1 text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[var(--line)] dark:border-white/5 mb-0.5 shrink-0 bg-[var(--surface-soft)] dark:bg-slate-800/50">
             <div className="flex items-center gap-1">
-              <UserCheck className="w-3 h-3 text-[var(--teal)]" />
+              <UserCheck className="w-3 h-3 text-[var(--teal-ink)]" />
               <span>Bác sĩ hệ thống ({doctors.length})</span>
             </div>
             <button
@@ -305,7 +305,7 @@ export function DoctorAutocomplete({
                 }
               }}
               disabled={syncing}
-              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[9.5px] font-bold"
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:text-[var(--teal-ink)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[11px] font-bold"
               title="Đồng bộ danh sách từ HIS bệnh viện"
             >
               {syncing ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
@@ -318,24 +318,24 @@ export function DoctorAutocomplete({
             <button
               type="button"
               onClick={() => handleAddNewDoctor(safeSearch)}
-              className="w-full text-left px-2.5 py-1.5 bg-[#f0fdf4] dark:bg-emerald-950/30 hover:bg-[#dcfce7] border-b border-[#bbf7d0] dark:border-emerald-800/30 text-[#166534] dark:text-emerald-300 flex items-center justify-between gap-1.5 transition-colors cursor-pointer group shrink-0"
+              className="w-full text-left px-2.5 py-1.5 bg-[var(--green-soft)] dark:bg-emerald-950/30 hover:bg-[var(--green-soft)] border-b border-[var(--green)]/30 dark:border-emerald-800/30 text-[var(--green-deep)] dark:text-emerald-300 flex items-center justify-between gap-1.5 transition-colors cursor-pointer group shrink-0"
             >
               <div className="flex items-center gap-1.5 min-w-0">
-                <UserPlus className="w-3.5 h-3.5 text-[#16a34a] shrink-0" />
+                <UserPlus className="w-3.5 h-3.5 text-[var(--green-deep)] shrink-0" />
                 <div className="truncate">
                   <div className="font-semibold text-[11.5px] truncate">
                     Thêm bác sĩ: <span className="underline font-bold">&ldquo;{safeSearch.trim()}&rdquo;</span>
                   </div>
                 </div>
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-[#16a34a] text-white rounded shrink-0">
+              <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-[var(--green)] text-white rounded shrink-0">
                 Thêm mới
               </span>
             </button>
           )}
 
           {/* Danh sách bác sĩ */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto divide-y divide-[var(--line)] dark:divide-white/5 custom-scrollbar">
             {loading && doctors.length === 0 ? (
               <div className="py-6 flex items-center justify-center text-xs text-[var(--mute)] gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-[var(--navy)]" />
@@ -359,26 +359,26 @@ export function DoctorAutocomplete({
                     onClick={() => handleSelect(doc.hoTen)}
                     className={`w-full text-left px-3 py-2 flex items-center justify-between gap-2 transition-colors cursor-pointer text-[12px] ${
                       isSelected
-                        ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:bg-teal-950/40 dark:text-[var(--teal)] font-bold"
+                        ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:bg-teal-950/40 dark:text-[var(--teal-ink)] font-bold"
                         : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="truncate">{doc.hoTen}</span>
                       {doc.maHIS ? (
-                        <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-semibold text-emerald-800 bg-emerald-100/70 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-300/60 dark:border-emerald-700/50 shrink-0">
-                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--green-deep)] bg-[var(--green)]/10 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.2 rounded border border-[var(--green)]/24 dark:border-emerald-700/50 shrink-0">
+                          <ShieldCheck className="w-2.5 h-2.5 text-[var(--green-deep)]" />
                           <span>HIS: {doc.maHIS}</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[9.5px] text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-1.5 py-0.2 rounded border border-amber-200 dark:border-amber-700/50 shrink-0">
-                          <Clock className="w-2.5 h-2.5 text-amber-500" />
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[var(--amber-deep)] bg-[var(--amber-soft)] dark:bg-amber-950/40 dark:text-amber-300 px-1.5 py-0.2 rounded border border-[var(--amber)]/30 dark:border-amber-700/50 shrink-0">
+                          <Clock className="w-2.5 h-2.5 text-[var(--amber-deep)]" />
                           <span>Chờ HIS</span>
                         </span>
                       )}
                     </div>
                     {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-[var(--teal-deep)] dark:text-[var(--teal)] shrink-0" strokeWidth={3} />
+                      <Check className="w-3.5 h-3.5 text-[var(--teal-deep)] dark:text-[var(--teal-ink)] shrink-0" strokeWidth={3} />
                     )}
                   </button>
                 );
@@ -535,21 +535,21 @@ export function DoctorMultiSelect({
       {/* Khung chứa các Tag bác sĩ đã chọn và ô nhập */}
       <div
         onClick={handleOpen}
-        className={`min-h-10 w-full p-1.5 rounded-xl border bg-white flex flex-wrap items-center gap-1.5 cursor-text transition-all ${
-          open ? "border-[#031da6] ring-2 ring-[#031da6]/15" : "border-[#cbd5e1] hover:border-[#94a3b8]"
+        className={`min-h-10 w-full p-1.5 rounded-xl border bg-[var(--surface)] flex flex-wrap items-center gap-1.5 cursor-text transition ${
+          open ? "border-[var(--navy)] ring-2 ring-[var(--navy)]/15" : "border-[var(--line-strong)] hover:border-[var(--line-heavy)]"
         } ${disabled ? "bg-[var(--surface-soft)] opacity-70 cursor-not-allowed" : ""}`}
       >
         {selectedList.map((docName, idx) => (
           <span
             key={docName}
-            className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg bg-[#eef2ff] border border-[#c7d2fe] text-[#031da6] text-[12.5px] font-bold shadow-2xs select-none"
+            className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg bg-[var(--navy-soft)] border border-[var(--navy-200)] text-[var(--navy)] text-[12.5px] font-bold shadow-2xs select-none"
           >
             <span>{idx === 0 && selectedList.length > 1 ? `⭐ ${docName}` : docName}</span>
             {!disabled && (
               <button
                 type="button"
                 onClick={(e) => removeDoctor(docName, e)}
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[#6366f1] hover:text-white hover:bg-[#e11d48] transition-colors cursor-pointer"
+                className="w-4 h-4 rounded-full flex items-center justify-center text-[var(--navy)] hover:text-white hover:bg-[var(--rose)] transition-colors cursor-pointer"
                 title="Bỏ chọn bác sĩ này"
               >
                 <X className="w-3 h-3 stroke-[2.5]" />
@@ -572,7 +572,7 @@ export function DoctorMultiSelect({
           onFocus={handleOpen}
           disabled={disabled}
           placeholder={selectedList.length === 0 ? placeholder : "Thêm bác sĩ khác..."}
-          className="flex-1 min-w-[150px] h-7 bg-transparent text-[13px] text-[#0f172a] placeholder-[#94a3b8] outline-hidden px-1"
+          className="flex-1 min-w-[150px] h-7 bg-transparent text-[13px] text-[var(--ink)] placeholder-[#94a3b8] outline-hidden px-1"
         />
 
         <div className="ml-auto pr-1">
@@ -584,9 +584,9 @@ export function DoctorMultiSelect({
               if (open) setOpen(false);
               else handleOpen();
             }}
-            className="p-1 text-[#64748b] hover:text-[#031da6] cursor-pointer"
+            className="p-1 text-[var(--mute)] hover:text-[var(--navy)] cursor-pointer"
           >
-            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? "rotate-180 text-[#02b8a9]" : ""}`} />
+            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? "rotate-180 text-[var(--teal-ink)]" : ""}`} />
           </button>
         </div>
       </div>
@@ -602,12 +602,12 @@ export function DoctorMultiSelect({
             maxHeight: `${coords.maxHeight}px`,
             zIndex: 99999,
           }}
-          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/10 rounded-xl shadow-2xl py-1.5 text-[13px] flex flex-col overflow-hidden animate-dropdown"
+          className="bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-xl shadow-2xl py-1.5 text-[13px] flex flex-col overflow-hidden animate-dropdown"
         >
           {/* Header */}
-          <div className="px-3 py-1.5 text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[#e2e8f0] dark:border-white/5 mb-1 shrink-0 bg-slate-50 dark:bg-slate-800/50">
+          <div className="px-3 py-1.5 text-[11px] font-bold text-[var(--mute)] uppercase tracking-wider flex items-center justify-between border-b border-[var(--line)] dark:border-white/5 mb-1 shrink-0 bg-[var(--surface-soft)] dark:bg-slate-800/50">
             <div className="flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-[var(--teal)]" />
+              <UserCheck className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
               <span>Đoàn bác sĩ khám ({selectedList.length} đã chọn)</span>
             </div>
             <button
@@ -629,7 +629,7 @@ export function DoctorMultiSelect({
                 }
               }}
               disabled={syncing}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[10px] font-bold"
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:text-[var(--teal-ink)] hover:bg-[var(--teal)] hover:text-white transition-colors cursor-pointer text-[11px] font-bold"
               title="Đồng bộ danh sách từ HIS bệnh viện"
             >
               {syncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
@@ -642,24 +642,24 @@ export function DoctorMultiSelect({
             <button
               type="button"
               onClick={() => handleAddNewDoctor(safeSearch)}
-              className="w-full text-left px-2.5 py-1.5 bg-[#f0fdf4] dark:bg-emerald-950/30 hover:bg-[#dcfce7] border-b border-[#bbf7d0] dark:border-emerald-800/30 text-[#166534] dark:text-emerald-300 flex items-center justify-between gap-1.5 transition-colors cursor-pointer group shrink-0"
+              className="w-full text-left px-2.5 py-1.5 bg-[var(--green-soft)] dark:bg-emerald-950/30 hover:bg-[var(--green-soft)] border-b border-[var(--green)]/30 dark:border-emerald-800/30 text-[var(--green-deep)] dark:text-emerald-300 flex items-center justify-between gap-1.5 transition-colors cursor-pointer group shrink-0"
             >
               <div className="flex items-center gap-1.5 min-w-0">
-                <UserPlus className="w-3.5 h-3.5 text-[#16a34a] shrink-0" />
+                <UserPlus className="w-3.5 h-3.5 text-[var(--green-deep)] shrink-0" />
                 <div className="truncate">
                   <div className="font-semibold text-[11.5px] truncate">
                     Thêm bác sĩ: <span className="underline font-bold">&ldquo;{safeSearch.trim()}&rdquo;</span>
                   </div>
                 </div>
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-[#16a34a] text-white rounded shrink-0">
+              <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-[var(--green)] text-white rounded shrink-0">
                 Thêm mới
               </span>
             </button>
           )}
 
           {/* Danh sách bác sĩ */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-white/5 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto divide-y divide-[var(--line)] dark:divide-white/5 custom-scrollbar">
             {loading && doctors.length === 0 ? (
               <div className="py-8 flex items-center justify-center text-xs text-[var(--mute)] gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-[var(--navy)]" />
@@ -683,26 +683,26 @@ export function DoctorMultiSelect({
                     onClick={() => toggleDoctor(doc.hoTen)}
                     className={`w-full text-left px-3.5 py-2 flex items-center justify-between gap-2 transition-colors cursor-pointer text-[12px] ${
                       isSelected
-                        ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:bg-teal-950/40 dark:text-[var(--teal)] font-bold"
+                        ? "bg-[var(--teal-soft)] text-[var(--teal-deep)] dark:bg-teal-950/40 dark:text-[var(--teal-ink)] font-bold"
                         : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800"
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="truncate">{doc.hoTen}</span>
                       {doc.maHIS ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-emerald-800 bg-emerald-100/70 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300/60 dark:border-emerald-700/50 shrink-0" title={`Mã HIS: ${doc.maHIS}`}>
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-[var(--green-deep)] bg-[var(--green)]/10 dark:bg-emerald-950 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-[var(--green)]/24 dark:border-emerald-700/50 shrink-0" title={`Mã HIS: ${doc.maHIS}`}>
+                          <ShieldCheck className="w-3 h-3 text-[var(--green-deep)]" />
                           <span>HIS: {doc.maHIS}</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-700/50 shrink-0" title="Chưa có mã HIS">
-                          <Clock className="w-3 h-3 text-amber-500" />
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[var(--amber-deep)] bg-[var(--amber-soft)] dark:bg-amber-950/40 dark:text-amber-300 px-1.5 py-0.5 rounded border border-[var(--amber)]/30 dark:border-amber-700/50 shrink-0" title="Chưa có mã HIS">
+                          <Clock className="w-3 h-3 text-[var(--amber-deep)]" />
                           <span>Chờ HIS</span>
                         </span>
                       )}
                     </div>
                     {isSelected && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal)] bg-[var(--teal-soft)] dark:bg-teal-950/60 px-2 py-0.5 rounded">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal-ink)] bg-[var(--teal-soft)] dark:bg-teal-950/60 px-2 py-0.5 rounded">
                         <Check className="w-3.5 h-3.5" /> Đã chọn
                       </span>
                     )}

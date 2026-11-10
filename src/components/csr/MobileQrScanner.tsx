@@ -232,7 +232,7 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
         initial={false}
         animate={success ? { scale: 1.05 } : { scale: 1 }}
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none transition-colors duration-300 ${
-          success ? "border-4 border-green-500 rounded-[20px] bg-green-500/20" : ""
+          success ? "border-4 border-[var(--green)] rounded-[20px] bg-[var(--green)]/20" : ""
         }`}
         style={{ width: FRAME, height: FRAME }}
       >
@@ -241,7 +241,7 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.6)]"
+              className="w-16 h-16 rounded-full bg-[var(--green)] flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.6)]"
             >
               <Check className="w-8 h-8 text-white stroke-[3]" />
             </motion.div>
@@ -279,7 +279,7 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
             type="button"
             onClick={toggleTorch}
             aria-label={torchOn ? "Tắt đèn" : "Bật đèn"}
-            className={`w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg active:scale-95 transition-all ${
+            className={`w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg active:scale-95 transition ${
               torchOn ? "border-yellow-400 bg-yellow-400/20 text-yellow-400" : "bg-black/40 border-white/10 text-white"
             }`}
           >
@@ -290,8 +290,8 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
 
       {loading && !error && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 bg-black">
-          <RefreshCw className="w-8 h-8 text-[var(--teal)] animate-spin" />
-          <p className="text-zinc-400 text-xs font-black tracking-widest uppercase animate-pulse">Kích hoạt quang học…</p>
+          <RefreshCw className="w-8 h-8 text-[var(--teal-ink)] animate-spin" />
+          <p className="text-[var(--mute)] text-xs font-black tracking-widest uppercase animate-pulse">Kích hoạt quang học…</p>
         </div>
       )}
 
@@ -302,7 +302,7 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
               <AlertCircle className="w-7 h-7" />
             </div>
             <div className="text-white font-bold text-[15px]">Không mở được camera</div>
-            <div className="text-zinc-400 text-[13px] leading-relaxed">{error}</div>
+            <div className="text-[var(--mute)] text-[13px] leading-relaxed">{error}</div>
             <button
               type="button"
               onClick={onClose}

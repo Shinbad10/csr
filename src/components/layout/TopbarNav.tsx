@@ -58,14 +58,14 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12.5px] font-bold whitespace-nowrap transition-colors cursor-pointer select-none border ${
           groupActive
-            ? "bg-white/15 text-[var(--teal)] border-white/20 shadow-xs"
+            ? "bg-white/15 text-[var(--teal-ink)] border-white/20 shadow-xs"
             : open
             ? "bg-white/20 text-white border-transparent"
             : "text-white/80 hover:text-white hover:bg-white/10 border-transparent"
         }`}
       >
         <span>{group.title}</span>
-        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ${open ? "rotate-180 text-white" : groupActive ? "text-[var(--teal)]" : "text-white/60"}`} />
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ${open ? "rotate-180 text-white" : groupActive ? "text-[var(--teal-ink)]" : "text-white/60"}`} />
       </button>
 
       <AnimatePresence>
@@ -75,7 +75,7 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 4 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 top-full mt-2 z-50 w-[240px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-1.5 text-[var(--ink)]"
+            className="absolute left-0 top-full mt-2 z-50 w-[240px] bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line)] dark:border-white/10 rounded-2xl shadow-xl p-1.5 text-[var(--ink)]"
           >
             {group.items.map((it) => {
               const Icon = it.icon;
@@ -88,10 +88,10 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-colors ${
                     active
                       ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
-                      : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 hover:text-[var(--navy)] dark:hover:text-[var(--teal)]"
+                      : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 hover:text-[var(--navy)] dark:hover:text-[var(--teal-ink)]"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
                   {it.label}
                 </Link>
               );
@@ -173,14 +173,14 @@ export default function TopbarNav({ initialRole, initialCoSo }: TopbarNavProps) 
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 350, damping: 32 }}
-              className="fixed inset-y-0 left-0 z-[61] w-[290px] bg-white dark:bg-slate-900 border-r border-[var(--line)] flex flex-col lg:hidden shadow-2xl"
+              className="fixed inset-y-0 left-0 z-[61] w-[290px] bg-[var(--surface)] dark:bg-slate-900 border-r border-[var(--line)] flex flex-col lg:hidden shadow-2xl"
             >
               <div className="h-16 shrink-0 px-4 bg-gradient-to-r from-[var(--navy-deep)] to-[var(--navy)] text-white flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/logo.png" alt="VISI" className="w-7 h-7 object-contain drop-shadow" />
                   <span className="font-serif font-bold text-[16px] tracking-tight">
-                    VISI <span className="text-[var(--teal)]">CSR</span>
+                    VISI <span className="text-[var(--teal-ink)]">CSR</span>
                   </span>
                 </div>
                 <button onClick={() => setDrawer(false)} className="p-1.5 rounded-full text-white/80 hover:bg-white/15 cursor-pointer">
@@ -189,8 +189,8 @@ export default function TopbarNav({ initialRole, initialCoSo }: TopbarNavProps) 
               </div>
               {/* Cơ sở làm việc */}
               <div className="px-3 py-3 border-b border-[var(--line-soft)] bg-[var(--surface-soft)] dark:bg-slate-800/60">
-                <div className="text-[10px] uppercase tracking-[0.12em] font-extrabold text-[var(--mute)] flex items-center gap-1.5 mb-1.5 font-mono">
-                  <Building2 className="w-3.5 h-3.5 text-[var(--teal)]" /> Cơ sở làm việc
+                <div className="text-[11px] uppercase tracking-[0.12em] font-extrabold text-[var(--mute)] flex items-center gap-1.5 mb-1.5 font-mono">
+                  <Building2 className="w-3.5 h-3.5 text-[var(--teal-ink)]" /> Cơ sở làm việc
                 </div>
                 <FacilitySwitcher className="w-full" variant="light" initialCoSo={initialCoSo} initialRole={role} />
               </div>
@@ -198,7 +198,7 @@ export default function TopbarNav({ initialRole, initialCoSo }: TopbarNavProps) 
               <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
                 {groups.map((g) => (
                   <div key={g.title} className="space-y-1">
-                    <div className="font-sans font-extrabold text-[9px] uppercase tracking-[0.15em] text-[var(--mute)] px-2.5 font-mono">
+                    <div className="font-sans font-extrabold text-[11px] uppercase tracking-[0.15em] text-[var(--mute)] px-2.5 font-mono">
                       {g.title}
                     </div>
                     {g.items.map((it) => {
@@ -214,7 +214,7 @@ export default function TopbarNav({ initialRole, initialCoSo }: TopbarNavProps) 
                               : "text-[var(--ink-soft)] dark:text-slate-300 font-medium hover:bg-[var(--navy-50)] hover:text-[var(--navy)] dark:hover:bg-slate-800"
                           }`}
                         >
-                          <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[var(--teal)]" : "text-[var(--mute)]"}`} />
+                          <Icon className={`w-4 h-4 shrink-0 ${active ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
                           {it.label}
                         </Link>
                       );

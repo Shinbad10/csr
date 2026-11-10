@@ -14,7 +14,6 @@ import {
   Scissors,
   CreditCard,
 } from "lucide-react";
-import * as XLSX from "xlsx";
 import { type ColumnDef } from "@tanstack/react-table";
 import { fmtDate, statusOf, bhytLevel, ageOf, parseDiag, classifyCSRNhom, fmtSinhTuoi, tenTuVanVien } from "@/lib/csr";
 import { StatusBadge } from "@/components/csr/fields";
@@ -131,7 +130,7 @@ function ExportButton({ onExport }: { onExport: (rows: any[]) => void }) {
       disabled={rows.length === 0}
       className="btn-primary h-9 px-3.5 text-[12px] rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <Download className="w-3.5 h-3.5 text-[var(--teal)]" />
+      <Download className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
       <span>Xuất Excel</span>
       <span className="font-mono text-[11px] px-1.5 py-px rounded-md bg-white/15">{fN(rows.length)}</span>
     </button>
@@ -394,7 +393,7 @@ export default function ReportDetailModal({
         size: 100,
         enableColumnFilter: false,
         meta: { align: "right" },
-        cell: ({ row }) => <NumCell value={row.original.phaco2Lan ?? 0} tone="text-[#7c3aed]" />,
+        cell: ({ row }) => <NumCell value={row.original.phaco2Lan ?? 0} tone="text-[var(--violet)]" />,
       },
       {
         id: "tyLeMo",
@@ -475,7 +474,7 @@ export default function ReportDetailModal({
               {p.maBN || "—"}
             </span>
             {p.maBNHIS && (
-              <span className="text-[10.5px] font-mono text-[var(--mute)] mt-0.5 whitespace-nowrap">HIS {p.maBNHIS}</span>
+              <span className="text-[11px] font-mono text-[var(--mute)] mt-0.5 whitespace-nowrap">HIS {p.maBNHIS}</span>
             )}
           </div>
         );
@@ -572,7 +571,7 @@ export default function ReportDetailModal({
               {detailDiag}
             </div>
             {(p.thiLucMP || p.thiLucMT) && (
-              <div className="text-[10.5px] text-[var(--mute)] font-mono mt-0.5">
+              <div className="text-[11px] text-[var(--mute)] font-mono mt-0.5">
                 TL MP {p.thiLucMP || "—"} · MT {p.thiLucMT || "—"}
               </div>
             )}
@@ -591,13 +590,13 @@ export default function ReportDetailModal({
         const { isNhomA, isNhomB } = classifyCSRNhom(row.original);
         if (isNhomA)
           return (
-            <span className="inline-flex px-2 py-[3px] rounded-[6px] font-mono text-[10.5px] font-bold bg-[var(--rose-soft)] text-[var(--rose)]">
+            <span className="inline-flex px-2 py-[3px] rounded-[6px] font-mono text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose)]">
               A
             </span>
           );
         if (isNhomB)
           return (
-            <span className="inline-flex px-2 py-[3px] rounded-[6px] font-mono text-[10.5px] font-bold bg-[var(--amber-soft)] text-[var(--amber)]">
+            <span className="inline-flex px-2 py-[3px] rounded-[6px] font-mono text-[11px] font-bold bg-[var(--amber-soft)] text-[var(--amber)]">
               B
             </span>
           );
@@ -617,7 +616,7 @@ export default function ReportDetailModal({
         return (
           <div>
             <div className="font-mono text-[11.5px] font-bold text-[var(--navy)]">{p.bhyt}</div>
-            <div className="text-[10.5px] text-[var(--mute)] mt-0.5">
+            <div className="text-[11px] text-[var(--mute)] mt-0.5">
               Mức hưởng <b className="font-mono text-[var(--ink-soft)]">{p.mucHuongBHYT === 0 ? "Thẻ hết hạn" : p.mucHuongBHYT ? `${p.mucHuongBHYT}%` : bhytLevel(p.bhyt)}</b>
             </div>
           </div>
@@ -664,13 +663,13 @@ export default function ReportDetailModal({
           <div>
             <StatusBadge label={st.label} cls={st.cls} sm />
             {isDaMo && (
-              <div className="text-[10.5px] font-bold text-[var(--teal-deep)] mt-1 flex items-center gap-1 font-mono">
+              <div className="text-[11px] font-bold text-[var(--teal-deep)] mt-1 flex items-center gap-1 font-mono">
                 <CheckCircle2 className="w-3 h-3 shrink-0" />
                 {p.ngayMoThucTe ? `Mổ ${fmtDate(p.ngayMoThucTe)}` : "Đã mổ"}
               </div>
             )}
             {isDenKhongMo && (
-              <div className="text-[10.5px] font-bold text-[var(--amber-deep)] mt-1 flex items-center gap-1">
+              <div className="text-[11px] font-bold text-[var(--amber-deep)] mt-1 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3 shrink-0" />
                 Đến chưa mổ{p.trangThaiDieuTri === "Hủy" ? " (Hủy)" : ""}
               </div>
@@ -704,8 +703,9 @@ export default function ReportDetailModal({
   ], []);
 
   // Xuất Excel đúng các dòng đang hiển thị trong bảng
-  const exportModalExcel = (rowsToExport: any[]) => {
+  const exportModalExcel = async (rowsToExport: any[]) => {
     try {
+      const XLSX = await import("xlsx"); // chỉ nạp khi bấm xuất
       if (isSessionView) {
         const rows = (rowsToExport as SessionItem[]).map((s, idx) => ({
           STT: idx + 1,
