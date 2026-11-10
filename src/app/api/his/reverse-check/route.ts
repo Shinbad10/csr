@@ -144,17 +144,26 @@ export async function POST(request: Request) {
         const NGAY_MS = 86400000;
         const csrMoMs = matched.ngayMoThucTe ? new Date(matched.ngayMoThucTe).getTime() : 0;
         const hisMoMs = his.ngayMo ? new Date(his.ngayMo).getTime() : 0;
-        const hadPriorSurgeryInCsr = Boolean(csrMoMs && hisMoMs && hisMoMs - csrMoMs > 1.5 * NGAY_MS);
+        const hadPriorSurgeryInCsr = Boolean(csrMoMs && hisMoMs && hisMoMs - csrMoMs > 1.5 * NGAY_MS && his.lanMo >= 2);
 
         const isMat2 = Boolean(his.isMat2 || hadPriorSurgeryInCsr);
-        /* CSR đã ghi nhận ĐÚNG ca mổ này (cùng ngày, hoặc đã lưu ghi chú Mắt 2). Chỉ tính khi ĐÃ XÁC NHẬN! */
+        const isLinkedToThisHis = Boolean(
+          matched.maBNHIS && (
+            matched.maBNHIS === his.maHIS ||
+            matched.maBNHIS.replace(/\./g, "") === his.maHIS.replace(/\./g, "")
+          )
+        );
+        const isCsrDaMo = matched.trangThaiDieuTri === "Đã mổ" || Boolean(matched.ngayMoThucTe);
+
+        /* CSR đã ghi nhận ca mổ này (cùng ngày, hoặc đã liên kết với mã HIS này, hoặc đã lưu ghi chú Mắt 2). Chỉ tính khi ĐÃ XÁC NHẬN! */
         const daGhiCaNay =
           !his.choMo &&
           confirmed &&
           Boolean(
-            (csrMoMs && hisMoMs && Math.abs(hisMoMs - csrMoMs) <= 1.5 * NGAY_MS) ||
-              (isMat2 && /Mắt 2/.test(matched.ghiChuMat2 || "")) ||
-              (matched.trangThaiDieuTri === "Đã mổ" && !csrMoMs)
+            (isLinkedToThisHis && isCsrDaMo) ||
+              (csrMoMs && hisMoMs && Math.abs(hisMoMs - csrMoMs) <= 1.5 * NGAY_MS) ||
+              (isMat2 && /Mắt 2/i.test(matched.ghiChuMat2 || "")) ||
+              (matched.trangThaiDieuTri === "Đã mổ")
           );
         const lanMo = his.lanMo > 1 ? his.lanMo : (hadPriorSurgeryInCsr ? 2 : 1);
         const mat2Reason = hadPriorSurgeryInCsr && matched.ngayMoThucTe

@@ -218,6 +218,9 @@ export function appendHisNote(oldNote: string | null | undefined, newHisDetail: 
       continue;
     }
     if (inHisBlock && (trimmed.startsWith("•") || trimmed.startsWith("-") || trimmed === "")) {
+      if (/m[ắa]t\s*2/i.test(trimmed)) {
+        filtered.push(trimmed);
+      }
       continue;
     } else {
       inHisBlock = false;
