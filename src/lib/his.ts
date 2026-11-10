@@ -232,14 +232,28 @@ export function appendHisNote(oldNote: string | null | undefined, newHisDetail: 
 }
 
 /** Truy vấn thực thu dịch vụ & tạm ứng của bệnh nhân từ HIS (PhieuthuDichvu + TKBenhnhan + BN_CTDichvu), tự động kiểm tra cấu trúc bảng để tránh lỗi Invalid column */
+/** Mã HIS ở 3 dạng có thể gặp ("26.003521" / "26003521") — so khớp bằng IN (...) để SQL Server dùng được chỉ mục,
+ *  thay cho REPLACE(cột, '.', '') = … (bắt quét toàn bảng, ~0,4s mỗi BN). */
+function dangMaHis(maHIS: string): { goc: string; khongCham: string; coCham: string } {
+  const goc = maHIS.trim();
+  const khongCham = goc.replace(/\./g, "");
+  const coCham = goc.includes(".") ? goc : khongCham.length > 2 ? `${khongCham.slice(0, 2)}.${khongCham.slice(2)}` : goc;
+  return { goc, khongCham, coCham };
+}
+
+/** Kết quả dò cột bảng thu tiền — mỗi kết nối HIS chỉ dò một lần (trước đây dò lại cho từng BN). */
+const cotThuTienCache = new WeakMap<sql.ConnectionPool, Promise<Record<string, unknown>>>();
+
 export async function fetchHisRevenue(pool: sql.ConnectionPool, maHIS: string): Promise<number | null> {
   if (!maHIS) return null;
   const cleanMa = maHIS.trim();
   const noDotMa = cleanMa.replace(/\./g, "");
 
   try {
-    // Kiếm tra sự tồn tại của các cột trong bảng trước khi truy vấn
-    const colCheck = await pool.request().query(`
+    // Kiếm tra sự tồn tại của các cột trong bảng trước khi truy vấn (cache theo kết nối)
+    let colPromise = cotThuTienCache.get(pool);
+    if (!colPromise) {
+      colPromise = pool.request().query(`
       SELECT 
         OBJECT_ID('PhieuthuDichvu') as hasPT,
         OBJECT_ID('TKBenhnhan') as hasTK,
@@ -252,16 +266,18 @@ export async function fetchHisRevenue(pool: sql.ConnectionPool, maHIS: string): 
         COL_LENGTH('BN_CTDichvu', 'Dongia') as dvDongia,
         COL_LENGTH('BN_CTDichvu', 'DonGia') as dvDonGia,
         COL_LENGTH('BN_CTDichvu', 'Soluong') as dvSoluong
-    `);
-
-    const cols = colCheck.recordset?.[0] || {};
+    `).then((x) => (x.recordset?.[0] || {}) as Record<string, unknown>);
+      cotThuTienCache.set(pool, colPromise);
+      colPromise.catch(() => cotThuTienCache.delete(pool));
+    }
+    const cols = await colPromise;
 
     let ptQuery = "SELECT 0 as revPhieuThu";
     if (cols.hasPT && cols.ptThucthu) {
       ptQuery = `
         SELECT ISNULL(SUM(ISNULL(TRY_CAST(pt.Thucthu AS bigint), 0)), 0) as revPhieuThu
         FROM PhieuthuDichvu pt WITH (NOLOCK)
-        WHERE (pt.Mabenhnhan = @maHIS OR REPLACE(pt.Mabenhnhan, '.', '') = @maHISNoDot OR pt.Mabenhnhan = @maHISNoDot)
+        WHERE pt.Mabenhnhan IN (@maHIS, @maHISNoDot, @maHISDot)
           AND NOT (CAST(pt.Trangthai AS nvarchar(50)) IN (N'Đã_Hủy', N'Đã hủy', '2'))
       `;
     }
@@ -272,7 +288,7 @@ export async function fetchHisRevenue(pool: sql.ConnectionPool, maHIS: string): 
       tkQuery = `
         SELECT ISNULL(SUM(ISNULL(TRY_CAST(${tkCol} AS bigint), 0)), 0) as revTamUng
         FROM TKBenhnhan WITH (NOLOCK)
-        WHERE (Mabenhnhan = @maHIS OR REPLACE(Mabenhnhan, '.', '') = @maHISNoDot OR Mabenhnhan = @maHISNoDot)
+        WHERE Mabenhnhan IN (@maHIS, @maHISNoDot, @maHISDot)
           AND (Trangthai IS NULL OR CAST(Trangthai AS nvarchar(50)) NOT IN (N'Đã_Hủy', N'Đã hủy', '2'))
       `;
     }
@@ -293,7 +309,7 @@ export async function fetchHisRevenue(pool: sql.ConnectionPool, maHIS: string): 
       dvQuery = `
         SELECT ISNULL(SUM(ISNULL(${dvExpr}, 0)), 0) as revCTDichVu
         FROM BN_CTDichvu dv WITH (NOLOCK)
-        WHERE (dv.MaBN = @maHIS OR REPLACE(dv.MaBN, '.', '') = @maHISNoDot OR dv.MaBN = @maHISNoDot)
+        WHERE dv.MaBN IN (@maHIS, @maHISNoDot, @maHISDot)
           AND (dv.Trangthai IS NULL OR CAST(dv.Trangthai AS nvarchar(50)) NOT IN (N'Đã_Hủy', N'Đã hủy', '2'))
       `;
     }
@@ -308,6 +324,7 @@ export async function fetchHisRevenue(pool: sql.ConnectionPool, maHIS: string): 
     const revRes = await pool.request()
       .input("maHIS", sql.NVarChar, cleanMa)
       .input("maHISNoDot", sql.NVarChar, noDotMa)
+      .input("maHISDot", sql.NVarChar, dangMaHis(cleanMa).coCham)
       .query(fullQuery);
 
     const row = revRes.recordset?.[0];
@@ -340,6 +357,7 @@ export async function fetchHisSurgeryDetail(
     const res = await pool.request()
       .input("maHIS", sql.NVarChar, cleanMa)
       .input("maHISNoDot", sql.NVarChar, noDotMa)
+      .input("maHISDot", sql.NVarChar, dangMaHis(cleanMa).coCham)
       .query(`
         SELECT TOP 1
           dv.Ngaylap as ngayMo,
@@ -353,7 +371,7 @@ export async function fetchHisSurgeryDetail(
         FROM BN_CTDichvu dv WITH (NOLOCK)
         INNER JOIN DMDichvuCM dm WITH (NOLOCK) ON dm.Ma = dv.MaDV
         WHERE (dv.Nhom = 'PT' OR dv.MaDV LIKE 'PT.%')
-          AND (dv.MaBN = @maHIS OR REPLACE(dv.MaBN, '.', '') = @maHISNoDot OR dv.MaBN = @maHISNoDot)
+          AND dv.MaBN IN (@maHIS, @maHISNoDot, @maHISDot)
         ORDER BY dv.Ngaylap DESC;
       `);
 
@@ -921,6 +939,30 @@ export async function batchCheckHISForPatients(
     const hisCols = await getQLyCapTheColumns(pool);
     const { tableName, cmndCol, sdtCol, addrCol } = hisCols;
 
+    /* Mã thẻ BHYT nằm ở DuyetBHYT: tra MỘT lần cho cả đợt (một lượt quét bảng) thay vì quét lại cho từng BN
+       (~0,26s/BN). Kết quả: 10 số cuối (mã số BHXH) → các mã BN HIS có thẻ đó. */
+    const bnTheoThe = new Map<string, string[]>();
+    if (!hisCols.bhytCol && hisCols.bhytDuyet) {
+      const ds = Array.from(new Set(patients.map((x) => foldId((x.bhyt || "").toUpperCase().trim())).filter((d) => d.length >= 10).map((d) => d.slice(-10))));
+      for (let i = 0; i < ds.length; i += 800) {
+        const phan = ds.slice(i, i + 800);
+        try {
+          const rq = pool.request();
+          phan.forEach((v, k) => rq.input(`t${k}`, sql.NVarChar, v));
+          const res = await rq.query(
+            `SELECT DISTINCT Mabenhnhan AS ma, RIGHT(SoBH, 10) AS duoi FROM DuyetBHYT WITH (NOLOCK) WHERE SoBH <> '' AND RIGHT(SoBH, 10) IN (${phan.map((_, k) => `@t${k}`).join(", ")})`
+          );
+          for (const row of res.recordset || []) {
+            const duoi = String(row.duoi || "").trim();
+            const ma = String(row.ma || "").trim();
+            if (duoi && ma) bnTheoThe.set(duoi, [...(bnTheoThe.get(duoi) || []), ma]);
+          }
+        } catch (e) {
+          console.error("[HIS] tra mã BHYT theo đợt lỗi:", e);
+        }
+      }
+    }
+
     const cmndSelect = cmndCol ? `c.[${cmndCol}] as CMND,` : `NULL as CMND,`;
     const bhytSelect = `${bhytSqlExpr(hisCols) || "NULL"} as Sothe,`;
     // Kèm địa chỉ HIS để người dùng so với CSR khi xác nhận ca chỉ khớp tên + NS
@@ -945,7 +987,10 @@ export async function batchCheckHISForPatients(
           whereClauses.push(`(c.[${cmndCol}] = @cccd AND @cccd <> '')`);
           if (cccdVars.length) whereClauses.push(`REPLACE(c.[${cmndCol}], ' ', '') IN (${cccdVars.map((_, i) => `@cv${i}`).join(", ")})`);
         }
-        whereClauses.push(...bhytWhereSql(hisCols));
+        // BHYT: cột trong bảng BN → điều kiện cũ; DuyetBHYT → dùng kết quả đã tra sẵn cho cả đợt (tìm theo c.Ma, có chỉ mục)
+        const maTheoThe = bhytLast10 ? (bnTheoThe.get(bhytLast10) || []).slice(0, 20) : [];
+        if (hisCols.bhytCol) whereClauses.push(...bhytWhereSql(hisCols));
+        else if (maTheoThe.length) whereClauses.push(`c.Ma IN (${maTheoThe.map((_, k) => `@bm${k}`).join(", ")})`);
         whereClauses.push(`(LOWER(LTRIM(RTRIM(c.Hoten))) = LOWER(@hoTen) AND c.Namsinh = @namSinh)`);
 
         const whereSql = whereClauses.join(" OR ");
@@ -969,6 +1014,7 @@ export async function batchCheckHISForPatients(
         cccdVars.forEach((v, i) => req.input(`cv${i}`, sql.NVarChar, v));
         req.input("bhyt", sql.NVarChar, bhytClean);
         req.input("bhytLast10", sql.NVarChar, bhytLast10);
+        maTheoThe.forEach((v, k) => req.input(`bm${k}`, sql.NVarChar, v));
         req.input("hoTen", sql.NVarChar, hoTenClean);
         req.input("namSinh", sql.NVarChar, namSinhStr);
 
@@ -1114,19 +1160,23 @@ export async function batchCheckHISForPatients(
           );
         }
 
-        await prisma.hoSoBenhNhan.update({
-          where: { id: p.id },
-          data: updateData,
-        });
-
-        /* KHÔNG xoá nhật ký cuộc gọi ở đây. Lệnh cũ deleteMany({ noiDung: { startsWith: "[⚡ Đối chiếu HIS]" } })
-           trên SQL Server thành LIKE '[⚡ Đối chiếu HIS]%' — ngoặc vuông là "1 ký tự bất kỳ trong nhóm" nên đã xoá
-           nhầm mọi cuộc gọi mở đầu bằng Đ/H/I/S/… (vd. "Đã gọi - Đồng ý mổ") sau mỗi lần đối chiếu.
-           Rác hệ thống cần dọn đã hết (0 dòng) và không còn được tạo ra. */
-
-        try {
-          await prisma.syncQueue.create({ data: { hoSoId: p.id } });
-        } catch {}
+        /* Chỉ ghi DB khi kết quả đối chiếu thật sự khác dữ liệu đang lưu: phần lớn lần đối chiếu lại không đổi gì,
+           mà mỗi lần ghi lên DB cloud mất ~0,2–0,3s (trước đây 2 lần ghi tuần tự cho MỌI bệnh nhân).
+           KHÔNG xoá nhật ký cuộc gọi ở đây — xem lịch sử: LIKE '[⚡ Đối chiếu HIS]%' từng xoá nhầm cuộc gọi. */
+        const cu = p as unknown as Record<string, unknown>;
+        const giong = (a: unknown, b: unknown) => {
+          if ((a == null || a === "") && (b == null || b === "")) return true;
+          if (a instanceof Date || b instanceof Date) return a != null && b != null && new Date(a as Date).getTime() === new Date(b as Date).getTime();
+          if (typeof a === "number" || typeof b === "number") return Number(a) === Number(b);
+          return String(a).trim() === String(b).trim();
+        };
+        const coThayDoi = Object.keys(updateData).some((k) => !giong(updateData[k], cu[k]));
+        if (coThayDoi) {
+          await Promise.all([
+            prisma.hoSoBenhNhan.update({ where: { id: p.id }, data: updateData }),
+            prisma.syncQueue.create({ data: { hoSoId: p.id } }).catch(() => {}),
+          ]);
+        }
 
         const duocTinh = matchType === "exact" || isReportValidSurgery({ ...p, ...updateData });
         const canXacNhan = (dec.daMo || dec.daMoTruoc) && !duocTinh;

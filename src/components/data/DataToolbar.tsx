@@ -228,7 +228,7 @@ export function DataToolbar({
                     <span className="text-[11px] font-extrabold text-[var(--navy)] uppercase tracking-wider">
                       Cấu hình cột
                     </span>
-                    <span className="text-[11px] font-bold px-2 py-0.5 bg-[var(--surface)] rounded-full border border-[var(--line-soft)] text-[var(--mute)]">
+                    <span className="text-[11px] font-bold px-2 py-0.5 bg-[var(--surface)] rounded-[4px] border border-[var(--line-soft)] text-[var(--mute)]">
                       {visibleCount}/{totalCount}
                     </span>
                   </div>

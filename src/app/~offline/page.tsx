@@ -3,7 +3,7 @@
 export default function OfflinePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--surface-bg)] text-center p-6">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] flex items-center justify-center mb-6 shadow-lg">
+      <div className="w-16 h-16 rounded-2xl bg-[var(--navy)] flex items-center justify-center mb-6">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="1" y1="1" x2="23" y2="23" />
           <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />

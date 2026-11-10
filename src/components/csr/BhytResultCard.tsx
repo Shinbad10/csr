@@ -98,7 +98,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
 
           <div className="flex items-center gap-2 shrink-0">
             {the.mucHuong && (
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[var(--navy)] text-white shadow-2xs">
+              <span className="px-2.5 py-0.5 rounded-[4px] text-[11px] font-mono font-bold bg-[var(--navy)] text-white shadow-2xs">
                 Mức hưởng: {the.mucHuong}
               </span>
             )}
@@ -112,7 +112,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 <History className="w-3.5 h-3.5 text-[var(--teal-deep)] dark:text-[var(--teal-ink)]" />
                 <span>Lịch sử KCB</span>
                 {hasHistoryKcb && (
-                  <span className="bg-[var(--teal)] text-white px-1.5 py-0.2 rounded-full text-[11px]">
+                  <span className="bg-[var(--teal)] text-white px-1.5 py-0.2 rounded-[4px] text-[11px]">
                     {the.dsLichSuKCB?.length}
                   </span>
                 )}
@@ -198,7 +198,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 )}
                 <Activity className="w-4 h-4" />
                 <span>Lịch sử Khám Chữa Bệnh</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-white/20">
+                <span className="px-1.5 py-0.5 rounded-[4px] text-[11px] bg-white/20">
                   {the.dsLichSuKCB?.length || 0}
                 </span>
               </button>
@@ -221,7 +221,7 @@ export function BhytResultCard({ the, notification, onApplyData, className = "" 
                 )}
                 <Clock className="w-4 h-4" />
                 <span>Lịch sử Kiểm tra Thẻ</span>
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-white/20">
+                <span className="px-1.5 py-0.5 rounded-[4px] text-[11px] bg-white/20">
                   {the.dsLichSuKT?.length || 0}
                 </span>
               </button>

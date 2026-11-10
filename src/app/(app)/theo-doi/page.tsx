@@ -710,7 +710,7 @@ export default function TheoDoiPage() {
             { k: "Nhóm A · chưa đến", v: stats.chuaDen, tone: "text-[var(--amber-deep)]", bar: "var(--amber)" },
             { k: "Nhóm A · quá hạn", v: stats.quaHan, tone: stats.quaHan ? "text-[var(--rose)]" : "text-[var(--mute-soft)]", bar: "var(--rose)" },
           ].map((s) => (
-            <div key={s.k} className="relative pl-3 sm:pl-3.5 pr-2.5 sm:pr-3 py-1.5 sm:py-2 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-xs)] overflow-hidden">
+            <div key={s.k} className="relative pl-3 sm:pl-3.5 pr-2.5 sm:pr-3 py-1.5 sm:py-2 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] shadow-[var(--shadow-xs)] overflow-hidden">
               <span className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: s.bar }} />
               <div className="text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-[var(--mute)] whitespace-nowrap">{s.k}</div>
               <div className="flex items-baseline gap-1 mt-0.5">
@@ -724,7 +724,7 @@ export default function TheoDoiPage() {
 
       {!selBk ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8 animate-fade-in">
-          <div className="w-14 h-14 rounded-[14px] bg-[var(--navy-50)] flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-[10px] bg-[var(--navy-50)] flex items-center justify-center mb-4">
             <CalendarDays className="w-7 h-7 text-[var(--teal-deep)]" />
           </div>
           <h3 className="font-serif font-semibold text-[18px] text-[var(--ink)]">Chưa chọn đợt khám</h3>
@@ -1129,7 +1129,7 @@ export default function TheoDoiPage() {
 
                         {/* Hồ sơ đối chiếu HIS */}
                         {hisNote && (
-                          <div className="rounded-[12px] border border-[var(--line)] border-l-[3px] border-l-[var(--teal)] bg-[var(--surface)] overflow-hidden">
+                          <div className="rounded-[10px] border border-[var(--line)] border-l-[3px] border-l-[var(--teal)] bg-[var(--surface)] overflow-hidden">
                             <div className="flex items-center justify-between gap-2 flex-wrap px-3.5 py-2.5 bg-[var(--surface-soft)] border-b border-[var(--line-soft)]">
                               <div className="flex items-center gap-2 min-w-0">
                                 <Zap className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
@@ -1192,7 +1192,7 @@ export default function TheoDoiPage() {
                     <button
                       type="button"
                       onClick={() => setShowList(true)}
-                      className="xl:hidden inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] shrink-0 cursor-pointer"
+                      className="xl:hidden inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] shrink-0 cursor-pointer"
                     >
                       <Users className="w-3.5 h-3.5" />
                       DS
@@ -1251,7 +1251,7 @@ export default function TheoDoiPage() {
             ) : (
               <div className="flex-1 flex flex-col justify-between min-h-0">
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12 gap-3">
-                  <div className="w-14 h-14 rounded-[14px] bg-[var(--navy-50)] flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-[10px] bg-[var(--navy-50)] flex items-center justify-center">
                     <PhoneCall className="w-7 h-7 text-[var(--teal-deep)]" />
                   </div>
                   <div className="space-y-1 max-w-sm">
@@ -1290,7 +1290,7 @@ export default function TheoDoiPage() {
       <Modal
         open={showBkModal}
         onClose={() => setShowBkModal(false)}
-        title={<>Chọn <span className="italic font-normal text-[var(--teal-ink)]">đợt khám</span></>}
+        title={<>Chọn đợt khám</>}
         subtitle="Lấy danh sách bệnh nhân để theo dõi & chăm sóc"
         icon={CalendarDays}
         maxWidth="max-w-[660px]"
@@ -1340,7 +1340,7 @@ export default function TheoDoiPage() {
                 <div
                   className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${
                     active
-                      ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs"
+                      ? "bg-[var(--navy)] border-transparent text-white shadow-xs"
                       : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"
                   }`}
                 >
@@ -1423,7 +1423,7 @@ export default function TheoDoiPage() {
       <Modal
         open={hisSearchOpen}
         onClose={() => setHisSearchOpen(false)}
-        title={<>Tìm <span className="italic font-normal text-[var(--teal-ink)]">HIS thủ công</span></>}
+        title={<>Tìm HIS thủ công</>}
         subtitle="Khi đối chiếu tự động không khớp — tự tìm & chọn đúng ca mổ để xác nhận"
         icon={Search}
         maxWidth="max-w-[720px]"

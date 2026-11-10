@@ -10,7 +10,7 @@ import {
   Plus, Search, Calendar, CalendarDays, MapPin, Loader2, Check, X,
   Stethoscope, Pencil, FolderOpen, Lock, LockOpen, FileSpreadsheet, UserCheck,
   RotateCcw, ChevronDown, Eye, CheckCheck, AlertTriangle, MoreVertical,
-  ClipboardList, Clock, RefreshCw, History, Download, Layers, Trash2
+  ClipboardList, Clock, RefreshCw, History, Download, Layers, Trash2, Pill
 } from "lucide-react";
 import { can } from "@/lib/permissions";
 import { dotDaQuaNgay, dotBiKhoa, DOT_MO_KHOA } from "@/lib/khoaSua";
@@ -20,6 +20,7 @@ import { fmtDate, fmtBuoiKhamName, fmtBuoiKhamCode, phaseOf } from "@/lib/csr";
 import { Field, DateField } from "@/components/csr/fields";
 import { DoctorMultiSelect, parseDoctorList, formatDoctorList } from "@/components/csr/DoctorAutocomplete";
 import BuoiKhamPatientsModal from "@/components/csr/BuoiKhamPatientsModal";
+import ToaThuocModal from "@/components/csr/ToaThuocModal";
 import { SkeletonTable } from "@/components/layout/Skeleton";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
@@ -56,13 +57,13 @@ interface Option<T = string> {
 
 /* ── Nút & menu dùng chung (chuẩn UI công ty: token màu, bo 10px, font mono cho số) ── */
 const BTN_SECONDARY =
-  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 hover:bg-[var(--navy-50)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[var(--line-strong)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 hover:bg-[var(--navy-50)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 /** Xuất dữ liệu — tông teal (thành công / dữ liệu sạch) */
 const BTN_TEAL_SOFT =
-  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 /** Đồng bộ / đối chiếu hệ thống — tông navy nhạt */
 const BTN_NAVY_SOFT =
-  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:border-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-[6px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy)] hover:border-[var(--navy)] hover:text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
 const BTN_PRIMARY =
   "btn-primary inline-flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[12px] font-semibold whitespace-nowrap";
 
@@ -300,7 +301,7 @@ function BuoiKhamRowActions({
               maxHeight: "min(420px, calc(100vh - 32px))",
               zIndex: 99999,
             }}
-            className="overflow-y-auto bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 animate-dropdown"
+            className="overflow-y-auto bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-[var(--shadow-lg)] p-1 animate-dropdown"
             onClick={(e) => e.stopPropagation()}
           >
             {canViewTamSoat && onViewPatients && (
@@ -533,6 +534,7 @@ export default function BuoiKhamPage() {
 
   const [list, setList] = useState<BuoiKham[]>([]);
   const [cosos, setCosos] = useState<CoSo[]>([]);
+  const [toaOpen, setToaOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Bộ lọc
@@ -1001,7 +1003,7 @@ export default function BuoiKhamPage() {
       {
         id: "stt",
         header: "STT",
-        size: 48,
+        size: 56,
         enableSorting: false,
         enableColumnFilter: false,
         meta: { align: "center" },
@@ -1255,7 +1257,7 @@ export default function BuoiKhamPage() {
                 </button>
               </div>
               {topExportOpen && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
+                <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
                   <MenuItem icon={FileSpreadsheet} tone="navy" label="Mẫu tiếp nhận" hint="Mỗi đợt khám một sheet — đăng ký / không đăng ký" onClick={() => { setTopExportOpen(false); handleExportPageExcel("tiepNhan"); }} />
                   <MenuItem icon={FileSpreadsheet} tone="amber" label="Mẫu Rút Gọn (XNĐ / KNM)" hint="5 cột: TT, Tên, Năm sinh, SĐT, Ghi chú" onClick={() => { setTopExportOpen(false); handleExportPageExcel("rutGon"); }} />
                   <MenuItem icon={FileSpreadsheet} tone="teal" label="Mẫu Khám Sức Khỏe (101 cột)" hint="Mẫu chuẩn nộp HIS / cơ quan" onClick={() => { setTopExportOpen(false); handleExportPageExcel("khamSucKhoe"); }} />
@@ -1264,9 +1266,16 @@ export default function BuoiKhamPage() {
               )}
             </div>
 
+            {canManage && (
+              <button type="button" onClick={() => setToaOpen(true)} className={BTN_SECONDARY} title="Toa thuốc mặc định in kèm phiếu khám">
+                <Pill aria-hidden="true" className="w-3.5 h-3.5" />
+                Toa thuốc
+              </button>
+            )}
             {canReconcile && <ReconcileAllButton his={his} toTarget={toTarget} />}
           </div>
         </div>
+        {toaOpen && <ToaThuocModal open onClose={() => setToaOpen(false)} coSoId={readCosoCookie() || session?.user?.coSoId || coSoId} cosos={cosos} />}
 
         {/* ── Card danh sách: DataToolbar + bảng + phân trang ── */}
         <div className="flex-1 min-h-0 flex flex-col bg-[var(--surface)] border border-[var(--line-soft)] rounded-2xl shadow-xs overflow-hidden">
@@ -1331,7 +1340,7 @@ export default function BuoiKhamPage() {
                       return (
                         <div
                           key={b.id}
-                          className={`px-4 py-3.5 border-l-[3px] ${isOngoing ? "border-l-[var(--teal)] bg-[var(--teal-softer)]" : "border-l-transparent"}`}
+                          className={`px-4 py-3.5 ${isOngoing ? "bg-[var(--teal-softer)]" : ""}`}
                         >
                           {/* Tên + trạng thái */}
                           <div className="flex items-start justify-between gap-2">
@@ -1431,7 +1440,7 @@ export default function BuoiKhamPage() {
             {/* Desktop: DataTable */}
             <div className="hidden md:flex flex-col flex-1 min-h-0">
               <DataTable<BuoiKham>
-                rowClassName={(b) => (phaseOf(b.ngayKham).key === "DangDienRa" ? "shadow-[inset_3px_0_0_var(--teal)]" : undefined)}
+                rowClassName={(b) => (phaseOf(b.ngayKham).key === "DangDienRa" ? "bg-[var(--teal-softer)]" : undefined)}
                 emptyIcon={CalendarDays}
                 emptyTitle="Không tìm thấy đợt khám nào phù hợp bộ lọc"
               />

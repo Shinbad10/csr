@@ -14,6 +14,10 @@ model CoSo {
   id          String         @id
   ten         String
   diaChi      String?
+  dienThoai   String?        // hotline in trên phiếu khám
+  email       String?
+  website     String?
+  toaThuoc    String?        @db.NVarChar(Max) // JSON { thuoc: [{ ten, soLuong, cachDung }], loiDan } — toa mặc định in kèm phiếu khám
   trangThai   String         @default("active") // active | inactive
   sheetId     String?        // UC-10/BR-15 — spreadsheetId Google Sheet (tự tạo lần đồng bộ đầu)
   bhxhUser    String?        // Tài khoản cổng BHXH của cơ sở

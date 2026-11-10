@@ -6,7 +6,7 @@
 
 /** Cơ sở: chỉ thông tin hiển thị + cấu hình trường phiếu khám. */
 export const COSO_AN_TOAN = {
-  select: { id: true, ten: true, diaChi: true, trangThai: true, cauHinhTruong: true },
+  select: { id: true, ten: true, diaChi: true, dienThoai: true, email: true, website: true, toaThuoc: true, trangThai: true, cauHinhTruong: true },
 } as const;
 
 /** Người dùng: chỉ định danh & vai trò, không có tên đăng nhập / mật khẩu. */

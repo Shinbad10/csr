@@ -200,7 +200,7 @@ export function PatientInfoModal({ hoSoId, onClose }: { hoSoId: string; onClose:
         <div className="px-5 pt-4 pb-3.5 border-b border-[var(--line)] shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center font-serif text-[20px] font-bold shadow-[var(--navy-shadow)] shrink-0">
+              <div className="w-12 h-12 rounded-full bg-[var(--navy)] text-white flex items-center justify-center font-serif text-[20px] font-bold shrink-0">
                 {data?.hoTen ? String(data.hoTen).trim().split(/\s+/).pop()!.charAt(0).toUpperCase() : <User className="w-5 h-5 text-[var(--teal-ink)]" />}
               </div>
               <div className="min-w-0">
@@ -626,7 +626,7 @@ export function PatientHistoryModal({ hoSoId, onClose }: { hoSoId: string; onClo
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="font-serif text-[20px] font-bold tracking-[-0.02em] text-white">
-                  Lịch sử <span className="italic font-normal text-[var(--teal-ink)]">thao tác</span> &amp; thay đổi dữ liệu
+                  Lịch sử thao tác &amp; thay đổi dữ liệu
                 </h2>
               </div>
               <p className="text-[12.5px] text-white/80 font-mono mt-[3px] flex items-center gap-2 font-sans">

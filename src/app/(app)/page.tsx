@@ -664,7 +664,7 @@ export default function Dashboard() {
                   <h2 className="font-serif text-[16px] font-bold leading-tight text-[var(--ink)]">
                     Đợt khám trong kỳ
                   </h2>
-                  <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)] tabular-nums">
+                  <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-[4px] bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy-100)] tabular-nums">
                     {sessions.length}
                   </span>
                 </div>
@@ -699,7 +699,7 @@ export default function Dashboard() {
               <h2 className="font-serif text-[16px] font-bold text-[var(--ink)]">
                 Phân hệ nghiệp vụ
               </h2>
-              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-soft)] text-[var(--mute)] border border-[var(--line)] tabular-nums">
+              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-[4px] bg-[var(--surface-soft)] text-[var(--mute)] border border-[var(--line)] tabular-nums">
                 {navTiles.length}
               </span>
             </div>

@@ -37,10 +37,12 @@
   --color-green: #059669;
   --color-green-soft: #ecfdf5;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  /* Bo góc kiểu bảng điều khiển: nút / tab 6–8px, thẻ 10px — không bo tròn kiểu "viên thuốc" */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
 
   --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
   --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
@@ -117,10 +119,10 @@
     --line-heavy: #c5cede;
     --navy-light: #3452d8;
 
-    --r-sm: 6px;
-    --r-md: 10px;
-    --r-lg: 14px;
-    --r-xl: 18px;
+    --r-sm: 4px;
+    --r-md: 6px;
+    --r-lg: 8px;
+    --r-xl: 10px;
 
     --shadow-xs: 0 1px 2px rgba(13, 16, 37, 0.04);
     --shadow-sm: 0 1px 3px rgba(13, 16, 37, 0.04), 0 1px 2px rgba(13, 16, 37, 0.03);
@@ -128,8 +130,8 @@
     --shadow-lg: 0 12px 32px rgba(13, 16, 37, 0.08);
     --shadow-xl: 0 20px 48px rgba(13, 16, 37, 0.14);
 
-    --navy-shadow: 0 4px 12px -2px rgba(3, 29, 166, 0.35);
-    --navy-shadow-hover: 0 6px 16px -2px rgba(3, 29, 166, 0.45);
+    --navy-shadow: 0 1px 2px rgba(3, 29, 166, 0.18);
+    --navy-shadow-hover: 0 2px 4px rgba(3, 29, 166, 0.22);
 
     --b0: var(--surface);
     --b1: var(--surface-soft);
@@ -176,8 +178,8 @@
     --amber-soft: rgba(217, 119, 6, 0.1);
 
     --scrollbar-thumb: rgba(2, 184, 169, 0.3);
-    --navy-shadow: 0 4px 12px -2px rgba(2, 184, 169, 0.35);
-    --navy-shadow-hover: 0 6px 16px -2px rgba(2, 184, 169, 0.45);
+    --navy-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --navy-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.35);
 
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
@@ -251,13 +253,13 @@
 
 @utility btn-primary {
   @apply btn;
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+  background: var(--navy);
   color: #ffffff;
   border: 1px solid transparent;
   box-shadow: var(--navy-shadow);
 
   &:hover {
-    background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy-ink) 100%);
+    background: var(--navy-deep);
     box-shadow: var(--navy-shadow-hover);
   }
 
@@ -303,12 +305,11 @@
   @apply btn;
   background: var(--teal);
   color: var(--navy-ink);
-  box-shadow: 0 4px 12px -2px rgba(2, 184, 169, 0.4);
+  box-shadow: var(--shadow-xs);
 
   &:hover {
     background: var(--teal-deep);
     color: #ffffff;
-    transform: translateY(-1px);
   }
 }
 

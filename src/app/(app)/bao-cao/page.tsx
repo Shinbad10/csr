@@ -579,7 +579,7 @@ function BaoCaoSkeleton() {
                       icon: UserX,
                     })
                   }
-                  className="text-xs font-bold text-[var(--amber-deep)] bg-[var(--amber-soft)] hover:bg-[var(--amber)]/15 px-2.5 py-1 rounded-full border border-[var(--amber)]/30 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  className="text-xs font-bold text-[var(--amber-deep)] bg-[var(--amber-soft)] hover:bg-[var(--amber)]/15 px-2.5 py-1 rounded-[6px] border border-[var(--amber)]/30 transition cursor-pointer flex items-center gap-1 shadow-2xs"
                   title="Nhấp để xem danh sách chi tiết bệnh nhân có đến nhưng không mổ"
                 >
                   <UserX className="w-3.5 h-3.5 text-[var(--amber-deep)]" />

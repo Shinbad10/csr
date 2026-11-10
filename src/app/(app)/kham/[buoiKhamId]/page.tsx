@@ -831,7 +831,7 @@ function EditInfoModal({ patient, cfg, coSoId, onClose, onSaved }: { patient: Ho
                 <Check className="w-4 h-4 stroke-[3] shrink-0" />
                 <span className="truncate flex-1 min-w-0">Thẻ BHYT hợp lệ</span>
               </span>
-              <span className="font-mono bg-[var(--teal)] text-white px-3 py-0.5 rounded-full text-[12px] font-bold shadow-sm shrink-0">
+              <span className="font-mono bg-[var(--teal)] text-white px-3 py-0.5 rounded-[4px] text-[12px] font-bold shadow-sm shrink-0">
                 Mức hưởng: {bhytLevel(bhyt)}
               </span>
             </div>
@@ -910,6 +910,37 @@ export default function ExamPage() {
   const [baseline, setBaseline] = useState(() => JSON.stringify(EMPTY));
   const dirty = JSON.stringify(f) !== baseline;
 
+  /* In phiếu khám: nạp trang phiếu vào khung ẩn rồi mở thẳng hộp thoại in (không mở tab mới). */
+  const [dangInPhieu, setDangInPhieu] = useState(false);
+  const inPhieuKham = (hoSoId: string) => {
+    document.getElementById("khung-in-phieu")?.remove();
+    setDangInPhieu(true);
+    const khung = document.createElement("iframe");
+    khung.id = "khung-in-phieu";
+    khung.title = "Phiếu khám";
+    khung.setAttribute("aria-hidden", "true");
+    khung.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+    const don = () => {
+      window.removeEventListener("message", nhan);
+      setTimeout(() => khung.remove(), 500);
+    };
+    const nhan = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== khung.contentWindow || e.data?.nguon !== "phieu-kham") return;
+      setDangInPhieu(false);
+      if (e.data.loai === "loi") {
+        addToast({ type: "error", message: `Không in được phiếu khám: ${e.data.loi}` });
+        don();
+      } else {
+        khung.contentWindow?.addEventListener("afterprint", don, { once: true });
+      }
+    };
+    window.addEventListener("message", nhan);
+    // phòng khi trình duyệt không báo afterprint: tự dọn sau 5 phút
+    setTimeout(() => { setDangInPhieu(false); don(); }, 5 * 60 * 1000);
+    khung.src = `/in/phieu-kham/${encodeURIComponent(hoSoId)}?nhung=1`;
+    document.body.appendChild(khung);
+  };
+
   // Cấu hình bật/tắt trường phiếu khám của cơ sở
   const [cfg, setCfg] = useState<FieldConfig>({});
 
@@ -928,6 +959,25 @@ export default function ExamPage() {
   /* NV tư vấn mặc định = người đang đăng nhập. Phiên đăng nhập thường tải xong SAU khi hồ sơ được nạp,
      nên không điền vào state lúc nạp mà dùng làm giá trị dự phòng khi hiển thị và khi lưu. */
   const tenDangNhap = readOnly ? "" : session?.user?.name || "";
+
+  /* Gợi ý ô "Nhân viên tư vấn": tư vấn viên của cơ sở + tên đã từng nhập trên hồ sơ của cơ sở */
+  const coSoDot = buoiKham?.coSoId;
+  const [dsTuVan, setDsTuVan] = useState<string[]>([]);
+  // Đang gõ ô NV tư vấn của hồ sơ này: cho phép xoá trắng để gõ lại (không bật về tên đăng nhập)
+  const [goTuVanId, setGoTuVanId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!coSoDot) return;
+    let huy = false;
+    fetch(`/api/csr/tuvanvien?coSoId=${encodeURIComponent(coSoDot)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d: unknown) => { if (!huy && Array.isArray(d)) setDsTuVan(d.filter((x): x is string => typeof x === "string")); })
+      .catch(() => {});
+    return () => { huy = true; };
+  }, [coSoDot]);
+  const goiYTuVan = useMemo(() => {
+    const ten = session?.user?.name;
+    return ten && !dsTuVan.includes(ten) ? [ten, ...dsTuVan] : dsTuVan;
+  }, [dsTuVan, session?.user?.name]);
 
   /** Khuyến nghị hiệu lực: nếu bật "Hướng xử trí" thì suy từ đó, không thì dùng trường cũ. */
   const effKhuyenNghi = isFieldOn(cfg, "huongXuTri") ? huongXuTriToKhuyenNghi(f.huongXuTri) : f.khuyenNghi;
@@ -1680,7 +1730,7 @@ export default function ExamPage() {
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-[var(--navy)]" />
               <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[var(--navy)]">Bệnh nhân</span>
-              <span className="font-mono text-[11px] font-bold bg-[var(--surface-soft)] text-[var(--ink-soft)] px-1.5 py-0.2 rounded-full">
+              <span className="font-mono text-[11px] font-bold bg-[var(--surface-soft)] text-[var(--ink-soft)] px-1.5 py-0.2 rounded-[4px]">
                 {counts.total}
               </span>
             </div>
@@ -1825,7 +1875,7 @@ export default function ExamPage() {
                 >
                   <ShieldCheck className="w-3 h-3 text-[var(--green-deep)] shrink-0" />
                   <span>Tra BH</span>
-                  <span className="font-mono text-[11px] font-extrabold bg-emerald-200/70 text-[var(--green-deep)] px-1 rounded-full">{missingBhytPatients.length}</span>
+                  <span className="font-mono text-[11px] font-extrabold bg-emerald-200/70 text-[var(--green-deep)] px-1 rounded-[4px]">{missingBhytPatients.length}</span>
                 </button>
               )}
 
@@ -1838,7 +1888,7 @@ export default function ExamPage() {
                 >
                   <Zap className="w-3 h-3 text-[var(--amber-deep)] fill-[var(--amber-deep)] shrink-0" />
                   <span>Chốt</span>
-                  <span className="font-mono text-[11px] font-extrabold bg-[var(--amber)]/18 text-[var(--amber-deep)] px-1 rounded-full">{counts.waiting}</span>
+                  <span className="font-mono text-[11px] font-extrabold bg-[var(--amber)]/18 text-[var(--amber-deep)] px-1 rounded-[4px]">{counts.waiting}</span>
                 </button>
               )}
             </div>
@@ -2014,6 +2064,20 @@ export default function ExamPage() {
                 ))}
               </ol>
             </div>
+            {/* In phiếu khám mắt (mẫu giấy của bệnh viện, kèm toa thuốc mặc định của cơ sở) */}
+            <div className="px-4 py-3 border-t border-[var(--line)] shrink-0">
+              <button
+                type="button"
+                onClick={() => inPhieuKham(selected.id)}
+                disabled={dangInPhieu}
+                className="btn btn-primary w-full h-9 rounded-[6px] text-[13px] font-semibold disabled:opacity-60"
+                title="In phiếu khám mắt kèm toa thuốc"
+              >
+                {dangInPhieu ? <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" /> : <Printer aria-hidden="true" className="w-4 h-4" />}
+                {dangInPhieu ? "Đang chuẩn bị…" : "In phiếu khám"}
+              </button>
+              <p className="mt-1.5 text-[11.5px] leading-snug text-[var(--mute)]">Phiếu khổ <b className="text-[var(--ink-soft)]">A5</b>. Máy in đang để A4 thì trong hộp thoại in chọn <i>More settings → Paper size → A5</i>.</p>
+            </div>
           </>) : <div className="flex-1 flex items-center justify-center text-[var(--mute)] text-[13px] px-6 text-center">Chọn bệnh nhân để xem hồ sơ</div>}
         </section>
 
@@ -2120,7 +2184,7 @@ export default function ExamPage() {
             <div className="@container flex-1 overflow-y-auto p-2.5 sm:p-4">
               <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-2.5 sm:gap-4 items-stretch">
                 {showBenhSu && (
-                  <div className="card p-0 h-full flex flex-col">
+                  <div className="@container card p-0 h-full flex flex-col">
                     <SectionHeader n={secNo.benhSu} accent="Bệnh sử của bản thân" />
                     <div className="p-3 sm:p-4 flex-1 space-y-2.5">
                       {isFieldOn(cfg, "benhSu") && (
@@ -2314,7 +2378,7 @@ export default function ExamPage() {
                                     type="button"
                                     onClick={() => setBothEyes(diag)}
                                     title={`Chọn ${diag} cho cả 2 mắt`}
-                                    className={`h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border text-[12.5px] sm:text-[11px] font-semibold transition-colors cursor-pointer ${
+                                    className={`h-8 sm:h-7 px-2.5 rounded-[6px] border text-[12.5px] sm:text-[11px] font-semibold transition-colors cursor-pointer ${
                                       on
                                         ? "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30"
                                         : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--line-strong)]"
@@ -2328,7 +2392,7 @@ export default function ExamPage() {
                                 type="button"
                                 onClick={copyMPtoMT}
                                 title="Sao chép chẩn đoán từ Mắt phải sang Mắt trái"
-                                className="h-8 sm:h-6 px-2.5 sm:px-2 rounded-md border border-[var(--line)] bg-[var(--surface)] text-[12.5px] sm:text-[11px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
+                                className="h-8 sm:h-7 px-2.5 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] text-[12.5px] sm:text-[11px] font-semibold text-[var(--ink-soft)] hover:border-[var(--line-strong)] cursor-pointer font-mono"
                               >
                                 MP → MT
                               </button>
@@ -2337,7 +2401,7 @@ export default function ExamPage() {
                                   type="button"
                                   onClick={clearBothEyes}
                                   title="Xoá chẩn đoán cả 2 mắt"
-                                  className="h-8 sm:h-6 px-1.5 text-[12.5px] sm:text-[11px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
+                                  className="h-8 sm:h-7 px-1.5 text-[12.5px] sm:text-[11px] font-semibold text-[var(--mute)] hover:text-[var(--rose)] cursor-pointer"
                                 >
                                   Xoá
                                 </button>
@@ -2348,17 +2412,22 @@ export default function ExamPage() {
                         <div className="rounded-[10px] border border-[var(--line)] divide-y divide-[var(--line-soft)] bg-[var(--surface)]">
                           {([
                             { mat: "MP", ten: "Mắt phải", ds: f.chanDoanMP, toggle: toggleChanDoanMP, khac: "chanDoanKhacMP", dot: "bg-[var(--teal)]",
-                              onCls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/50" },
+                              onCls: "bg-[var(--teal-soft)] text-[var(--teal-deep)] border-[var(--teal)]/55",
+                              boxOn: "bg-[var(--teal-deep)] border-[var(--teal-deep)] text-white" },
                             { mat: "MT", ten: "Mắt trái", ds: f.chanDoanMT, toggle: toggleChanDoanMT, khac: "chanDoanKhacMT", dot: "bg-[var(--navy)]",
-                              onCls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/30" },
+                              onCls: "bg-[var(--navy-50)] text-[var(--navy)] border-[var(--navy)]/45",
+                              boxOn: "bg-[var(--navy)] border-[var(--navy)] text-white" },
                           ] as const).map((e) => (
-                            <div key={e.mat} className="px-3 py-2">
-                              <div className="flex items-start gap-3">
-                                <span className="w-[46px] shrink-0 h-8 sm:h-7 flex items-center gap-1.5" title={e.ten}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
-                                  <span className="font-mono text-[12.5px] sm:text-[11px] font-bold text-[var(--ink)]">{e.mat}</span>
+                            <div key={e.mat} className="px-2.5 py-2">
+                              <div className="flex items-start gap-2.5">
+                                <span className="w-[66px] shrink-0 h-10 sm:h-9 flex flex-col justify-center leading-tight" title={e.ten}>
+                                  <span className="flex items-center gap-1.5">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
+                                    <span className="font-mono text-[12.5px] sm:text-[11.5px] font-bold text-[var(--ink)]">{e.mat}</span>
+                                  </span>
+                                  <span className="pl-3 text-[11px] sm:text-[10.5px] text-[var(--mute)]">{e.ten}</span>
                                 </span>
-                                <div className="flex-1 flex flex-wrap gap-1.5">
+                                <div className="flex-1 min-w-0 grid grid-cols-2 @md:grid-cols-4 gap-1.5">
                                   {CHAN_DOAN.map((o) => {
                                     const on = e.ds.includes(o);
                                     return (
@@ -2367,14 +2436,22 @@ export default function ExamPage() {
                                         type="button"
                                         onClick={() => !readOnly && e.toggle(o)}
                                         disabled={readOnly}
-                                        className={`inline-flex items-center gap-1 h-8 sm:h-7 px-3 sm:px-2.5 rounded-full border text-[13.5px] sm:text-[12px] transition-colors cursor-pointer ${
+                                        aria-pressed={on}
+                                        aria-label={`${e.ten}: ${o}`}
+                                        title={o}
+                                        className={`flex items-center gap-2 h-10 sm:h-9 px-2.5 rounded-[6px] border text-left text-[13.5px] sm:text-[12.5px] transition-colors cursor-pointer disabled:cursor-default ${
                                           on
                                             ? `${e.onCls} font-semibold`
-                                            : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] font-medium hover:border-[var(--line-strong)] hover:text-[var(--ink)]"
+                                            : "bg-[var(--surface)] text-[var(--ink-soft)] border-[var(--line)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
                                         }`}
                                       >
-                                        {on && <Check className="w-3 h-3" strokeWidth={3} />}
-                                        {o}
+                                        <span
+                                          aria-hidden="true"
+                                          className={`w-4 h-4 shrink-0 rounded-[4px] border-[1.5px] grid place-items-center transition-colors ${on ? e.boxOn : "border-[var(--line-heavy)] bg-[var(--surface)]"}`}
+                                        >
+                                          {on && <Check className="w-3 h-3" strokeWidth={3} />}
+                                        </span>
+                                        <span className="truncate">{o}</span>
                                       </button>
                                     );
                                   })}
@@ -2588,25 +2665,15 @@ export default function ExamPage() {
                       </Field>
                       {isFieldOn(cfg, "nhanVienTuVan") && (
                         <Field label="Nhân viên tư vấn">
-                          <div className="relative flex items-center">
-                            <input
-                              value={f.nhanVienTuVan || tenDangNhap}
-                              onChange={(e) => setF((s) => ({ ...s, nhanVienTuVan: e.target.value }))}
-                              placeholder="Tên nhân viên tư vấn ca này..."
-                              className="input-field pr-24"
-                              disabled={readOnly}
-                            />
-                            {!readOnly && session?.user?.name && (f.nhanVienTuVan || tenDangNhap) !== session.user.name && (
-                              <button
-                                type="button"
-                                onClick={() => setF((s) => ({ ...s, nhanVienTuVan: session?.user?.name || "" }))}
-                                className="absolute right-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-[var(--navy-soft)] hover:bg-[var(--navy)] text-[var(--navy)] hover:text-white transition-colors border border-[var(--navy-200)] cursor-pointer"
-                                title="Gán tên tôi làm nhân viên tư vấn ca này"
-                              >
-                                Tôi tư vấn
-                              </button>
-                            )}
-                          </div>
+                          <InputGoiY
+                            value={goTuVanId === selected.id ? f.nhanVienTuVan : f.nhanVienTuVan || tenDangNhap}
+                            onChange={(v) => { setGoTuVanId(selected.id); setF((s) => ({ ...s, nhanVienTuVan: v })); }}
+                            options={goiYTuVan}
+                            placeholder="Gõ hoặc chọn nhân viên tư vấn…"
+                            ariaLabel="Nhân viên tư vấn"
+                            minWidth={240}
+                            disabled={readOnly}
+                          />
                         </Field>
                       )}
                     </div>
@@ -2649,7 +2716,7 @@ export default function ExamPage() {
                     </span>
                   </button>
                   {newPatientAnimation && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--green)] text-white font-mono font-black text-[11px] px-1.5 py-0.5 rounded-full shadow-md animate-tin-moi pointer-events-none border border-white whitespace-nowrap z-40">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--green)] text-white font-mono font-black text-[11px] px-1.5 py-0.5 rounded-[4px] shadow-md animate-tin-moi pointer-events-none border border-white whitespace-nowrap z-40">
                       +1
                     </span>
                   )}
@@ -2705,23 +2772,21 @@ export default function ExamPage() {
                       type="button"
                       onClick={handleQuickNormal}
                       disabled={saving || !!isDone}
-                      className="h-8 sm:h-9 px-2.5 sm:px-3.5 font-bold text-[11px] sm:text-[12.5px] shrink-0 cursor-pointer rounded-lg bg-[var(--green)] hover:bg-[var(--green-deep)] active:bg-emerald-800 text-white active:scale-95 transition flex items-center gap-1.5 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
-                      title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả Bình thường (Thị lực 20/20, Theo dõi) và tự động chuyển ca kế tiếp"}
+                      className="h-8 sm:h-9 px-3 sm:px-4 font-semibold text-[12px] sm:text-[13px] shrink-0 cursor-pointer rounded-[6px] border border-[var(--green-deep)]/40 bg-[var(--green)] hover:bg-[var(--green-deep)] text-white transition-colors flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+                      title={isDone ? "Ca này đã hoàn tất khám" : "Lưu nhanh kết quả ổn (Thị lực 20/20, Theo dõi) và tự động chuyển ca kế tiếp"}
                     >
-                      <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 shrink-0" />
-                      <span className="hidden sm:inline">Khám bình thường</span>
-                      <span className="sm:hidden">Bình thường</span>
+                      <CheckCheck aria-hidden="true" className="w-4 h-4 shrink-0" />
+                      <span>KQ ổn</span>
                     </button>
                     <button
                       type="button"
                       onClick={save}
                       disabled={saving || !dirty}
-                      className="btn btn-primary px-2.5 sm:px-5 py-1.5 font-bold h-8 sm:h-9 text-[11px] sm:text-[13px] shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 disabled:cursor-not-allowed disabled:pointer-events-none disabled:bg-none disabled:!bg-[var(--surface-soft)] disabled:!text-[var(--mute)] disabled:!border disabled:!border-[var(--line)] disabled:!shadow-none"
+                      title="Lưu kết quả (Ctrl+S)"
+                      className="btn btn-primary h-8 sm:h-9 px-3 sm:px-4 rounded-[6px] font-semibold text-[12px] sm:text-[13px] shrink-0 cursor-pointer flex items-center gap-1.5 disabled:cursor-not-allowed disabled:pointer-events-none disabled:bg-none disabled:!bg-[var(--surface-soft)] disabled:!text-[var(--mute)] disabled:!border disabled:!border-[var(--line)] disabled:!shadow-none"
                     >
-                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
-                      <span>Lưu</span>
-                      <span className="hidden sm:inline"> kết quả</span>
-                      <span className="hidden md:inline font-mono text-[11px] opacity-70 font-normal">(Ctrl+S)</span>
+                      {saving ? <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" /> : <Save aria-hidden="true" className="w-4 h-4" />}
+                      <span>Lưu<span className="hidden sm:inline"> kết quả</span></span>
                     </button>
                   </>
                 )}
@@ -2776,7 +2841,7 @@ export default function ExamPage() {
                 >
                   <Users className="w-3.5 h-3.5 text-[#00d2d3]" />
                   <span className="font-extrabold text-[12px] text-white">DS</span>
-                  <span className="min-w-[18px] h-[18px] px-1 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                  <span className="min-w-[18px] h-[18px] px-1 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-[4px] flex items-center justify-center shadow-xs">
                     {counts.total}
                   </span>
                 </button>

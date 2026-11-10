@@ -22,7 +22,7 @@ interface AppShellProps {
 export default function AppShell({ children, initialUser, initialCoSo }: AppShellProps) {
   const pathname = usePathname();
   // Trang "bảng toàn màn hình": khung trang không cuộn, chỉ phần bảng bên trong cuộn (tiêu đề, bộ lọc, phân trang đứng yên)
-  const isTablePage = pathname === "/buoi-kham" || pathname === "/ho-so" || pathname.startsWith("/quan-tri");
+  const isTablePage = pathname === "/buoi-kham" || pathname === "/ho-so" || pathname === "/doi-chieu-his" || pathname.startsWith("/quan-tri");
   const isFullBleed = pathname.startsWith("/kham/") || pathname.startsWith("/tu-van") || pathname.startsWith("/theo-doi") || pathname.startsWith("/doan-xe") || isTablePage;
 
   return (

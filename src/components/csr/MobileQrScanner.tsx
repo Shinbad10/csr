@@ -306,7 +306,7 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
             <button
               type="button"
               onClick={onClose}
-              className="h-11 px-6 rounded-full bg-white/10 border border-white/15 text-white text-[13px] font-semibold active:scale-95"
+              className="h-11 px-6 rounded-[4px] bg-white/10 border border-white/15 text-white text-[13px] font-semibold active:scale-95"
             >
               Đóng
             </button>
@@ -316,7 +316,7 @@ export function MobileQrScanner({ onScan, onClose }: { onScan: (text: string) =>
 
       {!error && (
         <div className="absolute left-0 right-0 z-20 flex justify-center px-6" style={{ bottom: "max(48px, calc(env(safe-area-inset-bottom) + 24px))" }}>
-          <p className="text-white text-xs font-semibold text-center uppercase tracking-wider px-6 py-2.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+          <p className="text-white text-xs font-semibold text-center uppercase tracking-wider px-6 py-2.5 rounded-[4px] bg-black/40 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
             {success ? "Đã quét được mã" : "Di chuyển khung quét đến mã QR"}
           </p>
         </div>

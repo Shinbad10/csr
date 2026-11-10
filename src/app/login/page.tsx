@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Sparkles,
   Building2,
   Activity,
   ShieldCheck,
@@ -270,7 +269,7 @@ export default function LoginPage() {
               <div className="text-center mb-6 sm:mb-10">
                 <div className="inline-flex flex-col items-center">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3 justify-center">
-                    <Sparkles size={14} className="text-[var(--teal-ink)] animate-pulse" />
+                    <ShieldCheck size={14} className="text-[var(--teal-ink)]" />
                     <span className="text-[11px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-[var(--teal-ink)] font-mono">
                       Xác thực truy cập
                     </span>
@@ -285,7 +284,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="mb-4 p-3.5 rounded-[14px] bg-[var(--rose)]/10 border border-[var(--rose)]/20 text-[var(--rose)] text-xs sm:text-sm font-semibold flex items-center gap-2.5">
+                <div className="mb-4 p-3.5 rounded-[10px] bg-[var(--rose)]/10 border border-[var(--rose)]/20 text-[var(--rose)] text-xs sm:text-sm font-semibold flex items-center gap-2.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-[var(--rose)] shrink-0" />
                   <span>{error}</span>
                 </div>

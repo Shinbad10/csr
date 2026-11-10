@@ -15,7 +15,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!session || !isAllowed) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   try {
     const body = await request.json();
-    const { ten, diaChi, bhxhMaCSKCB, bhxhHoTenCB, cauHinhTruong } = body;
+    const { ten, diaChi, dienThoai, email, website, bhxhMaCSKCB, bhxhHoTenCB, cauHinhTruong } = body;
 
     // cauHinhTruong là chuỗi JSON object { "<fieldKey>": boolean }
     if (cauHinhTruong !== undefined && cauHinhTruong !== null) {
@@ -32,6 +32,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: {
         ten,
         diaChi: diaChi !== undefined ? (diaChi || null) : undefined,
+        dienThoai: dienThoai !== undefined ? (String(dienThoai || "").trim() || null) : undefined,
+        email: email !== undefined ? (String(email || "").trim() || null) : undefined,
+        website: website !== undefined ? (String(website || "").trim() || null) : undefined,
         cauHinhTruong: cauHinhTruong !== undefined ? (cauHinhTruong || null) : undefined,
         bhxhMaCSKCB: bhxhMaCSKCB !== undefined ? (bhxhMaCSKCB?.trim() || null) : undefined,
         bhxhHoTenCB: bhxhHoTenCB !== undefined ? (bhxhHoTenCB?.trim() || null) : undefined,

@@ -41,11 +41,11 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
         href={it.href}
         className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12.5px] font-bold whitespace-nowrap transition-colors select-none border ${
           active
-            ? "bg-[var(--teal)] text-[var(--navy-ink)] border-[var(--teal)] shadow-sm"
+            ? "bg-white/15 text-white border-white/20"
             : "text-white/80 hover:text-white hover:bg-white/10 border-transparent"
         }`}
       >
-        <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-[var(--navy-ink)]" : "text-white/70"}`} />
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? "text-[var(--teal-ink)]" : "text-white/70"}`} />
         {it.label}
       </Link>
     );
@@ -87,7 +87,7 @@ function GroupMenu({ group, pathname }: { group: NavGroup; pathname: string }) {
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-colors ${
                     active
-                      ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
+                      ? "bg-[var(--navy)] text-white shadow-xs"
                       : "text-[var(--ink-soft)] dark:text-slate-200 hover:bg-[var(--surface-hover)] dark:hover:bg-slate-800 hover:text-[var(--navy)] dark:hover:text-[var(--teal-ink)]"
                   }`}
                 >
@@ -210,7 +210,7 @@ export default function TopbarNav({ initialRole, initialCoSo }: TopbarNavProps) 
                           href={it.href}
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-colors ${
                             active
-                              ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white font-bold shadow-sm"
+                              ? "bg-[var(--navy)] text-white font-bold shadow-sm"
                               : "text-[var(--ink-soft)] dark:text-slate-300 font-medium hover:bg-[var(--navy-50)] hover:text-[var(--navy)] dark:hover:bg-slate-800"
                           }`}
                         >

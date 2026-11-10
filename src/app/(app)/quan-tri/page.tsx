@@ -24,7 +24,6 @@ import {
   Send,
   RotateCw,
   Server,
-  Sparkles,
   KeyRound,
   CheckCircle2,
   AlertCircle,
@@ -56,6 +55,9 @@ interface CoSo {
   id: string;
   ten: string;
   diaChi: string | null;
+  dienThoai?: string | null;
+  email?: string | null;
+  website?: string | null;
   trangThai: string;
   cauHinhTruong?: string | null;
   bhxhMaCSKCB?: string | null;
@@ -191,7 +193,7 @@ function QtStat({
   const bar = { navy: "bg-[var(--navy)]", teal: "bg-[var(--teal)]", amber: "bg-[var(--amber)]" }[tone];
   const ico = { navy: "text-[var(--navy)]", teal: "text-[var(--teal-deep)]", amber: "text-[var(--amber)]" }[tone];
   return (
-    <div className="relative bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-4 py-3.5 overflow-hidden">
+    <div className="relative bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-xs)] px-4 py-3.5 overflow-hidden">
       <span className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${bar}`} />
       <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--mute)]">
         <Icon className={`w-3.5 h-3.5 ${ico}`} />
@@ -959,7 +961,7 @@ export default function QuanTriPage() {
           const initials = ten.split(/\s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() || "?";
           return (
             <div className="flex items-center gap-3 min-w-0 pr-2">
-              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal-ink)] flex items-center justify-center font-mono text-[11px] font-bold shrink-0">
+              <span className="w-8 h-8 rounded-[8px] bg-[var(--navy)] text-[var(--teal-ink)] flex items-center justify-center font-mono text-[11px] font-bold shrink-0">
                 {initials}
               </span>
               <div className="min-w-0">
@@ -1146,7 +1148,7 @@ export default function QuanTriPage() {
           const initials = ten.split(/s+/).slice(-2).map((w) => w[0]).join("").toUpperCase() || "BS";
           return (
             <div className="flex items-center gap-3 min-w-0 pr-2">
-              <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal-ink)] flex items-center justify-center font-mono text-[11px] font-bold shrink-0">
+              <span className="w-8 h-8 rounded-[8px] bg-[var(--navy)] text-[var(--teal-ink)] flex items-center justify-center font-mono text-[11px] font-bold shrink-0">
                 {initials}
               </span>
               <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{ten}</span>
@@ -1353,7 +1355,7 @@ export default function QuanTriPage() {
             type="button"
             onClick={() => load(true)}
             title="Làm mới dữ liệu"
-            className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] px-3 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] px-3 text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[var(--teal-ink)] ${loading ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Làm mới</span>
@@ -1372,7 +1374,7 @@ export default function QuanTriPage() {
                 onClick={() => changeTab(k as any)}
                 className={`relative inline-flex items-center gap-2 h-8 px-3.5 rounded-lg text-[12.5px] font-semibold whitespace-nowrap transition cursor-pointer ${
                   on
-                    ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)]"
+                    ? "bg-[var(--navy)] text-white"
                     : "text-[var(--mute)] hover:text-[var(--ink)] hover:bg-[var(--surface)]"
                 }`}
               >
@@ -1433,9 +1435,9 @@ export default function QuanTriPage() {
               </div>
 
               {/* Cổng email (SMTP): một dải trạng thái gọn, không chiếm cả khối */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)] px-4 py-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-xs)] px-4 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="w-8 h-8 rounded-[8px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] flex items-center justify-center shrink-0 shadow-[var(--navy-shadow)]">
+                  <span className="w-8 h-8 rounded-[8px] bg-[var(--navy)] flex items-center justify-center shrink-0">
                     <Mail className="w-4 h-4 text-[var(--teal-ink)]" />
                   </span>
                   <div className="min-w-0">
@@ -1453,7 +1455,7 @@ export default function QuanTriPage() {
                     type="button"
                     onClick={checkSmtpConnection}
                     disabled={checkingSmtp}
-                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition cursor-pointer"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition cursor-pointer"
                     title="Kiểm tra kết nối tới mail.visicare.com.vn"
                   >
                     {checkingSmtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
@@ -1462,7 +1464,7 @@ export default function QuanTriPage() {
                   <button
                     type="button"
                     onClick={() => setSmtpTestModal(true)}
-                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
+                    className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12px] font-semibold hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer hover:bg-[var(--navy-deep)]"
                     title="Gửi thư thử nghiệm"
                   >
                     <Send className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
@@ -1472,7 +1474,7 @@ export default function QuanTriPage() {
               </div>
 
               {/* Bảng tài khoản: thanh công cụ nằm trong cùng thẻ với bảng (giống tab Cơ sở y tế) */}
-              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
                     <div className="relative w-full sm:w-[300px] shrink-0">
@@ -1528,7 +1530,7 @@ export default function QuanTriPage() {
                   <button
                     type="button"
                     onClick={() => setModal({ type: "user" })}
-                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer whitespace-nowrap shrink-0"
+                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12.5px] font-semibold hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer whitespace-nowrap shrink-0 hover:bg-[var(--navy-deep)]"
                   >
                     <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" />
                     <span>Thêm tài khoản</span>
@@ -1546,7 +1548,7 @@ export default function QuanTriPage() {
                       <button
                         type="button"
                         onClick={() => setBulkInviteModal(true)}
-                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12px] font-semibold hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer hover:bg-[var(--navy-deep)]"
                       >
                         <Send className="w-3.5 h-3.5 text-[var(--teal-ink)]" />
                         Gửi thư mời hàng loạt (<span className="font-mono">{selectedUsers.size}</span>)
@@ -1554,7 +1556,7 @@ export default function QuanTriPage() {
                       <button
                         type="button"
                         onClick={bulkDeleteUsers}
-                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] text-[12px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition cursor-pointer"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] text-[12px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         Xoá (<span className="font-mono">{selectedUsers.size}</span>)
@@ -1712,7 +1714,7 @@ export default function QuanTriPage() {
                 />
               </div>
 
-              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+              <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
                 {/* Thanh công cụ */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
                   <div className="relative w-full sm:w-[300px]">
@@ -1728,7 +1730,7 @@ export default function QuanTriPage() {
                     {selectedCosos.size > 0 && !isIT && (
                       <button
                         onClick={bulkDeleteCosos}
-                        className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] text-[12.5px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition cursor-pointer"
+                        className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[6px] text-[12.5px] font-semibold text-[var(--rose)] bg-[var(--rose-soft)] hover:brightness-95 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" /> Xoá <span className="font-mono">{selectedCosos.size}</span> đã chọn
                       </button>
@@ -1736,7 +1738,7 @@ export default function QuanTriPage() {
                     {!isIT && (
                       <button
                         onClick={() => setModal({ type: "coso" })}
-                        className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
+                        className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12.5px] font-semibold hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer hover:bg-[var(--navy-deep)]"
                       >
                         <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" /> Thêm cơ sở y tế
                       </button>
@@ -1834,7 +1836,7 @@ export default function QuanTriPage() {
               TAB: DANH SÁCH BÁC SĨ
              ════════════════════════════════════════════════════════════════ */}
           {tab === "bacsi" && (
-            <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+            <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
               {/* Thanh công cụ nằm trong thẻ bảng (cùng mẫu tab Cơ sở y tế / Tài khoản) */}
               <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 px-4 py-3 border-b border-[var(--line)]">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
@@ -1887,7 +1889,7 @@ export default function QuanTriPage() {
                       }
                     }}
                     disabled={syncingBacSi}
-                    className="h-9 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition cursor-pointer whitespace-nowrap"
+                    className="h-9 px-3.5 inline-flex items-center justify-center gap-1.5 rounded-[6px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-60 transition cursor-pointer whitespace-nowrap"
                   >
                     {syncingBacSi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
                     <span>Đồng bộ từ HIS DMNhanSu</span>
@@ -1906,7 +1908,7 @@ export default function QuanTriPage() {
                         } as any,
                       })
                     }
-                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer whitespace-nowrap"
+                    className="h-9 px-4 inline-flex items-center justify-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12.5px] font-semibold hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer whitespace-nowrap hover:bg-[var(--navy-deep)]"
                   >
                     <Plus className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" />
                     <span>Thêm bác sĩ</span>
@@ -1933,7 +1935,7 @@ export default function QuanTriPage() {
               TAB: NHẬT KÝ KIỂM TOÁN (AUDIT LOG)
              ════════════════════════════════════════════════════════════════ */}
           {tab === "audit" && (
-            <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
+            <div data-tour="qt-table" className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[300px]">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 py-3 border-b border-[var(--line)]">
                 <div className="relative w-full sm:w-[340px] shrink-0">
                   <Search className="w-3.5 h-3.5 text-[var(--mute)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2211,7 +2213,7 @@ function InviteUserModal({
                   className="btn btn-secondary px-3 py-2 text-[12px] font-bold rounded-xl shrink-0 flex items-center gap-1.5"
                   title="Sinh mật khẩu khác"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-[var(--navy)]" />
+                  <KeyRound className="w-3.5 h-3.5 text-[var(--navy)]" />
                   <span>Đổi mã</span>
                 </button>
               </div>
@@ -2838,7 +2840,7 @@ function UserModal({
         ) : (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/60 to-indigo-50/40 border border-[var(--navy-200)]/80 flex items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-[var(--navy)]/10 text-[var(--navy)] flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-              <Sparkles className="w-4 h-4 text-[var(--navy)]" />
+              <KeyRound className="w-4 h-4 text-[var(--navy)]" />
             </div>
             <div className="text-[12.5px] text-[var(--ink-soft)] leading-relaxed">
               <strong className="text-[var(--ink)] block mb-0.5">Khởi tạo tài khoản nhân sự mới</strong>
@@ -2945,7 +2947,7 @@ function UserModal({
                         <span className={`flex items-center gap-1.5 text-[13px] font-semibold ${on ? "text-[var(--navy)]" : "text-[var(--ink)]"}`}>
                           {roleLabels[r] || r}
                           {quanTri && (
-                            <span className="h-[18px] px-1.5 rounded-full bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[11px] font-semibold inline-flex items-center">
+                            <span className="h-[18px] px-1.5 rounded-[4px] bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[11px] font-semibold inline-flex items-center">
                               Quản trị
                             </span>
                           )}
@@ -3064,7 +3066,7 @@ function UserModal({
                   onClick={() => setMatKhau(generateTempPassword())}
                   className="text-[11.5px] font-semibold text-[var(--navy)] hover:text-[var(--navy)] flex items-center gap-1 hover:underline"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-[var(--navy)]" />
+                  <KeyRound className="w-3.5 h-3.5 text-[var(--navy)]" />
                   <span>Sinh ngẫu nhiên</span>
                 </button>
               </div>
@@ -3264,7 +3266,7 @@ function CsSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)]">
+    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-xs)]">
       <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[var(--line-soft)]">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="w-7 h-7 rounded-[8px] bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center shrink-0">
@@ -3377,6 +3379,10 @@ function CoSoModal({
   const [id, setId] = useState(edit?.id ?? autoId);
   const [ten, setTen] = useState(edit?.ten ?? "");
   const [diaChi, setDiaChi] = useState(edit?.diaChi ?? "");
+  // In trên đầu phiếu khám
+  const [dienThoai, setDienThoai] = useState(edit?.dienThoai ?? "");
+  const [email, setEmail] = useState(edit?.email ?? "");
+  const [website, setWebsite] = useState(edit?.website ?? "");
   // Thông tin kết nối không tải về trình duyệt: ô để trống khi sửa = giữ nguyên giá trị đã lưu
   const [bhxhUser, setBhxhUser] = useState("");
   // Mật khẩu không tải về trình duyệt: để trống khi sửa = giữ nguyên mật khẩu đã lưu
@@ -3444,6 +3450,9 @@ function CoSoModal({
         id,
         ten,
         diaChi,
+        dienThoai,
+        email,
+        website,
         bhxhUser,
         bhxhPass,
         bhxhMaCSKCB,
@@ -3503,7 +3512,7 @@ function CoSoModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-9 px-4 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
+            className="h-9 px-4 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
           >
             Huỷ bỏ
           </button>
@@ -3511,7 +3520,7 @@ function CoSoModal({
             type="submit"
             form="coso-form"
             disabled={saving}
-            className="h-9 px-4 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+            className="h-9 px-4 rounded-[6px] bg-[var(--navy)] text-white text-[12.5px] font-semibold hover:shadow-[var(--navy-shadow-hover)] inline-flex items-center gap-1.5 transition cursor-pointer disabled:opacity-60 disabled:cursor-wait hover:bg-[var(--navy-deep)]"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-[var(--teal-ink)] stroke-[3]" />}
             {edit ? "Lưu thay đổi" : "Tạo cơ sở"}
@@ -3534,8 +3543,8 @@ function CoSoModal({
         )}
 
         {/* Định danh cơ sở */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-xs)]">
-          <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center shadow-[var(--navy-shadow)] shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-xs)]">
+          <div className="w-10 h-10 rounded-[10px] bg-[var(--navy)] text-white flex items-center justify-center shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
@@ -3558,7 +3567,7 @@ function CoSoModal({
         </div>
 
         {/* 1. Thông tin cơ sở */}
-        <CsSection icon={Building2} title="Thông tin cơ sở" desc="Tên & địa chỉ chi nhánh khám chữa bệnh">
+        <CsSection icon={Building2} title="Thông tin cơ sở" desc="Tên, địa chỉ và liên hệ — in trên đầu phiếu khám">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <CsField label="Tên cơ sở khám chữa bệnh" required>
               <input
@@ -3575,6 +3584,32 @@ function CoSoModal({
                 onChange={(e) => setDiaChi(e.target.value)}
                 className={CS_INPUT}
                 placeholder="Số nhà, đường, phường/xã, tỉnh/thành"
+              />
+            </CsField>
+            <CsField label="Hotline / Điện thoại">
+              <input
+                value={dienThoai}
+                onChange={(e) => setDienThoai(e.target.value)}
+                inputMode="tel"
+                className={`${CS_INPUT} font-mono`}
+                placeholder="VD: 0842.183.183"
+              />
+            </CsField>
+            <CsField label="Email">
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                className={CS_INPUT}
+                placeholder="VD: lienhe@matvisi.com"
+              />
+            </CsField>
+            <CsField label="Website">
+              <input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                className={CS_INPUT}
+                placeholder="VD: matvisisoctrang.com"
               />
             </CsField>
           </div>
@@ -3668,7 +3703,7 @@ function CoSoModal({
                 onClick={testBhxh}
                 disabled={bhxhTesting || (!coBhxh && (!bhxhUser.trim() || !bhxhPass.trim()))}
                 title="Thử đăng nhập và kiểm tra quyền tra cứu thẻ trên cổng giám định BHYT (ô trống dùng giá trị đã lưu)"
-                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy-50)] hover:border-[var(--navy-100)] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--navy)] hover:bg-[var(--navy-50)] hover:border-[var(--navy-100)] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
                 {bhxhTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 Kiểm tra kết nối BHXH
@@ -3981,13 +4016,13 @@ function GoogleSheetPanel() {
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0">
       {/* Trạng thái tổng */}
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] p-4">
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <span
               className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${
                 status?.enabled
-                  ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)]"
+                  ? "bg-[var(--navy)]"
                   : "bg-[var(--rose-soft)]"
               }`}
             >
@@ -4012,7 +4047,7 @@ function GoogleSheetPanel() {
               onClick={rebuildSheet}
               disabled={rebuilding || syncing || !status?.enabled}
               title="Xoá dòng cũ & đẩy lại toàn bộ theo bộ cột hiện tại"
-              className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-50 transition cursor-pointer"
+              className="h-9 px-3.5 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--surface)] border border-[var(--line)] text-[12.5px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] disabled:opacity-50 transition cursor-pointer"
             >
               {rebuilding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--amber)]" />}
               <span>Dựng lại báo cáo</span>
@@ -4020,7 +4055,7 @@ function GoogleSheetPanel() {
             <button
               onClick={syncNow}
               disabled={syncing || rebuilding || !status?.enabled}
-              className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12.5px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] disabled:opacity-50 transition cursor-pointer"
+              className="h-9 px-4 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12.5px] font-semibold hover:shadow-[var(--navy-shadow-hover)] disabled:opacity-50 transition cursor-pointer hover:bg-[var(--navy-deep)]"
             >
               {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 text-[var(--teal-ink)]" />}
               <span>Đồng bộ ngay</span>
@@ -4050,7 +4085,7 @@ function GoogleSheetPanel() {
 
       {/* Sheet dùng chung */}
       {status?.sharedSheetId && (
-        <div className="bg-[var(--navy-50)] border border-[var(--navy-100)] rounded-[14px] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-[var(--navy-50)] border border-[var(--navy-100)] rounded-[10px] px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <FileSpreadsheet className="w-4 h-4 text-[var(--navy)] shrink-0" />
             <div className="min-w-0">
@@ -4072,7 +4107,7 @@ function GoogleSheetPanel() {
                 navigator.clipboard?.writeText(sheetUrl(status.sharedSheetId!));
                 addToast({ type: "success", message: "Đã copy link." });
               }}
-              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--surface)] border border-[var(--line)] text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface-soft)] hover:border-[var(--line-strong)] transition cursor-pointer"
             >
               <Copy className="w-3.5 h-3.5" /> Copy
             </button>
@@ -4080,7 +4115,7 @@ function GoogleSheetPanel() {
               href={sheetUrl(status.sharedSheetId)}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold shadow-[var(--navy-shadow)] hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-[6px] bg-[var(--navy)] text-white text-[12px] font-semibold hover:shadow-[var(--navy-shadow-hover)] transition cursor-pointer hover:bg-[var(--navy-deep)]"
             >
               <ExternalLink className="w-3.5 h-3.5 text-[var(--teal-ink)]" /> Mở bảng tính
             </a>
@@ -4089,7 +4124,7 @@ function GoogleSheetPanel() {
       )}
 
       {/* Danh sách cơ sở */}
-      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[240px]">
+      <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col md:flex-1 md:min-h-[240px]">
         <DataView<GSheetCoSo, unknown> fullHeight columns={gsheetColumns} data={rows} pageSize={100}>
           <DataTable<GSheetCoSo> dense emptyIcon={FileSpreadsheet} emptyTitle="Chưa có cơ sở nào" />
         </DataView>

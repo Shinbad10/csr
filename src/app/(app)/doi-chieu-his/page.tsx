@@ -7,10 +7,10 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 import {
   Activity, RefreshCw, CheckCircle2, Search,
-  Calendar, Users, ShieldCheck, Database, Check,
-  Play, Download, UserCheck, Stethoscope, Sparkles,
+  Users, ShieldCheck, Database, Check,
+  Download, UserCheck, Stethoscope, Info,
   CalendarDays, X, AlertTriangle, ShieldQuestion, ArrowRight,
-  CalendarCheck, Clock, CheckCircle, Zap, ChevronLeft, ChevronRight, Eye, Lightbulb
+  Clock, CheckCircle, Zap, ChevronLeft, ChevronRight, Eye, Lightbulb
 } from "lucide-react";
 import { fmtDate, fmtBuoiKhamName } from "@/lib/csr";
 import { Dropdown } from "@/components/csr/fields";
@@ -140,24 +140,24 @@ export default function DoiChieuHisPage() {
     return map;
   }, [buoiKhams]);
 
-  // Map cho chọn Tháng HIS (18 tháng trước -> 6 tháng sau)
+  // Map cho chọn Tháng HIS (24 tháng gần nhất, tháng này đứng đầu)
   const monthOptions = useMemo(() => {
     const options: string[] = [""];
     const labels: Record<string, string> = {
-      "": "🌐 Tất cả các tháng (Không lọc theo tháng)",
+      "": "Tất cả các tháng",
     };
     const now = new Date();
     const currentY = now.getFullYear();
     const currentStr = `${currentY}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     const temp: string[] = [];
-    for (let i = -18; i <= 6; i++) {
+    for (let i = -23; i <= 0; i++) {
       const d = new Date(currentY, now.getMonth() + i, 1);
       const y = d.getFullYear();
       const m = d.getMonth() + 1;
       const val = `${y}-${String(m).padStart(2, "0")}`;
       temp.push(val);
-      labels[val] = val === currentStr ? `📅 Tháng ${String(m).padStart(2, "0")} / ${y} (Hiện tại)` : `📅 Tháng ${String(m).padStart(2, "0")} / ${y}`;
+      labels[val] = `Tháng ${String(m).padStart(2, "0")}/${y}${val === currentStr ? " · tháng này" : ""}`;
     }
     temp.sort().reverse();
     return { options: ["", ...temp], labels };
@@ -175,10 +175,10 @@ export default function DoiChieuHisPage() {
     const sortedDates = Object.keys(dateMap).sort().reverse();
     const options = ["", ...sortedDates];
     const labels: Record<string, string> = {
-      "": "📅 Tất cả các ngày trong tháng",
+      "": "Tất cả các ngày trong tháng",
     };
     sortedDates.forEach((d) => {
-      labels[d] = `📅 Ngày ${fmtDate(d)} (${dateMap[d]} ca mổ)`;
+      labels[d] = `${fmtDate(d)} · ${dateMap[d]} ca mổ`;
     });
     return { options, labels };
   }, [revList]);
@@ -1052,7 +1052,7 @@ export default function DoiChieuHisPage() {
           if (r.cccdConflict) {
             return (
               <div className="text-xs space-y-1 min-w-0">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose-deep)] border border-[var(--rose)]/30">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose-deep)] border border-[var(--rose)]/30">
                   ✕ Lệch CCCD ({r.cccdConflict.maBN})
                 </span>
                 <div className="text-[11px] text-[var(--mute)]">
@@ -1361,7 +1361,7 @@ export default function DoiChieuHisPage() {
           if (r.cccdConflict) {
             return (
               <div className="text-xs space-y-1 min-w-0">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose-deep)] border border-[var(--rose)]/30">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[4px] text-[11px] font-bold bg-[var(--rose-soft)] text-[var(--rose-deep)] border border-[var(--rose)]/30">
                   ✕ Lệch CCCD ({r.cccdConflict.maBN})
                 </span>
                 <div className="text-[11px] text-[var(--mute)]">
@@ -1531,64 +1531,48 @@ export default function DoiChieuHisPage() {
   }
 
   return (
-    <div className="space-y-2.5 pb-12">
-      {/* Header chung */}
+    /* Màn hình rộng: khung trang đứng yên, chỉ bảng cuộn. Màn hình hẹp: cả trang cuộn như cũ. */
+    <div className="flex-1 min-h-0 flex flex-col gap-2.5 overflow-y-auto lg:overflow-hidden pb-2">
+      {/* Header chung siêu tinh gọn: Tiêu đề + Tabs + Bộ điều khiển trong 1 khối duy nhất */}
       <PageHeader
         icon={Database}
         title="Đối chiếu"
         accent="dữ liệu HIS"
         badge={
           <span className="inline-flex items-center gap-1 text-[var(--teal-deep)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)]" />
             HIS sẵn sàng
           </span>
         }
         description="Theo dõi ca mổ & đối chiếu bệnh nhân tầm soát CSR với máy chủ HIS"
-      />
-
-      {/* Tabs tinh gọn */}
-      <div data-tour="his-tabs" className="flex items-center">
-        <div className="bg-[var(--surface-soft)] p-1 rounded-xl inline-flex gap-1 border border-[var(--line)] max-w-full overflow-x-auto">
-          <button
-            onClick={() => setTab("today")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
-              tab === "today" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface)]"
-            }`}
-          >
-            <CalendarCheck className={`w-3.5 h-3.5 ${tab === "today" ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
-            <span>Mổ trong ngày</span>
-            <span className={`px-1.5 py-0.2 text-[11px] font-mono font-bold rounded ${
-              tab === "today" ? "bg-[var(--teal)] text-[var(--navy-ink)]" : "bg-[var(--green)]/15 text-[var(--green-deep)]"
-            }`}>
-              Hôm nay
-            </span>
-          </button>
-          <button
-            onClick={() => setTab("batch")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
-              tab === "batch" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface)]"
-            }`}
-          >
-            <Activity className={`w-3.5 h-3.5 ${tab === "batch" ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
-            <span>Quét theo Đợt khám</span>
-          </button>
-          <button
-            onClick={() => setTab("reverse")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
-              tab === "reverse" ? "bg-[var(--navy)] text-white shadow-xs" : "text-[var(--ink-soft)] hover:bg-[var(--surface)]"
-            }`}
-          >
-            <Database className={`w-3.5 h-3.5 ${tab === "reverse" ? "text-[var(--teal-ink)]" : "text-[var(--mute)]"}`} />
-            <span>Đối chiếu theo Tháng</span>
-          </button>
-        </div>
-      </div>
-
-      {/* TAB 0: THEO DÕI MỔ TRONG NGÀY (HÔM NAY / CHỌN NGÀY) */}
-      {tab === "today" && (
-        <div className="space-y-2.5">
-          {/* Thanh điều khiển siêu tinh gọn */}
-          <div className="bg-[var(--surface)] border border-[var(--line)] p-2 rounded-xl shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        actions={
+          <div data-tour="his-tabs" role="tablist" className="inline-flex p-1 bg-[var(--surface-soft)] rounded-lg border border-[var(--line)]">
+            {([
+              ["today", "Mổ trong ngày"],
+              ["batch", "Quét theo đợt khám"],
+              ["reverse", "Đối chiếu theo tháng"],
+            ] as const).map(([k, nhan]) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={tab === k}
+                onClick={() => setTab(k)}
+                className={`px-3 py-1 rounded-md text-[12px] font-semibold transition-all cursor-pointer ${
+                  tab === k
+                    ? "bg-white text-[var(--navy)] shadow-2xs font-bold"
+                    : "text-[var(--mute)] hover:text-[var(--ink)]"
+                }`}
+              >
+                {nhan}
+              </button>
+            ))}
+          </div>
+        }
+      >
+        {/* Bộ điều khiển tương ứng với Tab đang chọn */}
+        {tab === "today" && (
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center bg-[var(--surface-soft)] rounded-lg border border-[var(--line)] p-0.5">
                 <button
@@ -1644,14 +1628,95 @@ export default function DoiChieuHisPage() {
             </div>
 
             <div className="text-[11px] text-[var(--mute)] hidden md:flex items-center gap-1.5 font-medium">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--teal-deep)]" />
+              <Info aria-hidden="true" className="w-3.5 h-3.5 text-[var(--mute)]" />
               <span>Chỉ truy vấn khi bấm nút · Lưu vĩnh viễn vào CSR để báo cáo</span>
             </div>
           </div>
+        )}
+
+        {tab === "batch" && (
+          <div data-tour="his-select" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
+            <div className="w-full sm:w-[320px]">
+              <Dropdown
+                value={selectedBuoiId}
+                onChange={setSelectedBuoiId}
+                options={bkOptions}
+                labels={bkLabels}
+                placeholder="Chọn đợt khám…"
+                mono={false}
+                size="sm"
+              />
+            </div>
+            <div className="w-full sm:w-[170px]">
+              <Dropdown
+                value={batchMonth}
+                onChange={setBatchMonth}
+                options={monthOptions.options}
+                labels={monthOptions.labels}
+                placeholder="Chọn tháng…"
+                mono={false}
+                size="sm"
+              />
+            </div>
+            <button
+              type="button"
+              data-tour="his-run"
+              onClick={runBatchCheck}
+              disabled={batchLoading || !selectedBuoiId}
+              className="btn btn-primary h-8 px-4 rounded-lg font-bold text-xs shrink-0 inline-flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+            >
+              {batchLoading ? <RefreshCw aria-hidden="true" className="w-3.5 h-3.5 animate-spin text-teal-300" /> : <Search aria-hidden="true" className="w-3.5 h-3.5 text-teal-300" />}
+              <span>{batchLoading ? "Đang quét HIS…" : "Quét đối chiếu"}</span>
+            </button>
+          </div>
+        )}
+
+        {tab === "reverse" && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap flex-1">
+              <div className="w-full sm:w-[220px]">
+                <Dropdown
+                  value={revMonth}
+                  onChange={setRevMonth}
+                  options={monthOptions.options}
+                  labels={monthOptions.labels}
+                  placeholder="Chọn tháng phẫu thuật..."
+                  mono={false}
+                  size="sm"
+                />
+              </div>
+
+              <button
+                onClick={runReverseCheck}
+                disabled={revLoading}
+                className="btn btn-primary h-8 px-4 rounded-lg font-bold text-xs inline-flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                {revLoading ? <RefreshCw aria-hidden="true" className="w-3.5 h-3.5 animate-spin text-teal-300" /> : <Download aria-hidden="true" className="w-3.5 h-3.5 text-teal-300" />}
+                <span>{revLoading ? "Đang tải danh sách HIS…" : "Tải danh sách mổ HIS"}</span>
+              </button>
+            </div>
+
+            {revList.some((r) => r.matchedCsr && !r.matchedCsr.daMo) && (
+              <button
+                onClick={linkAllMatched}
+                disabled={revLoading}
+                className="btn btn-success h-8 px-4 rounded-lg font-bold text-xs inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Cập nhật toàn bộ ({revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo).length})</span>
+              </button>
+            )}
+          </div>
+        )}
+      </PageHeader>
+
+      {/* TAB 0: THEO DÕI MỔ TRONG NGÀY (HÔM NAY / CHỌN NGÀY) */}
+      {tab === "today" && (
+        <div className="lg:flex-1 lg:min-h-0 flex flex-col gap-2.5">
 
           {/* Stat Cards tinh gọn (Compact Strip) */}
           {hasScannedDaily && dailySummary && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-2">
               <CompactStatCard
                 label="Tổng ca mổ ở HIS"
                 value={dailySummary.totalHIS.toLocaleString("vi-VN")}
@@ -1685,9 +1750,9 @@ export default function DoiChieuHisPage() {
 
           {/* Bảng kết quả danh sách mổ trong ngày */}
           {hasScannedDaily ? (
-            <div className="card p-0 overflow-hidden bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-2xs">
+            <div className="lg:flex-1 lg:min-h-0 flex flex-col card p-0 overflow-hidden bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-2xs">
               {/* Header Lọc & Tìm kiếm & Đồng bộ tất cả */}
-              <div className="p-2 border-b border-[var(--line)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-[var(--surface-soft)]/60">
+              <div className="shrink-0 p-2 border-b border-[var(--line)] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-[var(--surface-soft)]/60">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
@@ -1820,6 +1885,7 @@ export default function DoiChieuHisPage() {
 
               {/* Bảng dữ liệu TanStack */}
               <DataView<HisRow, unknown>
+                fullHeight
                 columns={dailyColumns}
                 data={filteredDailyList}
                 pageSize={25}
@@ -1843,80 +1909,28 @@ export default function DoiChieuHisPage() {
             </div>
           ) : (
             /* Khung hướng dẫn ban đầu trước khi quét */
-            <div className="card p-6 text-center max-w-md mx-auto space-y-2.5 my-4 bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-2xs">
-              <div className="w-11 h-11 rounded-xl bg-[var(--teal-soft)] text-[var(--teal-deep)] flex items-center justify-center mx-auto border border-[var(--teal)]/25 shadow-2xs">
-                <CalendarCheck className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-[15px] font-bold text-[var(--ink)]">
-                  Theo dõi & Đối chiếu ca mổ trong ngày
-                </h3>
-                <p className="text-xs text-[var(--mute)] max-w-sm mx-auto leading-relaxed">
-                  Chọn ngày ở trên rồi bấm <strong>Kiểm tra mổ từ HIS</strong> để tải danh sách phẫu thuật thực tế và đối chiếu với hồ sơ CSR.
-                </p>
-              </div>
-              <div className="pt-1">
+            <HuongDanBatDau
+              tieuDe="Chưa kiểm tra ca mổ trong ngày"
+              moTa={<>Chọn ngày ở trên rồi bấm <b className="font-semibold text-[var(--ink)]">Kiểm tra mổ từ HIS</b> để tải các ca phẫu thuật thực tế và đối chiếu với hồ sơ CSR.</>}
+              hanhDong={
                 <button
                   type="button"
                   onClick={() => runDailyCheck(todayStr)}
                   disabled={dailyLoading}
-                  className="btn btn-primary px-4 py-2 rounded-lg font-bold text-xs inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  className="btn btn-primary h-8 px-3 text-[12.5px] font-semibold disabled:opacity-50"
                 >
-                  <Search className="w-3.5 h-3.5 text-teal-300" />
-                  <span>Quét ca mổ hôm nay ({fmtDate(todayStr)})</span>
+                  <Search aria-hidden="true" className="w-3.5 h-3.5" />
+                  Kiểm tra ca mổ hôm nay ({fmtDate(todayStr)})
                 </button>
-              </div>
-            </div>
+              }
+            />
           )}
         </div>
       )}
 
-      {/* TAB 2: QUÉT HÀNG LOẠT THEO ĐỢT KHÁM */}
+      {/* TAB 1: QUÉT HÀNG LOẠT THEO ĐỢT KHÁM */}
       {tab === "batch" && (
-        <div className="space-y-5">
-          {/* Card lọc & chọn buổi khám — KHÔNG overflow-hidden để menu dropdown không bị cắt */}
-          <div data-tour="his-select" className="card p-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 flex-1">
-              <div className="flex-1 min-w-[240px]">
-                <label className="text-[12px] font-bold text-[var(--ink-soft)] mb-1.5 flex items-center gap-1.5">
-                  <CalendarDays className="w-3.5 h-3.5 text-[var(--navy)]" /> Chọn Đợt khám / Buổi khám
-                </label>
-                <Dropdown
-                  value={selectedBuoiId}
-                  onChange={setSelectedBuoiId}
-                  options={bkOptions}
-                  labels={bkLabels}
-                  placeholder="Chọn buổi khám tầm soát..."
-                  mono={false}
-                />
-              </div>
-
-              <div className="w-full sm:w-[240px]">
-                <label className="text-[12px] font-bold text-[var(--ink-soft)] mb-1.5 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-[var(--teal-ink)]" /> Tháng phẫu thuật HIS
-                </label>
-                <Dropdown
-                  value={batchMonth}
-                  onChange={setBatchMonth}
-                  options={monthOptions.options}
-                  labels={monthOptions.labels}
-                  placeholder="Chọn tháng phẫu thuật..."
-                  mono={false}
-                />
-              </div>
-            </div>
-
-            <button
-              data-tour="his-run"
-              onClick={runBatchCheck}
-              disabled={batchLoading || !selectedBuoiId}
-              className="btn btn-primary h-[42px] px-6 rounded-[var(--r-md)] font-bold text-sm shrink-0 justify-center gap-2"
-            >
-              {batchLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[var(--teal-ink)]" /> : <Play className="w-4 h-4 fill-current" />}
-              {batchLoading ? "Đang quét HIS..." : "Quét đối chiếu ngay"}
-            </button>
-          </div>
-
+        <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto space-y-2.5">
           {/* Thống kê KPIs */}
           {batchSummary && (
             <div className={`grid grid-cols-2 gap-2 ${(batchSummary.surgeryPartial || 0) > 0 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
@@ -1937,55 +1951,15 @@ export default function DoiChieuHisPage() {
 
           {/* Trạng thái trống (Chưa quét) */}
           {!hasScannedBatch && (
-            <div className="card p-0 max-w-5xl mx-auto relative overflow-hidden">
-              {/* nền khí quyển nhẹ theo tông navy → teal */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--navy-50)] via-transparent to-[var(--teal-soft)]/40 pointer-events-none" />
-              <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full bg-[var(--teal)]/5 blur-3xl pointer-events-none" />
-
-              <div className="relative p-6 sm:p-9">
-                <div className="flex flex-col items-center text-center max-w-xl mx-auto mb-7">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[var(--navy)] to-[var(--teal-deep)] text-white shadow-[var(--shadow-lg)] ring-4 ring-white flex items-center justify-center mb-4">
-                    <Sparkles className="w-7 h-7 text-[var(--teal-ink)] animate-pulse" />
-                  </div>
-                  <h3 className="font-serif text-xl sm:text-[26px] font-bold text-[var(--ink)] tracking-tight leading-tight">
-                    Sẵn sàng đối chiếu <span className="italic font-normal text-[var(--teal-ink)]">dữ liệu HIS</span>
-                  </h3>
-                  <p className="text-[13px] text-[var(--mute)] leading-relaxed mt-2">
-                    Chọn buổi khám tầm soát ở trên rồi nhấn <strong className="text-[var(--navy)] font-semibold">Quét đối chiếu ngay</strong> — hệ thống tự chạy quy trình 3 bước:
-                  </p>
-                </div>
-
-                {/* Pipeline 3 bước có mũi tên kết nối */}
-                <div className="flex flex-col md:flex-row items-stretch gap-3 md:gap-0 max-w-4xl mx-auto">
-                  {[
-                    { n: 1, chip: "bg-[var(--navy)] text-white", t: "So khớp CCCD & BHYT", tbl: "QLyCapThe", d: "Đối chiếu tự động CCCD · Mã thẻ BHYT · Họ tên · Năm sinh trên bảng" },
-                    { n: 2, chip: "bg-[var(--teal-deep)] text-white", t: "Gán Mã BN HIS", tbl: "MaBNHIS", d: "Tự động lấy mã hồ sơ bệnh viện từ bảng" },
-                    { n: 3, chip: "bg-[var(--gold)] text-white", t: "Xác nhận Phẫu thuật", tbl: "QLyPhongMo", d: "Truy vấn lịch sử mổ & cập nhật trạng thái trên" },
-                  ].map((s, idx) => (
-                    <div key={s.n} className="flex-1 flex items-stretch">
-                      <div className="flex-1 rounded-[var(--r-md)] bg-white/80 backdrop-blur-sm border border-[var(--line)] p-4 text-left hover:border-[var(--teal)] hover:shadow-[var(--shadow-sm)] transition">
-                        <div className="flex items-center gap-2.5 mb-2">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold font-mono text-[12px] shrink-0 shadow-[var(--shadow-sm)] ${s.chip}`}>{s.n}</div>
-                          <div className="font-bold text-[var(--ink)] text-[13.5px]">{s.t}</div>
-                        </div>
-                        <div className="text-[12px] text-[var(--mute)] leading-relaxed">{s.d} <code className="text-[11px] font-mono bg-[var(--surface-hover)] px-1.5 py-0.5 rounded text-[var(--ink-soft)] font-bold">{s.tbl}</code></div>
-                      </div>
-                      {idx < 2 && (
-                        <div className="hidden md:flex items-center justify-center w-8 shrink-0 text-[var(--mute-soft)]">
-                          <ArrowRight className="w-4 h-4" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex justify-center mt-7">
-                  <span className="inline-flex items-center gap-2 text-xs font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] border border-[var(--teal)]/25 px-5 py-2.5 rounded-full">
-                    <Play className="w-3.5 h-3.5 fill-current" /> Nhấn &quot;Quét đối chiếu ngay&quot; để bắt đầu
-                  </span>
-                </div>
-              </div>
-            </div>
+            <HuongDanBatDau
+              tieuDe="Chưa quét đợt khám nào"
+              moTa={<>Chọn đợt khám ở trên rồi bấm <b className="font-semibold text-[var(--ink)]">Quét đối chiếu</b>. Hệ thống đối chiếu từng bệnh nhân Nhóm A/B theo thứ tự:</>}
+              buoc={[
+                { t: "Tìm bệnh nhân trên HIS", d: "Theo CCCD, rồi mã thẻ BHYT (10 số cuối), cuối cùng Họ tên + Năm sinh" },
+                { t: "Gán mã bệnh nhân HIS", d: "Lưu mã hồ sơ bệnh viện vào hồ sơ tầm soát" },
+                { t: "Đọc sổ phòng mổ", d: "Ca mổ sau ngày khám, ca chờ mổ, ca đã mổ trước — khớp CCCD/BHYT tự ghi nhận, khớp tên cần xác nhận" },
+              ]}
+            />
           )}
 
           {/* Bộ lọc nhanh Tab 1 */}
@@ -2032,7 +2006,7 @@ export default function DoiChieuHisPage() {
                   <Activity className="w-4 h-4 text-[var(--teal-deep)]" />
                   Danh sách Bệnh nhân ({filteredBatchResults.length} / {batchResults.length} BN)
                 </span>
-                <span className="text-[11.5px] text-[var(--teal-deep)] font-semibold bg-[var(--teal-soft)] px-3 py-1 rounded-full border border-[var(--teal)]/25">
+                <span className="text-[11.5px] text-[var(--teal-deep)] font-semibold bg-[var(--teal-soft)] px-3 py-1 rounded-[4px] border border-[var(--teal)]/25">
                   ⚡ Tự động cập nhật hồ sơ khi quét
                 </span>
               </div>
@@ -2064,49 +2038,10 @@ export default function DoiChieuHisPage() {
         </div>
       )}
 
-      {/* TAB 2: ĐỐI CHIẾU NGƯỢC TỪ HIS */}
+      {/* TAB 2: ĐỐI CHIẾU THEO THÁNG */}
       {tab === "reverse" && (
-        <div className="space-y-5">
-          {/* Card chọn tháng & action — KHÔNG overflow-hidden để menu dropdown không bị cắt */}
-          <div className="card p-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="w-full sm:w-[300px]">
-              <label className="text-[12px] font-bold text-[var(--ink-soft)] mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-[var(--navy)]" /> Tháng phẫu thuật trên HIS
-              </label>
-              <Dropdown
-                value={revMonth}
-                onChange={setRevMonth}
-                options={monthOptions.options}
-                labels={monthOptions.labels}
-                placeholder="Chọn tháng phẫu thuật..."
-                mono={false}
-              />
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                onClick={runReverseCheck}
-                disabled={revLoading}
-                className="btn btn-primary h-[42px] px-6 rounded-[var(--r-md)] font-bold text-sm gap-2"
-              >
-                {revLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[var(--teal-ink)]" /> : <Download className="w-4 h-4" />}
-                {revLoading ? "Đang tải danh sách HIS..." : "Tải danh sách mổ HIS"}
-              </button>
-
-              {revList.some((r) => r.matchedCsr && !r.matchedCsr.daMo) && (
-                <button
-                  onClick={linkAllMatched}
-                  disabled={revLoading}
-                  className="btn btn-success h-[42px] px-6 rounded-[var(--r-md)] font-bold text-sm gap-2"
-                >
-                  <UserCheck className="w-4 h-4" />
-                  Cập nhật toàn bộ ({revList.filter((r) => r.matchedCsr && !r.matchedCsr.daMo).length})
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Thống kê KPIs Tab 3 */}
+        <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto space-y-2.5">
+          {/* Thống kê KPIs */}
           {revSummary && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <CompactStatCard tone="navy" icon={Database} label="Tổng ca mổ trên HIS" value={revSummary.totalHIS} sub="Danh sách tháng" />
@@ -2120,24 +2055,15 @@ export default function DoiChieuHisPage() {
 
           {/* Trạng thái trống Tab 2 */}
           {!hasScannedRev && (
-            <div className="card p-0 max-w-4xl mx-auto relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--navy-50)] via-transparent to-[var(--teal-soft)]/40 pointer-events-none" />
-              <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full bg-[var(--teal)]/5 blur-3xl pointer-events-none" />
-              <div className="relative p-6 sm:p-9 text-center flex flex-col items-center max-w-xl mx-auto">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[var(--navy)] to-[var(--teal-deep)] text-white shadow-[var(--shadow-lg)] ring-4 ring-white flex items-center justify-center mb-4">
-                  <Database className="w-7 h-7 text-[var(--teal-ink)] animate-pulse" />
-                </div>
-                <h3 className="font-serif text-xl sm:text-[26px] font-bold text-[var(--ink)] tracking-tight leading-tight">
-                  Đối chiếu ngược từ <span className="italic font-normal text-[var(--teal-ink)]">danh sách mổ HIS</span>
-                </h3>
-                <p className="text-[13px] text-[var(--mute)] leading-relaxed mt-2 mb-6">
-                  Chọn tháng phẫu thuật ở trên rồi nhấn <strong className="text-[var(--navy)] font-semibold">Tải danh sách mổ HIS</strong> — hệ thống kéo toàn bộ ca mổ từ HIS và tự động so khớp với bệnh nhân đã tầm soát trong CSR.
-                </p>
-                <span className="inline-flex items-center gap-2 text-xs font-bold text-[var(--teal-deep)] bg-[var(--teal-soft)] border border-[var(--teal)]/25 px-5 py-2.5 rounded-full">
-                  <Download className="w-3.5 h-3.5" /> Tự động tìm bệnh nhân mổ để chốt danh sách chính xác
-                </span>
-              </div>
-            </div>
+            <HuongDanBatDau
+              tieuDe="Chưa tải danh sách mổ của tháng"
+              moTa={<>Chọn tháng phẫu thuật ở trên rồi bấm <b className="font-semibold text-[var(--ink)]">Tải danh sách mổ HIS</b>. Hệ thống lấy toàn bộ ca mổ trong tháng rồi tìm hồ sơ tầm soát tương ứng:</>}
+              buoc={[
+                { t: "Lấy ca mổ trong tháng", d: "Toàn bộ ca có trong sổ phòng mổ, kèm dịch vụ, mắt mổ, phòng mổ" },
+                { t: "Tìm hồ sơ tầm soát", d: "Khớp CCCD / mã BHYT trước, Họ tên + Năm sinh sau" },
+                { t: "Ghi nhận vào CSR", d: "Ca khớp chắc chắn đồng bộ được ngay; ca khớp tên cần xác nhận từng ca" },
+              ]}
+            />
           )}
 
           {/* Bộ lọc nhanh Tab 2 */}
@@ -2164,7 +2090,7 @@ export default function DoiChieuHisPage() {
                     onChange={setRevFilterDate}
                     options={revDateOptions.options}
                     labels={revDateOptions.labels}
-                    placeholder="📅 Tất cả các ngày trong tháng"
+                    placeholder="Tất cả các ngày trong tháng"
                     mono={false}
                   />
                 </div>
@@ -2196,7 +2122,7 @@ export default function DoiChieuHisPage() {
                   <Stethoscope className="w-4 h-4 text-[var(--navy)]" />
                   Danh sách phẫu thuật trên HIS ({filteredRevList.length} / {revList.length} ca)
                 </span>
-                <span className="text-[11.5px] text-[var(--teal-deep)] font-semibold bg-[var(--teal-soft)] px-3 py-1 rounded-full border border-[var(--teal)]/25">
+                <span className="text-[11.5px] text-[var(--teal-deep)] font-semibold bg-[var(--teal-soft)] px-3 py-1 rounded-[4px] border border-[var(--teal)]/25">
                   <Lightbulb aria-hidden="true" className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />
                   Ưu tiên hiển thị các ca khớp tầm soát
                 </span>
@@ -2241,5 +2167,41 @@ export default function DoiChieuHisPage() {
         }}
       />
     </div>
+  );
+}
+
+/** Trạng thái chưa quét: panel gọn kiểu bảng (tiêu đề · hướng dẫn · các bước), căn trái theo lưới trang. */
+function HuongDanBatDau({
+  tieuDe,
+  moTa,
+  buoc,
+  hanhDong,
+}: {
+  tieuDe: string;
+  moTa: React.ReactNode;
+  buoc?: { t: string; d: string }[];
+  hanhDong?: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-[8px] border border-[var(--line)] bg-[var(--surface)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3.5">
+        <div className="min-w-0">
+          <h3 className="text-[14px] font-semibold text-[var(--ink)]">{tieuDe}</h3>
+          <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--ink-soft)] max-w-3xl">{moTa}</p>
+        </div>
+        {hanhDong && <div className="shrink-0">{hanhDong}</div>}
+      </div>
+      {buoc && buoc.length > 0 && (
+        <ol className="border-t border-[var(--line)] px-4 sm:px-5 py-2">
+          {buoc.map((b, i) => (
+            <li key={b.t} className="grid grid-cols-[20px_minmax(0,1fr)] sm:grid-cols-[20px_200px_minmax(0,1fr)] items-baseline gap-x-2 gap-y-0.5 py-1.5">
+              <span className="text-[12.5px] font-semibold text-[var(--mute)] tabular-nums">{i + 1}.</span>
+              <span className="text-[13px] font-semibold text-[var(--ink)]">{b.t}</span>
+              <span className="col-start-2 sm:col-start-auto text-[12.5px] text-[var(--ink-soft)]">{b.d}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }

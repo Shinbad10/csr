@@ -40,7 +40,7 @@ export function SoDoXe({
   const soBN = nguoi.filter((n) => n.loai === "bn").length;
 
   return (
-    <section className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden">
+    <section className="rounded-[10px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden">
       <header className="px-4 py-2.5 border-b border-[var(--line-soft)] flex items-center gap-2.5 flex-wrap">
         <span className="w-7 h-7 rounded-[8px] bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center shrink-0">
           <Bus className="w-3.5 h-3.5" />

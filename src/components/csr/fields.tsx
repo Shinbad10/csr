@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useState, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft, Calendar as CalendarIcon, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, CalendarDays, X, ChevronLeft, Calendar as CalendarIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const labelCls = "block text-[13px] sm:text-[12px] font-semibold text-[var(--ink-soft)] mb-1.5 sm:mb-1";
@@ -333,8 +333,10 @@ export function InputGoiY({ value, onChange, options, placeholder, mono, disable
   }, [open]);
 
   const goiY = options.filter(Boolean);
-  const q = value.trim().toLowerCase();
-  const loc = daGo && q ? goiY.filter((o) => o.toLowerCase().includes(q)) : goiY;
+  // So khớp không phân biệt hoa/thường và dấu tiếng Việt ("nguyen" khớp "Nguyễn")
+  const boDau = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+  const q = boDau(value.trim());
+  const loc = daGo && q ? goiY.filter((o) => boDau(o).includes(q)) : goiY;
   const chon = (o: string) => { onChange(o); setOpen(false); };
 
   return (
@@ -704,7 +706,7 @@ export function DateField({
             ref={popupRef}
             data-portal-popover
             style={{ ...portalStyle, width: 280 }}
-            className="bg-[var(--surface)] border border-[var(--line-strong)] rounded-[14px] shadow-[var(--shadow-lg)] p-2.5 animate-dropdown select-none flex flex-col overflow-hidden"
+            className="bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-[var(--shadow-lg)] p-2.5 animate-dropdown select-none flex flex-col overflow-hidden"
           >
             {/* Tiêu đề: ‹  [Tháng 10, 2026 ▾]  › — bấm tiêu đề để lên cấp tháng / năm */}
             <div className="flex items-center justify-between gap-1 pb-2 mb-2 border-b border-[var(--line-soft)]">
@@ -828,7 +830,7 @@ export function DateField({
                   onClick={() => selectDate(todayStr)}
                   className="inline-flex items-center gap-1 font-bold text-[var(--teal-deep)] px-1.5 py-0.5 rounded-[6px] hover:bg-[var(--teal-soft)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Sparkles className="w-3 h-3 text-[var(--teal-ink)]" /> Hôm nay
+                  <CalendarDays className="w-3 h-3 text-[var(--teal-ink)]" /> Hôm nay
                 </button>
               )}
               <div className="flex items-center gap-1 shrink-0">
@@ -980,7 +982,7 @@ export function PillGroup({ options, selected, onToggle, disabled }: {
   options: readonly string[]; selected: string[]; onToggle: (v: string) => void; disabled?: boolean;
 }) {
   return (
-    <div className={`flex flex-wrap gap-1 sm:gap-1.5 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
+    <div className={`grid grid-cols-2 @md:grid-cols-3 @2xl:grid-cols-4 gap-1.5 ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
       {options.map((o) => {
         const on = selected.includes(o);
         return (
@@ -990,13 +992,22 @@ export function PillGroup({ options, selected, onToggle, disabled }: {
             onClick={() => !disabled && onToggle(o)}
             disabled={disabled}
             aria-pressed={on}
-            className={`inline-flex items-center gap-1 h-8 px-3 rounded-full text-[13.5px] sm:text-[12px] font-semibold border transition-colors cursor-pointer select-none active:scale-[0.98] ${
+            title={o}
+            className={`flex items-center gap-2 h-10 sm:h-9 px-2.5 rounded-[6px] border text-left text-[13.5px] sm:text-[12.5px] transition-colors cursor-pointer select-none ${
               on
-                ? "bg-[var(--amber-soft)] text-[var(--amber-deep)] border-[var(--amber)]/60"
-                : "bg-[var(--surface)] border-[var(--line-strong)] text-[var(--ink-soft)] hover:border-[var(--amber)]/50 hover:text-[var(--amber-deep)]"
+                ? "bg-[var(--navy-50)] border-[var(--navy)]/45 text-[var(--navy)] font-semibold"
+                : "bg-[var(--surface)] border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-soft)]"
             }`}
           >
-            {o}{on && !disabled && <X className="w-3 h-3 opacity-80 hover:opacity-100" />}
+            <span
+              aria-hidden="true"
+              className={`w-4 h-4 shrink-0 rounded-[4px] border-[1.5px] grid place-items-center transition-colors ${
+                on ? "bg-[var(--navy)] border-[var(--navy)] text-white" : "border-[var(--line-heavy)] bg-[var(--surface)]"
+              }`}
+            >
+              {on && <Check className="w-3 h-3" strokeWidth={3} />}
+            </span>
+            <span className="truncate">{o}</span>
           </button>
         );
       })}
@@ -1044,7 +1055,7 @@ export function MultiSelect({ options, selected, onToggle, disabled, placeholder
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {selected.map((v) => (
-            <span key={v} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold bg-[var(--gold-soft)] border border-[var(--gold-line)] text-[var(--gold-deep)] animate-fade-in">
+            <span key={v} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[4px] text-[12px] font-semibold bg-[var(--gold-soft)] border border-[var(--gold-line)] text-[var(--gold-deep)] animate-fade-in">
               <span className="min-w-0">{v}</span>
               {!disabled && (
                 <button type="button" onClick={() => onToggle(v)} title="Bỏ chọn" className="shrink-0 opacity-55 hover:opacity-100 transition-opacity cursor-pointer">

@@ -27,7 +27,6 @@ import {
   List,
   Table as TableIcon,
   CheckCheck,
-  Sparkles,
   ChevronRight,
   Edit3,
   UserPlus, Plus, ChevronLeft
@@ -907,24 +906,24 @@ export default function DoanXePage() {
           const isDaDen = tt === "daLen";
           if (isMo)
             return (
-              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-[var(--green)] text-white shadow-2xs">
+              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-[4px] bg-[var(--green)] text-white shadow-2xs">
                 ✓ ĐÃ MỔ
               </span>
             );
           if (isDaDen)
             return (
-              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-[var(--green)]/15 text-[var(--green-deep)] border border-[var(--green)]/40">
+              <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-[4px] bg-[var(--green)]/15 text-[var(--green-deep)] border border-[var(--green)]/40">
                 ✓ ĐÃ LÊN XE
               </span>
             );
           if (tt === "huy")
             return (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[var(--rose-soft)] text-[var(--rose)]" title="Quá ngày xe đón mà chưa lên xe">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-[4px] bg-[var(--rose-soft)] text-[var(--rose)]" title="Quá ngày xe đón mà chưa lên xe">
                 Huỷ ghế
               </span>
             );
           return (
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--amber)]/15 text-[var(--amber-deep)] border border-[var(--amber)]/40">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-[4px] bg-[var(--amber)]/15 text-[var(--amber-deep)] border border-[var(--amber)]/40">
               ⏳ CHỜ ĐÓN
             </span>
           );
@@ -1006,7 +1005,7 @@ export default function DoanXePage() {
       >
           {/* Dải chỉ số (ERP): một khối chia cột, số mono — điện thoại vuốt ngang */}
           <div className="min-w-0 overflow-x-auto no-scrollbar">
-            <div className="flex items-stretch w-max xl:w-full rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/40 divide-x divide-[var(--line-soft)]">
+            <div className="flex items-stretch w-max xl:w-full rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)]/40 divide-x divide-[var(--line-soft)]">
               {(() => {
                 const pct = (n: number) => `${summary.total > 0 ? Math.round((n / summary.total) * 100) : 0}%`;
                 return [
@@ -1298,7 +1297,7 @@ export default function DoanXePage() {
                 <button
                   type="button"
                   onClick={() => setActiveStation(null)}
-                  className="lg:hidden m-3 mb-0 inline-flex items-center gap-1 h-8 px-2.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] cursor-pointer"
+                  className="lg:hidden m-3 mb-0 inline-flex items-center gap-1 h-8 px-2.5 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] text-[12px] font-semibold text-[var(--ink-soft)] cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" /> Điểm đón
                 </button>
@@ -1466,7 +1465,7 @@ export default function DoanXePage() {
                                 type="button"
                                 disabled={isStationLoading}
                                 onClick={() => checkInAllStation(choDonDangXem, stationKey)}
-                                className="h-8 px-3 rounded-[9px] text-[12px] font-semibold border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                                className="h-8 px-3 rounded-[6px] text-[12px] font-semibold border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap"
                                 title="Đánh dấu tất cả bệnh nhân trong danh sách đang xem đã lên xe"
                               >
                                 {isStationLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCheck className="w-3.5 h-3.5" />}
@@ -1571,7 +1570,7 @@ export default function DoanXePage() {
                             <button
                               type="button"
                               onClick={() => handleOpenSplitModal(grp, stationDoanList)}
-                              className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] transition-colors cursor-pointer whitespace-nowrap"
+                              className="h-8 px-2.5 rounded-[6px] text-[12px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] transition-colors cursor-pointer whitespace-nowrap"
                               title="Chuyển nhanh nhiều bệnh nhân sang đoàn khác"
                             >
                               Chia bệnh nhân
@@ -1680,7 +1679,7 @@ export default function DoanXePage() {
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <span className="text-[13.5px] font-semibold text-[var(--ink)] truncate">{p.hoTen}</span>
                                     {isMo && (
-                                      <span className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold shrink-0">
+                                      <span className="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-[4px] bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold shrink-0">
                                         <Check className="w-3 h-3 stroke-[3]" /> Đã mổ
                                       </span>
                                     )}
@@ -1792,7 +1791,7 @@ export default function DoanXePage() {
                                     <button
                                       type="button"
                                       onClick={() => handleOpenAssignModal(p)}
-                                      className="h-8 px-2.5 rounded-[9px] text-[12px] font-semibold border border-[var(--amber)]/40 bg-[var(--amber-soft)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                                      className="h-8 px-2.5 rounded-[6px] text-[12px] font-semibold border border-[var(--amber)]/40 bg-[var(--amber-soft)] text-[var(--amber-deep)] hover:bg-[var(--amber)] hover:text-white transition-colors cursor-pointer flex items-center gap-1 shrink-0"
                                       title="Xếp điểm đón và giờ xe đón cho bệnh nhân này"
                                     >
                                       <Bus className="w-3.5 h-3.5" /> Xếp xe
@@ -1801,7 +1800,7 @@ export default function DoanXePage() {
                                     <button
                                       type="button"
                                       onClick={() => handleOpenAssignModal(p)}
-                                      className="w-8 h-8 rounded-[9px] text-[var(--mute-soft)] hover:text-[var(--navy)] hover:bg-[var(--surface-soft)] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                                      className="w-8 h-8 rounded-[6px] text-[var(--mute-soft)] hover:text-[var(--navy)] hover:bg-[var(--surface-soft)] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                                       title="Đổi điểm đón / giờ xe đón"
                                     >
                                       <Edit3 className="w-3.5 h-3.5" />
@@ -1824,7 +1823,7 @@ export default function DoanXePage() {
                                           "text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
                                         : isHuy
                                         ? "text-[var(--rose)] hover:bg-[var(--rose-soft)]"
-                                        : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
+                                        : "bg-[var(--navy)] text-white hover:brightness-110"
                                     }`}
                                   >
                                     {checkingInId === p.id ? (
@@ -1886,7 +1885,7 @@ export default function DoanXePage() {
                 const filterUnboarded = choDonDangXem.length;
 
                 return (
-                  <div key={stationKey} className="rounded-[14px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
+                  <div key={stationKey} className="rounded-[10px] border border-[var(--line)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
                     {/* Header trạm */}
                     <div className="px-4 pt-3 pb-2.5 border-b border-[var(--line-soft)]">
                       <div className="flex items-start gap-3">
@@ -1914,7 +1913,7 @@ export default function DoanXePage() {
                           </div>
                         </div>
                         {isAllDone ? (
-                          <span className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold">
+                          <span className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-[4px] bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold">
                             Đã đón đủ
                           </span>
                         ) : (
@@ -2005,7 +2004,7 @@ export default function DoanXePage() {
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{p.hoTen}</span>
                                   {isMo && (
-                                    <span className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold shrink-0">
+                                    <span className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-[4px] bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold shrink-0">
                                       <Check className="w-2.5 h-2.5 stroke-[3]" /> Đã mổ
                                     </span>
                                   )}
@@ -2080,7 +2079,7 @@ export default function DoanXePage() {
                                     ? "text-[var(--teal-deep)] hover:bg-[var(--teal-softer)]"
                                     : isHuy
                                     ? "text-[var(--rose)] hover:bg-[var(--rose-soft)]"
-                                    : "bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] hover:brightness-110"
+                                    : "bg-[var(--navy)] text-white hover:brightness-110"
                                 }`}
                               >
                                 {checkingInId === p.id ? (
@@ -2160,7 +2159,7 @@ export default function DoanXePage() {
         onClose={() => setShowBkModal(false)}
         title={
           <>
-            Chọn <span className="italic font-normal text-[var(--teal-ink)]">đợt khám</span>
+            Chọn đợt khám
           </>
         }
         subtitle="Lọc danh sách đoàn xe theo đợt khám tầm soát"
@@ -2271,7 +2270,7 @@ export default function DoanXePage() {
                 <button
                   type="button"
                   onClick={() => setEditingBusPatient(null)}
-                  className="h-9 px-4 text-[13px] font-semibold text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] rounded-[10px] transition-colors cursor-pointer"
+                  className="h-9 px-4 text-[13px] font-semibold text-[var(--ink-soft)] hover:bg-[var(--surface-soft)] rounded-[6px] transition-colors cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -2279,7 +2278,7 @@ export default function DoanXePage() {
                   type="button"
                   disabled={savingBus || !busFormDiem}
                   onClick={handleSaveBusAssignment}
-                  className="h-9 px-4 text-[13px] font-semibold text-white rounded-[10px] bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] hover:brightness-110 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:shadow-none"
+                  className="h-9 px-4 text-[13px] font-semibold text-white rounded-[6px] bg-[var(--navy)] hover:brightness-110 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:shadow-none hover:bg-[var(--navy-deep)]"
                 >
                   {savingBus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 stroke-[2.5]" />}
                   Lưu thông tin đón
@@ -2301,7 +2300,7 @@ export default function DoanXePage() {
             </div>
           );
           const INPUT = "w-full h-9 px-3 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)] text-[13px] text-[var(--ink)] placeholder:text-[var(--mute-soft)] outline-none focus:bg-[var(--surface)] focus:border-[var(--navy)] focus:shadow-[0_0_0_3px_var(--navy-100)] transition";
-          const CHIP = "h-7 px-2.5 rounded-full border border-[var(--line)] bg-[var(--surface)] text-[11.5px] font-medium text-[var(--ink-soft)] hover:border-[var(--navy)]/40 hover:text-[var(--navy)] transition-colors cursor-pointer";
+          const CHIP = "h-7 px-2.5 rounded-[6px] border border-[var(--line)] bg-[var(--surface)] text-[11.5px] font-medium text-[var(--ink-soft)] hover:border-[var(--navy)]/40 hover:text-[var(--navy)] transition-colors cursor-pointer";
           const doanToiDa = Math.max(3, busFormDoanXe);
           return (
             <div className="-mt-1 divide-y divide-[var(--line-soft)]">
@@ -2331,12 +2330,12 @@ export default function DoanXePage() {
                   </div>
                 </div>
                 {editingBusPatient.diemDon ? (
-                  <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11.5px] font-semibold max-w-full">
+                  <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[4px] bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11.5px] font-semibold max-w-full">
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">Đã xếp · {cleanDiemDon(editingBusPatient.diemDon)}</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[11.5px] font-semibold">
+                  <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-[4px] bg-[var(--amber-soft)] text-[var(--amber-deep)] text-[11.5px] font-semibold">
                     <AlertCircle className="w-3.5 h-3.5" /> Chưa xếp xe
                   </span>
                 )}
@@ -2387,7 +2386,7 @@ export default function DoanXePage() {
                   <button
                     type="button"
                     onClick={() => setBusFormDoanXe(doanToiDa + 1)}
-                    className="h-9 px-2.5 rounded-[10px] border border-dashed border-[var(--line-strong)] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer flex items-center gap-1"
+                    className="h-9 px-2.5 rounded-[6px] border border-dashed border-[var(--line-strong)] text-[12px] font-semibold text-[var(--mute)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" /> Đoàn {doanToiDa + 1}
                   </button>
@@ -2685,7 +2684,7 @@ export default function DoanXePage() {
                   }`}
                 >
                   <div className="text-[12px] font-black text-[var(--ink)] flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-[var(--violet)]" /> Chia đều 50%
+                    Chia đều 50%
                   </div>
                   <div className="text-[11px] text-[var(--mute)] mt-0.5">
                     Tự động tách nửa sau danh sách ({Math.floor(splitModalStation.items.length / 2)} BN)

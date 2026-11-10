@@ -428,7 +428,7 @@ export default function DoanXeAutocomplete({
           <span className="text-[12.5px]">Đang tải danh sách tuyến xe đón…</span>
         </div>
       ) : filteredDoanXe.length === 0 ? (
-        <div className="py-6 px-4 text-center rounded-[12px] border border-dashed border-[var(--line-strong)]">
+        <div className="py-6 px-4 text-center rounded-[10px] border border-dashed border-[var(--line-strong)]">
           <p className="text-[13px] font-semibold text-[var(--ink)]">Không tìm thấy tuyến xe phù hợp</p>
           <p className="text-[12px] text-[var(--mute)] mt-0.5">Thử từ khoá khác hoặc tạo tuyến mới</p>
           <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
@@ -439,7 +439,7 @@ export default function DoanXeAutocomplete({
                   onSelect({ diemDon: searchQuery.trim(), gioDon: gioDon || "06:00", ngayHen });
                   if (!isInline) setOpen(false);
                 }}
-                className="h-8 px-3 rounded-[9px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[var(--navy)] text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer"
+                className="h-8 px-3 rounded-[6px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[var(--navy)] text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <MapPin className="w-3.5 h-3.5" />
                 Chọn điểm &quot;{searchQuery.trim()}&quot; · <span className="font-mono">06:00</span>
@@ -448,7 +448,7 @@ export default function DoanXeAutocomplete({
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="h-8 px-3 rounded-[9px] bg-gradient-to-b from-[var(--navy)] to-[var(--navy-deep)] text-white text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-[var(--navy-shadow)]"
+              className="h-8 px-3 rounded-[6px] bg-[var(--navy)] text-white text-[12px] font-semibold inline-flex items-center gap-1.5 cursor-pointer hover:bg-[var(--navy-deep)]"
             >
               <Plus className="w-3.5 h-3.5" /> Tạo tuyến xe mới
             </button>
@@ -463,14 +463,14 @@ export default function DoanXeAutocomplete({
               dx.cacDiem.some((c) => c.diemDon.toLowerCase().includes(xaLower) || (c.cacXa && c.cacXa.some((x) => x.toLowerCase().includes(xaLower)))));
 
           return (
-            <div key={dx.id} className="rounded-[12px] border border-[var(--line)] bg-[var(--surface)] overflow-hidden">
+            <div key={dx.id} className="rounded-[10px] border border-[var(--line)] bg-[var(--surface)] overflow-hidden">
               {/* Header tuyến */}
               <div className="px-3 py-2 bg-[var(--surface-soft)]/60 border-b border-[var(--line-soft)] flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
                   <Bus className="w-3.5 h-3.5 text-[var(--navy)] shrink-0" />
                   <span className="text-[13px] font-semibold text-[var(--ink)] truncate">{dx.tenDoan}</span>
                   {isXaMatch && (
-                    <span className="hidden sm:inline-flex h-5 px-1.5 rounded-full bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold items-center">
+                    <span className="hidden sm:inline-flex h-5 px-1.5 rounded-[4px] bg-[var(--teal-soft)] text-[var(--teal-deep)] text-[11px] font-semibold items-center">
                       Cùng xã
                     </span>
                   )}
@@ -582,7 +582,7 @@ export default function DoanXeAutocomplete({
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="h-9 px-3 rounded-[10px] border border-dashed border-[var(--line-strong)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              className="h-9 px-3 rounded-[6px] border border-dashed border-[var(--line-strong)] text-[12.5px] font-semibold text-[var(--ink-soft)] hover:text-[var(--navy)] hover:border-[var(--navy)]/40 inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
               <Plus className="w-3.5 h-3.5" /> Tạo tuyến xe mới
             </button>
@@ -617,7 +617,7 @@ export default function DoanXeAutocomplete({
           {isSelected ? (
             /* Hai dòng: tên điểm đón + nút | giờ + ngày. Trước đây dồn một dòng cao cố định 44px nên
                trên điện thoại ngày hẹn đè lên nút "Đổi đoàn". */
-            <div className="px-3 py-2.5 rounded-[12px] border border-[var(--navy)]/15 bg-[var(--navy-50)]/60 flex items-start gap-2.5 transition">
+            <div className="px-3 py-2.5 rounded-[10px] border border-[var(--navy)]/15 bg-[var(--navy-50)]/60 flex items-start gap-2.5 transition">
               <div className="w-8 h-8 rounded-[9px] bg-[var(--surface)] border border-[var(--navy)]/15 flex items-center justify-center shrink-0">
                 {isTuTuc ? <Car className="w-4 h-4 text-[var(--ink-soft)]" /> : <Bus className="w-4 h-4 text-[var(--navy)]" />}
               </div>

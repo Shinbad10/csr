@@ -184,11 +184,11 @@ export default function FacilitySwitcher({
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               suppressHydrationWarning
-              className="overflow-hidden mt-2 bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] dark:border-white/10 rounded-xl shadow-xs p-1.5 text-[var(--ink)]"
+              className="overflow-hidden mt-2 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-xs p-1.5 text-[var(--ink)]"
             >
-              <div className="px-2 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1 flex items-center justify-between">
+              <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] mb-1 flex items-center justify-between">
                 <span>Chọn cơ sở làm việc</span>
-                <span className="text-[11px] font-bold text-[var(--teal-deep)] dark:text-[var(--teal-ink)] font-sans">{coSos.length} cơ sở</span>
+                <span className="text-[11px] font-semibold text-[var(--mute)] font-sans normal-case tracking-normal">{coSos.length} cơ sở</span>
               </div>
               <div className="max-h-[220px] overflow-y-auto space-y-0.5 pr-0.5 custom-scrollbar">
                 {coSos.length === 0 ? (
@@ -200,30 +200,17 @@ export default function FacilitySwitcher({
                       <button
                         key={c.id}
                         type="button"
+                        aria-pressed={active}
                         onClick={() => { setOpen(false); onChange(c.id); }}
-                        className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[12px] font-bold transition text-left cursor-pointer ${
+                        className={`w-full grid grid-cols-[36px_minmax(0,1fr)_16px] items-center gap-2 px-2 py-1.5 rounded-[6px] text-[12.5px] text-left transition-colors cursor-pointer ${
                           active
-                            ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
-                            : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
+                            ? "bg-[var(--navy-50)] text-[var(--navy)] font-semibold"
+                            : "text-[var(--ink)] font-medium hover:bg-[var(--surface-hover)]"
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div
-                            className={`w-5.5 h-5.5 rounded-md flex items-center justify-center shrink-0 ${
-                              active ? "bg-white/20 text-[var(--teal-ink)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
-                            }`}
-                          >
-                            <Building2 className="w-3 h-3" />
-                          </div>
-                          <span className="leading-snug break-words flex-1 min-w-0">{c.ten}</span>
-                        </div>
-                        {active ? (
-                          <Check className="w-3.5 h-3.5 text-[var(--teal-ink)] shrink-0" strokeWidth={3} />
-                        ) : (
-                          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
-                            {c.id}
-                          </span>
-                        )}
+                        <span className={`font-mono text-[11px] font-bold tabular-nums ${active ? "text-[var(--navy)]" : "text-[var(--mute)]"}`}>{c.id}</span>
+                        <span className="leading-snug break-words min-w-0">{c.ten}</span>
+                        {active ? <Check aria-hidden="true" className="w-4 h-4 text-[var(--navy)]" strokeWidth={2.5} /> : <span />}
                       </button>
                     );
                   })
@@ -237,18 +224,18 @@ export default function FacilitySwitcher({
         <AnimatePresence>
           {isDark && open && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 6 }}
-              transition={{ type: "spring", stiffness: 450, damping: 30 }}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
               suppressHydrationWarning
-              className="absolute left-0 top-full mt-2 w-[290px] z-50 bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 text-[var(--ink)]"
+              className="absolute left-0 top-full mt-2 w-[300px] z-50 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-[var(--shadow-lg)] p-1.5 text-[var(--ink)]"
             >
-              <div className="px-2.5 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] dark:border-white/5 mb-1.5 flex items-center justify-between">
+              <div className="px-2.5 pt-1 pb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--mute)] font-mono border-b border-[var(--line-soft)] mb-1 flex items-center justify-between">
                 <span>Danh sách cơ sở</span>
-                <span className="text-[11px] font-bold text-[var(--teal-deep)] font-sans">{coSos.length} cơ sở</span>
+                <span className="text-[11px] font-semibold text-[var(--mute)] font-sans normal-case tracking-normal">{coSos.length} cơ sở</span>
               </div>
-              <div className="max-h-[240px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+              <div className="max-h-[260px] overflow-y-auto space-y-0.5 custom-scrollbar">
                 {coSos.length === 0 ? (
                   <div className="py-4 text-center text-[12px] text-[var(--mute)]">Đang tải danh sách cơ sở...</div>
                 ) : (
@@ -258,30 +245,17 @@ export default function FacilitySwitcher({
                       <button
                         key={c.id}
                         type="button"
+                        aria-pressed={active}
                         onClick={() => { setOpen(false); onChange(c.id); }}
-                        className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-[12.5px] font-bold transition text-left cursor-pointer ${
+                        className={`w-full grid grid-cols-[36px_minmax(0,1fr)_16px] items-center gap-2 px-2.5 py-2 rounded-[6px] text-[13px] text-left transition-colors cursor-pointer ${
                           active
-                            ? "bg-gradient-to-r from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-xs"
-                            : "text-[var(--ink)] dark:text-slate-200 hover:bg-[var(--navy-50)] dark:hover:bg-slate-800 hover:text-[var(--navy)]"
+                            ? "bg-[var(--navy-50)] text-[var(--navy)] font-semibold"
+                            : "text-[var(--ink)] font-medium hover:bg-[var(--surface-hover)]"
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div
-                            className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                              active ? "bg-white/20 text-[var(--teal-ink)]" : "bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] border border-[var(--line)] dark:border-white/10"
-                            }`}
-                          >
-                            <Building2 className="w-3.5 h-3.5" />
-                          </div>
-                          <span className="leading-snug break-words flex-1 min-w-0">{c.ten}</span>
-                        </div>
-                        {active ? (
-                          <Check className="w-4 h-4 text-[var(--teal-ink)] shrink-0" strokeWidth={3} />
-                        ) : (
-                          <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--surface-soft)] dark:bg-slate-800 text-[var(--mute)] shrink-0">
-                            {c.id}
-                          </span>
-                        )}
+                        <span className={`font-mono text-[11px] font-bold tabular-nums ${active ? "text-[var(--navy)]" : "text-[var(--mute)]"}`}>{c.id}</span>
+                        <span className="leading-snug break-words min-w-0">{c.ten}</span>
+                        {active ? <Check aria-hidden="true" className="w-4 h-4 text-[var(--navy)]" strokeWidth={2.5} /> : <span />}
                       </button>
                     );
                   })

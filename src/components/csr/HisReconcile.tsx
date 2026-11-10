@@ -268,11 +268,11 @@ export function HisReconcilePanel({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed bottom-4 right-4 z-[900] w-[420px] max-w-[calc(100vw-32px)] bg-[var(--surface)] border border-[var(--line-strong)] rounded-[14px] shadow-[var(--shadow-lg)] overflow-hidden"
+        className="fixed bottom-4 right-4 z-[900] w-[420px] max-w-[calc(100vw-32px)] bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-[var(--shadow-lg)] overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--line)]">
-          <div className="relative w-8 h-8 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white flex items-center justify-center shrink-0 shadow-[var(--navy-shadow)]">
+          <div className="relative w-8 h-8 rounded-[10px] bg-[var(--navy)] text-white flex items-center justify-center shrink-0">
             <Activity className="w-4 h-4 text-[var(--teal-ink)]" />
             {running && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--teal)] ring-2 ring-[var(--surface)] animate-pulse" />}
           </div>

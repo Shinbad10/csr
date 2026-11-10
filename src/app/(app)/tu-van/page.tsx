@@ -901,7 +901,7 @@ export default function TuVanSessionPage() {
       <Modal
         open={showBkModal}
         onClose={() => setShowBkModal(false)}
-        title={<>Chọn <span className="italic font-normal text-[var(--teal-ink)]">đợt khám</span></>}
+        title={<>Chọn đợt khám</>}
         subtitle="Lấy danh sách bệnh nhân bệnh lý để tư vấn điều trị"
         icon={CalendarDays}
         maxWidth="max-w-[660px]"
@@ -939,7 +939,7 @@ export default function TuVanSessionPage() {
               >
                 <div
                   className={`w-10 h-10 rounded-[var(--r-md)] flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${active
-                      ? "bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] border-transparent text-white shadow-xs"
+                      ? "bg-[var(--navy)] border-transparent text-white shadow-xs"
                       : "bg-[var(--navy-50)] border-[var(--navy-100)] text-[var(--navy)]"
                     }`}
                 >
@@ -1063,7 +1063,7 @@ export default function TuVanSessionPage() {
             <div className="px-4 pt-3.5 pb-2.5 flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <h3 className="font-serif text-[16px] font-semibold text-[var(--ink)] truncate">
-                  Bệnh nhân <span className="italic font-medium text-[var(--teal-ink)]">bệnh lý</span>
+                  Bệnh nhân bệnh lý
                 </h3>
                 <span className="font-mono text-[11px] font-bold px-1.5 py-px rounded-md bg-[var(--navy-50)] text-[var(--navy)] tabular-nums">{counts.total}</span>
               </div>
@@ -1413,7 +1413,7 @@ export default function TuVanSessionPage() {
                   {/* 2. Hai cột: phương án điều trị | nhật ký cuộc gọi */}
                   <div className="p-3 sm:p-5 lg:flex-1 lg:min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_440px] 2xl:grid-cols-[1fr_500px] gap-3 sm:gap-4 items-start lg:items-stretch lg:overflow-hidden">
                     {/* Phương án điều trị */}
-                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
+                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
                       <header className="px-4 sm:px-5 py-2.5 sm:py-3.5 border-b border-[var(--line-soft)] shrink-0">
                         <h3 className="font-serif text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
                           Phương án điều trị <span className="text-[var(--rose)]">*</span>
@@ -1519,7 +1519,7 @@ export default function TuVanSessionPage() {
                               )}
 
                               {/* Người nhà đi kèm xe đón — thẻ trung tính cùng tông các khối khác (trước là gradient tím, chữ in hoa) */}
-                              <div className="mt-3 rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/50 overflow-hidden">
+                              <div className="mt-3 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)]/50 overflow-hidden">
                                 <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <span className="w-7 h-7 rounded-[8px] bg-[var(--navy-50)] text-[var(--navy)] flex items-center justify-center shrink-0">
@@ -1640,7 +1640,7 @@ export default function TuVanSessionPage() {
                               </span>
                             </div>
                             {f.nhom === "HoiGiaDinh" && (
-                              <div className="p-3 rounded-[12px] border border-[var(--line)] bg-[var(--surface-soft)]/50 space-y-2">
+                              <div className="p-3 rounded-[10px] border border-[var(--line)] bg-[var(--surface-soft)]/50 space-y-2">
                                 <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--ink)]">
                                   <Users className="w-3.5 h-3.5 text-[var(--navy)]" />
                                   <span>Người nhà cần liên hệ lại</span>
@@ -1680,7 +1680,7 @@ export default function TuVanSessionPage() {
                     </section>
 
                     {/* Nhật ký cuộc gọi */}
-                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
+                    <section className="bg-[var(--surface)] border border-[var(--line)] rounded-[10px] shadow-[var(--shadow-sm)] flex flex-col lg:h-full lg:min-h-0 overflow-hidden">
                       <header className="px-4 sm:px-5 py-2.5 sm:py-3.5 border-b border-[var(--line-soft)] shrink-0 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <h3 className="font-serif text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Nhật ký cuộc gọi</h3>
@@ -1734,7 +1734,7 @@ export default function TuVanSessionPage() {
                               type="button"
                               onClick={() => saveCallLog()}
                               disabled={savingCallNote || !callNote.trim()}
-                              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[10px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] border border-[var(--teal)]/30 bg-[var(--teal-soft)] text-[12px] font-semibold text-[var(--teal-deep)] hover:bg-[var(--teal)] hover:border-[var(--teal)] hover:text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               {savingCallNote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                               Lưu cuộc gọi
@@ -1780,7 +1780,7 @@ export default function TuVanSessionPage() {
                     <button
                       type="button"
                       onClick={() => setShowList(true)}
-                      className="xl:hidden inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] shrink-0 cursor-pointer"
+                      className="xl:hidden inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] border border-[var(--navy)]/20 bg-[var(--navy-50)] text-[12px] font-semibold text-[var(--navy)] shrink-0 cursor-pointer"
                     >
                       <Users className="w-3.5 h-3.5" />
                       DS
@@ -1885,7 +1885,7 @@ export default function TuVanSessionPage() {
                   >
                     <Users className="w-3.5 h-3.5 text-[#00d2d3]" />
                     <span className="font-extrabold text-[12px] text-white">DS</span>
-                    <span className="min-w-[18px] h-[18px] px-1 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                    <span className="min-w-[18px] h-[18px] px-1 bg-[var(--rose)] text-white font-mono text-[11px] font-bold rounded-[4px] flex items-center justify-center shadow-xs">
                       {counts.total}
                     </span>
                   </button>

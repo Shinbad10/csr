@@ -140,7 +140,7 @@ export default function Topbar({ initialUser, initialCoSo }: TopbarProps) {
               className="absolute right-0 top-full mt-2 z-50 w-[270px] bg-[var(--surface)] dark:bg-slate-900 border border-[var(--line-strong)] rounded-2xl shadow-2xl overflow-hidden text-[var(--ink)]"
             >
               <div className="px-4 py-3.5 bg-[var(--surface-soft)] dark:bg-slate-800/80 border-b border-[var(--line)] flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-[var(--teal-ink)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-[var(--navy)] text-[var(--teal-ink)] font-mono font-bold flex items-center justify-center text-[15px] shrink-0 shadow-sm">
                   {initial}
                 </div>
                 <div className="min-w-0">

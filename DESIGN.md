@@ -109,11 +109,12 @@ typography:
     fontWeight: 700
     lineHeight: 1
 rounded:
-  xs: "6px"
-  cell: "8px"
-  md: "10px"
-  lg: "14px"
-  xl: "18px"
+  xs: "4px"
+  cell: "6px"
+  md: "6px"
+  lg: "8px"
+  xl: "10px"
+  card: "10px"
   pill: "9999px"
 spacing:
   xs: "4px"
@@ -200,7 +201,7 @@ Density goes up on desktop and touch size goes up on mobile. Controls are common
 - Operate mode: dense tables, toolbars, segmented controls; Vietnamese copy; `dd/mm/yyyy`.
 - Navy is the one brand voice; teal means alive or done; amber pending; rose error; violet only for "Mắt 2".
 - Three faces with fixed jobs: Fraunces titles, Manrope UI, JetBrains Mono for every number, code and column label.
-- Flat tonal surfaces on a cool off-white page; shadows are hairline-soft, except the navy glow on primary actions.
+- Flat tonal surfaces on a cool off-white page; shadows are hairline-soft everywhere. No glows, no gradient fills on controls, no decorative blur.
 - Mobile first in touch size, desktop first in density.
 - Full dark theme through token remapping (navy becomes teal in dark).
 
@@ -209,13 +210,13 @@ Density goes up on desktop and touch size goes up on mobile. Controls are common
 A cool, institutional palette: one deep ultramarine navy for brand and action, one clinical teal for life and completion, with status hues used strictly as signals.
 
 ### Primary
-- **VISI Ultramarine** (navy): brand, primary buttons (as a 135deg gradient to navy-deep), the selected segment in "ChoiceRow", selected calendar day, focus outline, the active item in dropdown menus, links and hover text on secondary buttons. The masthead is a horizontal gradient of navy-ink, navy and navy-deep.
-- **Midnight Navy** (navy-deep) and **Ink Navy** (navy-ink): pressed and hover ends of the navy gradient; navy-ink is also the text color on teal fills.
+- **VISI Ultramarine** (navy): brand, primary buttons (flat navy, navy-deep on hover), the selected segment in "ChoiceRow", selected calendar day, focus outline, the active item in dropdown menus, links and hover text on secondary buttons. The masthead is a horizontal gradient of navy-ink, navy and navy-deep.
+- **Midnight Navy** (navy-deep) and **Ink Navy** (navy-ink): hover / pressed state of navy fills; navy-ink is also the text color on teal fills.
 - **Navy Wash** (navy-soft, plus the translucent `--navy-50` 4% and `--navy-100` 8%): selected-row and selected-option backgrounds, focus halo (3px), page-header badge, section-number tiles.
 
 ### Secondary
-- **Clinic Teal** (teal): positive, live and done. Active top-level nav pill, "Hôm nay" in the calendar, today's date, the icon color inside navy icon tiles, the italic accent word in page titles (teal-deep), success checks. In dark mode it also takes over navy's role.
-- **Deep Teal** (teal-deep, ≥4.7:1) and **Teal Ink** (teal-ink): teal text and icons. `teal-ink` is deep teal on light grounds and switches back to plain teal automatically inside navy or dark blocks (masthead, navy gradient tiles, dark mode), where plain teal is the readable one.
+- **Clinic Teal** (teal): positive, live and done. Active top-level nav pill, "Hôm nay" in the calendar, today's date, the icon color inside navy icon tiles, success checks. In dark mode it also takes over navy's role.
+- **Deep Teal** (teal-deep, ≥4.7:1) and **Teal Ink** (teal-ink): teal text and icons. `teal-ink` is deep teal on light grounds and switches back to plain teal automatically inside navy or dark blocks (masthead, navy icon tiles, dark mode), where plain teal is the readable one.
 
 ### Tertiary (status signals)
 - **Pending Amber** (amber, amber-deep, amber-soft): chờ, pending, warnings, and the selected state of multi-select diagnosis pills ("PillGroup").
@@ -250,7 +251,7 @@ All three load with the `vietnamese` subset.
 **Character:** a soft, slightly literary serif sets the record's titles while a geometric, sturdy sans and a precise mono do the clerical work; the serif feels like the hospital's letterhead, the mono like its register.
 
 ### Hierarchy
-- **Page title** (Fraunces 600, 17px mobile / 19px from `sm`, tracking -0.015em): one per page in "PageHeader"; the last one or two words render italic, weight 400, in teal-deep.
+- **Page title** (Fraunces 600, 17px mobile / 19px from `sm`, tracking -0.015em): one per page in "PageHeader", set in a single color (ink) — no italic or colored accent words.
 - **Modal title** (Fraunces 700, 17px / 21px): dialog headers, truncated on one line.
 - **Section title** (Fraunces 600, 14.5px / 15.5px): numbered form sections in the phiếu khám, preceded by a mono `01`, `02` tile.
 - **Body** (Manrope 500, 13px, line-height 1.5): input text, table cells, list options (12.5px in popovers).
@@ -278,28 +279,28 @@ Spacing runs on a 4px base, with 8, 12, 16 and 24px as the common steps. Gaps in
 
 ## Elevation & Depth
 
-Mostly flat. Depth comes from tone (white surfaces on Cool Paper, surface-soft bands for table headers and modal footers) and hairline borders. Shadows are faint and neutral-tinted from ink. The one strong shadow is a navy-colored glow under primary buttons, the selected segment, the selected calendar day and navy icon tiles; it marks the active or primary element. Popovers and modals use a large soft shadow and a translucent slate scrim with a slight blur.
+Mostly flat. Depth comes from tone (white surfaces on Cool Paper, surface-soft bands for table headers and modal footers) and hairline borders. Shadows are faint and neutral-tinted from ink. There is no colored glow: primary buttons, the selected segment and navy icon tiles are flat navy with at most a 1–2px shadow; selection is shown by fill. Popovers and modals use a large soft shadow and a translucent slate scrim with a slight blur.
 
 ### Shadow Vocabulary
 - **Hairline** (`box-shadow: 0 1px 2px rgba(13,16,37,0.04)`): cards, page header, secondary buttons at rest.
 - **Soft** (`box-shadow: 0 1px 3px rgba(13,16,37,0.04), 0 1px 2px rgba(13,16,37,0.03)`): secondary button hover.
 - **Raised** (`box-shadow: 0 4px 12px rgba(13,16,37,0.06), 0 2px 4px rgba(13,16,37,0.03)`): card hover.
 - **Floating** (`box-shadow: 0 12px 32px rgba(13,16,37,0.08)`): calendar and popovers.
-- **Navy Glow** (`box-shadow: 0 4px 12px -2px rgba(3,29,166,0.35)`, hover 0.45): primary and selected elements only.
+- **Navy Lift** (`--navy-shadow`: `0 1px 2px rgba(3,29,166,0.18)`, hover `0 2px 4px`): the only shadow a navy fill may carry.
 
 ### Named Rules
-**The Glow Means Chosen Rule.** The navy glow sits only on the primary action or the selected item. Never put it on a card or a passive element.
+**The No Glow Rule.** No colored halos, gradient fills, sparkle icons or animated decoration on controls. Emphasis comes from flat navy fill, weight and position.
 
 ## Shapes
 
-Gently rounded, never sharp and never blobby. Inputs, buttons and segmented tracks use 10px; calendar cells and segment buttons use 8px; small chips and badges 6px; cards, nav items and popover options 10-14px; the page header and popovers 18px; modals 16px. (In Tailwind v4 the `@theme` radius tokens override the defaults: `rounded-md` is 10px, `rounded-lg` 14px, `rounded-xl` 18px.) Multi-select diagnosis chips and nav counters are full pills. Borders are 1px throughout; selection is shown by fill, not by thicker strokes.
+Tight, console-like corners — never pill-shaped controls. Buttons, inputs, tabs, segmented tracks and selectable chips use 6px; small badges and status labels 4px; cards, page header and popovers 10px; modals 12px. (In Tailwind v4 the `@theme` radius tokens override the defaults: `rounded-sm` 4px, `rounded-md` 6px, `rounded-lg` 8px, `rounded-xl` 10px, `rounded-2xl` 12px.) `rounded-full` is only for true circles: status dots, avatars, toggles and progress bars. Borders are 1px throughout; selection is shown by fill, not by thicker strokes.
 
 ## Components
 
 ### Buttons
 Confident and compact.
 - **Shape:** gently rounded (10px), 6px icon gap, weight 700, no wrap.
-- **Primary:** navy-to-navy-deep 135deg gradient, white text, navy glow. Hover deepens to navy-deep → navy-ink with a stronger glow; active drops to 94% opacity.
+- **Primary:** flat navy, white text, 6px radius, 1px navy lift. Hover turns navy-deep; active drops to 94% opacity.
 - **Secondary:** white surface, firm-line border, hairline shadow; hover turns text navy and lifts to the soft shadow.
 - **Outline:** transparent with firm-line stroke and ink-soft text; hover fills navy wash with a navy border.
 - **Teal:** teal fill with navy-ink text, for positive confirmations; hover goes teal-deep with white text and lifts 1px.
@@ -307,11 +308,11 @@ Confident and compact.
 - **Focus:** a global 2px navy outline at 2px offset on `:focus-visible` (teal in dark mode). Do not remove it.
 
 ### Segmented choice ("ChoiceRow")
-- **Style:** a surface-soft track with a hairline border, 10px radius, 2px inner padding. Segments are 36px tall on mobile and 32px from `sm`.
-- **State:** the selected segment is solid navy with white text and the navy glow; idle segments are ink-soft text. Tapping the selected segment clears it. Used for Có/Không and hướng xử trí.
+- **Style:** a surface-soft track with a hairline border, 8px radius, 2px inner padding. Segments are 36px tall on mobile and 32px from `sm`.
+- **State:** the selected segment is solid navy with white text; idle segments are ink-soft text. Tapping the selected segment clears it. Used for Có/Không and hướng xử trí.
 
 ### Chips ("PillGroup", "StatusBadge")
-- **Multi-select pills:** 32px full pills, 1px firm-line border on white. Selected turns amber-soft with amber-deep text and an amber border, plus an "X". 
+- **Multi-select chips:** 32px chips with a 6px radius, 1px firm-line border on white. Selected turns amber-soft with amber-deep text and an amber border, plus an "X". 
 - **Status badge:** 6px radius, mono 11px uppercase with 0.05em tracking, a 5px dot in the current color, fill and text taken from the status hue's soft and deep tokens.
 
 ### Cards / Containers
@@ -330,8 +331,8 @@ Confident and compact.
 - **Date field ("DateField"):** mono, auto-formats `dd/mm/yyyy`, with a 280px three-level calendar (day, month, year). Birth dates open on the year grid around 1960 and block the future.
 
 ### Navigation
-- **Style:** navy gradient masthead, Fraunces logotype, grouped nav items as 32px, softly rounded (14px) buttons in Manrope 700 12.5px.
-- **States:** idle white at 80%; hover white on a 10% white wash; a single active link fills solid teal with navy-ink text; an active group gets a 15% white wash with teal text. Group dropdowns are white popovers where the active item is a navy gradient row with a teal icon.
+- **Style:** navy gradient masthead, Fraunces logotype, grouped nav items as 32px buttons with 8px corners in Manrope 700 12.5px.
+- **States:** idle white at 80%; hover white on a 10% white wash; a single active link fills solid teal with navy-ink text; an active group gets a 15% white wash with teal text. Group dropdowns are white popovers where the active item is a flat navy row with a teal icon.
 - **Mobile:** collapses into a drawer.
 
 ### Data table ("DataTable")

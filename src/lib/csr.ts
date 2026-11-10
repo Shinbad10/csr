@@ -58,6 +58,26 @@ export function csrCtXacNhan(h: Record<string, unknown>): CsrCtXacNhan {
   };
 }
 
+/* ───────── Toa thuốc mặc định của cơ sở (in kèm phiếu khám) ───────── */
+export interface ThuocToa { ten: string; soLuong: string; cachDung: string }
+export interface ToaThuoc { thuoc: ThuocToa[]; loiDan: string }
+
+/** Đọc JSON toa thuốc của cơ sở; sai định dạng / trống → toa rỗng. */
+export function docToaThuoc(raw?: string | null): ToaThuoc {
+  try {
+    const v = raw ? JSON.parse(raw) : null;
+    const ds = Array.isArray(v?.thuoc) ? v.thuoc : [];
+    return {
+      thuoc: ds
+        .map((x: Record<string, unknown>) => ({ ten: String(x?.ten ?? "").trim(), soLuong: String(x?.soLuong ?? "").trim(), cachDung: String(x?.cachDung ?? "").trim() }))
+        .filter((x: ThuocToa) => x.ten),
+      loiDan: typeof v?.loiDan === "string" ? v.loiDan.trim() : "",
+    };
+  } catch {
+    return { thuoc: [], loiDan: "" };
+  }
+}
+
 export const CHAN_DOAN = ["Đục thủy tinh thể", "Mộng", "Đục bao sau", "Khác"];   // SRS §7
 export const KHUYEN_NGHI = ["Phẫu thuật", "Theo dõi"] as const;                  // SRS §7
 export const BHYT = ["Không có", "100%", "95%", "80%", "Không rõ"] as const;     // SRS §7

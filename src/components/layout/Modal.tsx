@@ -127,9 +127,7 @@ export default function Modal({
                   {Icon && (
                     <motion.div
                       aria-hidden="true"
-                      whileHover={{ scale: 1.05, rotate: 3 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] text-white shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0 border border-white/20"
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[var(--navy)] text-white flex items-center justify-center shrink-0 border border-white/20"
                     >
                       <Icon className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-[var(--teal-ink)] stroke-[2.5]" />
                     </motion.div>
@@ -146,8 +144,6 @@ export default function Modal({
                   </div>
                 </div>
                 <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={onClose}
                   className="w-9 h-9 sm:w-8 sm:h-8 -mr-1.5 sm:mr-0 flex items-center justify-center rounded-lg hover:bg-[var(--surface-hover)] text-[var(--mute)] hover:text-[var(--ink)] transition-colors shrink-0 cursor-pointer"

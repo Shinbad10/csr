@@ -551,7 +551,7 @@ export default function BuoiKhamPatientsModal({
                     </button>
                   </div>
                   {exportMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[12px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
+                    <div className="absolute right-0 top-full mt-1 w-64 bg-[var(--surface)] border border-[var(--line-strong)] rounded-[10px] shadow-[var(--shadow-lg)] p-1 z-50 animate-dropdown">
                       {[
                         { f: "tiepNhan" as const, label: "Mẫu tiếp nhận", hint: "DS đăng ký / không đăng ký phẫu thuật", icon: "text-[var(--navy)]" },
                         { f: "rutGon" as const, label: "Mẫu Rút Gọn (XNĐ / KNM)", hint: "5 cột: TT, Tên, Năm sinh, SĐT, Ghi chú", icon: "text-[var(--amber-deep)]" },

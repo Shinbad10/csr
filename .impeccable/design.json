@@ -436,7 +436,7 @@
       "Operate mode: dense tables, toolbars, segmented controls; Vietnamese copy; `dd/mm/yyyy`.",
       "Navy is the one brand voice; teal means alive or done; amber pending; rose error; violet only for \"Mắt 2\".",
       "Three faces with fixed jobs: Fraunces titles, Manrope UI, JetBrains Mono for every number, code and column label.",
-      "Flat tonal surfaces on a cool off-white page; shadows are hairline-soft, except the navy glow on primary actions.",
+      "Flat tonal surfaces on a cool off-white page; shadows are hairline-soft everywhere. No glows, no gradient fills on controls, no decorative blur.",
       "Mobile first in touch size, desktop first in density.",
       "Full dark theme through token remapping (navy becomes teal in dark)."
     ],

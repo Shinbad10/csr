@@ -46,7 +46,7 @@ export default function PageHeader({ title, accent, icon: Icon, badge, descripti
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
         <div className="flex items-center gap-3 min-w-0">
           {Icon && (
-            <span className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] flex items-center justify-center shrink-0">
+            <span className="w-9 h-9 rounded-[6px] bg-[var(--navy)] flex items-center justify-center shrink-0">
               <Icon className="w-[18px] h-[18px] text-[var(--teal-ink)]" />
             </span>
           )}
@@ -54,10 +54,10 @@ export default function PageHeader({ title, accent, icon: Icon, badge, descripti
             <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap">
               <h1 className="font-serif text-[17px] sm:text-[19px] font-semibold tracking-[-0.015em] text-[var(--ink)] leading-tight">
                 {main}
-                {nhan ? <span className="italic font-normal text-[var(--teal-deep)]"> {nhan}</span> : null}
+                {nhan ? <> {nhan}</> : null}
               </h1>
               {badge && (
-                <span className="inline-flex items-center h-[22px] px-2 rounded-full bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy)]/15 text-[11px] font-semibold whitespace-nowrap">
+                <span className="inline-flex items-center h-[22px] px-2 rounded-[4px] bg-[var(--navy-50)] text-[var(--navy)] border border-[var(--navy)]/15 text-[11px] font-semibold whitespace-nowrap">
                   {badge}
                 </span>
               )}

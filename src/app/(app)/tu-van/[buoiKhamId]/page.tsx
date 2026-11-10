@@ -527,7 +527,7 @@ export default function TuVanSessionPage() {
             <Link href="/buoi-kham" className="p-1.5 -ml-1.5 rounded-[var(--r-md)] text-[var(--mute)] hover:bg-[var(--surface-hover)] hover:text-[var(--navy)]" title="Về danh sách đợt khám">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <>Tư vấn <span className="italic text-[var(--teal-deep)]">điều trị</span></>
+            <>Tư vấn điều trị</>
           </div>
         }
         description={buoiKham ? `Đợt khám: ${fmtBuoiKhamName(buoiKham)} · ${fmtDate(buoiKham.ngayKham)}` : "—"}
@@ -1189,7 +1189,7 @@ export default function TuVanSessionPage() {
                         </p>
                       </div>
                     </div>
-                    <span className="font-mono text-[11.5px] font-extrabold px-2.5 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--navy)] border border-[var(--line)] shrink-0">
+                    <span className="font-mono text-[11.5px] font-extrabold px-2.5 py-0.5 rounded-[4px] bg-[var(--surface-hover)] text-[var(--navy)] border border-[var(--line)] shrink-0">
                       {selected.nhatKy?.length || 0} cuộc gọi
                     </span>
                   </div>

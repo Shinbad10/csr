@@ -1785,6 +1785,10 @@ export namespace Prisma {
     id: string | null
     ten: string | null
     diaChi: string | null
+    dienThoai: string | null
+    email: string | null
+    website: string | null
+    toaThuoc: string | null
     trangThai: string | null
     sheetId: string | null
     bhxhUser: string | null
@@ -1804,6 +1808,10 @@ export namespace Prisma {
     id: string | null
     ten: string | null
     diaChi: string | null
+    dienThoai: string | null
+    email: string | null
+    website: string | null
+    toaThuoc: string | null
     trangThai: string | null
     sheetId: string | null
     bhxhUser: string | null
@@ -1823,6 +1831,10 @@ export namespace Prisma {
     id: number
     ten: number
     diaChi: number
+    dienThoai: number
+    email: number
+    website: number
+    toaThuoc: number
     trangThai: number
     sheetId: number
     bhxhUser: number
@@ -1844,6 +1856,10 @@ export namespace Prisma {
     id?: true
     ten?: true
     diaChi?: true
+    dienThoai?: true
+    email?: true
+    website?: true
+    toaThuoc?: true
     trangThai?: true
     sheetId?: true
     bhxhUser?: true
@@ -1863,6 +1879,10 @@ export namespace Prisma {
     id?: true
     ten?: true
     diaChi?: true
+    dienThoai?: true
+    email?: true
+    website?: true
+    toaThuoc?: true
     trangThai?: true
     sheetId?: true
     bhxhUser?: true
@@ -1882,6 +1902,10 @@ export namespace Prisma {
     id?: true
     ten?: true
     diaChi?: true
+    dienThoai?: true
+    email?: true
+    website?: true
+    toaThuoc?: true
     trangThai?: true
     sheetId?: true
     bhxhUser?: true
@@ -1974,6 +1998,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi: string | null
+    dienThoai: string | null
+    email: string | null
+    website: string | null
+    toaThuoc: string | null
     trangThai: string
     sheetId: string | null
     bhxhUser: string | null
@@ -2010,6 +2038,10 @@ export namespace Prisma {
     id?: boolean
     ten?: boolean
     diaChi?: boolean
+    dienThoai?: boolean
+    email?: boolean
+    website?: boolean
+    toaThuoc?: boolean
     trangThai?: boolean
     sheetId?: boolean
     bhxhUser?: boolean
@@ -2033,6 +2065,10 @@ export namespace Prisma {
     id?: boolean
     ten?: boolean
     diaChi?: boolean
+    dienThoai?: boolean
+    email?: boolean
+    website?: boolean
+    toaThuoc?: boolean
     trangThai?: boolean
     sheetId?: boolean
     bhxhUser?: boolean
@@ -2052,6 +2088,10 @@ export namespace Prisma {
     id?: boolean
     ten?: boolean
     diaChi?: boolean
+    dienThoai?: boolean
+    email?: boolean
+    website?: boolean
+    toaThuoc?: boolean
     trangThai?: boolean
     sheetId?: boolean
     bhxhUser?: boolean
@@ -2071,6 +2111,10 @@ export namespace Prisma {
     id?: boolean
     ten?: boolean
     diaChi?: boolean
+    dienThoai?: boolean
+    email?: boolean
+    website?: boolean
+    toaThuoc?: boolean
     trangThai?: boolean
     sheetId?: boolean
     bhxhUser?: boolean
@@ -2086,7 +2130,7 @@ export namespace Prisma {
     cauHinhTruong?: boolean
   }
 
-  export type CoSoOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ten" | "diaChi" | "trangThai" | "sheetId" | "bhxhUser" | "bhxhPass" | "bhxhMaCSKCB" | "bhxhHoTenCB" | "bhxhCccdCB" | "hisHost" | "hisPort" | "hisUser" | "hisPass" | "hisDbName" | "cauHinhTruong", ExtArgs["result"]["coSo"]>
+  export type CoSoOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "ten" | "diaChi" | "dienThoai" | "email" | "website" | "toaThuoc" | "trangThai" | "sheetId" | "bhxhUser" | "bhxhPass" | "bhxhMaCSKCB" | "bhxhHoTenCB" | "bhxhCccdCB" | "hisHost" | "hisPort" | "hisUser" | "hisPass" | "hisDbName" | "cauHinhTruong", ExtArgs["result"]["coSo"]>
   export type CoSoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     buoiKham?: boolean | CoSo$buoiKhamArgs<ExtArgs>
     nguoiDung?: boolean | CoSo$nguoiDungArgs<ExtArgs>
@@ -2107,6 +2151,10 @@ export namespace Prisma {
       id: string
       ten: string
       diaChi: string | null
+      dienThoai: string | null
+      email: string | null
+      website: string | null
+      toaThuoc: string | null
       trangThai: string
       sheetId: string | null
       bhxhUser: string | null
@@ -2549,6 +2597,10 @@ export namespace Prisma {
     readonly id: FieldRef<"CoSo", 'String'>
     readonly ten: FieldRef<"CoSo", 'String'>
     readonly diaChi: FieldRef<"CoSo", 'String'>
+    readonly dienThoai: FieldRef<"CoSo", 'String'>
+    readonly email: FieldRef<"CoSo", 'String'>
+    readonly website: FieldRef<"CoSo", 'String'>
+    readonly toaThuoc: FieldRef<"CoSo", 'String'>
     readonly trangThai: FieldRef<"CoSo", 'String'>
     readonly sheetId: FieldRef<"CoSo", 'String'>
     readonly bhxhUser: FieldRef<"CoSo", 'String'>
@@ -12867,6 +12919,10 @@ export namespace Prisma {
     id: 'id',
     ten: 'ten',
     diaChi: 'diaChi',
+    dienThoai: 'dienThoai',
+    email: 'email',
+    website: 'website',
+    toaThuoc: 'toaThuoc',
     trangThai: 'trangThai',
     sheetId: 'sheetId',
     bhxhUser: 'bhxhUser',
@@ -13120,6 +13176,10 @@ export namespace Prisma {
     id?: StringFilter<"CoSo"> | string
     ten?: StringFilter<"CoSo"> | string
     diaChi?: StringNullableFilter<"CoSo"> | string | null
+    dienThoai?: StringNullableFilter<"CoSo"> | string | null
+    email?: StringNullableFilter<"CoSo"> | string | null
+    website?: StringNullableFilter<"CoSo"> | string | null
+    toaThuoc?: StringNullableFilter<"CoSo"> | string | null
     trangThai?: StringFilter<"CoSo"> | string
     sheetId?: StringNullableFilter<"CoSo"> | string | null
     bhxhUser?: StringNullableFilter<"CoSo"> | string | null
@@ -13142,6 +13202,10 @@ export namespace Prisma {
     id?: SortOrder
     ten?: SortOrder
     diaChi?: SortOrderInput | SortOrder
+    dienThoai?: SortOrderInput | SortOrder
+    email?: SortOrderInput | SortOrder
+    website?: SortOrderInput | SortOrder
+    toaThuoc?: SortOrderInput | SortOrder
     trangThai?: SortOrder
     sheetId?: SortOrderInput | SortOrder
     bhxhUser?: SortOrderInput | SortOrder
@@ -13167,6 +13231,10 @@ export namespace Prisma {
     NOT?: CoSoWhereInput | CoSoWhereInput[]
     ten?: StringFilter<"CoSo"> | string
     diaChi?: StringNullableFilter<"CoSo"> | string | null
+    dienThoai?: StringNullableFilter<"CoSo"> | string | null
+    email?: StringNullableFilter<"CoSo"> | string | null
+    website?: StringNullableFilter<"CoSo"> | string | null
+    toaThuoc?: StringNullableFilter<"CoSo"> | string | null
     trangThai?: StringFilter<"CoSo"> | string
     sheetId?: StringNullableFilter<"CoSo"> | string | null
     bhxhUser?: StringNullableFilter<"CoSo"> | string | null
@@ -13189,6 +13257,10 @@ export namespace Prisma {
     id?: SortOrder
     ten?: SortOrder
     diaChi?: SortOrderInput | SortOrder
+    dienThoai?: SortOrderInput | SortOrder
+    email?: SortOrderInput | SortOrder
+    website?: SortOrderInput | SortOrder
+    toaThuoc?: SortOrderInput | SortOrder
     trangThai?: SortOrder
     sheetId?: SortOrderInput | SortOrder
     bhxhUser?: SortOrderInput | SortOrder
@@ -13214,6 +13286,10 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"CoSo"> | string
     ten?: StringWithAggregatesFilter<"CoSo"> | string
     diaChi?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
+    dienThoai?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
+    email?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
+    website?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
+    toaThuoc?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
     trangThai?: StringWithAggregatesFilter<"CoSo"> | string
     sheetId?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
     bhxhUser?: StringNullableWithAggregatesFilter<"CoSo"> | string | null
@@ -14116,6 +14192,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -14138,6 +14218,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -14160,6 +14244,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14182,6 +14270,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14204,6 +14296,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -14223,6 +14319,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -14242,6 +14342,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -15348,6 +15452,10 @@ export namespace Prisma {
     id?: SortOrder
     ten?: SortOrder
     diaChi?: SortOrder
+    dienThoai?: SortOrder
+    email?: SortOrder
+    website?: SortOrder
+    toaThuoc?: SortOrder
     trangThai?: SortOrder
     sheetId?: SortOrder
     bhxhUser?: SortOrder
@@ -15367,6 +15475,10 @@ export namespace Prisma {
     id?: SortOrder
     ten?: SortOrder
     diaChi?: SortOrder
+    dienThoai?: SortOrder
+    email?: SortOrder
+    website?: SortOrder
+    toaThuoc?: SortOrder
     trangThai?: SortOrder
     sheetId?: SortOrder
     bhxhUser?: SortOrder
@@ -15386,6 +15498,10 @@ export namespace Prisma {
     id?: SortOrder
     ten?: SortOrder
     diaChi?: SortOrder
+    dienThoai?: SortOrder
+    email?: SortOrder
+    website?: SortOrder
+    toaThuoc?: SortOrder
     trangThai?: SortOrder
     sheetId?: SortOrder
     bhxhUser?: SortOrder
@@ -17371,6 +17487,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -17392,6 +17512,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -17966,6 +18090,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17987,6 +18115,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18100,6 +18232,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -18121,6 +18257,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -18350,6 +18490,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18371,6 +18515,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18486,6 +18634,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -18507,6 +18659,10 @@ export namespace Prisma {
     id: string
     ten: string
     diaChi?: string | null
+    dienThoai?: string | null
+    email?: string | null
+    website?: string | null
+    toaThuoc?: string | null
     trangThai?: string
     sheetId?: string | null
     bhxhUser?: string | null
@@ -18717,6 +18873,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null
@@ -18738,6 +18898,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     ten?: StringFieldUpdateOperationsInput | string
     diaChi?: NullableStringFieldUpdateOperationsInput | string | null
+    dienThoai?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    website?: NullableStringFieldUpdateOperationsInput | string | null
+    toaThuoc?: NullableStringFieldUpdateOperationsInput | string | null
     trangThai?: StringFieldUpdateOperationsInput | string
     sheetId?: NullableStringFieldUpdateOperationsInput | string | null
     bhxhUser?: NullableStringFieldUpdateOperationsInput | string | null

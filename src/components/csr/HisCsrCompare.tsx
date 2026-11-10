@@ -509,7 +509,7 @@ export function XacNhanListModal({ entries, onClose }: { entries: XacNhanEntry[]
                       type="button"
                       onClick={() => xacNhan(e)}
                       disabled={st === "dang"}
-                      className="w-full h-9 rounded-[10px] text-[12.5px] font-semibold text-white bg-gradient-to-br from-[var(--navy)] to-[var(--navy-deep)] shadow-[var(--navy-shadow)] hover:brightness-110 inline-flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                      className="w-full h-9 rounded-[6px] text-[12.5px] font-semibold text-white bg-[var(--navy)] hover:brightness-110 inline-flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                     >
                       {st === "dang" ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" strokeWidth={3} />}
                       Đúng người

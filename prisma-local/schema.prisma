@@ -13,6 +13,10 @@ model CoSo {
   id          String         @id
   ten         String
   diaChi      String?
+  dienThoai   String?
+  email       String?
+  website     String?
+  toaThuoc    String?
   trangThai   String         @default("active")
   sheetId     String?        // UC-10/BR-15 — spreadsheetId Google Sheet (tự tạo lần đồng bộ đầu)
   bhxhUser    String?        // Tài khoản cổng BHXH của cơ sở

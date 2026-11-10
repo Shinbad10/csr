@@ -141,8 +141,8 @@ export function DataTable<TData>({
                           ? 'bg-[var(--navy)] text-white border-r border-white/10'
                           : 'bg-[var(--surface-soft)] text-[var(--mute)] font-mono',
                         'group transition-colors duration-200',
-                        dense ? 'px-3.5 py-2.5 text-[11px]' : 'px-3.5 py-3 text-[11px]',
-                        'font-bold tracking-[0.12em] uppercase first:pl-[18px]',
+                        dense ? 'px-3 py-2.5 text-[11px]' : 'px-3 py-3 text-[11px]',
+                        'font-bold tracking-[0.06em] uppercase first:pl-4',
                         isLast && 'border-r-0',
                         canSort && (headerVariant === 'navy'
                           ? 'cursor-pointer select-none hover:bg-[var(--navy-deep)]'
@@ -153,12 +153,15 @@ export function DataTable<TData>({
                     >
                       <div
                         className={cn(
-                          'flex items-center gap-2',
+                          'flex items-center gap-1',
                           align === 'right' && 'justify-end',
                           align === 'center' && 'justify-center',
                         )}
                       >
-                        <span className="whitespace-nowrap truncate">
+                        <span
+                          className="whitespace-nowrap truncate"
+                          title={typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : undefined}
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
@@ -167,8 +170,8 @@ export function DataTable<TData>({
                         {canSort && (
                           <div
                             className={cn(
-                              'flex flex-col items-center justify-center -space-y-1.5 transition duration-200 shrink-0',
-                              sorted ? 'opacity-100' : 'opacity-30 group-hover:opacity-75',
+                              'flex-col items-center justify-center -space-y-1.5 transition duration-200 shrink-0',
+                              sorted ? 'flex opacity-100' : 'hidden group-hover:flex group-focus-visible:flex opacity-60',
                             )}
                           >
                             <ChevronUp
@@ -291,7 +294,7 @@ export function DataTable<TData>({
             <tr>
               <td colSpan={visibleColumns.length} className="py-20 text-center bg-[var(--surface)]">
                 <div className="flex flex-col items-center justify-center gap-3">
-                  <div className="w-14 h-14 rounded-[14px] bg-[var(--surface-soft)] flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-[10px] bg-[var(--surface-soft)] flex items-center justify-center">
                     <EmptyIcon className="w-6 h-6 text-[var(--mute)]" />
                   </div>
                   <div>

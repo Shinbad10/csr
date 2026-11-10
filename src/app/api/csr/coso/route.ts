@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   if (!can(session.user.role, "admin.masterdata")) return NextResponse.json({ error: "Không đủ quyền" }, { status: 403 });
   try {
     const body = await request.json();
-    const { id, ten, diaChi, bhxhMaCSKCB, bhxhHoTenCB, cauHinhTruong } = body;
+    const { id, ten, diaChi, dienThoai, email, website, bhxhMaCSKCB, bhxhHoTenCB, cauHinhTruong } = body;
     if (!id || !ten) return NextResponse.json({ error: "Thiếu mã hoặc tên cơ sở" }, { status: 400 });
     if (cauHinhTruong) {
       try {
@@ -51,6 +51,9 @@ export async function POST(request: Request) {
         id: id.trim(),
         ten: ten.trim(),
         diaChi: diaChi || null,
+        dienThoai: String(dienThoai || "").trim() || null,
+        email: String(email || "").trim() || null,
+        website: String(website || "").trim() || null,
         bhxhMaCSKCB: bhxhMaCSKCB?.trim() || null,
         bhxhHoTenCB: bhxhHoTenCB?.trim() || null,
         // Thông tin kết nối HIS / BHXH lưu dạng mã hoá AES-256-GCM
