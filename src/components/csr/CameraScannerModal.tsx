@@ -13,7 +13,8 @@ interface CameraScannerModalProps {
 }
 
 const SCANNER_ID = "qr-camera-reader-box";
-const MOBILE_QUERY = "(max-width: 767px), (pointer: coarse) and (max-width: 1024px)";
+// Máy tính bảng (kể cả màn hình ngang > 1024px) cũng dùng bộ quét toàn màn hình
+const MOBILE_QUERY = "(max-width: 767px), (pointer: coarse)";
 
 /** Điện thoại / máy tính bảng: quét toàn màn hình (giống ứng dụng bhyt-check); máy tính: hộp thoại. */
 function useIsMobileScanner() {

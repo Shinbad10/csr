@@ -334,8 +334,9 @@ export function BarcodeScannerInput({
             <button
               type="button"
               onClick={onOpenCamera}
-              className="sm:hidden w-9 h-9 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-[var(--surface)] hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition flex items-center justify-center shadow-xs cursor-pointer"
-              title="Quét bằng camera (Mobile)"
+              className="hidden max-sm:flex pointer-coarse:flex w-9 h-9 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-[var(--surface)] hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition items-center justify-center shadow-xs cursor-pointer"
+              title="Quét bằng camera"
+              aria-label="Quét bằng camera"
             >
               <Camera className="w-4 h-4" />
             </button>
@@ -408,13 +409,14 @@ export function BarcodeScannerInput({
           </span>
         </div>
 
-        {/* Nút mở Camera — chỉ hiện khi ở giao diện mobile (sm:hidden) */}
+        {/* Nút mở Camera — hiện trên điện thoại và mọi thiết bị cảm ứng (máy tính bảng), ẩn trên máy tính dùng chuột */}
         {onOpenCamera && (
           <button
             type="button"
             onClick={onOpenCamera}
-            className="sm:hidden w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-[var(--surface)] hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition flex items-center justify-center shadow-xs cursor-pointer"
-            title="Quét bằng camera (Mobile)"
+            className="hidden max-sm:flex pointer-coarse:flex w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-lg border border-[var(--teal)]/40 bg-[var(--surface)] hover:bg-[var(--teal-soft)] text-[var(--teal-deep)] transition items-center justify-center shadow-xs cursor-pointer"
+            title="Quét bằng camera"
+            aria-label="Quét bằng camera"
           >
             <Camera className="w-4 h-4" />
           </button>
