@@ -433,6 +433,24 @@ export function parseTheBhyt(raw: unknown): ThongTinTheBHYT | null {
       }))
     : [];
 
+  /* 003 = thẻ cũ HẾT hạn nhưng đã được cấp thẻ mới → dùng mã + hạn của thẻ mới (lấy từ trường *Moi,
+     không có thì bóc từ ghi chú "Chủ thẻ đã được cấp mã thẻ mới : XX...Hạn thẻ từ dd/mm/yyyy đến dd/mm/yyyy"). */
+  if (maKetQua === "003") {
+    const gc = ghiChu || "";
+    const maMoi = (getStr("maTheMoi") || gc.match(/thẻ mới\s*:?\s*([A-Z]{2}\d{13})(?!\d)/i)?.[1] || "").toUpperCase();
+    const hanMoi = gc.match(/[Hh]ạn thẻ từ\s*(\d{2}\/\d{2}\/\d{4})\s*đến\s*(\d{2}\/\d{2}\/\d{4})/);
+    const tuMoi = getStr("gtTheTuMoi") || hanMoi?.[1];
+    const denMoi = getStr("gtTheDenMoi") || hanMoi?.[2];
+    if (maMoi) {
+      maThe = maMoi;
+      if (/^[A-Z]{2}\d/.test(maMoi) && !getStr("mucHuong", "MucHuong", "maQuyenLoi", "quyen_loi", "ty_le")) mucHuong = bhytLevel(maMoi);
+    }
+    return {
+      maThe, mucHuong, tuNgay: tuMoi || tuNgay, denNgay: denMoi || denNgay, maDKBD, tenDKBD, hoTen, ngaySinh, diaChi, gioiTinh, cccd,
+      namNamLienTuc, maSoBHXH, maKV, cqBHXH, maKetQua, ghiChu, dsLichSuKCB, dsLichSuKT,
+    };
+  }
+
   return {
     maThe,
     mucHuong,
@@ -592,10 +610,17 @@ async function traCuuTheBHYTGoc(params: TraCuuParams, retry = true): Promise<Ket
     }
 
     const the = parseTheBhyt(raw);
+    /* Mã kết quả Cổng giám định BHXH coi là THẺ CÒN DÙNG ĐƯỢC:
+       000 thông tin thẻ chính xác · 001/002 thẻ do BHXH Bộ Quốc phòng / Bộ Công an quản lý
+       003 thẻ cũ hết hạn NHƯNG đã được cấp thẻ mới · 004 thẻ cũ còn giá trị, đã được cấp thẻ mới.
+       Trước đây chỉ nhận 000/001 nên thẻ "còn giá trị, đã cấp mã thẻ mới" bị ghi nhầm là hết hạn. */
+    const MA_THE_HOP_LE = ["000", "001", "002", "003", "004"];
+    const ghiChuThe = String(rawObj.ghiChu || the?.ghiChu || "");
+    const conGiaTriTheoGhiChu = /^\s*Thẻ còn giá trị sử dụng/i.test(ghiChuThe) || /đã được cấp (mã )?thẻ mới/i.test(ghiChuThe);
     const isSuccess = Boolean(
       the &&
       the.maThe &&
-      (maKetQua === "000" || maKetQua === "001" || (!maKetQua && Boolean(the.tuNgay || the.denNgay)))
+      (MA_THE_HOP_LE.includes(maKetQua) || conGiaTriTheoGhiChu || (!maKetQua && Boolean(the.tuNgay || the.denNgay)))
     );
 
     if (isSuccess && the) {

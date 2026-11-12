@@ -98,15 +98,15 @@ export function explainMaKetQua(maKetQua?: string | null, ghiChu?: string | null
     case "000":
       return "Thẻ còn giá trị sử dụng và hợp lệ.";
     case "001":
-      return "Thẻ do cơ quan BHXH khác quản lý, còn giá trị sử dụng.";
+      return "Thẻ do BHXH Bộ Quốc phòng quản lý, còn giá trị sử dụng.";
     case "002":
-      return "Thẻ do cơ quan BHXH khác quản lý, đã hết hạn sử dụng.";
+      return "Thẻ do BHXH Bộ Công an quản lý, còn giá trị sử dụng.";
     case "003":
-      return "Thẻ BHYT đã hết hạn sử dụng.";
+      return "Thẻ cũ hết giá trị sử dụng nhưng đã được cấp thẻ mới.";
     case "004":
-      return "Thẻ BHYT đã bị khóa / ngưng sử dụng.";
+      return "Thẻ cũ còn giá trị sử dụng nhưng đã được cấp thẻ mới.";
     case "010":
-      return "Không tìm thấy thông tin thẻ trên Cổng BHXH.";
+      return "Thẻ BHYT đã hết giá trị sử dụng.";
     case "050":
       return "Thẻ BHYT không tồn tại hoặc chưa đến ngày có giá trị sử dụng.";
     case "051":
